@@ -87,7 +87,35 @@
               { "type": "StepMark", "props": { "icon": "github", "tone": "neutral", "size": "compact" } },
               { "type": "Stack", "props": { "gap": "stackPair", "grow": true }, "children": [
                 { "type": "Text", "props": { "value": { "t": "project.new.makesRepo" }, "role": "label" } },
-                { "type": "Text", "props": { "value": { "get": "vm.projectNew.repo" }, "role": "caption", "tone": "muted", "personal": true } }
+                {
+                  "type": "Text",
+                  "props": {
+                    "value": {
+                      "get": "vm.projectNew.repo"
+                    },
+                    "role": "caption",
+                    "tone": "muted",
+                    "personal": true,
+                    "label": {
+                      "t": "command.github.reference",
+                      "args": {
+                        "reference": {
+                          "get": "vm.projectNew.repo"
+                        }
+                      }
+                    }
+                  },
+                  "on": {
+                    "press": {
+                      "run": "github.open",
+                      "args": {
+                        "reference": {
+                          "get": "vm.projectNew.repo"
+                        }
+                      }
+                    }
+                  }
+                }
               ] },
               { "type": "Button", "when": { "expr": { "!": { "get": "vm.projectNew.repoEditing" } } }, "props": { "label": { "t": "project.new.change" }, "variant": "subtle", "size": "s" }, "on": { "press": { "run": "projects.newChangeRepo" } } }
             ] },

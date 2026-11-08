@@ -154,6 +154,22 @@
             },
             "disabled": {
              "get": "vm.projects.githubPending"
+            },
+            "detailLabel": {
+             "t": "command.github.reference",
+             "args": {
+              "reference": {
+               "get": "repo.owner"
+              }
+             }
+            },
+            "titleLabel": {
+             "t": "command.github.reference",
+             "args": {
+              "reference": {
+               "get": "repo.id"
+              }
+             }
             }
            },
            "on": {
@@ -161,6 +177,22 @@
              "run": "projects.githubOpen",
              "args": {
               "id": {
+               "get": "repo.id"
+              }
+             }
+            },
+            "detailPress": {
+             "run": "github.open",
+             "args": {
+              "reference": {
+               "get": "repo.owner"
+              }
+             }
+            },
+            "titlePress": {
+             "run": "github.open",
+             "args": {
+              "reference": {
                "get": "repo.id"
               }
              }

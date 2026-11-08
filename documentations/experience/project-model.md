@@ -282,7 +282,7 @@ This inventory covers every place the word reaches a person, plus the internal n
 | `save.backup.local`, `recovered.top` | …workspace… | …project… |
 | `spotlight.reason.noFiles`, `spotlight.reason.noOtherRoot`, `command.history.open.none` | …workspace… | …project… |
 | `agents.undo.locked` | …workspace… | …project… |
-| `migrate.moved`, `migrate.notice` | "Your workspace is now called a project." | **Keep, once.** It is the one sentence that explains the rename to people who knew the old word. Remove it after a release cycle. |
+| `migrate.moved`, `migrate.notice` | Former terminology explanation | **Superseded, owner 7 November.** Both messages and the startup notice are removed for fresh and upgraded profiles. Project is the only user-facing noun; Help keeps the model explainer. |
 
 ### Words outside the message file
 

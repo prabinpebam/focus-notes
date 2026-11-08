@@ -860,7 +860,15 @@
                                     "badge": {
                                       "get": "p.badge"
                                     },
-                                    "personal": "title"
+                                    "personal": "title",
+                                    "titleLabel": {
+                                      "t": "command.github.reference",
+                                      "args": {
+                                        "reference": {
+                                          "get": "p.login"
+                                        }
+                                      }
+                                    }
                                   },
                                   "children": [
                                     {
@@ -885,7 +893,17 @@
                                         }
                                       }
                                     }
-                                  ]
+                                  ],
+                                  "on": {
+                                    "titlePress": {
+                                      "run": "github.open",
+                                      "args": {
+                                        "reference": {
+                                          "get": "p.login"
+                                        }
+                                      }
+                                    }
+                                  }
                                 },
                                 "empty": {
                                   "type": "Text",
@@ -959,6 +977,24 @@
                                 "t": "project.home.linked.detail",
                                 "args": {
                                   "repo": {
+                                    "get": "vm.settings.workspace.repo"
+                                  }
+                                }
+                              },
+                              "detailLabel": {
+                                "t": "command.github.reference",
+                                "args": {
+                                  "reference": {
+                                    "get": "vm.settings.workspace.repo"
+                                  }
+                                }
+                              }
+                            },
+                            "on": {
+                              "detailPress": {
+                                "run": "github.open",
+                                "args": {
+                                  "reference": {
                                     "get": "vm.settings.workspace.repo"
                                   }
                                 }
@@ -2185,31 +2221,66 @@
                             "props": { "gap": "stackPair" },
                             "children": [
                               {
-                                "type": "Stack",
-                                "when": {
-                                  "get": "vm.settings.account.signedIn"
-                                },
+                                "type": "Inline",
                                 "props": {
-                                  "gap": "stackPair"
+                                  "gap": "inlineItem",
+                                  "align": "center"
                                 },
                                 "children": [
                                   {
-                                    "type": "Text",
+                                    "type": "StepMark",
                                     "props": {
-                                      "value": {
-                                        "get": "vm.settings.account.name"
-                                      },
-                                      "role": "emphasis"
+                                      "icon": "github",
+                                      "size": "compact",
+                                      "tone": "neutral"
                                     }
                                   },
                                   {
-                                    "type": "Text",
+                                    "type": "Stack",
+                                    "when": {
+                                      "get": "vm.settings.account.signedIn"
+                                    },
                                     "props": {
-                                      "value": {
-                                        "get": "vm.settings.account.login"
+                                      "gap": "stackPair"
+                                    },
+                                    "children": [
+                                      {
+                                        "type": "Text",
+                                        "props": {
+                                          "value": {
+                                            "get": "vm.settings.account.name"
+                                          },
+                                          "role": "emphasis"
+                                        }
                                       },
-                                      "tone": "muted"
-                                    }
+                                      {
+                                        "type": "Text",
+                                        "props": {
+                                          "value": {
+                                            "get": "vm.settings.account.login"
+                                          },
+                                          "tone": "muted",
+                                          "label": {
+                                            "t": "command.github.reference",
+                                            "args": {
+                                              "reference": {
+                                                "get": "vm.settings.account.login"
+                                              }
+                                            }
+                                          }
+                                        },
+                                        "on": {
+                                          "press": {
+                                            "run": "github.open",
+                                            "args": {
+                                              "reference": {
+                                                "get": "vm.settings.account.login"
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    ]
                                   }
                                 ]
                               },
@@ -2319,20 +2390,52 @@
                                 }
                               },
                               {
-                                "type": "Text",
+                                "type": "Inline",
+                                "when": {
+                                  "get": "vm.settings.account.hasGitLogin"
+                                },
                                 "props": {
-                                  "value": {
-                                    "t": "settings.account.gitStill",
-                                    "args": {
-                                      "login": {
+                                  "gap": "inlinePair",
+                                  "wrap": true
+                                },
+                                "children": [
+                                  {
+                                    "type": "Text",
+                                    "props": {
+                                      "value": {
+                                        "t": "settings.account.gitStill"
+                                      },
+                                      "tone": "muted"
+                                    }
+                                  },
+                                  {
+                                    "type": "Text",
+                                    "props": {
+                                      "value": {
                                         "get": "vm.settings.account.gitLogin"
+                                      },
+                                      "label": {
+                                        "t": "command.github.reference",
+                                        "args": {
+                                          "reference": {
+                                            "get": "vm.settings.account.gitLogin"
+                                          }
+                                        }
+                                      },
+                                      "personal": true
+                                    },
+                                    "on": {
+                                      "press": {
+                                        "run": "github.open",
+                                        "args": {
+                                          "reference": {
+                                            "get": "vm.settings.account.gitLogin"
+                                          }
+                                        }
                                       }
                                     }
                                   }
-                                },
-                                "when": {
-                                  "get": "vm.settings.account.hasGitLogin"
-                                }
+                                ]
                               }
                             ]
                           },
@@ -5628,7 +5731,25 @@
                       "detail": {
                         "get": "vm.sharingSettings.repo"
                       },
-                      "icon": "github"
+                      "icon": "github",
+                      "detailLabel": {
+                        "t": "command.github.reference",
+                        "args": {
+                          "reference": {
+                            "get": "vm.sharingSettings.repo"
+                          }
+                        }
+                      }
+                    },
+                    "on": {
+                      "detailPress": {
+                        "run": "github.open",
+                        "args": {
+                          "reference": {
+                            "get": "vm.sharingSettings.repo"
+                          }
+                        }
+                      }
                     }
                   },
                   {
@@ -5843,12 +5964,14 @@
                   "title": {
                     "get": "vm.sharingPeople.user"
                   },
+                  "titleLabel": { "t": "command.github.reference", "args": { "reference": { "get": "vm.sharingPeople.user" } } },
                   "detail": {
                     "t": "share.invite.account"
                   },
                   "icon": "github",
                   "personal": "title"
-                }
+                },
+                "on": { "titlePress": { "run": "github.open", "args": { "reference": { "get": "vm.sharingPeople.user" } } } }
               },
               {
                 "type": "Stack",

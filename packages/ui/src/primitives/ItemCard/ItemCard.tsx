@@ -9,6 +9,11 @@ import { Skeleton } from "../Skeleton/Skeleton.tsx";
 export interface ItemCardProps {
   title: string;
   detail?: string;
+  /** Accessible names for independently actionable repository or account text. */
+  titleLabel?: string;
+  detailLabel?: string;
+  onTitlePress?: () => void;
+  onDetailPress?: () => void;
   badge?: string;
   icon?: IconName;
   /** Only a data URL the shell made; anything else shows the initials. */
@@ -48,7 +53,7 @@ const PICTURE = /^data:image\/(png|jpeg|gif|webp);base64,/;
  * @a11y A choice uses native grouped radios; its slot actions are outside the choice label.
  * @key Arrow keys choose within the native radio group; Space chooses the focused radio.
  */
-export function ItemCard({ title, detail, badge, icon, avatar, initials, mark, size = "m", personal = "none", reading = false, chevron = true, label, busy, disabled, autoFocus, skeleton, id, children, onPress, choiceGroup, choiceValue, selected, onChoose }: ItemCardProps) {
+export function ItemCard({ title, detail, titleLabel, detailLabel, onTitlePress, onDetailPress, badge, icon, avatar, initials, mark, size = "m", personal = "none", reading = false, chevron = true, label, busy, disabled, autoFocus, skeleton, id, children, onPress, choiceGroup, choiceValue, selected, onChoose }: ItemCardProps) {
   // The shared busy policy (D-199): inert, aria-busy and data-busy, the same as Button's.
   const { inert, attrs: busyAttrs, ref: busyRef } = useBusy({ busy, label: label ?? "", disabled });
   if (skeleton) {
@@ -64,6 +69,7 @@ export function ItemCard({ title, detail, badge, icon, avatar, initials, mark, s
   }
   const Glyph = icon ? ICONS[icon] : undefined;
   const pressable = Boolean(onPress);
+  const references = Boolean(onTitlePress || onDetailPress);
   const GitHub = ICONS.github;
   const Chevron = ICONS.chevronRight;
   const visual = Glyph ? (
@@ -74,15 +80,19 @@ export function ItemCard({ title, detail, badge, icon, avatar, initials, mark, s
     <span className={s.avatar} aria-hidden="true" data-visual-anchor="" data-avatar="initials">{initials}</span>
   ) : null;
   // Inside a button only phrasing content: spans, laid out the same.
-  const Title = pressable || choiceGroup ? "span" : "p";
-  const Detail = pressable || choiceGroup ? "span" : "div";
+  const Title = pressable || choiceGroup || references ? "span" : "p";
+  const Detail = pressable || choiceGroup || references ? "span" : "div";
+  const titleClass = `${s.title} ${size === "l" ? s.titleLarge : ""} ${pressable ? s.titleAction : ""} ${reading ? s.readingTitle : ""}`;
   const text = (
     <Detail className={s.text}>
-      <Title className={`${s.title} ${size === "l" ? s.titleLarge : ""} ${pressable ? s.titleAction : ""} ${reading ? s.readingTitle : ""}`} data-personal={personal !== "none" ? "" : undefined}>{title}</Title>
+      {onTitlePress ? <Title className={titleClass}><button type="button" className={s.reference} aria-label={titleLabel} title={titleLabel} onClick={onTitlePress} data-personal={personal !== "none" ? "" : undefined}>{title}</button></Title>
+        : <Title className={titleClass} data-personal={personal !== "none" ? "" : undefined}>{title}</Title>}
       {detail || badge || mark ? (
         <Detail className={`${s.detail} ${reading ? s.readingDetail : ""}`}>
           {mark ? <GitHub className={s.mark} aria-hidden="true" /> : null}
-          {detail ? <span data-personal={personal === "all" ? "" : undefined}>{detail}</span> : null}
+          {detail ? onDetailPress
+            ? <button type="button" className={s.reference} aria-label={detailLabel} title={detailLabel} onClick={onDetailPress} data-personal={personal === "all" ? "" : undefined}>{detail}</button>
+            : <span data-personal={personal === "all" ? "" : undefined}>{detail}</span> : null}
           {badge ? <span className={`${s.badge} ${selected ? s.selectedBadge : ""}`}>{badge}</span> : null}
         </Detail>
       ) : null}
@@ -104,6 +114,16 @@ export function ItemCard({ title, detail, badge, icon, avatar, initials, mark, s
     );
   }
   if (pressable) {
+    if (references) {
+      return (
+        <div id={id} className={`${s.base} ${s.pressable} ${s.referenceCard} ${size === "l" ? s.large : ""} ${reading ? s.reading : ""}`} data-item-card="" {...busyAttrs} data-unavailable={disabled ? "" : undefined}>
+          <AriaButton className={s.cardHit} aria-label={label ?? [title, detail].filter(Boolean).join(" ")} {...busyAttrs} ref={busyRef} {...(autoFocus ? { autoFocus: true } : {})} onPress={inert ? undefined : onPress} />
+          {visual}
+          {text}
+          {chevron ? <Chevron className={s.chevron} aria-hidden="true" /> : null}
+        </div>
+      );
+    }
     return (
       <AriaButton
         id={id}

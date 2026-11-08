@@ -3115,6 +3115,14 @@
         "detail": {
           "kind": "message"
         },
+        "titleLabel": {
+          "kind": "message",
+          "description": "Accessible name for the title's independent GitHub action (D-393)."
+        },
+        "detailLabel": {
+          "kind": "message",
+          "description": "Accessible name for the detail's independent GitHub action (D-393)."
+        },
         "badge": {
           "kind": "message"
         },
@@ -3190,6 +3198,8 @@
       },
       "events": {
         "press": {},
+        "titlePress": {},
+        "detailPress": {},
         "choose": {
           "payload": {
             "value": "text"
@@ -3212,6 +3222,7 @@
         "name": "label"
       },
       "fixtures": [
+        "independent GitHub references",
         "published article",
         "selected radio with independent action",
         "pending radio",

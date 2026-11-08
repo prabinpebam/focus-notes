@@ -65,3 +65,27 @@ export const titleAction = style({ fontSize: t.action.title });
 export const reading = style({ fontFamily: t.readingFont, lineHeight: t.readingLineHeight });
 export const readingTitle = style({ fontFamily: t.readingHeadingFont, fontSize: `calc(${t.readingSize} * ${t.readingTitleRatio})` });
 export const readingDetail = style({ fontSize: t.readingSize });
+export const reference = style({
+  appearance: "none", border: 0, padding: 0, background: "none", font: "inherit", color: "inherit",
+  textAlign: "start", cursor: "pointer", maxWidth: "100%", position: "relative", outline: "none",
+  borderRadius: t.radius, pointerEvents: "auto",
+  selectors: {
+    "&:active": { textDecorationLine: "underline" },
+    "&:focus-visible": { outlineStyle: "solid", outlineColor: t.action.focusRing, outlineWidth: t.action.focusWidth, outlineOffset: t.action.focusOffset },
+  },
+  "@media": { "(hover: hover)": { selectors: { "&:hover": { textDecorationLine: "underline" } } } },
+});
+export const cardHit = style({
+  position: "absolute", inset: 0, appearance: "none", padding: 0, border: 0, background: "none",
+  borderRadius: t.radius, outline: "none", pointerEvents: "auto",
+  selectors: {
+    "&[data-focus-visible]": { outlineStyle: "solid", outlineColor: t.action.focusRing, outlineWidth: t.action.focusWidth, outlineOffset: t.action.focusOffset },
+  },
+});
+export const referenceCard = style({
+  position: "relative", pointerEvents: "none",
+  selectors: {
+    [`&:has(${cardHit}[data-hovered]):not([aria-disabled="true"])`]: { backgroundColor: t.action.hover },
+    [`&:has(${cardHit}[data-pressed]):not([aria-disabled="true"])`]: { backgroundColor: t.action.pressed },
+  },
+});

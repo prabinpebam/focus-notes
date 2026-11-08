@@ -19,7 +19,7 @@
   "githubPending": false,
   "githubStatus": "",
   "githubError": "",
-  "repos": [{ "id": "r/x", "label": "x", "description": "", "busy": false }],
+  "repos": [{ "id": "r/x", "owner": "r", "label": "x", "description": "", "busy": false }],
   "error": "",
   "details": "",
   "recoveryAction": "",

@@ -18,6 +18,22 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 
 ## Summary
 
+### GitHub reference and terminology backlog, 8 November
+
+**Local candidate validated; landing and exact-head Windows gate pending.** Backlog (a), (b) and (f) use the existing design system and external-link policy. No pending first-share or in-app Delete mock changed. [Surface audit](../design/foundations.md#external-links) enumerates the existing app surfaces.
+
+| Evidence | Result |
+| --- | --- |
+| `pnpm --filter @focus-notes/desktop run build` | Passed with the changed core, primitive and view documents. |
+| `pnpm typecheck` | Passed across the monorepo. |
+| `pnpm check` | Passed; UI schemas and component/notification inventories regenerated. |
+| `pnpm exec vitest run packages/core/test/github-links.test.ts packages/core/test/repo-backup.test.ts packages/ui-runtime/test/github-references.test.tsx packages/core/test/project-open.test.ts packages/core/test/project-delete-app.test.ts packages/core/test/project-settings.test.ts` | Passed: 6 files, 117 tests. Exact validated destinations, invalid identity refusal, independent focusable sibling actions, preserved card opening, and local-only absence. |
+| `FOCUS_NOTES_E2E=1; pnpm --filter @focus-notes/desktop exec playwright test e2e/github-references.spec.ts e2e/project-offline.spec.ts --workers=1` | Passed: 4 built-app journeys. Keyboard activation through Account, Project, existing Share, both Backup cards, Open project reference, GitHub chooser, wizard Confirm and Delete; intercepted exact destinations, unchanged original Markdown and no unintended project opening/deletion. Offline-project restoration and first Delete confirmation preserve data. |
+| Retired notice | Startup trigger, view layer, messages and notice mock scenes removed. Existing stored `projectIntroSeen` values are preserved and no longer written by the explainer. The terminology pages mark the notice as superseded. No notice-specific test or notification-inventory entry remains. |
+| Normal Shell scratch-profile proof | Passed in light and dark: one GitHub mark on Account, exact intercepted destinations through Account, Project, Share, both Backup cards, GitHub chooser, wizard Confirm and Delete, unchanged original Markdown. A fresh profile without `projectIntroSeen` and a legacy profile with `false` neither show the notice nor rewrite that preference. After more than 20 seconds, read-only Windows exposure checks found 45/45 and 35/45 interior points respectively; no E2E variables, OS input or owner profile used. Both owned app trees closed. |
+
+Exact-head Windows CI and scheduled Preview verification will be recorded after they complete; these local checks alone do not claim the backlog is landed or ready to try.
+
 ### P0 project entry, 8 November
 
 **First candidate landed; owner-path verification exposed a missing-root gap.** Exact head `724ffe4edfc4d80bca9f573f64a955c47376156f` passed all seven jobs in [42427085857](https://github.com/prabinpebam/focus-notes/actions/runs/42427085857), fast-forwarded to main without force, and reached scheduled Preview at 09:52 on 8 November. A normal Shell launch of an existing project with no `notes` directory still showed Open, not a note; no Ready claim was made. The focused root-preparation correction below needs its own exact-head gate and owner-path proof. D-397 supersedes D-376's empty-only admission and D-171's blank-public-note rejection only; new-note Private defaults and held-public consent remain unchanged. PRJ-24 remains MP / WP-P.4. No real-account writes, owner Preview manipulation or OS input were used.

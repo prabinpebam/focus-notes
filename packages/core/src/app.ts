@@ -35,6 +35,7 @@ import { registerPrint, PRINT_CLOSED, type PrintUiState } from "./print-app.ts";
 import { registerSettings, SETTINGS_CLOSED, type SettingsState } from "./settings-app.ts";
 import { registerProject } from "./project-app.ts";
 import { registerProjectIntro } from "./project-intro-app.ts";
+import { githubReferenceUrl } from "./github-links.ts";
 import { registerProjectOpen } from "./project-open-app.ts";
 import { registerProjectDelete } from "./project-delete-app.ts";
 import { registerProjectNew } from "./project-new-app.ts";
@@ -472,7 +473,17 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   const recover = registerRecover({ store, bridge, catalog, commands, viewModels, tracker, clock, now: () => Date.now(), again: (scope) => firstRun.again(scope) });
   registerSettings({ store, bridge, catalog, commands, viewModels, toast, persistAppState, appState: () => appState, flush, again: (scope, o) => firstRun.again(scope, o), tracker, prefetchRepos: () => firstRun.prefetchRepos() });
   const project = registerProject({ store, commands, viewModels, catalog, bridge, appState: () => appState, persistAppState });
-  const projectIntro = registerProjectIntro({ store, commands, viewModels, catalog, appState: () => appState, persistAppState });
+  registerProjectIntro({ store, commands, viewModels, catalog });
+  commands.register<{ reference: string }>({
+    id: "github.open", title: "command.github.open",
+    enabled: () => Boolean(bridge.openLink ?? bridge.openExternal),
+    run: async ({ reference }) => {
+      const url = githubReferenceUrl(reference);
+      const open = bridge.openLink ?? bridge.openExternal;
+      if (!open) throw new Error("External links are unavailable");
+      await open(url);
+    },
+  });
   const projects = registerProjectOpen({ store, commands, viewModels, catalog, bridge, load: (path, keepCurrent = false) => openNote(path, { keepOnFailure: keepCurrent }), flush, toast, tracker });
   registerProjectNew({ store, commands, viewModels, catalog, bridge, tracker });
   registerProjectDelete({
@@ -1267,7 +1278,6 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       const position = restorePosition;
       restorePosition = undefined;
       if (position) afterPaint(() => editorAction("note.restorePosition", position));
-      if (bridge.projects && !bridge.projects.local) afterPaint(() => projectIntro.ready());
       const jump = pendingJump;
       if (jump && jump.path === store.state.note.path) {
         pendingJump = undefined;
@@ -1744,7 +1754,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   const REPO_VIEW = {
     type: "object" as const,
     properties: {
-      visible: { type: "boolean" as const }, hasRepository: { type: "boolean" as const }, backingUp: { type: "boolean" as const }, canBackUp: { type: "boolean" as const },
+      visible: { type: "boolean" as const }, hasRepository: { type: "boolean" as const }, repositoryLink: { type: "boolean" as const }, backingUp: { type: "boolean" as const }, canBackUp: { type: "boolean" as const },
       state: { type: "string" as const, enum: ["savedLocal", "pending", "syncing", "synced", "offline", "error"] },
       ...Object.fromEntries(["name", "stateText", "label", "repository", "backupTime", "waitingText", "backupReason"].map((k) => [k, { type: "string" as const }])),
       icon: { type: "string" as const }, tone: { type: "string" as const, enum: ["neutral", "accent", "danger", "success"] },

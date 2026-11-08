@@ -88,11 +88,11 @@ The figure's text alternative is the model itself: a project window owns one pri
 
 ## Meeting Project for the first time
 
-**Accepted migration plan (owner, 3 November; D-272).** This is predominantly a vocabulary and UX change, not a storage redesign. The figure above is the explainer used by the upgrade note and Help: a project is the existing private repository; its site is the existing public repository. Existing public/private note locations, repository URLs, `.git`/submodule arrangement, IDs, relative links, credentials, commits, pending saves and publishing settings stay where they are. Never re-clone, move notes, create a replacement repository or silently turn sharing on.
+**Accepted migration plan (owner, 3 November; D-272), notice superseded on 7 November.** This is predominantly a vocabulary and UX change, not a storage redesign. The figure above is the explainer kept in Help: a project is the existing private repository; its site is the existing public repository. Existing public/private note locations, repository URLs, `.git`/submodule arrangement, IDs, relative links, credentials, commits, pending saves and publishing settings stay where they are. Never re-clone, move notes, create a replacement repository or silently turn sharing on.
 
 | Moment | What the person sees | Behaviour |
 | --- | --- | --- |
-| Existing owner/user upgrades | Non-blocking one-time notice: **“Your workspace is now called a project. Your notes and files are in the same place.”** Actions **Learn about projects** / **Dismiss** | Show after restoring the same note/caret, not before saving or behind a setup wizard. Keep working; dismiss is remembered on this device. |
+| Existing owner/user upgrades | The same note and caret, using Project terminology; **no terminology notice** | The old notice, its startup trigger, message keys and mock scenes are removed. Existing saved preferences, notes, IDs and history remain untouched. Help keeps the explainer. |
 | First run, no existing workspace | **“Keep related notes together in a project. Each project has its own files and history.”** New project… / Open project… / Local notes | Show the repository/site explainer in Learn more; GitHub terminology only when choosing GitHub. Local notes needs no account. |
 | Existing paired workspace | Existing project display name and **Sharing on**, with its current site address | Reuse the known private/site mapping; no new setup or public-site consent because nothing new is being created/published. If mapping is unavailable, show Find folder…; do not make an empty replacement. |
 | Project picker and Files | **Projects**, **Open project…**; Files heading **⟨project⟩**, Public/Private sections keep their visibility labels | A folder is inside a project, not another project; Recent retains locations and pins. No change to note title or disk filename. |
@@ -102,7 +102,7 @@ The figure's text alternative is the model itself: a project window owns one pri
 
 **Safety:** retain the existing configuration snapshot; rollback restores the old labels/configuration against the same unmoved files.
 
-No automatic tour, forced sign-in or new modal for upgrading. A read-only/offline project still gets the new words; failed preference writes keep the notice dismissible for this session and report the save failure, never block writing. At narrow widths put the project name on its own line; keyboard/screen-reader labels use the same noun. Acceptance is the owner explaining Project versus its site from the figure and finding their existing note/settings without relocating anything (PRJ-11 / MP.15).
+No automatic tour, terminology notification, forced sign-in or new modal for upgrading. A read-only/offline project still gets the new words, without writing a notice-dismissal preference. At narrow widths put the project name on its own line; keyboard/screen-reader labels use the same noun. Acceptance is the owner explaining Project versus its site from the figure and finding their existing note/settings without relocating anything (PRJ-11 / MP.15).
 
 ## Launch
 

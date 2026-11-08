@@ -124,25 +124,7 @@
               }
             },
             {
-              "type": "StatusRow",
-              "props": {
-                "message": {
-                  "t": "project.delete.problem.notAdmin",
-                  "args": {
-                    "repo": {
-                      "get": "vm.projectDelete.otherRepo"
-                    },
-                    "owner": {
-                      "get": "vm.projectDelete.otherOwner"
-                    }
-                  }
-                },
-                "tone": "warning",
-                "icon": "lock",
-                "actionLabel": {
-                  "t": "project.home.remove"
-                }
-              },
+              "type": "Stack",
               "when": {
                 "expr": {
                   "==": [
@@ -153,11 +135,92 @@
                   ]
                 }
               },
-              "on": {
-                "action": {
-                  "run": "project.deleteRemoveInstead"
+              "props": {
+                "gap": "stackPair"
+              },
+              "children": [
+                {
+                  "type": "StatusRow",
+                  "props": {
+                    "message": {
+                      "t": "project.delete.problem.notAdmin"
+                    },
+                    "tone": "warning",
+                    "icon": "lock",
+                    "actionLabel": {
+                      "t": "project.home.remove"
+                    }
+                  },
+                  "on": {
+                    "action": {
+                      "run": "project.deleteRemoveInstead"
+                    }
+                  }
+                },
+                {
+                  "type": "Inline",
+                  "props": {
+                    "gap": "inlineItem",
+                    "wrap": true
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "props": {
+                        "value": {
+                          "get": "vm.projectDelete.otherRepo"
+                        },
+                        "label": {
+                          "t": "command.github.reference",
+                          "args": {
+                            "reference": {
+                              "get": "vm.projectDelete.otherRepo"
+                            }
+                          }
+                        },
+                        "personal": true
+                      },
+                      "on": {
+                        "press": {
+                          "run": "github.open",
+                          "args": {
+                            "reference": {
+                              "get": "vm.projectDelete.otherRepo"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "type": "Text",
+                      "props": {
+                        "value": {
+                          "get": "vm.projectDelete.otherOwner"
+                        },
+                        "label": {
+                          "t": "command.github.reference",
+                          "args": {
+                            "reference": {
+                              "get": "vm.projectDelete.otherOwner"
+                            }
+                          }
+                        },
+                        "personal": true
+                      },
+                      "on": {
+                        "press": {
+                          "run": "github.open",
+                          "args": {
+                            "reference": {
+                              "get": "vm.projectDelete.otherOwner"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
                 }
-              }
+              ]
             },
             {
               "type": "StatusRow",
@@ -233,6 +296,14 @@
                                   "get": "vm.projectDelete.repo"
                                 }
                               }
+                            },
+                            "detailLabel": {
+                              "t": "command.github.reference",
+                              "args": {
+                                "reference": {
+                                  "get": "vm.projectDelete.repo"
+                                }
+                              }
                             }
                           },
                           "when": {
@@ -243,6 +314,16 @@
                                 },
                                 "gone"
                               ]
+                            }
+                          },
+                          "on": {
+                            "detailPress": {
+                              "run": "github.open",
+                              "args": {
+                                "reference": {
+                                  "get": "vm.projectDelete.repo"
+                                }
+                              }
                             }
                           }
                         },
@@ -261,7 +342,15 @@
                             "detail": {
                               "t": "project.delete.repo.detail"
                             },
-                            "personal": "title"
+                            "personal": "title",
+                            "titleLabel": {
+                              "t": "command.github.reference",
+                              "args": {
+                                "reference": {
+                                  "get": "vm.projectDelete.otherRepo"
+                                }
+                              }
+                            }
                           },
                           "when": {
                             "expr": {
@@ -271,6 +360,16 @@
                                 },
                                 "notAdmin"
                               ]
+                            }
+                          },
+                          "on": {
+                            "titlePress": {
+                              "run": "github.open",
+                              "args": {
+                                "reference": {
+                                  "get": "vm.projectDelete.otherRepo"
+                                }
+                              }
                             }
                           }
                         },
@@ -289,7 +388,15 @@
                             "detail": {
                               "t": "project.delete.repo.detail"
                             },
-                            "personal": "title"
+                            "personal": "title",
+                            "titleLabel": {
+                              "t": "command.github.reference",
+                              "args": {
+                                "reference": {
+                                  "get": "vm.projectDelete.repo"
+                                }
+                              }
+                            }
                           },
                           "when": {
                             "expr": {
@@ -311,6 +418,16 @@
                                   ]
                                 }
                               ]
+                            }
+                          },
+                          "on": {
+                            "titlePress": {
+                              "run": "github.open",
+                              "args": {
+                                "reference": {
+                                  "get": "vm.projectDelete.repo"
+                                }
+                              }
                             }
                           }
                         },
@@ -424,7 +541,15 @@
                                     }
                                   }
                                 },
-                                "personal": "title"
+                                "personal": "title",
+                                "titleLabel": {
+                                  "t": "command.github.reference",
+                                  "args": {
+                                    "reference": {
+                                      "get": "vm.projectDelete.privateRepo"
+                                    }
+                                  }
+                                }
                               },
                               "children": [
                                 {
@@ -444,7 +569,17 @@
                                     }
                                   }
                                 }
-                              ]
+                              ],
+                              "on": {
+                                "titlePress": {
+                                  "run": "github.open",
+                                  "args": {
+                                    "reference": {
+                                      "get": "vm.projectDelete.privateRepo"
+                                    }
+                                  }
+                                }
+                              }
                             },
                             {
                               "type": "Text",
@@ -856,31 +991,97 @@
           },
           "children": [
             {
-              "type": "Text",
+              "type": "Inline",
               "props": {
-                "value": {
-                  "t": "project.delete.confirm.summary",
-                  "args": {
-                    "repo": {
+                "gap": "inlinePair",
+                "wrap": true
+              },
+              "children": [
+                {
+                  "type": "Text",
+                  "props": {
+                    "value": {
+                      "t": "project.delete.confirm.before"
+                    }
+                  }
+                },
+                {
+                  "type": "Text",
+                  "props": {
+                    "value": {
                       "get": "vm.projectDelete.repo"
                     },
-                    "privateRepo": {
-                      "get": "vm.projectDelete.privateRepo"
+                    "label": {
+                      "t": "command.github.reference",
+                      "args": {
+                        "reference": {
+                          "get": "vm.projectDelete.repo"
+                        }
+                      }
                     },
-                    "private": {
-                      "expr": {
-                        "if": [
-                          {
-                            "get": "vm.projectDelete.private"
-                          },
-                          "yes",
-                          "no"
-                        ]
+                    "personal": true
+                  },
+                  "on": {
+                    "press": {
+                      "run": "github.open",
+                      "args": {
+                        "reference": {
+                          "get": "vm.projectDelete.repo"
+                        }
                       }
                     }
                   }
+                },
+                {
+                  "type": "Text",
+                  "when": {
+                    "get": "vm.projectDelete.private"
+                  },
+                  "props": {
+                    "value": {
+                      "t": "project.delete.confirm.and"
+                    }
+                  }
+                },
+                {
+                  "type": "Text",
+                  "props": {
+                    "value": {
+                      "get": "vm.projectDelete.privateRepo"
+                    },
+                    "label": {
+                      "t": "command.github.reference",
+                      "args": {
+                        "reference": {
+                          "get": "vm.projectDelete.privateRepo"
+                        }
+                      }
+                    },
+                    "personal": true
+                  },
+                  "on": {
+                    "press": {
+                      "run": "github.open",
+                      "args": {
+                        "reference": {
+                          "get": "vm.projectDelete.privateRepo"
+                        }
+                      }
+                    }
+                  },
+                  "when": {
+                    "get": "vm.projectDelete.private"
+                  }
+                },
+                {
+                  "type": "Text",
+                  "props": {
+                    "value": {
+                      "t": "project.delete.confirm.after"
+                    }
+                  }
                 }
-              }
+              ]
             },
             {
               "type": "TextField",
@@ -1042,22 +1243,7 @@
               }
             },
             {
-              "type": "StatusRow",
-              "props": {
-                "message": {
-                  "t": "project.delete.problem.policy",
-                  "args": {
-                    "org": {
-                      "get": "vm.projectDelete.org"
-                    }
-                  }
-                },
-                "tone": "warning",
-                "icon": "info",
-                "actionLabel": {
-                  "t": "project.home.remove"
-                }
-              },
+              "type": "Stack",
               "when": {
                 "expr": {
                   "==": [
@@ -1068,11 +1254,65 @@
                   ]
                 }
               },
-              "on": {
-                "action": {
-                  "run": "project.deleteRemoveInstead"
+              "props": {
+                "gap": "stackPair"
+              },
+              "children": [
+                {
+                  "type": "StatusRow",
+                  "props": {
+                    "message": {
+                      "t": "project.delete.problem.policy"
+                    },
+                    "tone": "warning",
+                    "icon": "info",
+                    "actionLabel": {
+                      "t": "project.home.remove"
+                    }
+                  },
+                  "on": {
+                    "action": {
+                      "run": "project.deleteRemoveInstead"
+                    }
+                  }
+                },
+                {
+                  "type": "Inline",
+                  "props": {
+                    "gap": "inlineItem",
+                    "wrap": true
+                  },
+                  "children": [
+                    {
+                      "type": "Text",
+                      "props": {
+                        "value": {
+                          "get": "vm.projectDelete.org"
+                        },
+                        "label": {
+                          "t": "command.github.reference",
+                          "args": {
+                            "reference": {
+                              "get": "vm.projectDelete.org"
+                            }
+                          }
+                        },
+                        "personal": true
+                      },
+                      "on": {
+                        "press": {
+                          "run": "github.open",
+                          "args": {
+                            "reference": {
+                              "get": "vm.projectDelete.org"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
                 }
-              }
+              ]
             },
             {
               "type": "StatusRow",
@@ -1129,6 +1369,14 @@
                       "personal": "title",
                       "busy": {
                         "get": "r.waiting"
+                      },
+                      "titleLabel": {
+                        "t": "command.github.reference",
+                        "args": {
+                          "reference": {
+                            "get": "r.id"
+                          }
+                        }
                       }
                     },
                     "children": [
@@ -1187,7 +1435,17 @@
                           }
                         ]
                       }
-                    ]
+                    ],
+                    "on": {
+                      "titlePress": {
+                        "run": "github.open",
+                        "args": {
+                          "reference": {
+                            "get": "r.id"
+                          }
+                        }
+                      }
+                    }
                   },
                   "empty": {
                     "type": "Text",
@@ -1265,6 +1523,24 @@
                               "get": "vm.projectDelete.repo"
                             }
                           }
+                        },
+                        "label": {
+                          "t": "command.github.reference",
+                          "args": {
+                            "reference": {
+                              "get": "vm.projectDelete.repo"
+                            }
+                          }
+                        }
+                      },
+                      "on": {
+                        "press": {
+                          "run": "github.open",
+                          "args": {
+                            "reference": {
+                              "get": "vm.projectDelete.repo"
+                            }
+                          }
                         }
                       }
                     }
@@ -1303,6 +1579,24 @@
                           "t": "project.delete.step.repo",
                           "args": {
                             "repo": {
+                              "get": "vm.projectDelete.privateRepo"
+                            }
+                          }
+                        },
+                        "label": {
+                          "t": "command.github.reference",
+                          "args": {
+                            "reference": {
+                              "get": "vm.projectDelete.privateRepo"
+                            }
+                          }
+                        }
+                      },
+                      "on": {
+                        "press": {
+                          "run": "github.open",
+                          "args": {
+                            "reference": {
                               "get": "vm.projectDelete.privateRepo"
                             }
                           }

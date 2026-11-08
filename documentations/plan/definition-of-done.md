@@ -32,6 +32,8 @@ What "done" means at every level: a work package, a stage, a release, and the wh
 
 **Try it:** open Settings → Account; the identity card shows one GitHub mark beside the name and @handle.
 
+**Candidate evidence:** [8 November backlog checks](gate-evidence.md#github-reference-and-terminology-backlog-8-november); landing and normal Preview proof are recorded separately.
+
 ### Backlog (b): remove the terminology notice
 
 **Owner, 23:28:** "Stop showing this msg alltogether. Not needed at all." This removes "Your workspace is now called a project…" entirely. PRJ-11 / WP-P.17 (MP), UC-PROJ-01.
@@ -42,6 +44,8 @@ What "done" means at every level: a work package, a stage, a release, and the wh
 | OB-b.2 | Projects → Approved terminology, slice 1 records the notice as superseded, not a surviving exception. | Documentation and copy-inventory check. |
 
 **Try it:** start once with a fresh profile and once with an upgraded profile; neither shows the terminology notice.
+
+**Candidate evidence:** [removal and preservation checks](gate-evidence.md#github-reference-and-terminology-backlog-8-november). Stored legacy preferences are preserved, not migrated or rewritten.
 
 ### Backlog (c): Find alignment
 
@@ -85,6 +89,8 @@ What "done" means at every level: a work package, a stage, a release, and the wh
 | OB-f.2 | A card's reference action never opens the project as a side effect, and card opening still works; local-only projects show no fictional GitHub link. | Scoped outcome journey; accessible-name/focus assertions. |
 
 **Try it:** tab to a shown repository or @handle and activate it; its repository/profile opens, without opening the enclosing card.
+
+**Candidate evidence:** [enumerated landed-surface audit](../design/foundations.md#external-links) and [scoped checks](gate-evidence.md#github-reference-and-terminology-backlog-8-november). Pending first-share and in-app Delete mocks remain excluded until approval.
 
 ### Backlog F4.2: delete in the app
 

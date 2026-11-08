@@ -10,6 +10,7 @@ import type { MessageCatalog } from "./messages.ts";
 import type { Store } from "./store.ts";
 import type { TaskTracker } from "./tasks.ts";
 import { SyncFailed, type SaveStateKind, type SyncState } from "./sync-app.ts";
+import { isGitHubReference } from "./github-links.ts";
 
 export interface RepoBackupEntry {
   /** What the shell last said waits there. */
@@ -67,12 +68,14 @@ export function repoBackupView(repo: RepoId, entry: RepoBackupEntry | undefined,
     : catalog.format(`save.state.${state}`);
   const backingUp = state === "syncing";
   const noRemote = entry?.report?.remote === false;
+  const repository = entry?.report?.name ?? "";
   return {
     visible: sync.git && Boolean(entry?.report),
     state, name, stateText,
     label: catalog.format("repoBackup.label", { name, state: stateText }),
-    repository: entry?.report?.name ?? "",
-    hasRepository: Boolean(entry?.report?.name),
+    repository,
+    hasRepository: Boolean(repository),
+    repositoryLink: isGitHubReference(repository) && repository.includes("/"),
     backingUp,
     canBackUp: sync.git && !noRemote && !backingUp && Boolean(entry?.report),
     backupTime: noRemote ? catalog.format("save.backup.none")

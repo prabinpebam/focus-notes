@@ -7393,6 +7393,32 @@
                 }
               ]
             },
+            "titleLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "detailLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
             "badge": {
               "anyOf": [
                 {
@@ -7688,6 +7714,12 @@
           "additionalProperties": false,
           "properties": {
             "press": {
+              "$ref": "#/$defs/actions"
+            },
+            "titlePress": {
+              "$ref": "#/$defs/actions"
+            },
+            "detailPress": {
               "$ref": "#/$defs/actions"
             },
             "choose": {

@@ -46,8 +46,6 @@
             { "type": "Text", "props": { "value": { "t": "migrate.fig.local" } } }
           ] }
         ] },
-        { "type": "StatusRow", "props": { "message": { "t": "migrate.moved" }, "tone": "info", "icon": "folder" } },
-        { "type": "Text", "props": { "value": { "get": "vm.projectIntro.error" }, "tone": "danger" } },
         { "type": "Inline", "props": { "justify": "end" }, "children": [
           { "type": "Button", "id": "projectIntroDismiss", "props": { "label": { "t": "migrate.gotIt" }, "variant": "primary" }, "on": { "press": { "run": "projects.dismissIntro" } } }
         ] }

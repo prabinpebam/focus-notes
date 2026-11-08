@@ -252,16 +252,15 @@ export function registerFiles(ctx: Ctx) {
     }),
   });
   // The repository and the account on GitHub, in the browser (D-189): only through the shell, as every web link.
-  const github = (path: string) => `https://github.com/${path.split("/").map(encodeURIComponent).join("/")}`;
   commands.register({
     id: "files.openRepo", title: "command.files.openRepo", icon: "github", group: "files",
     enabled: (s) => Boolean(bridge.openLink) && Boolean(s.workspace.repo),
-    run: () => { const r = store.state.workspace.repo; if (r) bridge.openLink?.(github(r)); },
+    run: () => commands.run("github.open", { reference: store.state.workspace.repo }),
   });
   commands.register({
     id: "files.openProfile", title: "command.files.openProfile", icon: "github", group: "files",
     enabled: (s) => Boolean(bridge.openLink) && Boolean(s.account.login),
-    run: () => { const l = store.state.account.login; if (l) bridge.openLink?.(github(l)); },
+    run: () => commands.run("github.open", { reference: store.state.account.login }),
   });
   // Open local folder (D-188): where the notes are saved, in the system's file manager.
   commands.register({

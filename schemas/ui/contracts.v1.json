@@ -7844,6 +7844,14 @@
         "detail": {
           "kind": "message"
         },
+        "titleLabel": {
+          "kind": "message",
+          "description": "Accessible name for the title's independent GitHub action (D-393)."
+        },
+        "detailLabel": {
+          "kind": "message",
+          "description": "Accessible name for the detail's independent GitHub action (D-393)."
+        },
         "badge": {
           "kind": "message"
         },
@@ -7919,6 +7927,8 @@
       },
       "events": {
         "press": {},
+        "titlePress": {},
+        "detailPress": {},
         "choose": {
           "payload": {
             "value": "text"
@@ -7941,6 +7951,35 @@
         "name": "label"
       },
       "fixtures": [
+        {
+          "name": "independent GitHub references",
+          "props": {
+            "title": {
+              "t": "gallery.sample"
+            },
+            "detail": {
+              "t": "gallery.long"
+            },
+            "titleLabel": {
+              "t": "gallery.action"
+            },
+            "detailLabel": {
+              "t": "gallery.action"
+            },
+            "icon": "github"
+          },
+          "on": {
+            "titlePress": {
+              "run": "gallery.back"
+            },
+            "detailPress": {
+              "run": "gallery.back"
+            },
+            "press": {
+              "run": "gallery.back"
+            }
+          }
+        },
         {
           "name": "published article",
           "props": {

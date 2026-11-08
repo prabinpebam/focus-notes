@@ -47,6 +47,14 @@ describe("what's waiting in a repository", () => {
 });
 
 describe("a repository's backup state", () => {
+  it("offers an independent link for a known GitHub identity, even before an upstream is established", () => {
+    expect(repoBackupView("private", { report: report("private", { name: "ada/notes" }) }, GIT, catalog).repositoryLink).toBe(true);
+    expect(repoBackupView("private", { report: report("private", { name: "ada/notes", remote: false }) }, GIT, catalog).repositoryLink).toBe(true);
+    const local = repoBackupView("private", { report: report("private", { name: "Local notes", remote: false }) }, GIT, catalog);
+    expect(local.repository).toBe("Local notes");
+    expect(local.hasRepository).toBe(true);
+    expect(local.repositoryLink).toBe(false);
+  });
   it("follows the per-note icon's looks: waiting, backing up, backed up, offline, problem", () => {
     expect(repoStateOf(undefined, NO_SYNC)).toBe("savedLocal");
     expect(repoStateOf({ report: report("public", { folders: 1 }) }, GIT)).toBe("pending");

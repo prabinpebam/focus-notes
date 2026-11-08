@@ -4808,14 +4808,37 @@
                           {
                             "type": "Text",
                             "when": {
-                              "get": "vm.repoBackup.private.hasRepository"
+                              "get": "vm.repoBackup.private.repositoryLink"
                             },
                             "props": {
                               "value": {
                                 "get": "vm.repoBackup.private.repository"
                               },
-                              "tone": "muted"
+                              "tone": "muted",
+                              "label": {
+                                "t": "command.github.reference",
+                                "args": {
+                                  "reference": {
+                                    "get": "vm.repoBackup.private.repository"
+                                  }
+                                }
+                              }
+                            },
+                            "on": {
+                              "press": {
+                                "run": "github.open",
+                                "args": {
+                                  "reference": {
+                                    "get": "vm.repoBackup.private.repository"
+                                  }
+                                }
+                              }
                             }
+                          },
+                          {
+                            "type": "Text",
+                            "when": { "expr": { "and": [{ "get": "vm.repoBackup.private.hasRepository" }, { "!": [{ "get": "vm.repoBackup.private.repositoryLink" }] }] } },
+                            "props": { "value": { "get": "vm.repoBackup.private.repository" }, "tone": "muted" }
                           },
                           {
                             "type": "Text",
@@ -4957,14 +4980,37 @@
                           {
                             "type": "Text",
                             "when": {
-                              "get": "vm.repoBackup.public.hasRepository"
+                              "get": "vm.repoBackup.public.repositoryLink"
                             },
                             "props": {
                               "value": {
                                 "get": "vm.repoBackup.public.repository"
                               },
-                              "tone": "muted"
+                              "tone": "muted",
+                              "label": {
+                                "t": "command.github.reference",
+                                "args": {
+                                  "reference": {
+                                    "get": "vm.repoBackup.public.repository"
+                                  }
+                                }
+                              }
+                            },
+                            "on": {
+                              "press": {
+                                "run": "github.open",
+                                "args": {
+                                  "reference": {
+                                    "get": "vm.repoBackup.public.repository"
+                                  }
+                                }
+                              }
                             }
+                          },
+                          {
+                            "type": "Text",
+                            "when": { "expr": { "and": [{ "get": "vm.repoBackup.public.hasRepository" }, { "!": [{ "get": "vm.repoBackup.public.repositoryLink" }] }] } },
+                            "props": { "value": { "get": "vm.repoBackup.public.repository" }, "tone": "muted" }
                           },
                           {
                             "type": "Text",
@@ -9554,23 +9600,7 @@
     }
   ]
 },
-{
-  "type": "Layer",
-  "when": { "get": "vm.projectIntro.notice" },
-  "props": { "layer": "toast", "position": "bottomCenter" },
-  "children": [{
-    "type": "Surface", "props": { "variant": "raised", "shape": "popover", "elevation": "2", "padding": "insetMd" },
-    "children": [{
-      "type": "Inline", "props": { "gap": "inlineItem", "align": "center", "wrap": true },
-      "children": [
-        { "type": "StepMark", "props": { "icon": "info", "tone": "accent", "size": "compact" } },
-        { "type": "Text", "props": { "value": { "t": "migrate.notice" }, "role": "label" } },
-        { "type": "Button", "props": { "label": { "t": "migrate.learn" }, "variant": "secondary" }, "on": { "press": { "run": "projects.learn" } } },
-        { "type": "Button", "props": { "label": { "t": "migrate.dismiss" }, "variant": "subtle" }, "on": { "press": { "run": "projects.dismissIntro" } } }
-      ]
-    }]
-  }]
-},
+
 {
   "type": "DialogPanel",
   "id": "imageDescription",

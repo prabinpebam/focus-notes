@@ -10,6 +10,8 @@ export const contract = defineContract({
     choiceValue: { kind: "text", description: "The radio's stable value." },
     selected: { kind: "boolean", default: false, description: "Saved radio selection, never optimistic. Emphasizes the badge with selected badge tokens." },
     detail: { kind: "message" },
+    titleLabel: { kind: "message", description: "Accessible name for the title's independent GitHub action (D-393)." },
+    detailLabel: { kind: "message", description: "Accessible name for the detail's independent GitHub action (D-393)." },
     badge: { kind: "message" },
     icon: { kind: "icon", description: "Shown in a tile, the card's visual anchor. Without an icon, a picture or initials show instead." },
     avatar: { kind: "text", description: "An account's picture: only a data URL the shell made (data:image/…), never an address. Missing, the initials show." },
@@ -26,12 +28,13 @@ export const contract = defineContract({
     autoFocus: { kind: "boolean", default: false, description: "A pressable card takes focus when it appears: a first-run step's main action, so Enter continues." },
   },
   // press: with an action, the whole card is one button: one tab stop, its title the name, no slot actions (D-131).
-  events: { press: {}, choose: { payload: { value: "text" } } },
+  events: { press: {}, titlePress: {}, detailPress: {}, choose: { payload: { value: "text" } } },
   slots: { default: { accepts: "any" } },
   states: ["rest", "selected", "disabled"],
   tokens: "cmp.itemCard.*",
   a11y: { pattern: "group", name: "label" },
   fixtures: [
+    { name: "independent GitHub references", props: { title: { t: "gallery.sample" }, detail: { t: "gallery.long" }, titleLabel: { t: "gallery.action" }, detailLabel: { t: "gallery.action" }, icon: "github" }, on: { titlePress: { run: "gallery.back" }, detailPress: { run: "gallery.back" }, press: { run: "gallery.back" } } },
     { name: "published article", props: { title: { t: "gallery.sample" }, detail: { t: "gallery.long" }, reading: true, chevron: false } },
     { name: "selected radio with independent action", covers: ["rest", "selected"], props: { title: { t: "gallery.sample" }, detail: { t: "gallery.long" }, badge: { t: "ai.badge.writer" }, icon: "cloud", choiceGroup: { get: "vm.gallery.optionFirst" }, choiceValue: { get: "vm.gallery.optionFirst" }, selected: true }, children: [{ type: "Button", props: { label: { t: "ai.change" } } }] },
     { name: "pending radio", covers: ["selected", "disabled"], props: { title: { t: "gallery.sample" }, choiceGroup: { get: "vm.gallery.optionFirst" }, choiceValue: { get: "vm.gallery.optionFirst" }, selected: true, busy: true } },

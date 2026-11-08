@@ -330,7 +330,7 @@ export function registerProjectOpen(ctx: {
       retrying: { type: "boolean" }, searchFocus: { type: "number" }, details: text, recoveryAction: text, pendingLabel: text,
       emptyTitle: text, emptyDetail: text, emptyAction: text, emptyRecentTitle: text, emptyRecentDetail: text, emptyRecentAction: text,
       githubOpen: { type: "boolean" }, githubLoading: { type: "boolean" }, githubWaiting: { type: "boolean" }, githubPending: { type: "boolean" }, githubStatus: text, githubError: text,
-      repos: { type: "array", items: { type: "object", properties: { id: text, label: text, description: text, busy: { type: "boolean" } } } }, query: text, active: text,
+      repos: { type: "array", items: { type: "object", properties: { id: text, owner: text, label: text, description: text, busy: { type: "boolean" } } } }, query: text, active: text,
       recent: { type: "array", items: item },
       entries: { type: "array", items: { type: "object", properties: { id: text, name: text, folder: text, accent: text, logo: text, logoSrc: text, repo: text, stats: text, statsBusy: { type: "boolean" }, pinned: { type: "boolean" }, pinCommit, menu } } },
     } },
@@ -358,7 +358,7 @@ export function registerProjectOpen(ctx: {
         emptyRecentAction: ctx.catalog.format(query ? "uiStates.empty.clearSearch" : "uiStates.empty.openProject"),
         githubOpen: github.open, githubLoading: github.loading, githubWaiting: github.loading && github.repos.length === 0, githubPending: Boolean(github.pending),
         githubStatus: github.pending ? ctx.catalog.format("project.github.cloning", { name: github.pending }) : "", githubError: github.error,
-        repos: github.repos.map((r) => ({ id: `${r.owner}/${r.name}`, label: r.name, description: ctx.catalog.format("project.github.repo", { owner: r.owner, private: String(r.private) }), busy: github.pending === r.name })),
+        repos: github.repos.map((r) => ({ id: `${r.owner}/${r.name}`, owner: r.owner, label: r.name, description: ctx.catalog.format("project.github.repo", { owner: r.owner, private: String(r.private) }), busy: github.pending === r.name })),
       };
     },
   });

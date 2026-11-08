@@ -182,11 +182,26 @@ Standard easing is `cubic-bezier(0.2, 0, 0, 1)`, decelerate is `cubic-bezier(0, 
 
 **GitHub references are links (D-393, owner, 7 November 23:33).** "If you show a github link, it should be clickable to open that repo. Add all of these to a DoD backlog". Every displayed GitHub repository or account reference is independently keyboard-accessible and opens its repository or profile on github.com in the default browser through the existing external-link policy. Use an accessible name such as "Open owner/repo on GitHub" or "Open @handle on GitHub"; never nest this action inside a card's own open action. Construct the destination from validated repository/account identity, not arbitrary display text. The same rule covers Settings → Project and Account, Open, Projects, New project's Confirm, Backup, Share and Delete (PRJ-21 / WP-P.21). No extra mark, border or enclosure is needed to make the reference actionable.
 
+**Landed-surface audit, 8 November.** The shared `github.open` command validates an account or owner/repository identity before using the existing external-link bridge. Arbitrary URLs, extra path segments, query/hash fragments and malformed identities are refused. Links remain separate keyboard stops; the chooser's main card action still opens the project.
+
+| Surface | Independently actionable reference |
+| --- | --- |
+| Settings → Account | Signed-in @handle; Git helper's account handle when signed out. The signed-in identity has one existing GitHub mark, beside name and handle. |
+| Settings → Project | Linked repository and each invited person's account. |
+| Open → Projects; Files heading | Existing independent project repository/profile actions, preserved. Local-only project names are not links. |
+| Open from GitHub | Repository title opens owner/repository; owner detail opens the profile. Neither activates cloning. |
+| New project → Confirm | Complete owner/repository identity, without creating the project. |
+| Files → Private/Public backup | Each repository's own identity. A known GitHub origin remains linkable without an upstream; a local repository name remains plain text. |
+| Sharing | Existing first-sharing repository card and invitation-preview account card. |
+| Delete project | Consequence cards, inaccessible repository, no-admin account/repository, policy-refused repository, typed-confirmation references, GitHub-stage repository and completed repository references. None activates deletion. |
+
+Pending first-share and in-app Delete design mocks are excluded until owner approval; this audit covers only already-landed views. [Backlog evidence](../plan/gate-evidence.md#github-reference-and-terminology-backlog-8-november) records the checks and remaining gate.
+
 ### Copy rules
 
 **Notice exception superseded (owner, 7 November 23:28).** The older one-time explanation allowance below no longer applies. Remove the terminology notice entirely; Project is the sole user-facing term (PRJ-11 / WP-P.17).
 
-- **Project, never workspace (D-pending, owner-approved 5 November):** a *project* is a folder of notes whose history is kept with Git, either *on this computer only* or *linked to GitHub*. A *standalone file* is one file opened on its own: "Not in a project", with no version history. "Workspace" isn't a synonym or a heading, and it isn't written in any message, menu, Help page or accessible name. Internal names (`.focus-notes/workspace.json`, message keys) aren't words people read. See [One concept: Project](../experience/project-model.md). Settings has no storage category: **Where it's kept** is the last group of Settings → Project. The one-time migration explanation may name the old word.
+- **Project, never workspace (D-pending, owner-approved 5 November):** a *project* is a folder of notes whose history is kept with Git, either *on this computer only* or *linked to GitHub*. A *standalone file* is one file opened on its own: "Not in a project", with no version history. "Workspace" isn't a synonym or a heading, and it isn't written in any message, menu, Help page or accessible name. Internal names (`.focus-notes/workspace.json`, message keys) aren't words people read. See [One concept: Project](../experience/project-model.md). Settings has no storage category: **Where it's kept** is the last group of Settings → Project. The former one-time notice exception is removed.
 - **Rewrite vocabulary (D-256, D-257):** *prompt* is what the person asks; a *preset* fills the prompt and never sends; the *Writer* is the connection Rewrite uses; a *connection* is one AI service set up in Settings → AI; *On this computer* and *Cloud* say where text goes, not a proof of where a model runs. Say "connect an AI service", never "install" or "start a model": Focus Notes runs none. [Rewrite's words](rewrite-with-ai.md#words) are the register.
 - **Sentence case** everywhere ("Move to…", not "Move To…"). An ellipsis means the action opens something before acting.
 - **Buttons say what they do.** "Delete 3 notes", not "OK". "Make public", not "Confirm".
