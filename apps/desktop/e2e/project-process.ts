@@ -38,9 +38,19 @@ export async function attachProject(profile: string): Promise<{ browser: Browser
   let browser: Browser | undefined;
   try {
     const portFile = join(profile, CHROMIUM_FOLDERS.session, "DevToolsActivePort");
-    await expect.poll(() => existsSync(portFile), { timeout: 10_000 }).toBe(true);
-    const port = Number(readFileSync(portFile, "utf8").split("\n")[0]);
-    if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error("The project inspector did not publish a valid loopback port");
+    let port = 0;
+    await expect.poll(() => {
+      try {
+        const lines = readFileSync(portFile, "utf8").split("\n");
+        const value = Number(lines[0]);
+        if (!Number.isInteger(value) || value < 1 || value > 65535 || !lines[1]?.startsWith("/devtools/browser/")) return false;
+        port = value;
+        return true;
+      } catch (error) {
+        if (error instanceof Error && "code" in error && (error.code === "ENOENT" || error.code === "EBUSY")) return false;
+        throw error;
+      }
+    }, { timeout: 10_000, message: "Project inspector publishes a complete, unlocked loopback port file" }).toBe(true);
     browser = await chromium.connectOverCDP(`http://127.0.0.1:${port}`, { timeout: 5000 });
     const connected = browser;
     await expect.poll(() => connected.contexts()[0]?.pages().length ?? 0).toBeGreaterThan(0);

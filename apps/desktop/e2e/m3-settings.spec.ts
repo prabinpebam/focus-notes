@@ -14,7 +14,7 @@ import { dirname, join, resolve } from "node:path";
 import { CHROMIUM_FOLDERS, DATA_FILES, DATA_FOLDERS, LOCK_FILES, filesRemovedBy } from "../../../packages/core/src/inventory.ts";
 import { launch, quit, tempDirs, type Launched } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
-import { card, existingInstance, GRACE, heading, noTokenInArgs, press, start, world, type World } from "./github-world.ts";
+import { card, existingInstance, GRACE, heading, noTokenInArgs, opened, press, start, world, type World } from "./github-world.ts";
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
 /** axe once dialogs have finished fading in, so contrast is measured at rest. */
@@ -192,7 +192,14 @@ test("IA-VIEW-SETTINGS, FRE-07: Settings opens with Mod+, and from ⋯; signing 
 
     // Sign in again: the first run's Connect card, alone, offering the account Git still has.
     await openSettings(page);
-    await expect(settings(page).getByText("Git on this computer is still signed in as @ada.")).toBeVisible({ timeout: 15_000 });
+    await expect(settings(page).getByText("Git on this computer is still signed in as", { exact: true })).toBeVisible({ timeout: 15_000 });
+    const gitProfile = settings(page).getByRole("button", { name: "Open @ada on GitHub", exact: true });
+    await expect(gitProfile).toBeVisible();
+    await gitProfile.focus();
+    await expect(gitProfile).toBeFocused();
+    await press(page, "Enter");
+    await expect.poll(() => opened(l)).toContain("https://github.com/ada");
+    expect(terminal(w)).toBe(w.gh.token);
     await settings(page).getByRole("button", { name: "Sign in…" }).click();
     await heading(page, "You're connected");
     await expect(card(page).getByRole("img", { name: /^Step \d of 4$/ })).toHaveCount(0);
