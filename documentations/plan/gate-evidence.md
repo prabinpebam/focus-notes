@@ -20,7 +20,7 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 
 ### Standalone text files, 8 November
 
-**Candidate, not yet landed.** G4 / PRJ-09 / UC-PROJ-08 extends the existing standalone Markdown path rather than importing text or making a project. All five invisible built-app journeys pass together. Exact-head Windows CI and scheduled packaged Preview proof are pending; installed Windows association registration was not changed on the owner's computer.
+**Landed and packaged writing verified.** G4 / PRJ-09 / UC-PROJ-08 extends the existing standalone Markdown path rather than importing text or making a project. All five invisible built-app journeys pass together. Runtime `a30004e91cb24b2353780bf0bd2ef0c2bf165f3d` passed all seven Windows jobs in [42461267072](https://github.com/prabinpebam/focus-notes/actions/runs/42461267072) and landed by non-force fast-forward under the coordinator's landing lock. The scheduled Preview reached `a30004e`; its byte-identical scratch copy passed normal-Shell literal writing and restart checks. Installed Windows association registration was not changed or independently verified on the owner's computer.
 
 | Evidence | Result |
 | --- | --- |
@@ -43,6 +43,16 @@ The first conflict attempts expected a dialog immediately or a second Resolve pi
 **Second gate, corrected before the final round:** rebased head `4ccb86620505f781369758719c96f842359819ce` on main `26cc369d` passed 278 targeted units, five text journeys, typecheck, build and repository checks locally. [42459506050](https://github.com/prabinpebam/focus-notes/actions/runs/42459506050) passed the full unit tests but Store packaging rejected duplicate `.md` associations: electron-builder already generates Store associations from the global declaration. The redundant custom XML block is removed. The routing test now calls the installed electron-builder's actual extension generator and asserts exactly one occurrence of each file type; it failed with two before the repair. Shard 3 also caught the existing Make public journey's immediate source-deletion assertion during staged publication. That assertion now waits for the final source removal, preserving the exact outcome instead of changing runtime behavior.
 
 Final-round repair checks passed: `pnpm exec vitest run apps\desktop\test\text-routing.test.ts packages\core\test\menu-bar.test.ts packages\core\test\diagnostics.test.ts` (34 tests), desktop typecheck, and the invisible `actions-outcomes.spec.ts` journey selected by `native outcome: note.makePublic`, including its existing PID-scoped cleanup. No production publication logic or owner's Windows registry was changed.
+
+**Final gate and scheduled Preview proof, 8 November:** the third permitted candidate gate passed all seven jobs; no fourth candidate gate was requested. Remote main was verified at the exact green head after landing. The scheduled updater, not the worker, produced `preview\builds\a30004e`. An owned `preview\candidates\a30004e-txt-proof` copy retained the same app.asar SHA-256 (`B8C4B1151F38A74F7998575FC7A4E4A805096DE7C146F4E7F348BC783CA56FF8`) and executable SHA-256 (`159FF98C42E707AE6282D904C75FF9D40978994FAF98DD229CEDCACB623DD4F5`); package fuses were not changed.
+
+| Packaged evidence | Result |
+| --- | --- |
+| Normal Windows Shell launch through `Open review build.cmd`, own scratch UTF-16LE/BOM file and profile | Passed twice, with no `FOCUS_NOTES_E2E*` variables. `verify-owner-review.ps1` confirmed a titled, non-minimized, non-cloaked, non-transparent live window after 20 seconds and 45/45 exposed interior points on each launch. |
+| Owned renderer loopback CDP through the ordinary writing UI | Passed: Markdown-like characters stayed literal, typed content autosaved to exact UTF-16LE/BOM/CRLF bytes, and normal-Shell restart reopened those same bytes. |
+| Settings through the ordinary keyboard/UI path | Passed: This file, no Project or Sharing tabs, disabled Insert image, visible Save as Markdown, and no `.git` or `.focus-notes` created beside the scratch source. |
+| Explicit Markdown copy and Windows Open with | Five built journeys and package declaration/generator units cover these paths. The packaged native copy picker and actual installed association registration were not independently exercised; neither is inferred from the scratch argv launch. Disabled Node-inspect fuses and the owner's registry remain intact. |
+| Cleanup | Both receipt-owned PIDs were closed with the PID-scoped cleanup script, preceded by `-WhatIf`. Owner Preview/root/gallery processes and files were untouched. Proof receipts remain in the owned candidate folder. |
 
 ### GitHub reference and terminology backlog, 8 November
 
