@@ -32,7 +32,7 @@ What "done" means at every level: a work package, a stage, a release, and the wh
 
 **Try it:** open Settings → Account; the identity card shows one GitHub mark beside the name and @handle.
 
-**Candidate evidence:** [8 November backlog checks](gate-evidence.md#github-reference-and-terminology-backlog-8-november); landing and normal Preview proof are recorded separately.
+**Delivered evidence:** [8 November backlog checks and Preview proof](gate-evidence.md#github-reference-and-terminology-backlog-8-november).
 
 ### Backlog (b): remove the terminology notice
 
@@ -45,7 +45,7 @@ What "done" means at every level: a work package, a stage, a release, and the wh
 
 **Try it:** start once with a fresh profile and once with an upgraded profile; neither shows the terminology notice.
 
-**Candidate evidence:** [removal and preservation checks](gate-evidence.md#github-reference-and-terminology-backlog-8-november). Stored legacy preferences are preserved, not migrated or rewritten.
+**Delivered evidence:** [removal and preservation checks](gate-evidence.md#github-reference-and-terminology-backlog-8-november). Stored legacy preferences are preserved, not migrated or rewritten.
 
 ### Backlog (c): Find alignment
 
@@ -90,7 +90,7 @@ What "done" means at every level: a work package, a stage, a release, and the wh
 
 **Try it:** tab to a shown repository or @handle and activate it; its repository/profile opens, without opening the enclosing card.
 
-**Candidate evidence:** [enumerated landed-surface audit](../design/foundations.md#external-links) and [scoped checks](gate-evidence.md#github-reference-and-terminology-backlog-8-november). Pending first-share and in-app Delete mocks remain excluded until approval.
+**Delivered evidence:** [enumerated landed-surface audit](../design/foundations.md#external-links) and [scoped checks and Preview proof](gate-evidence.md#github-reference-and-terminology-backlog-8-november). Pending first-share and in-app Delete mocks remain excluded until approval.
 
 ### Backlog F4.2: delete in the app
 
