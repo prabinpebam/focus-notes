@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import { lstat, open, readdir, realpath } from "node:fs/promises";
-import { basename, join } from "node:path";
+import { lstat, mkdir, open, readdir, realpath } from "node:fs/promises";
+import { basename, dirname, join, relative } from "node:path";
 
 export type FirstNoteCertificate = { roots: string; file: string; slot?: number };
 export type FirstNoteAdmission = <T>(roots: readonly string[], work: (
@@ -14,8 +14,53 @@ async function identity(path: string): Promise<string> {
   return createHash("sha256").update(`${info.dev}:${info.ino}:${info.birthtimeNs}`).digest("hex");
 }
 
+export async function prepareProjectNoteRoots(project: string, roots: readonly string[], writable: (path: string) => Promise<void>): Promise<void> {
+  const canonicalProject = await realpath(project);
+  const projectIdentity = await identity(canonicalProject);
+  const missing: { root: string; parent: string; canonicalParent: string; parentIdentity: string }[] = [];
+  for (const root of roots) {
+    const within = relative(project, root);
+    if (within !== "" && within !== "notes" && within !== join("private", "notes")) {
+      throw new Error("The first note has an untrusted root");
+    }
+    try {
+      const info = await lstat(root);
+      if (!info.isDirectory() || info.isSymbolicLink()) throw new Error("The first note's root is not a directory");
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+      const parent = dirname(root);
+      const canonicalParent = await realpath(parent);
+      if (canonicalParent !== join(canonicalProject, relative(project, parent))) {
+        throw new Error("The first note's root was redirected");
+      }
+      const parentIdentity = await identity(canonicalParent);
+      missing.push({ root, parent, canonicalParent, parentIdentity });
+    }
+  }
+  for (const entry of missing) {
+    await writable(join(entry.root, "Untitled.md"));
+    if (await realpath(project) !== canonicalProject || await identity(canonicalProject) !== projectIdentity
+      || await realpath(entry.parent) !== entry.canonicalParent || await identity(entry.canonicalParent) !== entry.parentIdentity) {
+      throw new Error("The project changed while preparing its note roots");
+    }
+    // Never recreate a removed project or private repository with recursive mkdir.
+    try { await mkdir(entry.root); }
+    catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+    }
+    const info = await lstat(entry.root);
+    if (!info.isDirectory() || info.isSymbolicLink()
+      || await realpath(project) !== canonicalProject || await identity(canonicalProject) !== projectIdentity
+      || await realpath(entry.parent) !== entry.canonicalParent || await identity(entry.canonicalParent) !== entry.parentIdentity
+      || await realpath(entry.root) !== join(canonicalProject, relative(project, entry.root))) {
+      throw new Error("The project changed while preparing its note roots");
+    }
+  }
+}
+
 export function firstProjectNote(options: {
   roots: () => Promise<readonly string[] | undefined>;
+  prepareRoots?: (roots: readonly string[]) => Promise<void>;
   writable: (path: string) => Promise<void>;
   admit: FirstNoteAdmission;
   /** Missing launch history still admits writing without replacing existing content. */
@@ -26,6 +71,7 @@ export function firstProjectNote(options: {
     const roots = await options.roots();
     if (!roots) return undefined;
     if (!roots.length) throw new Error("The project has no trusted note root");
+    await options.prepareRoots?.(roots);
     const canonical = await Promise.all(roots.map(root => realpath(root)));
     const rootIdentity = JSON.stringify(await Promise.all(roots.map(identity)));
     const notePath = (slot: number) => join(roots[0]!, slot === 1 ? "Untitled.md" : `Untitled ${slot}.md`);

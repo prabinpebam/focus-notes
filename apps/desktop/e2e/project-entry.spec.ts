@@ -59,10 +59,10 @@ for (const route of ["Projects card", "Open project…", "Recent"] as const) {
     const profile = join(dirs.userData, "project-profiles", "testing-delete");
     mkdirSync(profile, { recursive: true });
     mkdirSync(join(folder, ".focus-notes"));
-    mkdirSync(join(folder, "notes"));
     writeFileSync(join(folder, ".focus-notes", "workspace.json"), '{"formatVersion":1}\n');
     const root = join(folder, "notes");
-    writeFileSync(join(root, ".gitkeep"), "preserve fixture metadata\n");
+    if (route === "Recent") mkdirSync(root);
+    writeFileSync(join(folder, "kept.txt"), "preserve fixture metadata\n");
     const last = route === "Recent" ? join(root, "Untitled.md") : "";
     if (last) writeFileSync(last, "");
     writeFileSync(join(profile, "project-folder.txt"), folder);
@@ -94,8 +94,8 @@ for (const route of ["Projects card", "Open project…", "Recent"] as const) {
         const selection = getSelection();
         return Boolean(selection?.isCollapsed && selection.rangeCount && element.contains(selection.anchorNode));
       })).toBe(true);
-      expect(readdirSync(root).sort()).toEqual([".gitkeep", "Untitled.md"]);
-      expect(readFileSync(join(root, ".gitkeep"), "utf8")).toBe("preserve fixture metadata\n");
+      expect(readdirSync(root)).toEqual(["Untitled.md"]);
+      expect(readFileSync(join(folder, "kept.txt"), "utf8")).toBe("preserve fixture metadata\n");
       await child.page.keyboard.type("Entry route keeps this thought.");
       await expect.poll(() => readdirSync(root).filter(name => /\.md$/i.test(name)).map(name => readFileSync(join(root, name), "utf8")).join("")).toContain("Entry route keeps this thought.");
       expect(readdirSync(root).filter(name => /\.md$/i.test(name))).toHaveLength(1);

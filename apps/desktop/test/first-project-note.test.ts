@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mkdtemp, mkdir, open, readdir, readFile, rename, rm, rmdir, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { firstProjectNote as helper } from "../src/main/first-project-note.ts";
+import { firstProjectNote as helper, prepareProjectNoteRoots } from "../src/main/first-project-note.ts";
 import { projectMetadataStore } from "../src/main/project-metadata.ts";
 import { NoteWriter } from "../src/main/note-write.ts";
 import { spawn } from "node:child_process";
@@ -32,6 +32,94 @@ async function root() {
 }
 
 describe("first project note (PRJ-24)", () => {
+  it("creates one note from two independent admissions when its trusted notes directory is absent", async () => {
+    const project = await root();
+    const notes = join(project, "notes");
+    const second = projectMetadataStore(metadataRoot);
+    await writeFile(join(project, "kept.txt"), "unchanged");
+    const options = {
+      roots: async () => [notes], writable: async () => {}, allowNonempty: true,
+      prepareRoots: (roots: readonly string[]) => prepareProjectNoteRoots(project, roots, async () => {}),
+    };
+    try {
+      const paths = await Promise.all([
+        helper({ ...options, admit: metadata.firstNoteAdmission })(),
+        helper({ ...options, admit: second.firstNoteAdmission })(),
+      ]);
+      expect(paths).toEqual([join(notes, "Untitled.md"), join(notes, "Untitled.md")]);
+      expect(await readdir(notes)).toEqual(["Untitled.md"]);
+      expect(await readFile(paths[0]!, "utf8")).toBe("");
+      expect(await readFile(join(project, "kept.txt"), "utf8")).toBe("unchanged");
+    } finally { await second.dispose(); }
+  });
+
+  it("prepares missing public and private note roots only inside their existing trusted parents", async () => {
+    const project = await root();
+    await mkdir(join(project, "private"));
+    const roots = [join(project, "private", "notes"), join(project, "notes")];
+    await prepareProjectNoteRoots(project, roots, async () => {});
+    expect(await readdir(roots[0]!)).toEqual([]);
+    expect(await readdir(roots[1]!)).toEqual([]);
+  });
+
+  it("preserves a stable project-root alias while preparing its actual notes directory", async () => {
+    const project = await root();
+    const aliases = await root();
+    const alias = join(aliases, "project");
+    await symlink(project, alias, process.platform === "win32" ? "junction" : "dir");
+    await prepareProjectNoteRoots(alias, [join(alias, "notes")], async () => {});
+    expect(await readdir(project)).toEqual(["notes"]);
+    expect(await readdir(join(project, "notes"))).toEqual([]);
+  });
+
+  it("does not create a note directory when access is refused", async () => {
+    const project = await root();
+    await expect(prepareProjectNoteRoots(project, [join(project, "notes")], async () => {
+      throw new Error("read-only project");
+    })).rejects.toThrow("read-only");
+    expect(await readdir(project)).toEqual([]);
+  });
+
+  it("does not recreate a project removed during root preparation", async () => {
+    const project = await root();
+    await expect(prepareProjectNoteRoots(project, [join(project, "notes")], async () => {
+      await rmdir(project);
+    })).rejects.toThrow();
+    await expect(readdir(project)).rejects.toMatchObject({ code: "ENOENT" });
+  });
+
+  it("does not follow a redirected private parent or overwrite a colliding root file", async () => {
+    const project = await root();
+    const outside = await root();
+    await symlink(outside, join(project, "private"), process.platform === "win32" ? "junction" : "dir");
+    await expect(prepareProjectNoteRoots(project, [join(project, "private", "notes")], async () => {})).rejects.toThrow("redirected");
+    expect(await readdir(outside)).toEqual([]);
+    await writeFile(join(project, "notes"), "existing bytes");
+    await expect(prepareProjectNoteRoots(project, [join(project, "notes")], async () => {})).rejects.toThrow("not a directory");
+    expect(await readFile(join(project, "notes"), "utf8")).toBe("existing bytes");
+  });
+
+  it("rejects a root outside the trusted project without creating anything", async () => {
+    const project = await root();
+    const outside = await root();
+    await expect(prepareProjectNoteRoots(project, [join(outside, "notes")], async () => {})).rejects.toThrow("untrusted");
+    expect(await readdir(outside)).toEqual([]);
+  });
+
+  it("prepares missing trusted roots before canonical identity and admission", async () => {
+    const project = await root();
+    const notes = join(project, "notes");
+    const prepareRoots = vi.fn(async () => { await mkdir(notes); });
+    const options = {
+      roots: async () => [notes], writable: async () => {}, allowNonempty: true, prepareRoots,
+    };
+    const create = firstProjectNote(options);
+    expect(await create()).toBe(join(notes, "Untitled.md"));
+    expect(prepareRoots).toHaveBeenCalledWith([notes]);
+    expect(await readdir(notes)).toEqual(["Untitled.md"]);
+    expect(await readFile(join(notes, "Untitled.md"), "utf8")).toBe("");
+  });
+
   it("admits one empty note without history in a populated project and preserves existing bytes", async () => {
     const dir = await root();
     await writeFile(join(dir, "Untitled.md"), "# Existing\n");

@@ -27,7 +27,7 @@ import { copyNoteMedia, ownSidecar, removeCopies } from "./note-media.ts";
 import { opErrorCode } from "@focus-notes/core";
 import { watchKeybindings } from "./keybindings-watch.ts";
 import { stateFromWindow } from "./windows.ts";
-import { firstProjectNote } from "./first-project-note.ts";
+import { firstProjectNote, prepareProjectNoteRoots } from "./first-project-note.ts";
 import { spawn } from "node:child_process";
 import { candidateGitHubApi, projectGitHubClient, projectWindows, resumeProjectProfile } from "./projects.ts";
 import { randomBytes } from "node:crypto";
@@ -807,6 +807,7 @@ const roots = () => isWorkspace()
 const notesRoot = () => roots()[0]!.path;
 const createFirstProjectNote = firstProjectNote({
   allowNonempty: true,
+  prepareRoots: trustedRoots => prepareProjectNoteRoots(notesHome(), trustedRoots, assertWritable),
   admit: (roots, work) => {
     if (!projectMetadata) throw new Error("Project startup metadata is unavailable");
     return projectMetadata.firstNoteAdmission(roots, work);
