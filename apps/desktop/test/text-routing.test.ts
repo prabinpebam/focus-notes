@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { EventEmitter } from "node:events";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileLaunchProfile, projectWindows, WRITING_EXTENSIONS } from "../src/main/projects.ts";
@@ -80,7 +81,15 @@ describe("PRJ-09: Open file and Open with routing", () => {
   it("Windows installers declare Markdown and text Open-with associations", () => {
     const manifest = JSON.parse(readFileSync(join(import.meta.dirname, "..", "package.json"), "utf8"));
     expect(manifest.build.fileAssociations[0].ext).toEqual(WRITING_EXTENSIONS);
-    const appx = readFileSync(join(import.meta.dirname, "..", "build", "appx-extensions.xml"), "utf8");
-    for (const ext of WRITING_EXTENSIONS) expect(appx).toContain(`<uap:FileType>.${ext}</uap:FileType>`);
+    const appx = execFileSync(process.execPath, ["-e", `
+      const manifest = require("./package.json");
+      const builder = require("node:module").createRequire(require.resolve("electron-builder"));
+      const AppXTarget = builder("app-builder-lib/out/targets/AppxTarget.js").default;
+      const target = { packager: { config: manifest.build, platformSpecificBuildOptions: manifest.build.win, info: { metadata: manifest, appDir: process.cwd() } }, options: manifest.build.appx };
+      AppXTarget.prototype.getExtensions.call(target, "app\\\\focus-notes.exe", "Focus Notes")
+        .then(xml => process.stdout.write(xml))
+        .catch(error => { console.error(error); process.exitCode = 1; });
+    `], { cwd: join(import.meta.dirname, ".."), encoding: "utf8" });
+    for (const ext of WRITING_EXTENSIONS) expect(appx.match(new RegExp(`<uap:FileType>\\.${ext}</uap:FileType>`, "g"))).toHaveLength(1);
   });
 });

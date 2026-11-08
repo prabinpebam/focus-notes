@@ -261,7 +261,7 @@ const outcomes: Record<string, Outcome> = {
       await expect(confirm).toBeVisible();
       await confirm.getByRole("button", { name: "Make public", exact: true }).click();
       await expect.poll(() => existsSync(join(docs, "notes", "welcome.md"))).toBe(true);
-      expect(existsSync(join(docs, "private", "notes", "welcome.md"))).toBe(false);
+      await expect.poll(() => existsSync(join(docs, "private", "notes", "welcome.md"))).toBe(false);
     },
   },
   "history.open": {

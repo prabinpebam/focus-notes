@@ -7,13 +7,3 @@
     <desktop:ExecutionAlias Alias="focus-notes.exe" />
   </uap3:AppExecutionAlias>
 </uap3:Extension>
-<uap:Extension xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10" Category="windows.fileTypeAssociation">
-  <uap:FileTypeAssociation Name="focusnoteswriting">
-    <uap:DisplayName>Focus Notes writing file</uap:DisplayName>
-    <uap:SupportedFileTypes>
-      <uap:FileType>.md</uap:FileType>
-      <uap:FileType>.markdown</uap:FileType>
-      <uap:FileType>.txt</uap:FileType>
-    </uap:SupportedFileTypes>
-  </uap:FileTypeAssociation>
-</uap:Extension>
