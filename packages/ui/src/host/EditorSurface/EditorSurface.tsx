@@ -3,7 +3,7 @@ import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import Placeholder from "@tiptap/extension-placeholder";
 import {
   applyLink, cancelImageImport, trackImageCut, finishImageCut, trackImageReplacement, trackImageCaption, applyImageCaption, trackImageEdit, applyImageEdit, restoreImageOriginal, captureFindScope, clearFindScope, closeSlashMenu, coreExtensions, EDITOR_ACTIONS, EDITOR_OPTIONS, MarkdownSession, findFromCaret, findStatus, formatState, insertImageAssets, insertSlashEntry, requestImageCommand, type ImageAsset,
-  focusAtEnd, ghostRange, replaceDocument, RewriteStream, type RewriteCapture, selectFindTarget, setFind, setImageOptions, setImageWords, setSelectionGhost, slashEntries, slashInfo, syncSelection, type PMNode,
+  focusAtEnd, ghostRange, insertPlainText, replaceDocument, RewriteStream, type RewriteCapture, selectFindTarget, setFind, setImageOptions, setImageWords, setSelectionGhost, slashEntries, slashInfo, syncSelection, type PMNode,
 } from "@focus-notes/editor";
 import type { ImageSource, KeyBinding, MenuSection } from "../../data.ts";
 import { captureImageSelection, imageView, renderImageEdit, type ImagePayload } from "./image-view.tsx";
@@ -49,6 +49,8 @@ export interface EditorSurfaceProps {
   /** Changes when a different note is loaded. The editor resets only then. */
   documentKey: string;
   initialValue: string;
+  /** Text files keep literal characters and have no Markdown input, paste, or image rules. */
+  plainText?: boolean;
   label: string;
   placeholder?: string;
   /** What an empty table header cell shows and is called, with "{index}" for its column's number. */
@@ -182,7 +184,7 @@ export const EDITOR_ACTION_EVENT = "focus-notes:editor-action";
 /** The writing surface: Tiptap on ProseMirror, owning the note's DOM (Views as data → Rendering). */
 export function EditorSurface({
   imageSources = [], imageMenu = [], imageMenuLabel = "", imageMissing = "", imageLoadingLabel = "", imageRetryLabel = "", imageRetryBusyLabel = "", imageCaptionLabel = "", onImageRead, onImageRetry, onImageFailed, onImageSelect, onImageAction, onImageEdited, onImageEditError, onImageEditApplied, onImageImport, onImageImported, onImageCaptionPrepared, onImageCaptionApplied,
-  documentKey, initialValue, label, placeholder, emptyHeader, readOnly, focusMode, keymap,
+  documentKey, initialValue, plainText = false, label, placeholder, emptyHeader, readOnly, focusMode, keymap,
   findOpen, findQuery = "", findReplace = "", findCase = false, findWord = false, findRegex = false, findInSelection = false, linkEditing,
   slashOpen, slashActive = "", slashList, outlineLabel, outlineUntitled, outlinePinned = false, outlineCommit, outlinePinLabel = "", outlineUnpinLabel = "", onOutlinePin,
   outlineWidth = 0, outlineResizeLabel, filesDock = false, filesWidth = 0, onOutlineResize, onFilesFit,
@@ -204,7 +206,7 @@ export function EditorSurface({
   const minimapRef = useRef<DocMinimapHandle | null>(null);
   useAutoHideScrollbar(scrollerRef);
   useFadingEdges(scrollerRef);
-  const session = useMemo(() => new MarkdownSession(initialValue), [documentKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  const session = useMemo(() => new MarkdownSession(initialValue, plainText), [documentKey, plainText]); // eslint-disable-line react-hooks/exhaustive-deps
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
   const findRef = useRef({ onFindResult, onFindPrefill, onFindScope, findOpen });
@@ -269,6 +271,7 @@ export function EditorSurface({
       ...EDITOR_OPTIONS,
       extensions: [
         ...coreExtensions(keymap ?? [], {
+          plainText,
           imageView: imageView(() => imageOptions.current, imageRenders.current),
           onImageImport: async ({ request, files, error: refusal }) => {
             const target = imageImportRef.current;
@@ -324,6 +327,18 @@ export function EditorSurface({
       injectCSS: false,
       shouldRerenderOnTransaction: false,
       editorProps: {
+        handlePaste: (_view, event) => {
+          if (!plainText) return false;
+          const text = event.clipboardData?.getData("text/plain") ?? "";
+          if (event.clipboardData?.files.length) formatRef.current.onPasteNotice?.({ kind: "plainTextImage", rows: 0, cols: 0, addedRows: 0, addedCols: 0 });
+          if (text && editorRef.current) insertPlainText(editorRef.current, text);
+          return true;
+        },
+        handleDrop: (_view, event) => {
+          if (!plainText || !event.dataTransfer?.files.length) return false;
+          formatRef.current.onPasteNotice?.({ kind: "plainTextImage", rows: 0, cols: 0, addedRows: 0, addedCols: 0 });
+          return true;
+        },
         handleKeyDown: (view, event) => {
           if (event.isComposing) return false;
           if (slashKey(event)) return true;
@@ -437,9 +452,9 @@ export function EditorSurface({
 
   // The slash menu (EDT-06): the editor reports the query; the menu is a view node under the `/`.
   useEffect(() => {
-    if (!editor || !scrollerRef.current) return;
+    if (plainText || !editor || !scrollerRef.current) return;
     return trackSlash(editor, scrollerRef.current, (p) => slashRef.current.onSlash?.(p));
-  }, [editor]);
+  }, [editor, plainText]);
   // Focus stays in the note, which points at the menu's active row (aria-activedescendant).
   useEffect(() => {
     if (!editor || editor.isDestroyed) return;
@@ -508,7 +523,7 @@ export function EditorSurface({
   findOpenRef.current = findOpen;
   useEffect(() => {
     if (!editor || !scrollerRef.current) return;
-    const t = trackFormatting(editor, scrollerRef.current, (p) => formatRef.current.onFormat?.(p), () => Boolean(findOpenRef.current));
+    const t = trackFormatting(editor, scrollerRef.current, (p) => formatRef.current.onFormat?.(plainText ? { ...p, toolbar: false } : p), () => Boolean(findOpenRef.current));
     tracker.current = t;
     return () => {
       t.dispose();
@@ -519,7 +534,7 @@ export function EditorSurface({
 
   // The table controls (IA-CMP-TABLE): handles, insertion points, and edge bars follow the pointer.
   useEffect(() => {
-    if (!editor || !scrollerRef.current) return;
+    if (plainText || !editor || !scrollerRef.current) return;
     const t = trackTables(editor, scrollerRef.current, { gutter: s.tableGutterVar, boundary: s.tableBoundaryVar, reach: s.tableReachVar }, (p) => tableRef.current.onTable?.(p));
     tables.current = t;
     return () => {
@@ -529,7 +544,7 @@ export function EditorSurface({
   }, [editor]);
   // The block handle (IA-CMP-HANDLE): the grip follows the pointer down the note.
   useEffect(() => {
-    if (!editor || !scrollerRef.current || !columnRef.current) return;
+    if (plainText || !editor || !scrollerRef.current || !columnRef.current) return;
     const t = trackBlocks(editor, scrollerRef.current, columnRef.current, (p) => blockRef.current.onBlock?.(p));
     blocks.current = t;
     return () => {
@@ -678,6 +693,10 @@ export function EditorSurface({
       const id = String(detail?.id);
       const args = detail?.args ?? {};
       if (!editor || editor.isDestroyed) return;
+      if (plainText && /^(format|block|table|task|image|link)\./.test(id)) {
+        formatRef.current.onPasteNotice?.({ kind: "plainTextImage", rows: 0, cols: 0, addedRows: 0, addedCols: 0 });
+        return;
+      }
       if (id === "note.restorePosition") {
         if (args.key !== documentKey || typeof args.from !== "number" || typeof args.to !== "number" || typeof args.scroll !== "number") return;
         const max = editor.state.doc.content.size;

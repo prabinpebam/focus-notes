@@ -6062,6 +6062,11 @@
           "kind": "text",
           "required": true
         },
+        "plainText": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Literal text files: no Markdown formatting, input rules, image insertion or rich paste."
+        },
         "label": {
           "kind": "message",
           "required": true
@@ -6444,7 +6449,9 @@
         "pattern": "textbox (multi-line)",
         "name": "label"
       },
-      "fixtures": []
+      "fixtures": [
+        "plain text"
+      ]
     },
     {
       "type": "TableControls",

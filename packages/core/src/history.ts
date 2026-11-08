@@ -257,6 +257,7 @@ export type ConflictChoiceKind = "mine" | "theirs" | "both";
  * and its file name follows that title, numbered if taken.
  */
 export function conflictCopy(o: { path: string; text: string; title: string; taken: Iterable<string> }): { path: string; text: string } {
-  const name = uniqueName(fileStemForTitle(o.title), o.taken);
-  return { path: joinPath(dirOf(o.path), name), text: retitle(o.text, o.title) };
+  const plainText = /\.txt$/i.test(o.path);
+  const name = uniqueName(fileStemForTitle(o.title), o.taken, plainText ? ".txt" : ".md");
+  return { path: joinPath(dirOf(o.path), name), text: plainText ? o.text : retitle(o.text, o.title) };
 }

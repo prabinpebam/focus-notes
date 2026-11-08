@@ -15,6 +15,7 @@ export const contract = defineContract({
     imageCaptionLabel: { kind: "message" },
     documentKey: { kind: "text", required: true },
     initialValue: { kind: "text", required: true },
+    plainText: { kind: "boolean", default: false, description: "Literal text files: no Markdown formatting, input rules, image insertion or rich paste." },
     label: { kind: "message", required: true },
     placeholder: { kind: "message" },
     emptyHeader: { kind: "message", description: "What an empty table header cell shows and is called, with {index} for its column's number." },
@@ -97,5 +98,5 @@ export const contract = defineContract({
   a11y: { pattern: "textbox (multi-line)", name: "label" },
   journeys: [{ spec: "apps/desktop/e2e/m1-canvas.spec.ts", covers: ["editing"] }, { spec: "apps/desktop/e2e/m1-focus.spec.ts", covers: ["empty"] }],
   uncovered: { readOnly: "No journey checks that the surface itself refuses edits yet." },
-  fixtures: [],
+  fixtures: [{ name: "plain text", props: { documentKey: { get: "vm.gallery.query" }, initialValue: { get: "vm.gallery.query" }, plainText: true, label: { t: "canvas.editorLabel" } } }],
 });

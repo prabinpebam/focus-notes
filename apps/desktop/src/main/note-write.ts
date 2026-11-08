@@ -57,6 +57,9 @@ export async function changedOutside(path: string, content: string, expected: st
 }
 
 export interface NoteWriterHooks {
+  /** A file format can guard the original bytes and encode its saved text without conversion. */
+  outside?(path: string, content: string, expected: string | undefined): Promise<string | undefined>;
+  encode?(path: string, content: string): string | Buffer;
   /** Waits until the path may be written: a writable workspace, no Git pull rewriting files. */
   ready?(path: string): Promise<void>;
   /** Keeps an admitted first note's identity with its atomic replacement, after writable/Git waits. */
@@ -94,15 +97,16 @@ export class NoteWriter {
   }
 
   async #replace(path: string, content: string, expected: string | undefined): Promise<{ outside: string } | undefined> {
-    await mkdir(dirname(path), { recursive: true });
     // Checked now that it's this write's turn: what a pull or an earlier write left is what counts.
-    const found = await changedOutside(path, content, expected);
+    const outside = () => this.#hooks.outside ? this.#hooks.outside(path, content, expected) : changedOutside(path, content, expected);
+    const found = await outside();
     if (found !== undefined) return { outside: found };
+    await mkdir(dirname(path), { recursive: true });
     const tmp = tempName(path, this.#tmp++);
-    await writeFile(tmp, content, "utf8");
+    await writeFile(tmp, this.#hooks.encode?.(path, content) ?? content);
     try {
       // And again right before the rename: a change while the temporary file was written.
-      const late = await changedOutside(path, content, expected);
+      const late = await outside();
       if (late !== undefined) {
         await rm(tmp, { force: true });
         return { outside: late };

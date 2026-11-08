@@ -172,8 +172,9 @@ export function registerWorkspaceFeatures(ctx: Ctx) {
 
   async function reconcile(path: string, revision: number): Promise<void> {
     if (revision !== reconciliation || store.state.note.path !== path) return;
+    ctx.handOver?.();
     const key = store.state.note.key;
-    const text = await bridge.readNote(path).catch(() => undefined);
+    const text = await bridge.readNote(path, store.state.note.saveState === "saved").catch(() => undefined);
     if (text === undefined) return;
     if (revision !== reconciliation || store.state.note.path !== path || store.state.note.key !== key) return;
     // Typing the editor hasn't handed over yet is unsaved too: it must never be replaced (D-92).
@@ -217,13 +218,13 @@ export function registerWorkspaceFeatures(ctx: Ctx) {
   let follows = false;
   function loaded(path: string, markdown: string): void {
     const name = nameOf(path);
-    follows = !markdown.trim() && /^untitled(-\d+)?$/i.test(stemOf(name));
+    follows = !/\.txt$/i.test(path) && !markdown.trim() && /^untitled(-\d+)?$/i.test(stemOf(name));
   }
   async function written(path: string, markdown: string): Promise<void> {
     lastWritten = { path, text: markdown };
     if (!ws || store.state.workspace.access !== "write") return;
     // Notes the app creates are in the tree before the watcher (if any) reports them, with their titles.
-    const next = titleOfMarkdown(markdown);
+    const next = /\.txt$/i.test(path) ? undefined : titleOfMarkdown(markdown);
     if (queued) {
       queued.push({ path, kind: "note", exists: true, title: next ?? "" });
       // The name needs the tree: a first save that lands while it's still listed is named once it's ready.

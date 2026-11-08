@@ -80,7 +80,11 @@ PRJ-09 / UC-PROJ-08 and [G4](../plan/definition-of-done.md#g4-open-and-save-a-te
 | Crash / external edit / disk failure | Dirty recovery survives restart. Compare external changes before replacement and show conflict choices; never silently overwrite. Keep text and a recovery action on a write/read failure. |
 | Open/save takes over 100 ms | Existing local save/open feedback names the wait and its fn: measure; input remains usable and no remote task exists. |
 
-The built journey opens a disposable .txt, edits, closes and reopens, asserts its exact saved bytes, then exercises external conflict and explicit conversion. It is not a proof that Markdown import happens to accept text.
+The implementation reads strict UTF-8 (with or without BOM) and BOM-marked UTF-16 little/big endian. It retains the source's BOM and each line separator, including mixed endings and final empty lines. Unsupported bytes fail before a profile or editor is opened. Plain-text editing uses paragraphs and text only, without Markdown input rules, rich clipboard parsing or image insertion.
+
+The existing per-folder standalone profile lives in app data, not beside the file. Both Open file and Open with choose an existing project profile first; standalone files retain local-only scope. Autosave compares acknowledged **bytes**, not only decoded text; a dirty watcher's inspection does not acknowledge an external encoding change. Conflict copies retain `.txt`, literal content and source encoding, without generating a heading or front matter.
+
+Five built journeys cover recoverable unsupported-input retry, literal paste/undo across mixed endings, exact UTF-16 autosave/reopen and explicit Markdown copy, external conflict with Decide later/Keep both, and journal-ahead-of-disk crash recovery. Association declarations cover NSIS and Store packages; installed Windows association registration still requires package installation. [G4 gate evidence](../plan/gate-evidence.md#standalone-text-files-8-november) separates these checks from exact-head CI and scheduled Preview proof.
 
 ## Reconciling the existing specs
 

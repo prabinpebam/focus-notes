@@ -964,6 +964,7 @@
           "initialValue": {
             "get": "vm.canvas.initialMarkdown"
           },
+          "plainText": { "get": "vm.canvas.plainText" },
           "label": {
             "t": "canvas.editorLabel"
           },

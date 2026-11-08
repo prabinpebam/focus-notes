@@ -71,6 +71,9 @@
     "protocols": [
       { "name": "Focus Notes", "schemes": ["focus-notes"] }
     ],
+    "fileAssociations": [
+      { "ext": ["md", "markdown", "txt"], "name": "Writing file", "role": "Editor" }
+    ],
     "win": {
       "icon": "build/icon.ico",
       "target": [

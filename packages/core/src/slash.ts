@@ -141,6 +141,7 @@ export function registerSlash({ store, commands, viewModels, catalog, editorActi
     run: ({ kind, rows, cols, addedRows, addedCols }) => {
       // Images wait for the image block (EXT-03): they're refused with a message, never dropped silently.
       if (kind === "images") toast(catalog.format("paste.imagesLeftOut"));
+      if (kind === "plainTextImage") toast(catalog.format("file.settings.imagesTxt"));
       // A range pasted into a table says its size and how the table grew (Tables → Copy, paste, and sort).
       if (kind === "tablePasted") {
         const n = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : 0);

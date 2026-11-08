@@ -94,4 +94,9 @@ describe("FIL-12: the conflict resolver's model", () => {
     expect(again.path).toBe("notes/on-focus-your-version-oct-14-2026-9-05-am-2.md");
     expect(again.text).toBe("# On focus (your version, Oct 14, 2026, 9:05 AM)\n\nNo title yet.\n");
   });
+  it("keeps a text conflict copy literal, including title-like lines and front matter", () => {
+    const text = "---\r\nid: literal\r\n---\r\n# Not a title\r\n";
+    expect(conflictCopy({ path: "files/a.txt", text, title: "a (conflict copy)", taken: ["a-conflict-copy.txt"] }))
+      .toEqual({ path: "files/a-conflict-copy-2.txt", text });
+  });
 });

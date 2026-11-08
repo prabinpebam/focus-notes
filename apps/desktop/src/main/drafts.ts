@@ -19,6 +19,7 @@ import { parseJournal, replay, textHash } from "@focus-notes/core/journal";
 import { DATA_FOLDERS } from "@focus-notes/core/inventory";
 import { titleOfMarkdown } from "@focus-notes/core/workspace";
 import type { FoundDraft, RecoveredDraft, RecoveryFound } from "@focus-notes/core";
+import { decodeText } from "./text-files.ts";
 
 /** A draft's ID, from the window (a ULID there): letters, digits, `_` and `-` only, so never a path. */
 export const DRAFT_ID = /^[0-9A-Za-z_-]{10,40}$/;
@@ -142,7 +143,7 @@ export function frontMatterId(text: string): string | undefined {
 }
 
 const isStr = (v: unknown): v is string => typeof v === "string";
-const isMarkdown = (p: string) => /\.(md|markdown)$/i.test(p);
+const isMarkdown = (p: string) => /\.(md|markdown|txt)$/i.test(p);
 /** A path relative to the workspace, as the store keeps it: never absolute, never up and out. */
 const goodRel = (p: string) => p !== "" && !p.includes("\\") && !p.startsWith("/") && !/^[A-Za-z]:/.test(p) && !p.split("/").some((s) => s === ".." || s === "." || s === "");
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -221,8 +222,10 @@ class WorkspaceIndex {
             const h = await open(this.#abs(files[i]!), "r");
             try {
               const st = await h.stat({ bigint: true });
-              const text = await h.readFile("utf8");
-              keys[i] = { ino: String(st.ino), hash: textHash(text), id: frontMatterId(text) };
+              const bytes = await h.readFile();
+              const plain = /\.txt$/i.test(files[i]!);
+              const text = plain ? decodeText(bytes).text : bytes.toString("utf8");
+              keys[i] = { ino: String(st.ino), hash: textHash(text), id: plain ? undefined : frontMatterId(text) };
             } finally {
               await h.close();
             }
@@ -653,13 +656,13 @@ export class DraftStore {
   async #facts(rel: string, text?: string, quick = false): Promise<Pick<Draft, "base" | "ino" | "noteId" | "head">> {
     const disk = await this.#readNote(rel);
     const st = await stat(this.#abs(rel), { bigint: true }).catch(() => undefined);
-    const noteId = (disk !== undefined ? frontMatterId(disk) : undefined) ?? (text !== undefined ? frontMatterId(text) : undefined);
+    const noteId = /\.txt$/i.test(rel) ? undefined : (disk !== undefined ? frontMatterId(disk) : undefined) ?? (text !== undefined ? frontMatterId(text) : undefined);
     const head = quick ? (this.#headKnown(rel) ?? undefined) : await this.#head(rel);
     return { base: disk !== undefined ? textHash(disk) : undefined, ino: st ? String(st.ino) : undefined, noteId, head };
   }
 
   #readNote(rel: string): Promise<string | undefined> {
-    return readFile(this.#abs(rel), "utf8").catch(() => undefined);
+    return readFile(this.#abs(rel)).then(bytes => /\.txt$/i.test(rel) ? decodeText(bytes).text : bytes.toString("utf8")).catch(() => undefined);
   }
 
   /** The repository a note is in: the private one for `private/…` when it's there, else the workspace's. */

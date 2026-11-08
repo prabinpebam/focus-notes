@@ -150,7 +150,7 @@ export function registerConflicts(ctx: Ctx) {
     const copy = conflictCopy({ path: n.path, text, title, taken: await siblings(n.path) });
     const ws = bridge.workspace;
     if (!ws?.apply) return void (await bridge.writeNote(copy.path, copy.text));
-    await ws.apply([{ op: "create", path: copy.path, text: copy.text }]);
+    await ws.apply([{ op: "create", path: copy.path, text: copy.text, ...(/\.txt$/i.test(n.path) ? { source: n.path } : {}) }]);
     if (recoverable) await ws.apply([{ op: "delete", path: copy.path }]);
   }
   const currentMine = () => {

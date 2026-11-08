@@ -1407,6 +1407,29 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   const keybindings = registerKeybindings({ store, commands, viewModels, catalog, bridge, toast });
   registerAgents({ store, commands, viewModels, catalog, bridge, toast, announce, tracker, commits });
   const spotlight = registerSpotlight({ store, commands, viewModels, catalog, bridge, load, toast, editorAction, now: clock.now, ai });
+  commands.addHold((id, s) => /\.txt$/i.test(s.note.path ?? "") && (
+    /^(block|table|task|image)\./.test(id) || /^(format\.(bold|italic|strike|code|clear|underline)|link\.(edit|apply|remove))$/.test(id)
+  ) ? id.startsWith("image.") ? "file.settings.imagesTxt" : "file.settings.markdownOnly" : undefined);
+  commands.register({
+    id: "note.saveAsMarkdown", title: "file.settings.saveAsMarkdown",
+    enabled: s => s.note.status === "ready" && /\.txt$/i.test(s.note.path ?? "") && Boolean(bridge.projects?.saveAsMarkdown),
+    run: async () => {
+      editorAction(FLUSH_EDITOR);
+      const { path, markdown } = store.state.note;
+      if (!path || !bridge.projects?.saveAsMarkdown) return;
+      try {
+        const copy = await tracker.run("note.convert", "file.settings.copying", () => bridge.projects!.saveAsMarkdown!(path, markdown), undefined, "fn:note.convert");
+        if (copy) {
+          toast(catalog.format("file.settings.copied"));
+          if (await flush()) await load(copy);
+        }
+      } catch (error) {
+        console.error("Could not save a Markdown copy:", error instanceof Error ? error.name : "Error");
+        toast(catalog.format("file.settings.copyFailed"), { tone: "error" });
+      }
+    },
+  });
+  bridge.projects?.onFileError?.(() => toast(catalog.format("project.open.fileFailed"), { tone: "error" }));
   const deepLinks = registerDeepLinks({ bridge, openAt: (path, at) => spotlight.openAt(path, at), searchNotes: (q) => spotlight.searchNotes(q) });
   const findAll = registerFindAll({ store, commands, viewModels, catalog, bridge, openMatch });
   registerThemeManager({ store, commands, viewModels, catalog, persistAppState, project, announce, ...(bridge.themes?.save ? { saveTheme: (file: string, text: string) => bridge.themes!.save!(file, text) } : {}), ...(bridge.themes ? { listThemes: () => bridge.themes!.list() } : {}), ...(bridge.themes?.remove ? { removeTheme: (file: string) => bridge.themes!.remove!(file) } : {}), ...(bridge.themes?.reveal ? { revealTheme: (file: string) => bridge.themes!.reveal!(file) } : {}), toast,
@@ -1662,6 +1685,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       properties: {
         noteKey: { type: "string" },
         initialMarkdown: { type: "string" },
+        plainText: { type: "boolean" },
         status: { type: "string", enum: ["loading", "ready", "error"] },
         saveState: { type: "string", enum: ["saved", "saving", "unsaved", "error"] },
         saveProblem: { type: "boolean" },
@@ -1676,6 +1700,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     select: (s) => ({
       noteKey: s.note.key,
       initialMarkdown: s.note.initialMarkdown,
+      plainText: /\.txt$/i.test(s.note.path ?? ""),
       status: s.note.status,
       saveState: s.note.saveState,
       saveProblem: s.note.saveState === "error",
@@ -1902,6 +1927,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       if (bridge.startupNotice === "preview-carry-over") {
         toast(catalog.format("toast.previewCarryOverFailed"), { tone: "warning", sticky: true, mustReadReason: "profile-carry-over" });
       }
+      if (bridge.startupNotice === "file-open") toast(catalog.format("project.open.fileFailed"), { tone: "error" });
     },
   };
 }

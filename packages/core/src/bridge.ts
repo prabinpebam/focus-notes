@@ -29,7 +29,8 @@ export interface ProjectCreateProgress {
  */
 export interface PlatformBridge {
   platform: Platform;
-  readNote(path: string): Promise<string>;
+  /** Dirty watcher reads observe changes without acknowledging new text-file bytes for saving. */
+  readNote(path: string, acknowledge?: boolean): Promise<string>;
   readImage?(note: string, src: string): Promise<string>;
   copyImage?(note: string, src: string, alt: string, caption: string): Promise<void>;
   saveImage?(note: string, src: string): Promise<boolean>;
@@ -79,7 +80,7 @@ export interface PlatformBridge {
   defaultNotePath(): Promise<string>;
   loadAppState(): Promise<AppStateFile>;
   /** A nonpersistent startup outcome, announced once by the existing notification surface. */
-  startupNotice?: "preview-carry-over";
+  startupNotice?: "preview-carry-over" | "file-open";
   saveAppState(state: AppStateFile): Promise<void>;
   /** The OS color scheme, and changes to it. */
   systemScheme(): "light" | "dark";
@@ -161,6 +162,8 @@ export interface PlatformBridge {
     openRepo?(folder: string): Promise<void>;
     /** Open file…: the platform picker; a file in this window's project comes back to open here. */
     openFile?(): Promise<{ file: string; here: boolean } | undefined>;
+    saveAsMarkdown?(path: string, text: string): Promise<string | undefined>;
+    onFileError?(listener: () => void): () => void;
     /** Open from GitHub…: the account's own repositories (never templates). */
     githubRepos?(): Promise<{ owner: string; name: string; private: boolean }[]>;
     /** Clones a repository into a new project and opens its window. */

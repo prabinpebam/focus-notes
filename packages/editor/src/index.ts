@@ -373,6 +373,7 @@ export const CommandKeymap = Extension.create<{ bindings: KeyBinding[] }>({
 });
 
 export interface CoreOptions {
+  plainText?: boolean;
   onImageImport?: (request: ImageImportRequest) => void;
   imageView?: NodeViewRenderer;
   /** Opens a link through the shell (Mod+click). */
@@ -413,6 +414,17 @@ export const EDITOR_OPTIONS = { enablePasteRules: false } as const;
 
 /** The schema shared by the editor surface, tests, and (later) the publisher. */
 export function coreExtensions(bindings: KeyBinding[] = [], options: CoreOptions = {}): AnyExtension[] {
+  if (options.plainText) return [
+    SelectionSync, ExpandSelection, AutoDirection,
+    StarterKit.configure({ bold: false, italic: false, strike: false, underline: false, link: false, heading: false, blockquote: false, bulletList: false, orderedList: false, listItem: false, listKeymap: false, code: false, codeBlock: false, horizontalRule: false, hardBreak: false, trailingNode: false }),
+    Extension.create({
+      name: "plainTextLines",
+      addGlobalAttributes: () => [{ types: ["paragraph"], attributes: { plainEol: { default: null, rendered: false, keepOnSplit: true } } }],
+    }),
+    CommandKeymap.configure({ bindings: bindings.filter(({ id }) => !/^(format|block|link|table|task|image)\./.test(id)) }),
+    Find.configure({ scopeClass: options.findScopeClass ?? "" }),
+    SelectionGhost.configure({ className: options.ghostClass ?? "" }), RewriteDecoration,
+  ];
   return [
     SelectionSync,
     ExpandSelection,
@@ -457,15 +469,24 @@ export function coreExtensions(bindings: KeyBinding[] = [], options: CoreOptions
 /** Holds the parsed source of the open note so saving can reuse untouched blocks. */
 export class MarkdownSession {
   #parsed: Parsed;
+  #plain: string | undefined;
   /** The source before `adopt`, with what the editor's text read as then: undo goes back to exactly that. */
   #before: { parsed: Parsed; markdown: string } | undefined;
-  constructor(markdown: string) {
-    this.#parsed = parseMarkdown(markdown);
+  constructor(markdown: string, plainText = false) {
+    this.#plain = plainText ? markdown : undefined;
+    this.#parsed = parseMarkdown(plainText ? "" : markdown);
   }
   get doc(): PMNode {
+    if (this.#plain !== undefined) return plainTextDocument(this.#plain);
     return this.#parsed.doc;
   }
   serialize(doc: PMNode): string {
+    if (this.#plain !== undefined) {
+      const eol = this.#plain.match(/\r\n|\r|\n/)?.[0] ?? "\n";
+      return (doc.content ?? []).map((node, i, all) =>
+        (node.content ?? []).map(child => child.text ?? "").join("") + (i < all.length - 1 ? node.attrs?.plainEol || eol : "")
+      ).join("");
+    }
     if (this.#before) {
       const back = serializeMarkdown(doc, this.#before.parsed);
       if (back === this.#before.markdown) return back;
@@ -478,10 +499,39 @@ export class MarkdownSession {
    * back exactly if the person undoes.
    */
   adopt(markdown: string, current: PMNode): PMNode {
+    if (this.#plain !== undefined) { this.#plain = markdown; return this.doc; }
     this.#before = { parsed: this.#parsed, markdown: this.serialize(current) };
     this.#parsed = parseMarkdown(markdown);
     return this.#parsed.doc;
   }
+
+}
+
+/** Literal lines, including empty/trailing lines; separators are retained on their paragraphs. */
+export function plainTextDocument(text: string): PMNode {
+  const lines = text.split(/(\r\n|\r|\n)/);
+  const content: PMNode[] = [];
+  for (let i = 0; i < lines.length; i += 2) {
+    const value = lines[i]!;
+    content.push({ type: "paragraph", attrs: { plainEol: lines[i + 1] ?? null }, ...(value ? { content: [{ type: "text", text: value }] } : {}) });
+  }
+  return { type: "doc", content };
+}
+
+export function insertPlainText(editor: Editor, text: string): void {
+  const { doc, selection, schema } = editor.state;
+  const from = doc.resolve(Math.max(1, selection.from));
+  const to = doc.resolve(Math.min(doc.content.size - 1, selection.to));
+  const prefix = from.parent.textBetween(0, from.parentOffset);
+  const suffix = to.parent.textBetween(to.parentOffset, to.parent.content.size);
+  const content = plainTextDocument(prefix + text + suffix).content!;
+  content[content.length - 1]!.attrs = { plainEol: to.parent.attrs.plainEol ?? null };
+  const inserted = plainTextDocument(prefix + text).content!;
+  const caret = from.before() + inserted.slice(0, -1).reduce((size, node) => size + 2 + (node.content?.[0]?.text?.length ?? 0), 0)
+    + 1 + (inserted[inserted.length - 1]!.content?.[0]?.text?.length ?? 0);
+  const tr = editor.state.tr.replaceWith(from.before(), to.after(), content.map(node => schema.nodeFromJSON(node)));
+  tr.setSelection(TextSelection.create(tr.doc, caret));
+  editor.view.dispatch(tr.scrollIntoView());
 }
 
 /** The selection Rewrite captured: the document it was taken from and its range. */

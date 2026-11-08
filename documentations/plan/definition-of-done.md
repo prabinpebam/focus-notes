@@ -205,6 +205,8 @@ SHR-20/25/26, SHR-04 and SEC-06 deliver UC-SHARE-02/10. WP-P.22 owns the live le
 
 **Try it:** Open file, choose a .txt outside your projects, type, close and reopen: it is still plain text in the same place. Images explain why they need Markdown; Save as Markdown makes a deliberate separate copy.
 
+**Implementation evidence, 8 November:** five targeted built journeys cover G4.1–G4.3, including exact UTF-16 source/copy bytes, literal paste/undo with mixed endings, literal conflict copies, unsupported-input retry and dirty journal recovery. Units cover UTF-8/BOM, UTF-16LE/BE, CRLF/LF/CR, mixed/trailing lines, encoding-only conflicts, project routing and both package association declarations. Installed association registration, the exact-head Windows gate and scheduled Preview proof remain separate acceptance steps in [gate evidence](gate-evidence.md#standalone-text-files-8-november); this is not a G4 completion claim.
+
 ### G5: recover a missing or moved notes folder
 
 | # | Done when | Evidence |

@@ -17,6 +17,59 @@ import { projectMetadataStore, type MetadataTicket } from "./project-metadata.ts
 import { countProject, githubRepo } from "./project-card.ts";
 import { spawnOffThread } from "./spelling/off-thread.ts";
 import type { GitRunner } from "./git/run.ts";
+import { decodeText } from "./text-files.ts";
+
+export const WRITING_EXTENSIONS = ["md", "markdown", "txt"];
+export const writingFile = (path: string) => WRITING_EXTENSIONS.includes(extname(path).slice(1).toLowerCase());
+
+/** Open with selects the same per-folder profile as Open file, before services and locks start. */
+export async function fileLaunchProfile(root: string, input: string) {
+  if (!isAbsolute(input) || !writingFile(input)) throw new Error("Choose a Markdown or text file.");
+  const file = await realpath(input);
+  const bytes = await readFile(file);
+  if (extname(file).toLowerCase() === ".txt") decodeText(bytes);
+  const profiles = join(root, DATA_FOLDERS.projectProfiles);
+  const candidates: { profile: string; folder: string; localNotes: boolean }[] = [];
+  const rootRecord = await readFile(join(root, DATA_FILES.workspace), "utf8").catch(error => missing(error) ? "" : Promise.reject(error));
+  const rootFolder = parseRecord(rootRecord)?.folder ?? await readFile(join(root, DATA_FILES.projectFolder), "utf8").catch(error => missing(error) ? "" : Promise.reject(error));
+  if (rootFolder && existsSync(rootFolder)) {
+    const folder = await realpath(rootFolder.trim());
+    const within = relative(folder, file);
+    if (within && !within.startsWith("..") && !isAbsolute(within)) {
+      const saved = JSON.parse(await readFile(join(root, DATA_FILES.state), "utf8").catch(error => missing(error) ? '{"version":1}' : Promise.reject(error))) as AppStateFile;
+      candidates.push({ profile: root, folder, localNotes: saved.localNotes === true });
+    }
+  }
+  for (const entry of await readdir(profiles, { withFileTypes: true }).catch((error) => missing(error) ? [] : Promise.reject(error))) {
+    if (!entry.isDirectory()) continue;
+    const profile = join(profiles, entry.name);
+    try {
+      const folder = await realpath((await readFile(join(profile, DATA_FILES.projectFolder), "utf8")).trim());
+      const within = relative(folder, file);
+      if (within && !within.startsWith("..") && !isAbsolute(within)) {
+        const saved = JSON.parse(await readFile(join(profile, DATA_FILES.state), "utf8")) as AppStateFile;
+        candidates.push({ profile, folder, localNotes: saved.localNotes === true });
+      }
+    } catch (error) {
+      if (!missing(error)) throw error;
+    }
+  }
+  const owner = candidates.sort((a, b) => Number(a.localNotes) - Number(b.localNotes) || b.folder.length - a.folder.length)[0];
+  if (owner) return { ...owner, file };
+  const folder = dirname(file);
+  const key = createHash("sha256").update(process.platform === "win32" ? folder.toLowerCase() : folder).digest("hex").slice(0, 24);
+  const profile = join(profiles, key);
+  await mkdir(profile, { recursive: true });
+  for (const [name, content] of [
+    [DATA_FILES.projectFolder, folder],
+    [DATA_FILES.workspace, JSON.stringify({ version: 1, folder, kind: "local" })],
+    [DATA_FILES.state, JSON.stringify({ version: 1, firstRun: "done", localNotes: true, projectIntroSeen: true })],
+  ]) {
+    try { await writeFile(join(profile, name!), content!, { flag: "wx" }); }
+    catch (error) { if (!error || typeof error !== "object" || !("code" in error) || error.code !== "EEXIST") throw error; }
+  }
+  return { profile, folder, localNotes: true, file };
+}
 
 function missing(error: unknown) {
   return error && typeof error === "object" && "code" in error && error.code === "ENOENT";
@@ -239,7 +292,7 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     await recentWrites;
   }
   async function remember(path: string, snapshot?: { from: number; to: number; scroll: number }) {
-    if (!isAbsolute(path) || ![".md", ".markdown"].includes(extname(path).toLowerCase())) throw new Error("Choose a Markdown note.");
+    if (!isAbsolute(path) || !writingFile(path)) throw new Error("Choose a Markdown or text note.");
     // Old renderer callbacks after sign-out or shutdown must not recreate forgotten records.
     if (!acceptingMetadata) return;
     if (!safeStorage.isEncryptionAvailable()) throw new Error("Protected launch storage is unavailable.");
@@ -407,7 +460,7 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
       if (!isAbsolute(note)) throw new Error("That note isn't in this project");
       const path = await realpath(note);
       const within = relative(canonical, path);
-      if (!isAbsolute(path) || within === ".." || within.startsWith(`..${sep}`) || resolve(path) === canonical || ![".md", ".markdown"].includes(extname(path).toLowerCase())) throw new Error("That note isn't in this project");
+      if (!isAbsolute(path) || within === ".." || within.startsWith(`..${sep}`) || resolve(path) === canonical || !writingFile(path)) throw new Error("That note isn't in this project");
       target = path;
     }
     if (canonical === await here() && !target) return;
@@ -702,10 +755,14 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
    * notes (D-333): no backup, sharing or publishing.
    */
   async function openFile(): Promise<{ file: string; here: boolean } | undefined> {
-    const result = await dialog.showOpenDialog({ properties: ["openFile"], filters: [{ name: "Markdown", extensions: ["md", "markdown"] }] });
+    const result = await dialog.showOpenDialog({ properties: ["openFile"], filters: [{ name: "Markdown and text", extensions: WRITING_EXTENSIONS }] });
     if (result.canceled || !result.filePaths[0]) return undefined;
-    const file = await realpath(result.filePaths[0]);
-    if (![".md", ".markdown"].includes(extname(file).toLowerCase())) throw new Error("Choose a Markdown file");
+    return openFilePath(result.filePaths[0]);
+  }
+  async function openFilePath(input: string): Promise<{ file: string; here: boolean }> {
+    const file = await realpath(input);
+    if (!writingFile(file)) throw new Error("Choose a Markdown or text file.");
+    if (extname(file).toLowerCase() === ".txt") decodeText(await readFile(file));
     await list();
     const owner = [...known.keys()].filter((f) => { const r = relative(f, file); return r && !r.startsWith("..") && !isAbsolute(r); }).sort((a, b) => b.length - a.length)[0];
     const folder = owner ?? dirname(file);
@@ -715,5 +772,5 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     await open(folder, file);
     return { file, here: false };
   }
-  return { list, known: knownFolder, stats, repo, adopt, openFile, open, choose, upload, pin, localNote, importLocal, edited: (path: string) => score(path, 2), parent: async () => dirname(home()), chooseParent, check, create, continueCreate, pendingCreate, lastNote, position, remember, closed, purge, resume, dispose, firstNoteAdmission: metadata.firstNoteAdmission };
+  return { list, known: knownFolder, stats, repo, adopt, openFile, openFilePath, open, choose, upload, pin, localNote, importLocal, edited: (path: string) => score(path, 2), parent: async () => dirname(home()), chooseParent, check, create, continueCreate, pendingCreate, lastNote, position, remember, closed, purge, resume, dispose, firstNoteAdmission: metadata.firstNoteAdmission };
 }

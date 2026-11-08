@@ -263,7 +263,7 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
             canLink: { type: "boolean" }, removeBlocked: { type: "boolean" }, canDelete: { type: "boolean" }, deleteNote: { type: "string" },
           },
         },
-        file: { type: "object", properties: { path: { type: "string" } } },
+        file: { type: "object", properties: { path: { type: "string" }, plainText: { type: "boolean" } } },
         appearance: {
           type: "object",
           properties: { summary: { type: "string" }, scale: { type: "string" }, scales: { type: "array", items: OPTION }, canSync: { type: "boolean" }, syncOn: { type: "boolean" }, syncCommit: { type: "string", enum: ["rest", "pending", "confirmed", "failed"] } },
@@ -308,7 +308,7 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
           setupLabel: catalog.format(s.sync.git ? "command.setup.runAgain" : "settings.workspace.connect"),
           canOpenOther: available() && Boolean(s.account.login),
         },
-        file: { path: s.note.path ?? "" },
+        file: { path: s.note.path ?? "", plainText: /\.txt$/i.test(s.note.path ?? "") },
         // A summary that opens the theme manager: theme choice has one home (DD-SET-02).
         appearance: {
           summary: catalog.format("settings.appearance.summary", {

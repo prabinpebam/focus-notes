@@ -13100,6 +13100,19 @@
                 }
               ]
             },
+            "plainText": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
             "label": {
               "anyOf": [
                 {

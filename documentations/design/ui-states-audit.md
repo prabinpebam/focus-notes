@@ -46,13 +46,17 @@ Auto-dismiss includes ordinary errors, Retry and Undo. Only retained-text risk, 
 | 70fd587254d1-1 | catalog.format("toast.actionFailed") | packages/core/src/app.ts:1187 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | retryCommand |
 | ab0cb7f69e8d-1 | m | packages/core/src/app.ts:1324 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
 | c92a56db27bf-1 | catalog.format("demo.aboutText") | packages/core/src/app.ts:1376 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | "demo.download" |
-| dd1b834760a5-1 | catalog.format(on ? "toast.settingsSynced" : "toast.settingsLocal") | packages/core/src/app.ts:1438 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| 3ca8f065a3a8-1 | catalog.format("toast.settingsFailed") | packages/core/src/app.ts:1442 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| 95707da4a75e-1 | catalog.format("toast.revealItemFailed") | packages/core/src/app.ts:1704 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| 622621cf4b88-2 | catalog.format("project.launch.restoreFailed") | packages/core/src/app.ts:1854 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| 622621cf4b88-3 | catalog.format("project.launch.restoreFailed") | packages/core/src/app.ts:1861 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| 764b21274964-1 | catalog.format("newNote.createFailed") | packages/core/src/app.ts:1883 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| 76f66d0fd5ca-1 | catalog.format("toast.previewCarryOverFailed") | packages/core/src/app.ts:1903 | must-read | profile-carry-over: Preview opened without all its previous settings; the person must know the original is retained and the next launch retries without overwriting new changes. | None |
+| df2926de2609-1 | catalog.format("file.settings.copied") | packages/core/src/app.ts:1423 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 4c08daeddb10-1 | catalog.format("file.settings.copyFailed") | packages/core/src/app.ts:1428 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| de6ca098ab04-1 | catalog.format("project.open.fileFailed") | packages/core/src/app.ts:1432 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| dd1b834760a5-1 | catalog.format(on ? "toast.settingsSynced" : "toast.settingsLocal") | packages/core/src/app.ts:1461 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 3ca8f065a3a8-1 | catalog.format("toast.settingsFailed") | packages/core/src/app.ts:1465 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 95707da4a75e-1 | catalog.format("toast.revealItemFailed") | packages/core/src/app.ts:1729 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 622621cf4b88-2 | catalog.format("project.launch.restoreFailed") | packages/core/src/app.ts:1879 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 622621cf4b88-3 | catalog.format("project.launch.restoreFailed") | packages/core/src/app.ts:1886 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 764b21274964-1 | catalog.format("newNote.createFailed") | packages/core/src/app.ts:1908 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 76f66d0fd5ca-1 | catalog.format("toast.previewCarryOverFailed") | packages/core/src/app.ts:1928 | must-read | profile-carry-over: Preview opened without all its previous settings; the person must know the original is retained and the next launch retries without overwriting new changes. | None |
+| de6ca098ab04-2 | catalog.format("project.open.fileFailed") | packages/core/src/app.ts:1930 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
 | d2cef3e5197d-1 | catalog.format("block.copiedLink", { name: b.text }) | packages/core/src/block-handle.ts:93 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
 | 2e9627698b69-1 | catalog.format("table.copyFailed") | packages/core/src/block-handle.ts:95 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
 | a22985aaed62-1 | catalog.format("toast.copiedToLocal", { note: titleOfPath(target) }) | packages/core/src/browser.ts:165 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
@@ -148,8 +152,9 @@ Auto-dismiss includes ordinary errors, Retry and Undo. Only retained-text risk, 
 | a1b8ed2dda3b-1 | catalog.format("toast.saveFailed") | packages/core/src/settings-app.ts:189 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
 | 8bf767b91621-1 | catalog.format("sharing.publish.saved") | packages/core/src/sharing-preview.ts:107 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
 | 12a158e779e1-1 | catalog.format("paste.imagesLeftOut") | packages/core/src/slash.ts:143 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| 0b3ece652939-1 | catalog.format(key, args) | packages/core/src/slash.ts:149 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| 88dc1e6063a2-1 | catalog.format("paste.lineBreaks") | packages/core/src/slash.ts:152 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 7f5054a992c9-1 | catalog.format("file.settings.imagesTxt") | packages/core/src/slash.ts:144 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 0b3ece652939-1 | catalog.format(key, args) | packages/core/src/slash.ts:150 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 88dc1e6063a2-1 | catalog.format("paste.lineBreaks") | packages/core/src/slash.ts:153 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
 | 7284eb7be408-1 | done | packages/core/src/spotlight-app.ts:647 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
 | 49ed82fdadc3-1 | msg("spotlight.copyFailed") | packages/core/src/spotlight-app.ts:649 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
 | cabf6a6b3513-1 | msg("actions.contentMissing") | packages/core/src/spotlight-app.ts:659 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
@@ -164,8 +169,8 @@ Auto-dismiss includes ordinary errors, Retry and Undo. Only retained-text risk, 
 | 2f95d4f8beaa-1 | catalog.format("toast.workspaceOlder") | packages/core/src/workspace-app.ts:84 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | "workspace.migrate" |
 | 96d315b91b76-1 | catalog.format("toast.workspaceUpdateFailed") | packages/core/src/workspace-app.ts:109 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
 | a1fa4aa71bfc-1 | catalog.format("toast.workspaceUpdated") | packages/core/src/workspace-app.ts:114 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| ae0f170964a6-1 | catalog.format("toast.changedOutside", { note: stemOf(nameOf(path)) }) | packages/core/src/workspace-app.ts:199 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| 55b2286d882c-1 | catalog.format("files.firstNameFailed") | packages/core/src/workspace-app.ts:258 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| ae0f170964a6-1 | catalog.format("toast.changedOutside", { note: stemOf(nameOf(path)) }) | packages/core/src/workspace-app.ts:200 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 55b2286d882c-1 | catalog.format("files.firstNameFailed") | packages/core/src/workspace-app.ts:259 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
 <!-- /generated:notification-inventory -->
 
 ### Owner feedback batch, 6 November: button geometry
