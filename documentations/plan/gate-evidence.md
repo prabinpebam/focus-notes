@@ -18,6 +18,26 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 
 ## Summary
 
+### Standalone text files, 8 November
+
+**Candidate, not yet landed.** G4 / PRJ-09 / UC-PROJ-08 extends the existing standalone Markdown path rather than importing text or making a project. All five invisible built-app journeys pass together. Exact-head Windows CI and scheduled packaged Preview proof are pending; installed Windows association registration was not changed on the owner's computer.
+
+| Evidence | Result |
+| --- | --- |
+| `pnpm typecheck` | Passed across the monorepo. |
+| `pnpm --filter @focus-notes/desktop run build` | Passed with the plain editor, strict codec, startup routing and explicit copy handler. |
+| `pnpm check`; `node .\slate\scripts\runtime-host.mjs check --repo . --host documentations` | Passed; 879 UI documents, 86 components and regenerated notification inventory agree with source. |
+| `pnpm exec vitest run apps\desktop\test\text-files.test.ts apps\desktop\test\text-routing.test.ts apps\desktop\test\note-write.test.ts apps\desktop\test\drafts.test.ts apps\desktop\test\project-create.test.ts packages\editor\test\plain-text.test.ts packages\editor\test\schema.test.ts packages\ui\test\editor-ready.test.tsx packages\core\test\app.test.ts packages\core\test\conflicts-app.test.ts packages\core\test\history.test.ts packages\core\test\note-history.test.ts` | Passed: 12 files, 250 tests. |
+| Text codec/writer and routing units | Passed: strict UTF-8/BOM, UTF-16LE/BE, LF/CRLF/CR, no-op exact bytes, queued external changes, encoding-only conflict after a dirty watcher read, canonical project/standalone routing and NSIS/Store association declarations. |
+| Editor literal-mode units | Passed: mixed/trailing separators, title/front-matter-like text, typing/Enter and literal recovery; existing Markdown schema/editor-ready units passed. |
+| Draft/history/conflict units | Passed after replacing the obsolete `.txt` rejection with binary-file rejection: UTF-16 decoded-source matching, unchanged source bytes, literal `.txt` conflict-copy content, and existing conflict save-lane regressions. |
+| `FOCUS_NOTES_E2E=1; pnpm --filter @focus-notes/desktop exec playwright test standalone-text.spec.ts --workers=1` | Passed: 5 journeys together. Literal clipboard text wins over HTML, retains mixed endings and undoes to original bytes; unsupported input with in-place Retry; Open with/Open file, UTF-16 autosave/reopen, no project/Git/sharing controls and explicit Markdown copy; Decide later/Keep both without overwriting external bytes; dirty crash recovery followed by exact encoded save. Every run ended with PID-scoped test-app cleanup and scratch-folder removal. |
+| Wait feedback | Existing `fn:project.open`/`fn:note.save`; explicit-copy `fn:note.convert` added to the wait inventory. No new spinner, reload, blank view or remote task. |
+| Windows associations | NSIS `fileAssociations` and Store `windows.fileTypeAssociation` declare `.md`, `.markdown`, `.txt`; declaration units passed. Actual installed registration is not inferred from an argv launch. |
+| Headless documentation rendering | All six changed/generated pages render one H1 in verified light and dark contexts; the new G4 evidence anchor resolves. No interactive browser tab or owner docs-server change. |
+
+The first conflict attempts expected a dialog immediately or a second Resolve pill after Decide later; the existing contract presents a Resolve notification first and reopens a held conflict on Save. The journey now follows that user path. Inspection also found that a dirty watcher must not replace acknowledged bytes, that Markdown's conflict-copy retitling must not run on text, and that generic block paste changed untouched separators. All three coupled fixes have focused regressions; plain paste replaces only the selected paragraphs in one undoable transaction. No gate failure is waived and no full local suite was run.
+
 ### GitHub reference and terminology backlog, 8 November
 
 **Landed and verified.** Runtime `7493b44fab37ea1704ad1f5e2c07950a9caeb1aa` landed by non-force fast-forward after all seven Windows jobs passed in [42452871996](https://github.com/prabinpebam/focus-notes/actions/runs/42452871996). Backlog (a), (b) and (f) use the existing design system and external-link policy. No pending first-share or in-app Delete mock changed. [Surface audit](../design/foundations.md#external-links) enumerates the existing app surfaces.

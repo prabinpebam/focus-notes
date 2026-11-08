@@ -1309,6 +1309,16 @@
                                 }
                               }
                             ]
+                          },
+                          {
+                            "type": "Stack",
+                            "when": { "get": "vm.settings.file.plainText" },
+                            "props": { "gap": "stackPair" },
+                            "children": [
+                              { "type": "Text", "props": { "value": { "t": "file.settings.imagesTxt" } } },
+                              { "type": "Button", "props": { "label": { "t": "file.settings.insertImage" }, "disabled": true, "disabledReason": { "t": "file.settings.imagesTxt" }, "variant": "secondary" } },
+                              { "type": "Button", "props": { "label": { "t": "file.settings.saveAsMarkdown" }, "variant": "secondary" }, "on": { "press": { "run": "note.saveAsMarkdown" } } }
+                            ]
                           }
                         ]
                       }

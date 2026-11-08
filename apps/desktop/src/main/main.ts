@@ -21,15 +21,17 @@ import { cliInstallState, installCli, type InstallHost } from "./agents/install-
 import { cliArgv, isStoreBuild, storeAliasPath } from "./store-build.ts";
 import { appIdentity, preparePreviewProfile } from "./app-identity.ts";
 import { appendFileSync, existsSync, readFileSync, realpathSync, statSync } from "node:fs";
-import { NoteWriter, noteSave, readNow, writeBack } from "./note-write.ts";
+import { NoteWriter, noteSave, readNow, writeBack, changedOutside } from "./note-write.ts";
 import { stageNoteMove, validateNoteImages } from "./note-move.ts";
 import { copyNoteMedia, ownSidecar, removeCopies } from "./note-media.ts";
 import { opErrorCode } from "@focus-notes/core";
 import { watchKeybindings } from "./keybindings-watch.ts";
 import { stateFromWindow } from "./windows.ts";
 import { firstProjectNote, prepareProjectNoteRoots } from "./first-project-note.ts";
+import { textFiles, decodeText } from "./text-files.ts";
 import { spawn } from "node:child_process";
-import { candidateGitHubApi, projectGitHubClient, projectWindows, resumeProjectProfile } from "./projects.ts";
+import { candidateGitHubApi, fileLaunchProfile, projectGitHubClient, projectWindows, resumeProjectProfile, writingFile } from "./projects.ts";
+import { localImportCopies } from "./local-import.ts";
 import { randomBytes } from "node:crypto";
 import { tmpdir } from "node:os";
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
@@ -115,6 +117,22 @@ if (identity.channel !== "stable") {
   process.env.FOCUS_NOTES_CHANNEL = identity.channel;
 }
 app.setPath("userData", identity.userData);
+let fileLaunchFailed = false;
+const launchFile = !process.env.FOCUS_NOTES_PROJECT_NOTE && !cliArgv(process.argv, { packaged: app.isPackaged, store: isStoreBuild() })
+  ? process.argv.find(arg => isAbsolute(arg) && writingFile(arg)) : undefined;
+if (launchFile) {
+  try {
+    const selected = await fileLaunchProfile(app.getPath("userData"), launchFile);
+    process.env.FOCUS_NOTES_PROJECTS_PROFILE = app.getPath("userData");
+    process.env.FOCUS_NOTES_DOCS = selected.folder;
+    process.env.FOCUS_NOTES_LOCAL_NOTES = selected.localNotes ? "1" : "";
+    process.env.FOCUS_NOTES_PROJECT_NOTE = selected.file;
+    app.setPath("userData", selected.profile);
+  } catch (error) {
+    fileLaunchFailed = true;
+    console.error("Could not open the requested file:", error instanceof Error ? error.name : "Error");
+  }
+}
 if (!process.env.FOCUS_NOTES_PROJECTS_PROFILE && !process.env.FOCUS_NOTES_PROJECT_NOTE) {
   const rootProfile = app.getPath("userData");
   const resume = resumeProjectProfile(rootProfile);
@@ -950,11 +968,11 @@ const NOTES_PER_READ = 64;
 /** Files it reads at once (Node has four file threads by default). */
 const FILES_AT_ONCE = 2;
 
-/** Only Markdown files, given as absolute paths, may be read or written. */
+/** Supported writing files, given as absolute paths. */
 function notePath(p: unknown): string {
   if (typeof p !== "string" || !p) throw new Error("A note path is required");
   const abs = resolve(p);
-  if (![".md", ".markdown"].includes(extname(abs).toLowerCase())) throw new Error("Only Markdown files can be opened");
+  if (![".md", ".markdown", ".txt"].includes(extname(abs).toLowerCase())) throw new Error("Choose a Markdown or text file.");
   return abs;
 }
 
@@ -964,7 +982,11 @@ function notePath(p: unknown): string {
  * With `expected`, the file is checked once the write's turn has come, after any Git pull, and right
  * before the rename: another program's change is never written over (D-92, DEF-26).
  */
+const texts = textFiles();
+const isText = (path: string) => extname(path).toLowerCase() === ".txt";
 const writer = new NoteWriter({
+  outside: (path, content, expected) => isText(path) ? texts.outside(path, content, expected) : changedOutside(path, content, expected),
+  encode: (path, content) => isText(path) ? texts.encode(path, content) : content,
   replace: (path, write) => createFirstProjectNote.write(path, write),
   ready: async (path) => {
     await assertWritable(path);
@@ -973,6 +995,7 @@ const writer = new NoteWriter({
   },
   // A write hands its result straight to the snapshot: the next read doesn't touch the disk (PRF-10).
   written: async (path, content) => {
+    if (isText(path)) { texts.written(path, content); return; }
     if (!isMarkdown(path)) return;
     const st = await stat(path).catch(() => undefined);
     if (st) parsed.set({ path, size: st.size, mtimeMs: st.mtimeMs }, parseNote(content));
@@ -1036,14 +1059,14 @@ async function applyOps(raw: unknown): Promise<{ done: BatchOp[]; rewrites: Note
     }
     if (o?.op === "write" || o?.op === "create") {
       const at = opPath(o.path);
-      if (typeof o.text !== "string" || !isMarkdown(at.path)) throw refuse("invalid");
+      if (typeof o.text !== "string" || (!isMarkdown(at.path) && !isText(at.path))) throw refuse("invalid");
       if (o.before !== undefined && (o.op !== "write" || typeof o.before !== "string")) throw refuse("invalid");
       // A duplicate names the note it copies, in the same root, so the sidecar images it owns can be copied too.
       let source: string | undefined;
       if (o.source !== undefined) {
         if (o.op !== "create") throw refuse("invalid");
         const from = opPath(o.source);
-        if (from.root !== at.root || !isMarkdown(from.path)) throw refuse("invalid");
+        if (from.root !== at.root || (!isMarkdown(from.path) && !isText(from.path)) || isText(from.path) !== isText(at.path)) throw refuse("invalid");
         source = from.path;
       }
       return { op: o.op, ...at, text: o.text, ...(typeof o.before === "string" ? { before: o.before } : {}), ...(source ? { source } : {}) };
@@ -1153,7 +1176,7 @@ async function applyOps(raw: unknown): Promise<{ done: BatchOp[]; rewrites: Note
         if (existsSync(op.path)) throw refuse("taken");
         if (!(await isDir(dirname(op.path)))) throw refuse("notFound");
         let text = op.text;
-        if (op.op === "create" && op.source) {
+        if (op.op === "create" && op.source && !isText(op.source)) {
           // Images in the original's own sidecar are copied into the duplicate's; shared ones stay shared.
           const boundary = isWorkspace() ? dirname(op.root) : op.root;
           const copy = await copyNoteMedia(text, op.source, op.path, boundary, undefined, false, text, ownSidecar(op.source));
@@ -1161,7 +1184,7 @@ async function applyOps(raw: unknown): Promise<{ done: BatchOp[]; rewrites: Note
           media.push(...copy.paths);
           text = copy.text;
         }
-        await writeFile(op.path, text, { encoding: "utf8", flag: "wx" });
+        await writeFile(op.path, isText(op.path) && op.source ? texts.encode(op.source, text) : text, { encoding: "utf8", flag: "wx" });
         undo.push(() => rm(op.path, { force: true }));
       }
     }
@@ -1394,7 +1417,7 @@ async function slowSeam(channel: string): Promise<void> {
   if (typeof ms === "number" && ms > 0) await new Promise((r) => setTimeout(r, Math.min(ms, 60_000)));
 }
 
-let projectMetadata: Pick<ReturnType<typeof projectWindows>, "closed" | "purge" | "resume" | "firstNoteAdmission"> | undefined;
+let projectMetadata: Pick<ReturnType<typeof projectWindows>, "closed" | "purge" | "resume" | "firstNoteAdmission" | "openFilePath"> | undefined;
 function registerIpc(win: () => BrowserWindow | undefined): void {
   const imageBatches = new Map<string, string[]>();
   handleFrom("image:import", async (event, path, inputs, replace) => {
@@ -1531,6 +1554,16 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     if (projectDeleted) setTimeout(() => app.quit(), 500);
   }, projectGitHub, projectRemote);
   projectMetadata = projects;
+  const markdownCopies = localImportCopies();
+  handle("note:saveAsMarkdown", async (input: unknown, content: unknown) => {
+    const source = notePath(input);
+    if (!isText(source) || typeof content !== "string") throw new Error("Choose an open text file.");
+    const chosen = await dialog.showSaveDialog({ defaultPath: source.replace(/\.txt$/i, ".md"), filters: [{ name: "Markdown", extensions: ["md"] }] });
+    if (chosen.canceled || !chosen.filePath) return undefined;
+    if (!isMarkdown(chosen.filePath)) throw new Error("Choose a Markdown filename.");
+    await assertWritable(chosen.filePath);
+    return markdownCopies(randomUUID(), source, dirname(chosen.filePath), basename(chosen.filePath, extname(chosen.filePath)), content);
+  });
   const resumeSignedInProject = async (operation: ReturnType<Account["status"]>) => {
     const status = await operation;
     if (status.account && !status.signedOut) await projects.resume();
@@ -1677,9 +1710,11 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     await projects.adopt(canonical, { name, accent: "teal", logo: "book" });
     await projects.open(canonical);
   });
-  handle("note:read", async (p) => {
+  handle("note:read", async (p, acknowledge: unknown = true) => {
+    if (typeof acknowledge !== "boolean") throw new Error("Invalid note read.");
     try {
-      return (await readParsed(notePath(p))).text;
+      const path = notePath(p);
+      return isText(path) ? await texts.read(path, acknowledge) : (await readParsed(path)).text;
     } catch (error) {
       if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") return null;
       throw error;
@@ -1896,7 +1931,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     path: notePath,
     write: atomicWrite,
     // How much changed decides when it's backed up (D-133): against the text last written here, or on disk.
-    before: async (path) => lastWritten.get(path) ?? (await readFile(path, "utf8").catch(() => "")),
+    before: async (path) => lastWritten.get(path) ?? (isText(path) ? decodeText(await readFile(path)).text : await readFile(path, "utf8").catch(() => "")),
     written: (path, before, content) => {
       lastWritten.set(path, content);
       withGit((g) => g.written(path, changedChars(before, content)));
@@ -1905,7 +1940,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   }));
   handle("note:choose", async () => {
     const w = win();
-    const opts = { properties: ["openFile" as const], defaultPath: notesHome(), filters: [{ name: "Markdown", extensions: ["md", "markdown"] }] };
+    const opts = { properties: ["openFile" as const], defaultPath: notesHome(), filters: [{ name: "Markdown and text", extensions: ["md", "markdown", "txt"] }] };
     const res = w ? await dialog.showOpenDialog(w, opts) : await dialog.showOpenDialog(opts);
     return res.canceled ? undefined : res.filePaths[0];
   });
@@ -2832,7 +2867,7 @@ function createWindow(frame: AppWindowFrame, extra: { note?: string; open?: bool
   // The theme is read again each time, so a page loaded after a crash paints the theme showing now.
   const load = () => {
     const b = bootTheme();
-    return win.loadFile(join(import.meta.dirname, "..", "renderer", "index.html"), { query: { platform, compositing: gpu.current(), theme: b.theme, scheme: b.scheme, ...frame.query(win), ...(previewCarryOverFailed && !extra.note ? { startupNotice: "preview-carry-over" } : {}), ...(process.env.FOCUS_NOTES_LOCAL_NOTES === "1" ? { localNotes: "1" } : {}), ...    (extra.note ? { note: extra.note } : {}), ...(extra.open ? { open: "1" } : {}), ...(devEnv("FOCUS_NOTES_WARMUP") === "0" ? { warmup: "0" } : {}), ...(folderState !== "ok" ? { folder: "missing" } : {}) } });
+    return win.loadFile(join(import.meta.dirname, "..", "renderer", "index.html"), { query: { platform, compositing: gpu.current(), theme: b.theme, scheme: b.scheme, ...frame.query(win), ...(fileLaunchFailed ? { startupNotice: "file-open" } : previewCarryOverFailed && !extra.note ? { startupNotice: "preview-carry-over" } : {}), ...(process.env.FOCUS_NOTES_LOCAL_NOTES === "1" ? { localNotes: "1" } : {}), ...    (extra.note ? { note: extra.note } : {}), ...(extra.open ? { open: "1" } : {}), ...(devEnv("FOCUS_NOTES_WARMUP") === "0" ? { warmup: "0" } : {}), ...(folderState !== "ok" ? { folder: "missing" } : {}) } });
   };
   void load();
   // The theme's canvas now: the window's cover after a renderer crash is painted in it.
@@ -3012,12 +3047,12 @@ function watchWorkspace(win: () => Iterable<BrowserWindow>): TreeWatcher | undef
         continue;
       }
       const st = await stat(p).catch(() => undefined);
-      if (!st) changes.push({ path: p, kind: isMarkdown(p) ? "note" : "folder", exists: false });
+      if (!st) changes.push({ path: p, kind: isMarkdown(p) || isText(p) ? "note" : "folder", exists: false });
       else if (st.isDirectory()) {
         changes.push({ path: p, kind: "folder", exists: true });
         for (const e of await listTree(p)) changes.push({ ...e, exists: true });
-      } else if (isMarkdown(p)) {
-        const title = await readTitle(p);
+      } else if (isMarkdown(p) || isText(p)) {
+        const title = isText(p) ? undefined : await readTitle(p);
         changes.push({ path: p, kind: "note", exists: true, ...(title ? { title } : {}) });
       }
     }
@@ -3182,8 +3217,17 @@ app.whenReady().then(async () => {
   app.on("second-instance", (_e, argv) => {
     const noteAt = argv.indexOf("--project-note");
     const link = argv.map(parseDeepLink).find((l): l is DeepLink => l !== undefined);
+    const file = argv.find(arg => isAbsolute(arg) && writingFile(arg));
     if (noteAt >= 0 || link || argv.some(arg => /\.(md|markdown|txt)$/i.test(arg))) {
       if (noteAt >= 0 && argv[noteAt + 1]) mainWindow?.webContents.send("projects:note", notePath(argv[noteAt + 1]));
+      else if (file) {
+        void projectMetadata?.openFilePath(file).then(result => {
+          if (result.here) mainWindow?.webContents.send("projects:note", result.file);
+        }).catch(error => {
+          logLine(`open-file: ${opErrorCode(error)}`);
+          mainWindow?.webContents.send("projects:fileError");
+        });
+      }
       linkArrived(link);
       showMain();
       return;

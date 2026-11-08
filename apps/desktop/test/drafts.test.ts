@@ -10,6 +10,7 @@ import { tmpdir } from "node:os";
 import { join, relative, sep } from "node:path";
 import { encodeRecord, textHash } from "@focus-notes/core/journal";
 import { DraftStore, frontMatterId, KEEP_MS, parseRenames, workspaceKey, type DraftCrypt, type DraftStoreOptions } from "../src/main/drafts.ts";
+import { encodeText } from "../src/main/text-files.ts";
 
 let root: string;
 let data: string;
@@ -118,16 +119,29 @@ describe("QLT-06: drafts while writing", () => {
     expect((await (await relaunch(s)).found(W)).matched[0]!.text).toBe("123");
   });
 
-  it("refuses an ID that could be a path, and a note outside the workspace or not Markdown", async () => {
+  it("refuses an ID that could be a path, and a note outside the workspace or not a writing file", async () => {
     const s = open();
     await expect(s.keep(W, "../../evil", 1, note("a.md"), "x")).rejects.toThrow();
     await expect(s.keep(W, "short", 1, note("a.md"), "x")).rejects.toThrow();
     await expect(s.keep(W, ID(1), 1, join(root, "outside.md"), "x")).rejects.toThrow();
-    await expect(s.keep(W, ID(1), 1, note("a.txt"), "x")).rejects.toThrow();
+    await expect(s.keep(W, ID(1), 1, note("a.bin"), "x")).rejects.toThrow();
     await expect(s.keep(W, ID(1), 1, join(ws, ".git", "x.md"), "x")).rejects.toThrow();
     await expect(s.keep(W, ID(1), -1, note("a.md"), "x")).rejects.toThrow();
     await expect(s.text("..\\..\\x")).rejects.toThrow();
     expect(draftFiles(s)).toEqual([]);
+  });
+
+  it("PRJ-09: a UTF-16 text draft matches its decoded source without changing its bytes or interpreting front matter", async () => {
+    const path = note("a.txt");
+    const text = "---\r\nid: literal\r\n---\r\n# plain text\r\n";
+    const bytes = encodeText(text, { encoding: "utf16be", bom: true });
+    writeFileSync(path, bytes);
+    const s = open();
+    await s.keep(W, ID(1), 1, path, `${text}Recovered`);
+    const found = await (await relaunch(s)).found(W);
+    expect(found.matched.map(draft => draft.text)).toEqual([`${text}Recovered`]);
+    expect(found.changed).toEqual([]);
+    expect(readFileSync(path)).toEqual(bytes);
   });
 
   it("a save of the latest text clears the draft; a save of an older one keeps the newer text, over what's on disk now", async () => {

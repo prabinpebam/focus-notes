@@ -117,8 +117,8 @@ contextBridge.exposeInMainWorld("focusNotes", {
   },
   // Off only when the main process says so: end-to-end tests (PRF-10).
   warmUp: params.get("warmup") !== "0",
-  readNote: async (path: string): Promise<string> => {
-    const text: string | null = await ipcRenderer.invoke("note:read", path);
+  readNote: async (path: string, acknowledge = true): Promise<string> => {
+    const text: string | null = await ipcRenderer.invoke("note:read", path, acknowledge);
     if (text === null) throw new Error("note:missing");
     return text;
   },
@@ -137,6 +137,8 @@ contextBridge.exposeInMainWorld("focusNotes", {
     stats: (folder: string) => ipcRenderer.invoke("projects:stats", folder),
     openRepo: (folder: string) => ipcRenderer.invoke("projects:openRepo", folder),
     openFile: () => ipcRenderer.invoke("projects:openFile"),
+    saveAsMarkdown: (path: string, text: string) => ipcRenderer.invoke("note:saveAsMarkdown", path, text),
+    onFileError: listen("projects:fileError"),
     githubRepos: () => ipcRenderer.invoke("projects:githubRepos"),
     openGitHub: (owner: string, name: string) => ipcRenderer.invoke("projects:openGitHub", owner, name),
     lastNote: () => ipcRenderer.invoke("projects:lastNote"),
@@ -187,7 +189,7 @@ contextBridge.exposeInMainWorld("focusNotes", {
   },
   defaultNotePath: () => ipcRenderer.invoke("note:default"),
   loadAppState: () => ipcRenderer.invoke("state:load"),
-  ...(params.get("startupNotice") === "preview-carry-over" ? { startupNotice: "preview-carry-over" } : {}),
+  ...(params.get("startupNotice") === "file-open" ? { startupNotice: "file-open" } : params.get("startupNotice") === "preview-carry-over" ? { startupNotice: "preview-carry-over" } : {}),
   saveAppState: (state: unknown) => ipcRenderer.invoke("state:save", state),
   systemScheme: () => (darkQuery?.matches ? "dark" : "light"),
   onSystemSchemeChange: (listener: (s: "light" | "dark") => void) => {

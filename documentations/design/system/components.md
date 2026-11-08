@@ -119,7 +119,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | SiteText | primitive | `rest` | 10 | None |
 | SiteFigure | primitive | `rest` | 3 | None |
 | SiteThemeShowcase | primitive | `light`, `dark`, `focus` | 1 | `dark`, `focus` |
-| EditorSurface | host component | `empty`, `editing`, `readOnly` | 0 | `readOnly` |
+| EditorSurface | host component | `empty`, `editing`, `readOnly` | 1 | `readOnly` |
 | TableControls | host component | `hidden`, `hover`, `handleHover`, `menuOpen`, `insertPoint`, `dragging`, `resizing`, `rangeSelected` | 0 | `hidden`, `handleHover` |
 | BlockHandle | host component | `hidden`, `shown`, `pressed`, `menuOpen`, `dragging` | 0 | `hidden` |
 | WindowFrame | host component | `rest`, `bandHover`, `fullScreenHidden`, `moving`, `resizing`, `menuOpen` | 0 | `bandHover`, `fullScreenHidden` |

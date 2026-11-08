@@ -17624,6 +17624,11 @@
           "kind": "text",
           "required": true
         },
+        "plainText": {
+          "kind": "boolean",
+          "default": false,
+          "description": "Literal text files: no Markdown formatting, input rules, image insertion or rich paste."
+        },
         "label": {
           "kind": "message",
           "required": true
@@ -18023,7 +18028,23 @@
       "uncovered": {
         "readOnly": "No journey checks that the surface itself refuses edits yet."
       },
-      "fixtures": []
+      "fixtures": [
+        {
+          "name": "plain text",
+          "props": {
+            "documentKey": {
+              "get": "vm.gallery.query"
+            },
+            "initialValue": {
+              "get": "vm.gallery.query"
+            },
+            "plainText": true,
+            "label": {
+              "t": "canvas.editorLabel"
+            }
+          }
+        }
+      ]
     },
     {
       "type": "TableControls",
