@@ -154,7 +154,7 @@ export function redact(text: string, o: RedactOptions = {}): string {
  * the task tracker's waits, whose targets are fixed command IDs, never a note's name).
  */
 export const MEASURE_NAMES: readonly string[] = [
-  "fn:note.open", "fn:spotlight.open", "fn:actions.ai", "fn:image.print",
+  "fn:note.open", "fn:note.convert", "fn:spotlight.open", "fn:actions.ai", "fn:image.print",
   "fn:image.caption.open", "fn:image.caption.generate", "fn:image.edit.save",
   "fn:files.move", "fn:files.rename",
   "fn:sharing.invite", "fn:sharing.people", "focus-notes:sharing.people",
@@ -172,7 +172,7 @@ export const MEASURE_NAMES: readonly string[] = [
     "project.create", "project.open", "project.pin", "project.reveal", "project.delete", "project.deleteExport",
     "share.item.words", "share.item.count", "share.item.addNotes", "share.item.publish", "share.item.handoff",
     "share.item.withdraw", "share.item.create", "share.item.reveal"].map(t => `focus-notes:${t}`),
-  ...["note.save", "conflict", "import.confirm", "notes.export", "unlock.remember", "unlock.submit", "account.signOut", "workspace.remove", "files.copyItem", "files.import", "repoBackup.private", "repoBackup.public", "feedback.send", "note.print"].map((t) => `focus-notes:${t}`),
+  ...["note.save", "note.convert", "conflict", "import.confirm", "notes.export", "unlock.remember", "unlock.submit", "account.signOut", "workspace.remove", "files.copyItem", "files.import", "repoBackup.private", "repoBackup.public", "feedback.send", "note.print"].map((t) => `focus-notes:${t}`),
   // The first run's waits (PRF-13, D-149): FIRST_RUN_WAITS in first-run-app.ts.
   ...["git", "prepare", "account", "signIn", "identity", "findNotes", "folder", "chooseFolder", "clone", "create", "open", "strength"].map((t) => `focus-notes:firstRun.${t}`),
   // The recovery view's waits (D-212): RECOVER_WAITS in recover-app.ts.

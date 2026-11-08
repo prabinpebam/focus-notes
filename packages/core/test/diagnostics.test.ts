@@ -192,6 +192,9 @@ describe("QLT-04: timings, settings, the preview, and the log", () => {
     expect(MEASURE_NAMES).toContain(OPEN_MEASURE);
     expect(MEASURE_NAMES).toContain(SPOTLIGHT_MEASURE);
     expect(summarizeTimings([{ name: "fn:image.print", duration: 180 }])).toEqual([{ name: "fn:image.print", count: 1, p50: 180, p95: 180 }]);
+    for (const name of ["fn:note.convert", "focus-notes:note.convert"]) {
+      expect(summarizeTimings([{ name, duration: 180 }])).toEqual([{ name, count: 1, p50: 180, p95: 180 }]);
+    }
     for (const name of ["fn:image.caption.open", "fn:image.caption.generate", "focus-notes:image.caption.open", "focus-notes:image.caption.generate",
       "fn:files.move", "fn:files.rename", "focus-notes:files.move", "focus-notes:files.rename"]) {
       expect(summarizeTimings([{ name, duration: 180 }])).toEqual([{ name, count: 1, p50: 180, p95: 180 }]);

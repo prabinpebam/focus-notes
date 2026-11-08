@@ -97,6 +97,7 @@ export const MENU_BAR: readonly MenuBarMenu[] = [
  * bar's tests check it.
  */
 export const NOT_IN_MENU_BAR: readonly { why: string; ids: RegExp }[] = [
+  { why: "This file settings' explicit text-to-Markdown copy action", ids: /^note\.saveAsMarkdown$/ },
   { why: "a displayed repository or account reference supplies its own destination", ids: /^github\.open$/ },
   { why: "print preparation pill's Cancel control", ids: /^print\.cancel$/ },
   { why: "commit feedback and retry controls", ids: /^commit\.(run|revert)$/ },
