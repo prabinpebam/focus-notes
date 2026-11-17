@@ -1022,11 +1022,146 @@ h1 .slate-xref, h2 .slate-xref, h3 .slate-xref, h4 .slate-xref { position: relat
     .search-box { padding-inline: var(--space-s); }
 }
 
+/* Revisions are reader chrome, not authored document components. */
+/* Compact density: rows own their inline padding, so scroll regions and dividers run edge to edge. */
+.revision-toggle { display: inline-flex; flex: 0 0 32px; align-items: center; justify-content: center; height: 32px; border-radius: var(--radius-md); }
+.revision-toggle:hover, .revision-toggle[aria-expanded="true"] { background: var(--color-subtle-bg-selected); }
+.revision-panel[hidden], .revision-panel [hidden], .revision-pick-layer[hidden], .revision-pick-layer [hidden] { display: none !important; }
+.revision-panel { grid-area: revisions; display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--color-neutral-bg-1); border-left: 1px solid var(--color-neutral-stroke-2); font-size: var(--font-size-300); line-height: 1.45; }
+.revision-panel-header { display: flex; flex: 0 0 auto; align-items: center; gap: var(--space-xxs); padding: var(--space-xs) var(--space-s) var(--space-xs) var(--space-m); border-bottom: 1px solid var(--color-neutral-stroke-2); }
+.revision-panel-header h2 { flex: 1; margin: 0; font-size: var(--font-size-400); }
+.revision-header-actions { display: flex; align-items: center; gap: var(--space-xxs); }
+.revision-panel-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.revision-panel button { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-xs); min-height: 32px; padding: var(--space-xs) var(--space-s); border: 1px solid transparent; border-radius: var(--radius-md); margin: 0; background: transparent; color: var(--color-neutral-fg-1); font: inherit; cursor: pointer; overflow-wrap: anywhere; }
+.revision-panel button:hover { background: var(--color-subtle-bg-hover); }
+.revision-panel button:disabled { opacity: .55; cursor: not-allowed; }
+.revision-panel .material-symbols-outlined { flex-shrink: 0; font-size: 18px; }
+.revision-panel .revision-icon-button { flex: 0 0 32px; width: 32px; height: 32px; padding: 0; color: var(--color-neutral-fg-2); }
+.revision-panel .revision-icon-button:hover { color: var(--color-neutral-fg-1); }
+.revision-panel button:focus-visible, .revision-panel input:focus-visible, .revision-panel select:focus-visible, .revision-panel textarea:focus-visible, .revision-panel summary:focus-visible, .revision-panel pre:focus-visible { outline: 2px solid var(--color-brand-stroke); outline-offset: 2px; }
+.revision-panel p { margin: var(--space-xs) 0; overflow-wrap: anywhere; }
+.revision-panel h3 { font-size: var(--font-size-400); margin: var(--space-m) 0 var(--space-xs); }
+.revision-panel h4 { font-size: var(--font-size-200); margin: 0; color: var(--color-neutral-fg-2); }
+.revision-panel label { display: block; margin-bottom: var(--space-xs); font-weight: var(--font-weight-semibold); }
+.revision-panel input:not([type="file"]), .revision-panel select, .revision-panel textarea { display: block; width: 100%; min-width: 0; padding: var(--space-xs) var(--space-s); border: 1px solid var(--color-neutral-stroke-1); border-radius: var(--radius-md); background: var(--color-neutral-bg-1); color: var(--color-neutral-fg-1); font: inherit; }
+.revision-panel textarea { resize: vertical; line-height: 1.45; }
+.revision-panel .revision-primary, .revision-panel .revision-primary:hover { background: var(--color-brand-bg); color: var(--color-on-brand); border-color: var(--color-brand-stroke); font-weight: var(--font-weight-semibold); }
+.revision-storage, .revision-help, .revision-meta { font-size: var(--font-size-200); color: var(--color-neutral-fg-2); }
+.revision-storage { display: flex; flex: 0 0 auto; align-items: center; gap: var(--space-xs); padding: var(--space-xs) var(--space-m); border-top: 1px solid var(--color-neutral-stroke-2); }
+.revision-storage > .material-symbols-outlined { font-size: 16px; }
+.revision-storage[data-state="saved"] > .material-symbols-outlined { color: var(--color-status-success-fg); }
+.revision-storage[data-state="pending"] { color: var(--color-status-warning-fg); background: var(--color-status-warning-bg); }
+.revision-panel .revision-error { margin: var(--space-s) var(--space-m); padding: var(--space-xs) var(--space-s); background: var(--color-status-danger-bg); color: var(--color-status-danger-fg); border: 1px solid var(--color-status-danger-stroke); border-radius: var(--radius-md); }
+.revision-recovery:not(:empty) { display: flex; flex-wrap: wrap; gap: var(--space-xs); padding: var(--space-s) var(--space-m); }
+.revision-list { display: flex; flex: 0 0 auto; flex-direction: column; gap: var(--space-xxs); padding: var(--space-s) var(--space-m); border-bottom: 1px solid var(--color-neutral-stroke-2); }
+.revision-list:empty { display: none; }
+.revision-context-row { display: flex; align-items: center; gap: var(--space-xs); }
+.revision-panel select { flex: 1; height: 32px; text-overflow: ellipsis; font-weight: var(--font-weight-semibold); }
+.revision-panel .revision-copy-prompt { flex: 0 0 auto; white-space: nowrap; padding-inline: var(--space-s) var(--space-m); }
+.revision-archived { max-height: 160px; overflow-y: auto; }
+.revision-archived summary { cursor: pointer; color: var(--color-neutral-fg-2); font-size: var(--font-size-200); padding-block: var(--space-xxs); }
+.revision-panel .revision-choice { display: block; width: 100%; padding-inline: var(--space-s); text-align: left; font-size: var(--font-size-200); }
+.revision-choice[aria-pressed="true"] { font-weight: var(--font-weight-semibold); background: var(--color-subtle-bg-selected); }
+.revision-composer { padding: var(--space-s) var(--space-m); background: var(--color-neutral-bg-2); border-bottom: 1px solid var(--color-neutral-stroke-2); }
+.revision-composer-actions { display: flex; align-items: center; gap: var(--space-xxs); margin-top: var(--space-xs); }
+.revision-panel .revision-selection-count { flex: 1; min-width: 0; margin: 0 var(--space-xs); overflow: hidden; font-size: var(--font-size-200); color: var(--color-neutral-fg-2); text-overflow: ellipsis; white-space: nowrap; }
+.revision-panel .revision-select-action[aria-pressed="true"] { background: var(--color-subtle-bg-selected); color: var(--color-brand-fg-1); }
+.revision-panel .revision-add-comment:not(:disabled) { color: var(--color-brand-fg-1); }
+.revision-panel .revision-help { margin: var(--space-xs) 0 0; }
+.revision-comments-header { display: flex; align-items: baseline; gap: var(--space-s); padding: var(--space-s) var(--space-m) var(--space-xs); }
+.revision-panel .revision-comments-header h3 { flex: 1; margin: 0; font-size: var(--font-size-300); }
+.revision-panel .revision-comments-empty { margin: 0; padding: 0 var(--space-m) var(--space-m); color: var(--color-neutral-fg-2); font-size: var(--font-size-200); }
+.revision-comment { position: relative; padding: var(--space-xxs) var(--space-xs) var(--space-s) var(--space-m); border-top: 1px solid var(--color-neutral-stroke-3); }
+.revision-comment-header { display: flex; align-items: center; gap: var(--space-xxs); min-height: 32px; }
+.revision-comment-header h4 { margin-right: var(--space-xs); }
+/* Comment actions take their space at rest but show only on hover or keyboard focus, so nothing shifts when they appear. */
+.revision-comment-actions { display: flex; gap: var(--space-xxs); margin-left: auto; opacity: 0; transition: opacity var(--duration-fast) var(--curve-ease); }
+.revision-comment:hover .revision-comment-actions, .revision-comment:focus-within .revision-comment-actions, .revision-comment--editing .revision-comment-actions { opacity: 1; }
+@media (hover: none) { .revision-comment-actions { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .revision-comment-actions { transition: none; } }
+.revision-inline-edit { padding-right: var(--space-s); }
+.revision-inline-edit-actions { display: flex; justify-content: flex-end; gap: var(--space-xxs); margin-top: var(--space-xs); }
+.revision-details { display: flex; flex-direction: column; gap: var(--space-m); min-height: 0; margin-top: var(--space-s); overflow: auto; }
+.revision-dialog .revision-details-text { margin: 0; color: var(--color-neutral-fg-1); white-space: pre-wrap; }
+.revision-details .revision-context-item { display: flex; flex-direction: column; gap: var(--space-xxs); }
+.revision-details h3.revision-quote-label { margin: 0; font-size: var(--font-size-200); }
+.revision-dialog .revision-context-meta { margin: 0; }
+.revision-context-selector { font-family: var(--font-family-mono); overflow-wrap: anywhere; }
+.revision-details .revision-snapshot { max-height: 240px; }
+.revision-comment-status { font-size: var(--font-size-100); border-radius: var(--radius-sm); padding: var(--space-xxs) var(--space-xs); background: var(--color-neutral-bg-3); color: var(--color-neutral-fg-2); }
+.revision-panel .revision-comment-text, .revision-panel .revision-resolution { margin: 0; padding-right: var(--space-s); white-space: pre-wrap; }
+.revision-targets { display: flex; flex-wrap: wrap; gap: var(--space-xs); margin-top: var(--space-xs); padding-right: var(--space-s); }
+.revision-panel .revision-target-link { justify-content: flex-start; max-width: 100%; min-height: 28px; padding: var(--space-xxs) var(--space-s) var(--space-xxs) var(--space-xs); gap: var(--space-xxs); background: var(--color-neutral-bg-3); color: var(--color-brand-fg-1); font-size: var(--font-size-200); text-align: left; }
+.revision-panel .revision-target-link .material-symbols-outlined { font-size: 14px; }
+.revision-target-link .revision-button-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.revision-context { display: flex; flex-direction: column; gap: var(--space-s); margin-top: var(--space-s); padding-right: var(--space-s); }
+.revision-dialog .revision-quote-label { margin: 0; font-size: var(--font-size-200); font-weight: var(--font-weight-semibold); color: var(--color-neutral-fg-1); }
+.revision-dialog .revision-context-meta { font-size: var(--font-size-200); color: var(--color-neutral-fg-2); }
+.revision-panel .revision-quote-label { margin: 0; font-size: var(--font-size-200); font-weight: var(--font-weight-semibold); }
+.revision-panel .revision-context-meta { margin: 0; font-size: var(--font-size-200); color: var(--color-neutral-fg-2); }
+.revision-panel .revision-snapshot { max-height: 96px; margin: var(--space-xxs) 0 0; padding: var(--space-xs) var(--space-s); overflow: auto; border-radius: var(--radius-md); background: var(--color-neutral-bg-3); color: var(--color-neutral-fg-1); font: var(--font-size-200)/1.45 var(--font-family-mono); white-space: pre-wrap; overflow-wrap: anywhere; }
+.revision-remove-confirmation { display: flex; align-items: center; gap: var(--space-xxs); margin-top: var(--space-xs); padding-right: var(--space-s); }
+.revision-panel .revision-remove-confirmation p { flex: 1; margin: 0; font-size: var(--font-size-200); }
+.revision-panel .revision-danger { color: var(--color-status-danger-fg); }
+.revision-archive-summary { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-xs); padding: var(--space-s) var(--space-m); border-bottom: 1px solid var(--color-neutral-stroke-2); }
+.revision-empty { display: flex; flex-direction: column; align-items: flex-start; padding: var(--space-l) var(--space-m); }
+.revision-empty > .material-symbols-outlined { display: grid; place-items: center; width: 44px; height: 44px; font-size: 24px; border-radius: var(--radius-lg); background: var(--color-neutral-bg-3); color: var(--color-brand-fg-1); }
+.revision-empty h3 { font-size: var(--font-size-400); line-height: 1.4; }
+.revision-empty p { color: var(--color-neutral-fg-2); }
+.revision-empty button { margin-top: var(--space-s); }
+.revision-menu { display: flex; }
+.revision-menu-popover { position: fixed; inset: auto; width: 224px; max-width: calc(100vw - 16px); max-height: calc(100dvh - 16px); overflow-y: auto; margin: 0; padding: var(--space-xs); border: 1px solid var(--color-neutral-stroke-2); border-radius: var(--radius-lg); background: var(--color-neutral-bg-1); color: var(--color-neutral-fg-1); box-shadow: var(--shadow-16); }
+.revision-panel .revision-menu-item { display: flex; justify-content: flex-start; width: 100%; text-align: left; }
+.revision-menu-popover hr { border: 0; border-top: 1px solid var(--color-neutral-stroke-2); margin: var(--space-xs) 0; }
+.revision-tooltip { position: fixed; inset: auto; max-width: 280px; margin: 0; padding: var(--space-xxs) var(--space-s); border: 0; border-radius: var(--radius-md); background: var(--color-neutral-fg-1); color: var(--color-neutral-bg-1); font-size: var(--font-size-200); line-height: 1.4; overflow-wrap: anywhere; pointer-events: none; }
+.revision-dialog { width: min(420px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); margin: auto; padding: var(--space-xl); border: 1px solid var(--color-neutral-stroke-2); border-radius: var(--radius-lg); background: var(--color-neutral-bg-1); color: var(--color-neutral-fg-1); box-shadow: var(--shadow-16); }
+.revision-dialog::backdrop { background: rgba(0,0,0,.4); }
+.revision-dialog h2 { margin: 0; font-size: var(--font-size-500); }
+.revision-dialog p { margin-block: var(--space-m) var(--space-l); color: var(--color-neutral-fg-2); line-height: 1.6; }
+.revision-dialog-actions { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-s); margin-top: var(--space-l); }
+.revision-dialog--wide { width: min(760px, calc(100vw - 32px)); padding: var(--space-l); }
+.revision-prompt { display: flex; flex-direction: column; max-height: calc(100dvh - 32px - 2 * var(--space-l) - 2px); }
+.revision-dialog-header { display: flex; align-items: center; gap: var(--space-s); }
+.revision-dialog-header h2 { flex: 1; }
+.revision-dialog .revision-dialog-help { margin-block: var(--space-xs) var(--space-s); }
+.revision-panel .revision-prompt-text { flex: 1; min-height: 0; margin: 0; padding: var(--space-s) var(--space-m); overflow: auto; border-radius: var(--radius-md); background: var(--color-neutral-bg-3); color: var(--color-neutral-fg-1); font: var(--font-size-200)/1.5 var(--font-family-mono); white-space: pre-wrap; overflow-wrap: anywhere; }
+.revision-prompt .revision-dialog-actions { margin-top: var(--space-s); }
+.revision-dialog .revision-prompt-size { margin: 0 auto 0 0; font-size: var(--font-size-200); }
+/* The element picker draws on its own fixed layer; it never restyles document content. */
+.revision-pick-layer { position: fixed; inset: 0; z-index: 90; pointer-events: none; }
+.revision-pick-frame { position: fixed; overflow: hidden; }
+/* The picking cursor is the same selection arrow as the Select elements button, with a contrasting outline that reads on any surface. */
+.revision-pick-glass { position: absolute; inset: 0; pointer-events: auto; cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M4 2.5v16.2l4.3-4.1 2.9 6.6 2.9-1.3-2.9-6.5h6.1z' fill='%23111' stroke='%23fff' stroke-width='1.5' stroke-linejoin='round'/%3E%3Crect x='14.5' y='14.5' width='8' height='8' rx='1.5' fill='%23fff' stroke='%23111' stroke-width='1.4' stroke-dasharray='2 1.5'/%3E%3C/svg%3E") 4 2, default; touch-action: none; }
+.revision-pick-glass:focus { outline: none; }
+.revision-pick-glass:focus-visible { outline: 2px solid var(--color-brand-stroke); outline-offset: -2px; }
+.revision-pick-box { position: absolute; top: 0; left: 0; box-sizing: border-box; border-radius: var(--radius-sm); pointer-events: none; }
+.revision-pick-box--candidate { border: 2px solid var(--color-brand-stroke); background: color-mix(in srgb, var(--color-brand-bg) 10%, transparent); }
+.revision-pick-box--selected { border: 2px solid var(--color-brand-stroke); }
+.revision-pick-label { position: absolute; top: 0; left: 0; max-width: calc(100% - 4px); overflow: hidden; padding: 2px var(--space-xs); border-radius: var(--radius-sm); background: var(--color-brand-bg); color: var(--color-on-brand); font: var(--font-weight-semibold) var(--font-size-100)/1.6 var(--font-family-mono); white-space: nowrap; text-overflow: ellipsis; pointer-events: none; }
+@media (forced-colors: active) {
+    .revision-pick-box--candidate, .revision-pick-box--selected { border-color: Highlight; background: transparent; }
+    .revision-pick-label { forced-color-adjust: none; background: Highlight; color: HighlightText; }
+    .revision-tooltip { border: 1px solid CanvasText; }
+}
+.revision-target-focus { outline: 2px solid var(--color-brand-stroke); outline-offset: 3px; background: color-mix(in srgb, var(--color-brand-bg) 9%, transparent); }
+.app.revision-open > .toc { display: none !important; }
+@media (min-width: 769px) {
+    .app.revision-open { grid-template-columns: var(--sidebar-w) minmax(0, 1fr) min(360px, 40vw); grid-template-areas: "header header header" "sidebar content revisions"; }
+    .app.revision-open.sidebar-collapsed { grid-template-columns: 0 minmax(0, 1fr) min(360px, 40vw); }
+}
+@media (max-width: 768px) {
+    .app.revision-open { height: 100vh; height: 100dvh; min-height: 0; overflow: hidden; grid-template-columns: minmax(0, 1fr); grid-template-rows: var(--header-h) minmax(0, 1fr) minmax(220px, 44dvh); grid-template-areas: "header" "content" "revisions"; }
+    .revision-open > .content { min-height: 0; overflow-y: auto; }
+    .revision-panel { border-left: 0; border-top: 1px solid var(--color-neutral-stroke-2); }
+    .revision-toggle { flex-basis: 28px; }
+}
+
 /* ============================================================
    13. PRINT / EXPORT  (REQ-UX-23)
    ============================================================ */
 @media print {
-    .header, .sidebar, .toc, .overlay, .copy-btn, .collapse-toggle, .heading-anchor, .pager, .breadcrumbs { display: none !important; }
+    .header, .sidebar, .toc, .overlay, .copy-btn, .collapse-toggle, .heading-anchor, .pager, .breadcrumbs, .revision-panel, .revision-pick-layer, .revision-menu-popover, .revision-dialog, .revision-tooltip { display: none !important; }
+    .revision-target-focus { outline: none !important; background: none !important; }
     .app { display: block; height: auto; }
     .content { overflow: visible; }
     .document { max-width: none; padding: 0; }
