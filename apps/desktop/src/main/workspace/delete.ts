@@ -5,11 +5,11 @@
  * and only the open project's own folder: never a drive's root, the home folder or the app's data.
  */
 import { existsSync, realpathSync } from "node:fs";
-import { readdir, realpath, rename, stat } from "node:fs/promises";
+import { cp, lstat, mkdtemp, readFile, readdir, realpath, rename, rm, stat } from "node:fs/promises";
 import { basename, dirname, isAbsolute, join, parse, relative, resolve } from "node:path";
 import type { DeletionCheck, DeletionResult, RemoteDeletionResult, RepoStatus } from "@focus-notes/core";
 import { GitHubError } from "@focus-notes/github";
-import type { GitRunner } from "../git/run.ts";
+import { createRunner, type GitRunner } from "../git/run.ts";
 
 const real = (p: string) => {
   try {
@@ -257,30 +257,127 @@ export function keptPrivateFolder(folder: string, label = "private notes"): stri
   }
 }
 
+async function privateMetadataDependencies(git: GitRunner, metadata: string) {
+  const visit = async (at: string): Promise<void> => {
+    for (const entry of await readdir(at, { withFileTypes: true })) {
+      if (entry.isSymbolicLink() || entry.name.endsWith(".promisor") || !entry.isDirectory() && !entry.isFile()) throw new Error("Private Git metadata is not self-contained");
+      if (entry.isDirectory()) await visit(join(at, entry.name));
+    }
+  };
+  await visit(metadata);
+  for (const file of ["commondir", "worktrees", "modules", "config.worktree", "objects/info/alternates", "objects/info/http-alternates"]) {
+    if (existsSync(join(metadata, file))) throw new Error("Private Git metadata has shared dependencies");
+  }
+  const includes = await git({ cwd: metadata, args: ["config", "--no-includes", "--file", join(metadata, "config"), "--get-regexp", "^(include\\.|includeif\\.|extensions\\.(worktreeconfig|partialclone)$|remote\\..*\\.(promisor|partialclonefilter)$|core\\.(hookspath|fsmonitor)$)"], read: true });
+  if (includes.code !== 1) throw new Error("Private Git configuration has unsupported dependencies");
+}
+
+/** Copy submodule history before moving its worktree; its original metadata/config are never edited. */
+async function stagePrivateHistory(folder: string, priv: string, current?: () => Promise<boolean>) {
+  const dotGit = join(priv, ".git");
+  if (!existsSync(dotGit)) return undefined;
+  if (["GIT_OBJECT_DIRECTORY", "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_QUARANTINE_PATH", "GIT_CONFIG_PARAMETERS"].some(key => Boolean(process.env[key]))
+    || Boolean(process.env.GIT_CONFIG_COUNT && process.env.GIT_CONFIG_COUNT !== "0")) throw new Error("Private Git environment has shared dependencies");
+  const privateInfo = await lstat(priv);
+  const info = await lstat(dotGit);
+  if (!privateInfo.isDirectory() || privateInfo.isSymbolicLink() || info.isSymbolicLink()) throw new Error("Private Git paths are not owned by this project");
+  const git = createRunner();
+  if (info.isDirectory()) {
+    await privateMetadataDependencies(git, dotGit);
+    const worktree = await git({ cwd: priv, args: ["config", "--no-includes", "--file", join(dotGit, "config"), "--get", "core.worktree"], read: true });
+    if (worktree.code !== 1) throw new Error("Standalone private Git metadata has a worktree dependency");
+    return undefined;
+  }
+  if (!info.isFile()) throw new Error("Private Git pointer is not a file");
+  const pointer = await readFile(dotGit);
+  const target = /^gitdir:\s*([^\r\n]+)\r?\n?$/.exec(pointer.toString("utf8"))?.[1];
+  if (!target) throw new Error("Private Git pointer is invalid");
+  const parentGit = join(folder, ".git");
+  const parentInfo = await lstat(parentGit);
+  if (!parentInfo.isDirectory() || parentInfo.isSymbolicLink()) throw new Error("Parent Git metadata is shared");
+  const root = real(folder);
+  const modules = real(join(parentGit, "modules"));
+  const candidate = resolve(priv, target.trim());
+  const metadata = real(candidate);
+  if (!root || !modules || !metadata || !within(root, modules) || !within(modules, metadata) || modules === metadata) throw new Error("Private Git metadata is outside this project's modules");
+  const spelling = (path: string) => process.platform === "win32" || process.platform === "darwin" ? path.toLowerCase() : path;
+  if (!within(resolve(folder), candidate) || modules !== spelling(join(root, ".git", "modules"))
+    || metadata !== spelling(resolve(root, relative(resolve(folder), candidate)))) throw new Error("Private Git metadata uses linked paths");
+  if (real(parentGit) !== real(join(root, ".git")) || real(priv) !== real(join(root, "private"))) throw new Error("Private Git paths changed");
+  await privateMetadataDependencies(git, metadata);
+  const worktree = await git({ cwd: priv, args: ["config", "--no-includes", "--file", join(metadata, "config"), "--get", "core.worktree"], read: true });
+  if (worktree.code !== 1 && (worktree.code !== 0 || real(resolve(metadata, worktree.stdout.trim())) !== real(priv))) throw new Error("Private Git metadata belongs to another worktree");
+  const head = await git({ cwd: priv, args: ["rev-parse", "HEAD"], read: true });
+  if (head.code !== 0 || !/^[0-9a-f]{40,64}$/.test(head.stdout.trim())) throw new Error("Private Git history could not be checked");
+  if (!current || !await current()) throw new Error("Private retention intent changed");
+  const identity = await deletionFolderIdentity(folder);
+  const config = await readFile(join(metadata, "config"));
+  const transaction = await mkdtemp(join(parentGit, "focus-notes-private-retention-"));
+  const copy = join(transaction, "git");
+  try {
+    await cp(metadata, copy, { recursive: true, force: false, errorOnExist: true });
+    await privateMetadataDependencies(git, copy);
+    const configured = await git({ cwd: priv, args: ["config", "--file", join(copy, "config"), "--unset-all", "core.worktree"] });
+    if (configured.code !== 0 && configured.code !== 5) throw new Error("Private Git copy could not be configured");
+    const copiedHead = await git({ cwd: priv, args: ["--git-dir", copy, "--work-tree", priv, "rev-parse", "HEAD"], read: true });
+    const currentHead = await git({ cwd: priv, args: ["rev-parse", "HEAD"], read: true });
+    if (copiedHead.code !== 0 || copiedHead.stdout !== head.stdout || currentHead.code !== 0 || currentHead.stdout !== head.stdout
+      || !(await readFile(dotGit)).equals(pointer) || !(await readFile(join(metadata, "config"))).equals(config)
+      || !await sameDeletionFolder(folder, identity) || !await current()) throw new Error("Private Git history or intent changed during preservation");
+    return { transaction, copy, pointer: join(transaction, "pointer") };
+  } catch (error) {
+    await rm(transaction, { recursive: true });
+    throw error;
+  }
+}
+
 /**
  * Moves the project's folder to the Recycle Bin. With `keepPrivate`, `private/` is moved beside it first
  * and put back if the folder can't go, so a failure never splits the project. `trash` is the
  * platform's (Electron's `shell.trashItem`); `holder` names the file another app holds, when it can.
  */
-export async function recycleProject(folder: string, opts: { keepPrivate: boolean; trash: (p: string) => Promise<void>; holder?: (folder: string) => Promise<string | undefined> }): Promise<DeletionResult> {
+export async function recycleProject(folder: string, opts: { keepPrivate: boolean; trash: (p: string) => Promise<void>; holder?: (folder: string) => Promise<string | undefined>; current?: () => Promise<boolean> }): Promise<DeletionResult> {
   const priv = join(folder, "private");
   let kept: string | undefined;
-  if (opts.keepPrivate && existsSync(priv)) {
-    kept = keptPrivateFolder(folder);
-    try {
-      await rename(priv, kept);
-    } catch {
-      // A folder another app holds can't move; copying would leave two, so nothing changes.
-      return { state: existsSync(priv) ? "locked" : "failed", ...(opts.holder ? { file: await opts.holder(priv).catch(() => undefined) } : {}) };
-    }
-  }
+  let stage: Awaited<ReturnType<typeof stagePrivateHistory>>;
+  let pointerMoved = false;
+  let installed = false;
+  let recycling = false;
+  let notMoved = false;
   try {
+    if (opts.keepPrivate && existsSync(priv)) {
+      stage = await stagePrivateHistory(folder, priv, opts.current);
+      if (opts.current && !await opts.current()) throw new Error("Private retention intent changed");
+      kept = keptPrivateFolder(folder);
+      await rename(priv, kept);
+      if (stage) {
+        await rename(join(kept, ".git"), stage.pointer);
+        pointerMoved = true;
+        await rename(stage.copy, join(kept, ".git"));
+        installed = true;
+      }
+    }
+    if (opts.current && !await opts.current()) throw new Error("Deletion intent changed before recycling");
+    recycling = true;
     await opts.trash(folder);
+    if (existsSync(folder)) { notMoved = true; throw new Error("Recycling did not move the project"); }
   } catch {
-    // Put back where it was; if even that fails, the private notes are still whole beside the folder.
-    if (kept && !existsSync(priv)) await rename(kept, priv).catch(() => {});
-    return { state: existsSync(folder) ? "locked" : "failed", ...(opts.holder ? { file: await opts.holder(folder).catch(() => undefined) } : {}) };
+    if (kept && !existsSync(folder)) return { state: "failed", privateKept: kept };
+    if (kept && !stage && existsSync(priv) && !existsSync(kept)) return { state: "locked", ...(opts.holder ? { file: await opts.holder(priv).catch(() => undefined) } : {}) };
+    try {
+      if (installed && kept && stage) await rename(join(kept, ".git"), stage.copy);
+      if (pointerMoved && kept && stage) await rename(stage.pointer, join(kept, ".git"));
+      if (kept && !existsSync(priv) && existsSync(kept)) await rename(kept, priv);
+      if (stage) await rm(stage.transaction, { recursive: true });
+    } catch {
+      console.error("Private project retention could not be restored");
+      return { state: "failed", reason: "privateHistory", ...(kept && existsSync(kept) ? { privateKept: kept } : {}) };
+    }
+    if (!recycling) {
+      console.error("Private project history could not be preserved safely");
+      return { state: "failed", reason: "privateHistory" };
+    }
+    return { state: notMoved ? "failed" : existsSync(folder) ? "locked" : "failed", ...(opts.holder ? { file: await opts.holder(folder).catch(() => undefined) } : {}) };
   }
-  if (existsSync(folder)) return { state: "failed" };
   return { state: "deleted", ...(kept ? { privateKept: kept } : {}) };
 }
