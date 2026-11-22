@@ -245,6 +245,15 @@ describe("QLT-04: timings, settings, the preview, and the log", () => {
     expect(report).toContain("| fn:project.firstNote | 1 | 20 | 20 |");
     expect(report).toContain("| focus-notes:project.firstNote | 1 | 35 | 35 |");
   });
+  it("keeps fixed recovery timing names and legacy aliases without private labels", () => {
+    const names = ["account", "download", "open", "find", "place", "create"].flatMap(op => [`fn:recover.${op}`, `focus-notes:recover.${op}`]).sort();
+    const timings = summarizeTimings([...names.map(name => ({ name, duration: 123 })), { name: "fn:recover.find.My private folder", duration: 123 }]);
+    expect(timings).toEqual(names.map(name => ({ name, count: 1, p50: 123, p95: 123 })));
+    expect(parseTimings(timings)).toEqual(timings);
+    const report = buildReport(facts({ timings }));
+    for (const name of names) expect(report).toContain(`| ${name} | 1 | 123 | 123 |`);
+    expect(report).not.toContain("My private folder");
+  });
   it("summarizes each part for the preview", () => {
     expect(previewOf(facts())).toEqual({ version: "0.5.0", os: "Windows", electron: "38", git: "2.47.1", helper: "gcm", repositories: 2, ahead: 1, behind: 3, conflicts: 1, journal: 1, compositing: "software", problems: 1 });
   });

@@ -80,7 +80,7 @@ export function registerRecover<St extends S>({ store, bridge, catalog, commands
   const state = () => store.state.recover;
   const set = (patch: Partial<RecoverState>) => store.update((s) => ({ ...s, recover: { ...s.recover, ...patch } }));
   const setEmpty = (patch: Partial<RecoverState["empty"]>) => store.update((s) => ({ ...s, recover: { ...s.recover, empty: { ...s.recover.empty, ...patch } } }));
-  const track = <T,>(op: keyof typeof RECOVER_WAITS, fn: () => Promise<T>) => (tracker ? tracker.run(RECOVER_WAITS[op], `recover.wait.${op}`, fn) : fn());
+  const track = <T,>(op: keyof typeof RECOVER_WAITS, fn: () => Promise<T>) => (tracker ? tracker.run(RECOVER_WAITS[op], `recover.wait.${op}`, fn, undefined, `fn:recover.${op}`) : fn());
 
   // ---- the account, checked in the background with 10 s at most (the shell's limit) ----
   let turn = 0;
@@ -141,8 +141,9 @@ export function registerRecover<St extends S>({ store, bridge, catalog, commands
   reg("recover.empty", async () => {
     if (!rb || state().wait) return;
     if (state().empty.open) return setEmpty({ focus: state().empty.focus + 1 });
-    set({ error: "", different: "" });
-    const p = await rb.emptyPlace().catch(() => undefined);
+    set({ wait: "place", error: "", different: "" });
+    const p = await track("place", () => rb.emptyPlace()).catch(() => undefined);
+    set({ wait: "" });
     if (!p) return set({ error: "recover.error.failed" });
     setEmpty({ open: true, name: p.name, suggested: p.name, place: p.place, short: p.short, error: "", focus: state().empty.focus + 1 });
   });
@@ -220,7 +221,7 @@ export function registerRecover<St extends S>({ store, bridge, catalog, commands
       // The wait under way, in words, with the elapsed time past wait.elapsedDelay (PRF-13).
       const op = r.back ? "found" : r.wait;
       const task = op ? s.tasks.findLast((t) => t.message === `recover.wait.${op}`) : undefined;
-      const said = op === "download" || op === "create" || op === "open" || op === "found";
+      const said = Boolean(op);
       const words = !op ? "" : op === "download" && r.progress.part ? (r.progress.part === "download" && r.progress.percent >= 0 ? catalog.format("recover.wait.downloadPercent", { percent: r.progress.percent }) : catalog.format(`recover.wait.part.${r.progress.part}`)) : catalog.format(`recover.wait.${op}`);
       const hasWait = said && (op === "found" || task?.phase === "on");
       const percent = op === "download" && r.progress.part === "download" ? r.progress.percent : -1;

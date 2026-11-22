@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { recoverOptions, type RecoverAccount, type RecoverStatus } from "../src/recover.ts";
-import { createApp, type PlatformBridge } from "../src/index.ts";
+import { createApp, summarizeTimings, parseTimings, type PlatformBridge, type RecoverResult } from "../src/index.ts";
 import en from "../../views/messages/en.json" with { type: "json" };
 
 const github: RecoverStatus = { missing: "folder", folder: "C:\\Users\\you\\Documents\\prabins-notes", short: "Documents\\prabins-notes", kind: "github", repository: "you/prabins-notes", account: "you", downloadTo: "Documents\\prabins-notes" };
@@ -9,6 +9,74 @@ const legacy: RecoverStatus = { missing: "folder", folder: "C:\\Users\\you\\Docu
 const ok: RecoverAccount = { state: "ok", login: "you", repository: "you/prabins-notes", pushedAt: "2026-10-23T14:41:00Z" };
 
 describe("WP-5.14: the recovery view's ways back (IA-VIEW-RECOVER)", () => {
+  it.each([
+    { op: "find", outcome: "success", command: "recover.find", wait: "find" },
+    { op: "find", outcome: "failure", command: "recover.find", wait: "" },
+    { op: "find", outcome: "cancel", command: "recover.find", wait: "" },
+    { op: "account", outcome: "success", command: "recover.download", wait: "" },
+    { op: "download", outcome: "success", command: "recover.download", wait: "download" },
+    { op: "open", outcome: "success", command: "recover.useFound", wait: "open" },
+    { op: "place", outcome: "success", command: "recover.empty", wait: "" },
+    { op: "create", outcome: "success", command: "recover.create", wait: "create" },
+  ])("retains asynchronous $op $outcome timing without claiming restored writing", async ({ op, outcome, command, wait }) => {
+    performance.clearMeasures();
+    const readNote = vi.fn(async () => "");
+    const writeNote = vi.fn(async () => {});
+    const delay = () => new Promise(resolve => setTimeout(resolve, 120));
+    let releaseFind!: () => void;
+    const findGate = new Promise<void>(resolve => { releaseFind = resolve; });
+    const bridge: PlatformBridge = {
+      platform: "windows", readNote, writeNote,
+      chooseNote: async () => undefined, newNotePath: async () => "/notes/Untitled.md",
+      defaultNotePath: async () => "/notes/Original.md",
+      loadAppState: async () => ({ version: 1, firstRun: "done" }), saveAppState: async () => {},
+      systemScheme: () => "light", onSystemSchemeChange: () => () => {},
+      recover: {
+        status: async () => op === "download" ? github : local,
+        account: async () => { await delay(); return op === "download" ? ok : { state: "signedOut" }; },
+        download: async () => { await delay(); return { ok: true }; },
+        useFound: async () => { await delay(); return { ok: true }; },
+        find: async (): Promise<RecoverResult | undefined> => {
+          await delay();
+          await findGate;
+          if (outcome === "failure") throw new Error("Disposable Locate failure");
+          return outcome === "cancel" ? undefined : { ok: true };
+        },
+        useChosen: async () => ({ ok: false, problem: "failed" }),
+        emptyPlace: async () => { await delay(); return { place: "/notes", short: "/notes", name: "New notes" }; },
+        choosePlace: async () => undefined,
+        createEmpty: async () => { await delay(); return { ok: true }; },
+        onFound: () => () => {}, onProgress: () => () => {},
+      },
+    };
+    const app = createApp(bridge, en);
+    await app.start();
+    if (op === "create") await app.commands.run("recover.empty");
+    const work = app.commands.run(command);
+    if (op === "find") {
+      await new Promise(resolve => setTimeout(resolve, 350));
+      try {
+        expect(app.viewModels.select("vm.recover", app.store.state)).toMatchObject({ hasWait: true, waitText: en["recover.wait.find"] });
+      } finally {
+        releaseFind();
+      }
+    }
+    await work;
+    const name = `fn:recover.${op}`;
+    const measures = performance.getEntriesByType("measure").filter(entry => entry.name === name);
+    expect(measures).toHaveLength(1);
+    expect(measures[0]!.duration).toBeGreaterThanOrEqual(100);
+    const timings = summarizeTimings(measures);
+    expect(timings).toEqual([{ name, count: 1, p50: Math.round(measures[0]!.duration), p95: Math.round(measures[0]!.duration) }]);
+    expect(parseTimings(timings)).toEqual(timings);
+    expect(app.store.state.recover).toMatchObject({
+      open: true, wait,
+      error: outcome === "failure" ? "recover.error.failed" : "",
+    });
+    expect(readNote).not.toHaveBeenCalled();
+    expect(writeNote).not.toHaveBeenCalled();
+    performance.clearMeasures();
+  });
   it.each(["missing", "failed"])("checks recovery before source access when folder verification is %s", async (state) => {
     const error = new Error("Folder verification failed");
     const readNote = vi.fn(async () => "# Must not open");
