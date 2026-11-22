@@ -5,9 +5,11 @@
  */
 import { describe, expect, it, vi } from "vitest";
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, renameSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import fsPromises from "node:fs/promises";
+import { syncBuiltinESMExports } from "node:module";
 import { GitHubError } from "@focus-notes/github";
 import { createRunner } from "../src/main/git/run.ts";
 import { deletionCheck, deletionFolderIdentity, deletionGate, isRepoSlug, keptPrivateFolder, recycleProject, recycleRefusal, repoStatus, RemoteProjectDeletion, sameDeletionFolder } from "../src/main/workspace/delete.ts";
@@ -31,6 +33,25 @@ function bin(root: string) {
   mkdirSync(to, { recursive: true });
   const moved: string[] = [];
   return { moved, trash: async (p: string) => { renameSync(p, join(to, String(moved.length))); moved.push(p); } };
+}
+
+function privateSubmodule() {
+  const { root, folder } = project();
+  const vault = join(root, "vault");
+  mkdirSync(join(vault, "notes"), { recursive: true });
+  writeFileSync(join(vault, "notes", "Secret.md"), "# Private history\n");
+  git(vault, "init", "-qb", "main");
+  git(vault, "add", "-A");
+  git(vault, "commit", "-qm", "Start private history");
+  git(folder, "-c", "protocol.file.allow=always", "submodule", "add", "-q", vault, "private");
+  const priv = join(folder, "private");
+  writeFileSync(join(priv, "notes", "Secret.md"), "# Unpushed private history\n");
+  git(priv, "add", "-A");
+  git(priv, "commit", "-qm", "Keep an unpushed private change");
+  const head = git(priv, "rev-parse", "HEAD").toString();
+  writeFileSync(join(priv, "notes", "Draft.md"), "# Unsaved private draft\n");
+  const metadata = join(folder, ".git", "modules", "private");
+  return { root, folder, priv, metadata, head, pointer: readFileSync(join(priv, ".git")), config: readFileSync(join(metadata, "config")) };
 }
 
 describe("PRJ-23: what deleting would delete", () => {
@@ -361,6 +382,102 @@ describe("DD-PROJ-15: to the Recycle Bin", () => {
     expect(existsSync(folder)).toBe(false);
     expect(existsSync(join(root, "Field notes (private notes)", "notes", "Secret.md"))).toBe(true);
     expect(keptPrivateFolder(folder)).toBe(join(root, "Field notes (private notes 2)"));
+  });
+  it("keeps a retained private submodule's unpushed history independently usable", async () => {
+    const { root, folder, head, config } = privateSubmodule();
+    const b = bin(root);
+    const result = await recycleProject(folder, { keepPrivate: true, trash: b.trash, current: async () => true });
+    expect(result.state).toBe("deleted");
+    const kept = join(root, "Field notes (private notes)");
+    expect(git(kept, "rev-parse", "HEAD").toString()).toBe(head);
+    expect(git(kept, "show", "HEAD:notes/Secret.md").toString()).toBe("# Unpushed private history\n");
+    expect(readFileSync(join(kept, "notes", "Draft.md"), "utf8")).toBe("# Unsaved private draft\n");
+    expect(git(kept, "status", "--porcelain").toString()).toContain("?? notes/Draft.md");
+    expect(realpathSync.native(git(kept, "rev-parse", "--show-toplevel").toString().trim()).toLowerCase()).toBe(realpathSync.native(kept).toLowerCase());
+    expect(git(kept, "config", "--local", "--get", "core.bare").toString().trim()).toBe("false");
+    expect(readFileSync(join(root, "bin", "0", ".git", "modules", "private", "config"))).toEqual(config);
+  });
+  it("rolls back a retained submodule's exact pointer, config, HEAD and draft when recycling fails", async () => {
+    const { folder, priv, metadata, head, pointer, config } = privateSubmodule();
+    expect(await recycleProject(folder, { keepPrivate: true, current: async () => true, trash: async () => { throw new Error("Fixture folder held"); } })).toEqual({ state: "locked" });
+    expect(readFileSync(join(priv, ".git"))).toEqual(pointer);
+    expect(readFileSync(join(metadata, "config"))).toEqual(config);
+    expect(git(priv, "rev-parse", "HEAD").toString()).toBe(head);
+    expect(git(priv, "status", "--porcelain").toString()).toContain("?? notes/Draft.md");
+    expect(readFileSync(join(priv, "notes", "Draft.md"), "utf8")).toBe("# Unsaved private draft\n");
+    expect((await fsPromises.readdir(join(folder, ".git"))).filter(name => name.startsWith("focus-notes-private-retention-"))).toEqual([]);
+  });
+  it("never recycles after intent is invalidated during the deferred private-history copy", async () => {
+    const { folder, priv, metadata, head, pointer, config } = privateSubmodule();
+    let copying = false;
+    let allowed = true;
+    let release!: () => void;
+    const held = new Promise<void>(resolve => { release = resolve; });
+    const original = fsPromises.cp;
+    const copy = vi.spyOn(fsPromises, "cp").mockImplementation(async (...args) => {
+      copying = true;
+      await held;
+      return original(...args);
+    });
+    syncBuiltinESMExports();
+    const trash = vi.fn();
+    const operation = recycleProject(folder, { keepPrivate: true, current: async () => allowed, trash });
+    try {
+      await expect.poll(() => copying).toBe(true);
+      allowed = false;
+      release();
+      expect(await operation).toEqual({ state: "failed", reason: "privateHistory" });
+      expect(trash).not.toHaveBeenCalled();
+      expect(readFileSync(join(priv, ".git"))).toEqual(pointer);
+      expect(readFileSync(join(metadata, "config"))).toEqual(config);
+      expect(git(priv, "rev-parse", "HEAD").toString()).toBe(head);
+      expect(readFileSync(join(priv, "notes", "Draft.md"), "utf8")).toBe("# Unsaved private draft\n");
+      expect((await fsPromises.readdir(join(folder, ".git"))).filter(name => name.startsWith("focus-notes-private-retention-"))).toEqual([]);
+    } finally { release(); await operation; copy.mockRestore(); syncBuiltinESMExports(); }
+  });
+  for (const dependency of ["alternates", "commondir", "registeredWorktree", "configInclude", "worktree", "partialClone", "foreign", "linked"] as const) {
+    it(`refuses retained private history with ${dependency} without moving original bytes`, async () => {
+      const { root, folder, priv, metadata } = privateSubmodule();
+      let sourceMetadata = metadata;
+      if (dependency === "alternates") writeFileSync(join(metadata, "objects", "info", "alternates"), join(root, "foreign-objects"));
+      else if (dependency === "commondir") writeFileSync(join(metadata, "commondir"), join(root, "foreign-common"));
+      else if (dependency === "registeredWorktree") mkdirSync(join(metadata, "worktrees", "other"), { recursive: true });
+      else if (dependency === "partialClone") git(priv, "config", "--file", join(metadata, "config"), "remote.origin.promisor", "true");
+      else if (dependency === "foreign") {
+        sourceMetadata = join(root, "foreign-metadata");
+        renameSync(metadata, sourceMetadata);
+        git(root, "config", "--file", join(sourceMetadata, "config"), "core.worktree", priv);
+        renameSync(join(priv, ".git"), join(root, "original-private-pointer"));
+        writeFileSync(join(priv, ".git"), `gitdir: ${sourceMetadata}\n`);
+      } else if (dependency === "linked") {
+        const link = join(folder, ".git", "modules", "linked");
+        symlinkSync(metadata, link, process.platform === "win32" ? "junction" : "dir");
+        renameSync(join(priv, ".git"), join(root, "original-private-pointer"));
+        writeFileSync(join(priv, ".git"), "gitdir: ../.git/modules/linked\n");
+      }
+      else git(priv, "config", "--file", join(metadata, "config"), dependency === "configInclude" ? "include.path" : "core.worktree", join(root, "foreign"));
+      const pointer = readFileSync(join(priv, ".git"));
+      const config = readFileSync(join(sourceMetadata, "config"));
+      const trash = vi.fn();
+      expect(await recycleProject(folder, { keepPrivate: true, current: async () => true, trash })).toEqual({ state: "failed", reason: "privateHistory" });
+      expect(trash).not.toHaveBeenCalled();
+      expect(readFileSync(join(priv, ".git"))).toEqual(pointer);
+      expect(readFileSync(join(sourceMetadata, "config"))).toEqual(config);
+      expect(readFileSync(join(priv, "notes", "Draft.md"), "utf8")).toBe("# Unsaved private draft\n");
+      expect((await fsPromises.readdir(join(folder, ".git"))).filter(name => name.startsWith("focus-notes-private-retention-"))).toEqual([]);
+    });
+  }
+  it("refuses inherited shared object storage instead of certifying a copy through it", async () => {
+    const { folder, priv, metadata, pointer, config } = privateSubmodule();
+    const trash = vi.fn();
+    vi.stubEnv("GIT_OBJECT_DIRECTORY", join(metadata, "objects"));
+    try {
+      expect(await recycleProject(folder, { keepPrivate: true, current: async () => true, trash })).toEqual({ state: "failed", reason: "privateHistory" });
+      expect(trash).not.toHaveBeenCalled();
+      expect(readFileSync(join(priv, ".git"))).toEqual(pointer);
+      expect(readFileSync(join(metadata, "config"))).toEqual(config);
+      expect(readFileSync(join(priv, "notes", "Draft.md"), "utf8")).toBe("# Unsaved private draft\n");
+    } finally { vi.unstubAllEnvs(); }
   });
   it("a folder that can't go puts the private notes back and names the file held", async () => {
     const { folder } = project();

@@ -426,6 +426,7 @@
     ],
     "exportPath": "Documents\\Garden notes (copy)",
     "lockedFile": "north-beds.md",
+    "localError": "Deleted on GitHub, but the folder couldn't go to the Recycle Bin: north-beds.md is open in another app. Close it, then try again.",
     "retryAt": "16:42",
     "toastDone": "Garden notes is deleted. Its folder is in the Recycle Bin.",
     "toastOffline": "Garden notes is in the Recycle Bin.",
