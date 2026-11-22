@@ -2,13 +2,16 @@
  * The workspace record (FRE-11, D-212): read strictly, written in a fixed shape an older build still
  * opens; the start never re-makes a folder the record names; Documents moved by OneDrive is found.
  */
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import * as fs from "node:fs/promises";
 import { existsSync, mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import {
   backupToRecord, checkFolder, configUrl, driveOf, envSyncRoots, folderNameOk, movedDocuments, nextFree, parseRecord, recordFor, serializeRecord, shortPath, startDecision, syncService,
 } from "../src/main/workspace/record.ts";
+
+vi.mock("node:fs/promises", { spy: true });
 
 const win = process.platform === "win32";
 const abs = (p: string) => resolve(win ? `C:\\${p}` : `/${p}`);
@@ -71,6 +74,14 @@ describe("at start", () => {
     if (!free) return;
     expect(await checkFolder(`${free}:\\Notes\\prabins-notes`)).toBe("drive");
     expect(driveOf(`${free}:\\Notes`)).toBe(`${free}:`);
+  });
+
+  it("does not treat failed folder verification as a missing or empty project", async () => {
+    for (const code of ["EACCES", "EIO"]) {
+      const error = Object.assign(new Error("Folder verification failed"), { code });
+      vi.mocked(fs.stat).mockRejectedValueOnce(error);
+      await expect(checkFolder(abs("notes"))).rejects.toBe(error);
+    }
   });
 });
 

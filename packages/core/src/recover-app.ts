@@ -253,7 +253,7 @@ export function registerRecover<St extends S>({ store, bridge, catalog, commands
     /** Asks the shell whether the folder is missing; if so, the view opens and the account is checked. Resolves to whether it's showing. */
     async begin(): Promise<boolean> {
       if (!rb) return false;
-      const status = await rb.status().catch(() => undefined);
+      const status = await rb.status();
       if (!status) return false;
       set({ ...RECOVER_CLOSED, open: true, status });
       rb.onFound(() => set({ back: true, error: "", different: "" }));

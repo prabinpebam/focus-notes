@@ -29,6 +29,10 @@ It serves [UC-SAFE-08, UC-SAFE-09, UC-SAFE-10, UC-OWN-02 and UC-OWN-03](../produ
 
 **What's built, 7 November:** missing-folder detection and portions of sync status exist; complete choice/recovery and removed-and-recovered-folder journey are still [G5 / WP-5.14](../plan/definition-of-done.md#g5-recover-a-missing-or-moved-notes-folder). A missing or disconnected folder never qualifies as the positively verified empty project of PRJ-24. Local Git with no remote is Saved on this computer, never Backed up (F1 landed); Git presence alone does not mean GitHub backup.
 
+**22 November safety slice, not yet landed:** recovery status now precedes renderer source-format preparation. Missing-folder recovery defers synced settings and custom-theme source reads without writing default preferences. Failed status does not fall through to opening or creating notes; permission and I/O failures in folder verification are errors, not evidence of a missing or empty project. App-owned window/input initialization remains before the check. Existing recovery error routing and G7 cache-cleanup acknowledgement still require combined main-process verification.
+
+The disposable built journey confirms missing-folder startup and Cancel preserve the original bytes and record and create no replacement. An earlier Locate reproduction reached the moved folder but opened **Open**, not the original note: G5.2 and D-397 remain unclosed. Download/fresh-folder history retention, reconciliation, mass-deletion backup pause and the exact-head Windows gate remain open. See [the partial evidence](../plan/gate-evidence.md#missing-folder-recovery-safety-slice-22-november); real recovery remains the owner's G5.6 check.
+
 ### Recovery contract and proof
 
 | Branch | Required result (FRE-11–13, UC-SAFE-08–10) |

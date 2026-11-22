@@ -1822,11 +1822,12 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     async start() {
       windowApp.start();
       textMenuApp.start();
-      // The workspace format is read alongside the app state, before the first note opens (DST-05).
-      const formatRead = workspace.prepare();
+      const missing = await recover.begin();
+      // Recovery owns a missing folder; source reads wait for verified admission.
+      const formatRead = missing ? Promise.resolve() : workspace.prepare();
       const [loaded, synced] = await Promise.all([
         bridge.loadAppState().catch(() => ({ version: 1 as const })),
-        bridge.settings?.load().catch(() => undefined),
+        missing ? undefined : bridge.settings?.load().catch(() => undefined),
       ]);
       deviceState = loaded;
       // Synced settings, when they're on, are read over this device's own (PRV-03).
@@ -1836,7 +1837,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       // to put it back: otherwise nothing about them is read, parsed, or checked at start (PRF-14);
       // the theme manager reads them when it opens.
       const wantsCustom = isCustomId(appState.lightTheme) || isCustomId(appState.darkTheme);
-      const customThemes = wantsCustom ? customThemesOf((await bridge.themes?.list().catch(() => [])) ?? []) : [];
+      const customThemes = wantsCustom && !missing ? customThemesOf((await bridge.themes?.list().catch(() => [])) ?? []) : [];
       if (customThemes.length) store.update((s) => ({ ...s, appearance: { ...s.appearance, customThemes } }));
       store.update((s) => ({ ...s, settingsSync: !synced?.available ? "unavailable" : settingsFile ? "on" : "off" }));
       store.update((s) => ({
@@ -1870,7 +1871,6 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       // The notes folder is missing (FRE-11, D-212): the recovery view, and nothing that reads or
       // writes the folder (no note, Files, backup or setup) until the shell has one again and starts
       // the app over. The first run's steps are still there, for Sign in again and Choose your notes.
-      const missing = await recover.begin();
       // What the last session left is asked for now, and never delays the first note (PRF-02).
       // Files → Recovered shows once the launch has sorted what the last session left (D-221).
       const recovering = missing ? undefined : drafts.start().catch(() => {}).then(() => files.listRecovered());

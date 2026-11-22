@@ -1,5 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { recoverOptions, type RecoverAccount, type RecoverStatus } from "../src/recover.ts";
+import { createApp, type PlatformBridge } from "../src/index.ts";
+import en from "../../views/messages/en.json" with { type: "json" };
 
 const github: RecoverStatus = { missing: "folder", folder: "C:\\Users\\you\\Documents\\prabins-notes", short: "Documents\\prabins-notes", kind: "github", repository: "you/prabins-notes", account: "you", downloadTo: "Documents\\prabins-notes" };
 const local: RecoverStatus = { missing: "folder", folder: "C:\\Users\\you\\Documents\\Focus Notes", short: "Documents\\Focus Notes", kind: "local", downloadTo: "Documents\\Focus Notes" };
@@ -7,6 +9,51 @@ const legacy: RecoverStatus = { missing: "folder", folder: "C:\\Users\\you\\Docu
 const ok: RecoverAccount = { state: "ok", login: "you", repository: "you/prabins-notes", pushedAt: "2026-10-23T14:41:00Z" };
 
 describe("WP-5.14: the recovery view's ways back (IA-VIEW-RECOVER)", () => {
+  it.each(["missing", "failed"])("checks recovery before source access when folder verification is %s", async (state) => {
+    const error = new Error("Folder verification failed");
+    const readNote = vi.fn(async () => "# Must not open");
+    const writeNote = vi.fn(async () => {});
+    const saveAppState = vi.fn(async () => {});
+    const info = vi.fn(async () => ({ folder: "/notes", format: '{"formatVersion":1}' }));
+    const settings = vi.fn(async () => ({ available: false }));
+    const themes = vi.fn(async () => []);
+    const bridge: PlatformBridge = {
+      platform: "windows", readNote, writeNote,
+      chooseNote: async () => undefined, newNotePath: async () => "/notes/Untitled.md",
+      defaultNotePath: async () => "/notes/Original.md",
+      loadAppState: async () => ({ version: 1, firstRun: "done", lightTheme: "custom-local" }), saveAppState,
+      systemScheme: () => "light", onSystemSchemeChange: () => () => {},
+      workspace: {
+        info, scan: async () => ({ folder: "/notes", roots: [], entries: [] }),
+        writeFormat: async () => {}, renameNote: async () => {},
+        onChange: () => () => {},
+      },
+      settings: { load: settings, save: async () => {}, remove: async () => {} },
+      themes: { list: themes },
+      recover: {
+        status: async () => { if (state === "failed") throw error; return local; },
+        account: async () => ({ state: "signedOut" }),
+        download: async () => ({ ok: false, problem: "failed" }),
+        useFound: async () => ({ ok: false, problem: "failed" }),
+        find: async () => undefined, useChosen: async () => ({ ok: false, problem: "failed" }),
+        emptyPlace: async () => ({ place: "/notes", short: "/notes", name: "New notes" }),
+        choosePlace: async () => undefined, createEmpty: async () => ({ ok: false, problem: "failed" }),
+        onFound: () => () => {}, onProgress: () => () => {},
+      },
+    };
+    const app = createApp(bridge, en);
+    if (state === "failed") await expect(app.start()).rejects.toBe(error);
+    else {
+      await app.start();
+      expect(app.store.state.recover.open).toBe(true);
+    }
+    expect(info).not.toHaveBeenCalled();
+    expect(settings).not.toHaveBeenCalled();
+    expect(themes).not.toHaveBeenCalled();
+    expect(readNote).not.toHaveBeenCalled();
+    expect(writeNote).not.toHaveBeenCalled();
+    expect(saveAppState).not.toHaveBeenCalled();
+  });
   it("offers Download first for notes on GitHub, with Choose other notes… under it", () => {
     expect(recoverOptions(github, ok)).toEqual({ found: false, download: "ready", choose: false, signIn: false, link: "other", primary: "download", repository: "you/prabins-notes" });
   });

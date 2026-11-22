@@ -75,7 +75,11 @@ export function configUrl(config: string, section: string): string | undefined {
 /** What's at the folder: a folder, nothing (`missing`), or nothing because its drive isn't connected (`drive`). A file in its place counts as missing. */
 export type FolderCheck = "ok" | "missing" | "drive";
 export async function checkFolder(folder: string): Promise<FolderCheck> {
-  const st = await stat(folder).catch(() => undefined);
+  const st = await stat(folder).catch((error: unknown) => {
+    const code = (error as NodeJS.ErrnoException).code;
+    if (code === "ENOENT" || code === "ENOTDIR") return undefined;
+    throw error;
+  });
   if (st?.isDirectory()) return "ok";
   const root = parse(folder).root;
   return root && !existsSync(root) ? "drive" : "missing";
