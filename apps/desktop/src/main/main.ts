@@ -586,7 +586,7 @@ async function deleteLocalProject(keepPrivate: boolean, current: () => Promise<b
   const old = gitSync;
   armGit();
   await old?.dispose();
-  const r = await current() ? await recycleProject(folder, { keepPrivate, trash: (p) => shell.trashItem(p) }) : { state: "refused" as const };
+  const r = await current() ? await recycleProject(folder, { keepPrivate, trash: (p) => shell.trashItem(p), current }) : { state: "refused" as const };
   if (r.state !== "deleted") {
     watcher = watchWorkspace(() => windows);
     startGit();

@@ -166,6 +166,9 @@ describe("PRJ-23: deleting a linked project", () => {
       const remote = await confirmed([{ state: "refused", reason: "permission" }]);
       expect(remote.vm().remoteTitle).toBe("GitHub refused deletion");
       expect(remote.vm().remoteKept).toContain("Ask a repository admin");
+      const preservation = await confirmed([{ state: "refused", reason: "preservation" }]);
+      expect(preservation.vm().remoteTitle).toBe("Deletion stopped");
+      expect(preservation.vm().remoteKept).toBe("Your local project is kept. Save a fresh copy before deleting.");
     });
     it("closing during authorization cancels it, clears the entered token, and ignores a late remote success", async () => {
       const t = await confirmed([{ state: "stepup" }]);
@@ -262,6 +265,9 @@ describe("PRJ-23: deleting a linked project", () => {
     const t = await started({ check: { ...LINKED, unsynced: ["Trips/Iceland.md", "Ideas.md"] } });
     await t.run("project.deleteContinue");
     expect(t.vm()).toMatchObject({ step: "unsynced", unsyncedCount: 2, unsynced: [{ label: "Iceland", description: "Trips" }, { label: "Ideas", description: "" }] });
+    await t.run("project.deleteContinue");
+    expect(t.vm().step).toBe("unsynced");
+    expect(t.toast()).toBe("Save a copy before continuing.");
     await t.run("project.deleteExport");
     expect(t.vm()).toMatchObject({ exported: true, exportPath: "/home/ada/Documents/Field notes (not on GitHub)" });
     await t.run("project.deleteContinue");
@@ -334,6 +340,35 @@ describe("PRJ-23: what stops a deletion, and its recovery (DD-PROJ-17)", () => {
     const t = await started({ check: { ...LINKED, problem: "notProject" } });
     expect(t.vm().open).toBe(false);
     expect(t.toast()).toBeTruthy();
+  });
+  it("names unsafe private history without claiming a file lock, and Retry does not replay remote deletion", async () => {
+    const t = await started({ remote: [{ state: "deleted" }], result: [{ state: "failed", reason: "privateHistory" }, { state: "deleted" }] });
+    await t.run("project.deleteContinue");
+    await t.run("project.deleteType", { value: "Field notes" });
+    await t.run("project.deleteConfirm");
+    expect(t.vm()).toMatchObject({ open: true, step: "progress", problem: "partialLocal", busy: false });
+    expect(t.vm().localError).toContain("private Git history could not be kept safely");
+    expect(t.vm().localError).not.toContain("open in another app");
+    await t.run("project.deleteRetry");
+    expect(t.vm()).toMatchObject({ step: "inApp", remoteState: "deleted" });
+    expect(t.calls.filter(call => call.startsWith("DELETE:"))).toEqual(["DELETE:ada/field-notes"]);
+  });
+  it("a late private-history failure cannot overwrite a reopened dialog's later choice", async () => {
+    const t = await started({ remote: [{ state: "deleted" }] });
+    let copying = false;
+    let release!: () => void;
+    const held = new Promise<void>(resolve => { release = resolve; });
+    t.bridge.workspace!.deleteLocal = async () => { copying = true; await held; return { state: "failed", reason: "privateHistory" }; };
+    await t.run("project.deleteContinue");
+    await t.run("project.deleteType", { value: "Field notes" });
+    const confirmation = t.run("project.deleteConfirm");
+    await expect.poll(() => copying).toBe(true);
+    await t.run("project.deleteSetOpen", { open: false });
+    await t.run("project.delete");
+    await t.run("project.deleteType", { value: "Later choice" });
+    release();
+    await confirmation;
+    expect(t.vm()).toMatchObject({ open: true, step: "consequences", typed: "Later choice", problem: "", busy: false });
   });
 });
 
