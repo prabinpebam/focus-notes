@@ -11,7 +11,7 @@ The stages in which Focus Notes gets built. Every stage ends with an app someone
 
 **P0, 8 November (D-397):** all-entry empty Untitled/caret landing and approved Open centring are the sole next runtime candidate, above parked Find and sharing. PRJ-24 remains MP / WP-P.4; [P0 acceptance rows](definition-of-done.md#dod-backlog) and [same-candidate evidence](gate-evidence.md#p0-project-entry-8-november) require real native entry journeys and measured supported-size/theme bounds. Local proof is not landing: one frozen candidate needs coordinator approval and its exact-final seven-green Windows gate.
 
-**Owner backlog, 7 November evening:** [observable rows and Try it](definition-of-done.md#dod-backlog) retain existing stage ownership: Account mark (FRE-07, M3 / WP-3.6), notice removal (PRJ-11, MP / WP-P.17), Find row/exclusivity (FND-01, M1 / WP-1.10), familiar all-notes candidate (FND-04, M4 / WP-4.3), all GitHub references as links (PRJ-21, MP / WP-P.21), and in-app deletion F4.2 (PRJ-23, MP / WP-P.23). D-394 supersedes the earlier handoff-only deletion direction; its new states and D-395's all-notes layout await owner approval before wiring/tests. The historical handoff is built, not the new in-app flow. [G1 evidence](gate-evidence.md#g1-production-creation-7-november) records the landed 7/7 gate; G1.8 remains repository verified by API, owner view pending.
+**Owner backlog, 7 November evening; scope settled 22 November:** [observable rows and Try it](definition-of-done.md#dod-backlog) retain existing stage ownership: Account mark (FRE-07, M3 / WP-3.6), notice removal (PRJ-11, MP / WP-P.17), Find row/exclusivity (FND-01, M1 / WP-1.10), familiar all-notes candidate (FND-04, M4 / WP-4.3), all GitHub references as links (PRJ-21, MP / WP-P.21), and in-app deletion F4.2 (PRJ-23, MP / WP-P.23). [D-398](decisions.md#d-398-1-1-0-autopilot-execution-scope-publishing-defaults-and-on-disk-stability) authorizes production wiring and tests for D-394's in-app states, D-395's familiar all-notes layout and G2's editable neutral site name, each behind its exact-head 7/7 Windows gate. The historical deletion handoff is built, not certification of the new in-app flow. [G1 evidence](gate-evidence.md#g1-production-creation-7-november) records the landed 7/7 gate; G1.8 remains owner-only.
 
 | Stage | In short | Used by | Delivered as | Requirements |
 | --- | --- | --- | --- | --- |
@@ -66,11 +66,12 @@ Sharing follow-ons come after WP-P.9: **WP-P.10**, **WP-P.18**, **WP-P.11**, the
 
 | Decision or acceptance | What remains |
 | --- | --- |
-| Publishing P1 to P4 | [Readiness questions](../experience/published-site.md#readiness-assessment-5-november): publish on today's project rather than wait for a separate site repository; `/n/` note paths; stripped location/camera metadata; first live publish on the real site or a throwaway repository. Until answered, Publish… saves only a local preview draft. |
+| Publishing P1 to P4: settled | [D-398](decisions.md#d-398-1-1-0-autopilot-execution-scope-publishing-defaults-and-on-disk-stability): paired public site repository/Pages, `/n/` paths, metadata-stripped public images and opaque sealed image IDs. Agents use loopback fakes only; production wiring and exact-head gates remain implementation work, not owner decisions. |
 | First real Delete project | The owner's manual run, including progress, status-check and resume screens (D-343). Agents never delete a real repository; MP.34 real-account acceptance is open. |
-| On-disk Project rename | UI terminology is delivered; folders, the workspace-format filename and template files are a separate decision, part c of “Project replaces workspace”. No disk move is implied. |
-| Faster reopen | `fix-reopen-residual` is paused after red CI on 5 November (shards 2 and 3); resume or drop. |
-| Your own actions | WP-A.7 / MACT.9 is deferred by D-364 until a week using the starter set. |
+| First real creation, sharing, publishing and recovery | G1.8, G2.8, G2.9, G3.7, G3.8, G5.6 and G6.5 remain owner-only checks under D-398. Fake-backed evidence never claims these outcomes. |
+| On-disk Project rename: settled | Retain `.focus-notes/workspace.json` internally for 1.1.0; UI uses Project. No disk migration (D-398). |
+| Faster reopen: dropped | The paused `fix-reopen-residual` branch is excluded from this execution scope (D-398). |
+| Your own actions: deferred | WP-A.7 / MACT.9 stays deferred by D-364 and D-398, not a release-readiness implementation item. |
 | MAI acceptance | Full gate and owner acceptance remain open; real providers beyond connected ones require approval (WP-AI.7, WP-AI.8). |
 
 ### Gap closure: what's next

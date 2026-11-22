@@ -1,7 +1,28 @@
 # Decisions
 
 > [!NOTE]
-> **TL;DR.** Owner corrections D-393–D-395 below govern GitHub references, in-app deletion and Find. Earlier decisions remain historical where explicitly superseded.
+> **TL;DR.** D-398 settles the 1.1.0 Autopilot scope and publishing defaults, authorizing production wiring of the prepared candidates. Owner corrections D-393–D-395 still govern GitHub references, in-app deletion and Find. Earlier decisions remain historical where explicitly superseded.
+
+## D-398: 1.1.0 Autopilot execution scope, publishing defaults and on-disk stability
+
+**Decided (owner, 22 November 2026; ID assigned by coordinator).** "Create a detailed plan and implement all the items identified until it's release-ready. Execute against DoD and that should make it release-ready."
+
+The prepared review-queue candidates now proceed to production wiring, automated outcome tests and an exact-head seven-of-seven Windows CI gate: D-395's familiar Find in all notes, D-394's six-state in-app Delete project and G2's editable neutral public-site name confirmation. This supersedes their earlier approval holds, not their behavior, data-safety rules or observable Definitions of Done. Passing a fake-backed gate is not a first-real-account check or permission to release.
+
+| Publishing choice | Settled default and owning work |
+| --- | --- |
+| P1: destination | Publish directly to the paired public site repository and GitHub Pages (WP-P.22). Never publish private project sources in place of that pairing. |
+| P2: note paths | Use `/n/` for published notes, keeping the site root clean. |
+| P3: images | Strip EXIF, GPS and camera metadata from published images (WP-9.9); seal images under opaque asset IDs for code-shared notes (WP-9.6). |
+| P4: account boundary | All agent tests run entirely against loopback protocol fakes. Agents never create, modify, invite, publish or delete on real GitHub accounts or Pages. |
+
+First-real rows **G1.8, G2.8, G2.9, G3.7, G3.8, G5.6, G6.5 and F4.2.5** remain explicit owner-only checks. They are not silently certified by automation and do not block safe fake-backed implementation.
+
+**Architecture and scope:** `.focus-notes/workspace.json` remains the internal on-disk format filename for 1.1.0; the UI uses Project everywhere, with no risky disk migration. Drop the paused `fix-reopen-residual` branch from execution scope. Custom user-authored Actions (WP-A.7 / MACT.9) remain deferred per D-364.
+
+**Baseline hygiene, 22 November:** the approved-feed worktree install and tokens build succeeded. `pnpm run check:licenses` passes in both this worktree and the root checkout; both installed Koffi 3.2.1 packages contain a readable `LICENSE.txt`. The previously reported missing-text failure is not reproducible at this head, so no notice regeneration, license-policy relaxation or speculative resolver change is warranted. Preserved commits `d66fe47c`, `d88a4db0` and `62691794` are readable, as are the three archived gallery entry files in `focus-notes-work/review/`. Ports 8795, 8796, 5207 and 8797 have no listening approval servers at inspection; no process was stopped and the Docs server on 8787 was untouched.
+
+**Affects:** [Roadmap](roadmap.md#waiting-on-the-owner), [Find and replace](../experience/find-and-replace.md), [Project model](../experience/project-model.md#deleting-a-project), [new-project sharing](../experience/files-and-sharing.md#turning-on-sharing-for-a-new-project), [publishing](../experience/published-site.md#production-publishing-contract), [DoD backlog](definition-of-done.md#dod-backlog) and [gap closure](definition-of-done.md#gap-closure-7-november-p0-and-p1).
 
 ## D-397: every project entry opens a note, never Open first
 
