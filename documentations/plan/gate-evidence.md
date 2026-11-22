@@ -33,6 +33,31 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 
 The pending cleanup table stores only hashed profile identities and fixed inventory scopes. Raw filesystem errors (including injected token/title text) are not persisted or placed in the cleanup error. Tests use disposable profiles, loopback GitHub and local bare remotes only; no real account, owner notes or Preview profile was touched.
 
+### PRF-12 Pages-compression fixture repair, 22 November
+
+The surgical fixture repair from `4a5be135` is integrated with G7. Both obsolete
+web `test.fixme` guards and their active-quarantine rows were removed; no Find
+or UI code was imported. Loopback fixtures now negotiate gzip for text, matching
+Pages transport, and the tests assert encoded CSS bytes are smaller than decoded
+bytes. This corrects the lab fixture, not a production speed improvement.
+
+`pnpm --filter @focus-notes/web run build` and
+`pnpm --filter @focus-notes/web exec playwright test public-pages.spec.ts site.spec.ts --workers=1`
+passed on the combined candidate: 13 tests, no skipped PRF-12 assertions.
+Public-page LCP was 844 ms and landing-page LCP 828 ms; reported INP and CLS
+were 0. The original 150 ms latency, 1.6 Mbps download, CPU x4 and 2,500 ms
+LCP budget are unchanged. D-186 remains the only renewed scope below, with
+its real root fix and zero active quarantines mandatory before release.
+
+Combined-head integration also passed `pnpm check`, `pnpm typecheck`,
+`pnpm exec vitest run apps/desktop/test/project-metadata.test.ts apps/desktop/test/account-settings.test.ts packages/core/test/settings-app.test.ts packages/core/test/search-feed.test.ts packages/core/test/diagnostics.test.ts`
+(60 tests), and invisible
+`pnpm --filter @focus-notes/desktop exec playwright test e2e/m3-settings.spec.ts --workers=1 -g G7`
+(3 tests, including real locked-file Retry and restart). Each owned Electron
+PID was checked and closed through the scoped cleanup helper.
+`node .\slate\scripts\runtime-host.mjs check --repo . --host documentations`
+passed. Exact-head CI and serialized landing remain pending.
+
 ### Standalone text files, 8 November
 
 **Landed and packaged writing verified.** G4 / PRJ-09 / UC-PROJ-08 extends the existing standalone Markdown path rather than importing text or making a project. All five invisible built-app journeys pass together. Runtime `a30004e91cb24b2353780bf0bd2ef0c2bf165f3d` passed all seven Windows jobs in [42461267072](https://github.com/prabinpebam/focus-notes/actions/runs/42461267072) and landed by non-force fast-forward under the coordinator's landing lock. The scheduled Preview reached `a30004e`; its byte-identical scratch copy passed normal-Shell literal writing and restart checks. Installed Windows association registration was not changed or independently verified on the owner's computer.
@@ -926,23 +951,22 @@ The existing four quarantines below retain their exact scope.
 
 #### Scoped CI quarantines, expires 10 November 2026
 
-Authorized by the implementation coordinator, not considered fixed. Only these
-four exact test titles use Playwright's `test.fixme` during the quarantine.
+Originally authorized by the implementation coordinator, not considered fixed.
+Four exact test titles used Playwright's `test.fixme` during that quarantine.
 The date guard automatically restores the unchanged assertions after
 10 November (UTC); no budget, selector or other test is relaxed. On 22 November,
-Coordinator 2 authorized renewing only the two PRF-12 rows and the D-186 row
-below to `2026-11-24T00:00:00Z` for integration, with their original assertions
-and thresholds unchanged. Track 3A owns the PRF-12 root fixes and Track 4A
-owns the D-186 root fix. Release requires those root fixes and zero active
-quarantines; this renewal is not release acceptance. The PRF-14 row is
-historical and its expired guard is unchanged.
+Coordinator 2 authorized renewing only the D-186 row below to
+`2026-11-24T00:00:00Z` for integration, with its original assertions
+unchanged. Track 4A owns its mandatory root fix before release; release
+requires zero active quarantines. This renewal is not release acceptance.
+The two PRF-12 guards were removed after integrating the Pages-compression
+fixture repair from `4a5be135`; its slow-4G settings and budgets stay unchanged.
+The PRF-14 row is historical and its expired guard is unchanged.
 
 | Exact scope | Failure and run | Owner | Expiry | Status |
 | --- | --- | --- | --- | --- |
 | `apps/desktop/e2e/m5-snappy.spec.ts`: "PRF-14: every control answers in the next frame: input to next paint for the toolbar, Files, Spotlight and Settings, p95 at most 50 ms" | p95 56 ms, budget 50 ms; [41654808341](https://github.com/prabinpebam/focus-notes/actions/runs/41654808341), also [41656910779](https://github.com/prabinpebam/focus-notes/actions/runs/41656910779) | Implementation coordinator | 10 November 2026 | Quarantined; actual performance fix queued |
 | `apps/desktop/e2e/doc-minimap.spec.ts`: "D-186: the pin keeps the card open in a column of its own, the text moved clear of it, live, through leaving, Esc, a jump and the next launch; without room the rail returns; unpinning gives the room back" | Minimap row inactive when focused expected; inherited failures in 44038933839 / 45014686049 | 1.1.0 Phase 3/4/5 Coordinator; Track 4A root-fix owner | `2026-11-24T00:00:00Z` | Integration-only renewal; unchanged assertions; root fix mandatory before release; zero active quarantines required |
-| `apps/web/e2e/public-pages.spec.ts`: "PRF-12: LCP, INP, and CLS on a throttled profile, and only the first screen's fonts preloaded" | LCP/INP/CLS lab gate; inherited failure in [45014686049](https://github.com/prabinpebam/focus-notes/actions/runs/45014686049) | 1.1.0 Phase 3/4/5 Coordinator; Track 3A root-fix owner | `2026-11-24T00:00:00Z` | Integration-only renewal; unchanged assertions/budgets; root fix mandatory before release; zero active quarantines required |
-| `apps/web/e2e/site.spec.ts`: "PRF-12: the landing page's LCP, INP and CLS on a throttled profile" | LCP/INP/CLS lab gate; inherited failure in 45014686049 | 1.1.0 Phase 3/4/5 Coordinator; Track 3A root-fix owner | `2026-11-24T00:00:00Z` | Integration-only renewal; unchanged assertions/budgets; root fix mandatory before release; zero active quarantines required |
 ### WP-P.9 item-dialog candidate
 
 **Production-ready work in progress, not a merge candidate (3 November).** Owner-approved design D-335/D-336; first increment covers SHR-13 and parts of SHR-14/15/24 with real JSON and view models, not mocks. No access-file write, clipboard write, network publication or note write occurs in this increment.
