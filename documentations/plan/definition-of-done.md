@@ -118,6 +118,8 @@ What "done" means at every level: a work package, a stage, a release, and the wh
 
 **Actually landed G7 integration:** the clean checkpoint was locally integrated onto exact landed `454513f3…`; combined build/types/80 units/static checks and two retained actual outcomes pass. The authentic new-project-pill/old-mounted-writer regression still fails after full authorization settlement, and stops before typing. [Combined evidence](gate-evidence.md#serial-g7-integration-and-remaining-writer-blocker-22-november) preserves the failure. This is not combined acceptance, CI, landing or full-release certification.
 
+**D-402 local writer repair:** the original failure above remains historical. Current-project restoration plus the owner-authorized missing-marker-only read-only current-record authority now passes the exact rebuilt project-switch case: the new Untitled is mounted before typing, saves only in the new project, and old note/uncommitted draft bytes and HEAD stay unchanged after full authorization settlement with zero granted DELETE. Retained Retry and foreign preflight pass in the same three-case run. [Causal proof](gate-evidence.md#current-project-startup-causal-proof-22-november) separates core fail-before, core-only Open failure, the reverted unbuilt proposal and approved native repair. Native-owner/full Delete, CI, landing and the complete release programme remain open.
+
 **Try it:** review the actual renderer captures and their compiled/persistence receipts. After the candidate lands, the owner alone deletes one disposable GitHub project from Preview; authorization is one-time in the app, local cleanup waits for confirmation, and Open returns with honest success.
 
 ## Gap closure, 7 November (P0 and P1)

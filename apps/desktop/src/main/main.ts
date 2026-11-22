@@ -27,7 +27,7 @@ import { copyNoteMedia, ownSidecar, removeCopies } from "./note-media.ts";
 import { opErrorCode } from "@focus-notes/core";
 import { watchKeybindings } from "./keybindings-watch.ts";
 import { stateFromWindow } from "./windows.ts";
-import { firstProjectNote, prepareProjectNoteRoots } from "./first-project-note.ts";
+import { firstProjectFolder, firstProjectNote, prepareProjectNoteRoots } from "./first-project-note.ts";
 import { textFiles, decodeText } from "./text-files.ts";
 import { spawn } from "node:child_process";
 import { candidateGitHubApi, fileLaunchProfile, projectGitHubClient, projectWindows, resumeProjectProfile, writingFile } from "./projects.ts";
@@ -844,13 +844,8 @@ const createFirstProjectNote = firstProjectNote({
   },
   roots: async () => {
     if (process.env.FOCUS_NOTES_LOCAL_NOTES === "1") return undefined;
-    let project: string;
-    try { project = await readFile(dataFile(DATA_FILES.projectFolder), "utf8"); }
-    catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") return undefined;
-      throw error;
-    }
-    if (!samePath(await realpath(project.trim()), await realpath(notesHome()))) throw new Error("The project root changed");
+    const project = await firstProjectFolder(dataFile(DATA_FILES.projectFolder), workspaceFile(), record !== undefined, notesHome);
+    if (!project) return undefined;
     return roots().map(root => root.path);
   },
   writable: async path => {
