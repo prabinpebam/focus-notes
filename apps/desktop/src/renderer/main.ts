@@ -111,8 +111,14 @@ const followTheme = (app: App) => app.store.subscribe(() => {
 // The search index (WP-4.1) builds in its worker once the first note is open, never before; Spotlight
 // (WP-4.2) and Find in all notes (WP-4.3) ask it. Each time every note is indexed, a performance mark
 // says so: the large-workspace bench waits for it, so it measures a workspace that is open, not one still loading.
-function attachSearch(r: Running): void {
-  const search = startSearch(r.app, createSearchWorker(searchWorkerUrl));
+let searchEpoch = 0;
+base.onPrivacyCleared?.(() => { searchEpoch++; });
+async function attachSearch(r: Running): Promise<void> {
+  const epoch = searchEpoch;
+  if (await base.canCache?.() === false) return;
+  const excludedRoots = await base.removedRoots?.() ?? [];
+  if (running !== r || await base.canCache?.() === false || epoch !== searchEpoch) return;
+  const search = startSearch(r.app, createSearchWorker(searchWorkerUrl), { excludedRoots });
   r.search = search;
   r.app.useSearch(search);
   let indexed = false;
@@ -132,6 +138,7 @@ let running: Running;
   const react = mountApp(root, { app, views, overlays: OVERLAYS, signal: abort.signal });
   const r: Running = { app, root: react, abort, revoke: scoped.revoke, offTheme: followTheme(app) };
   running = r;
+  base.onPrivacyResumed?.(() => { void attachSearch(r); });
   // A missing notes folder (FRE-11): the first frame is the recovery view, never a canvas that can't open a note.
   const missing = new URLSearchParams(location.search).get("folder") === "missing";
   const started = app.start();

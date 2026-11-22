@@ -32,7 +32,7 @@ export const DATA_FILES = {
   projectLastNote: "last-project-note.dat",
   projectRecent: "project-recent.dat",
   lastProject: "last-project.json",
-  /** Shared lifecycle generations only: hashed profile identities, never note paths. */
+  /** Shared lifecycle generations and pending cleanup: hashed profile identities and fixed scopes, never note paths. */
   projectMetadata: "project-metadata.sqlite",
   projectMetadataWal: "project-metadata.sqlite-wal",
   projectMetadataShm: "project-metadata.sqlite-shm",
@@ -42,7 +42,7 @@ export const DATA_FILES = {
   firstRun: "first-run.json",
   /** Set up my instance: names, the login, the site, and each step's state. */
   setup: "setup.json",
-  /** Only that Focus Notes was signed out while Git kept its sign-in. No login or token. */
+  /** Only that this project profile is signed out, with or without Git's sign-in. No login or token. */
   account: "account.json",
   /** The window's size, position, and maximized or snapped state (DSK-03, D-104). */
   window: "window.json",

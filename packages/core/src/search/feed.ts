@@ -13,6 +13,7 @@ import type { Store } from "../store.ts";
 import type { AppState } from "../app.ts";
 import type { PlatformBridge } from "../bridge.ts";
 import { sourceOf } from "../notes.ts";
+import { atOrUnder } from "../journal.ts";
 import { buildTree, walk, type RootId, type TreeNode, type WorkspaceRoot, type WorkspaceTree } from "../workspace.ts";
 import type { FindQuery, FindResults, IndexOp, IndexStatus, SearchIndexClient, SearchItem, SearchQuery, SearchResults } from "./types.ts";
 
@@ -38,6 +39,7 @@ export interface SearchService {
 }
 
 export interface SearchFeedOptions {
+  excludedRoots?: readonly string[];
   /** Notes read at once where the shell reads one per call (4). */
   concurrency?: number;
   /** Notes per call where it reads several (`readNotes`, 32), one call at a time. */
@@ -116,8 +118,9 @@ export function startSearch(host: SearchHost, index: SearchIndexClient, options:
   const perCall = bridge.readNotes ? Math.max(1, options.batch ?? READ_BATCH) : 1;
   const calls = bridge.readNotes ? 1 : concurrency;
   const unlocked = () => store.state.instance.vault === "unlocked";
+  let excludedRoots = options.excludedRoots ?? [];
   /** The browser's private notes only while the vault is open (D-90). The desktop's are files of its own. */
-  const allowed = (path: string) => sourceOf(path) !== "private" || unlocked();
+  const allowed = (path: string) => !excludedRoots.some(root => atOrUnder(path, root)) && (sourceOf(path) !== "private" || unlocked());
 
   let known = new Map<string, Entry>();
   let tree = store.state.workspace.tree;
@@ -177,7 +180,7 @@ export function startSearch(host: SearchHost, index: SearchIndexClient, options:
       void read(paths).then((texts) => {
         active--;
         paths.forEach((path, i) => {
-          const current = known.has(path) && (sourceOf(path) !== "private" || (gen === lockGen && unlocked()));
+          const current = known.has(path) && allowed(path) && (sourceOf(path) !== "private" || (gen === lockGen && unlocked()));
           if (!stopped && current) push({ op: "text", path, markdown: texts[i] ?? null });
         });
         pump();
@@ -198,6 +201,14 @@ export function startSearch(host: SearchHost, index: SearchIndexClient, options:
     send(ops);
     enqueue(read);
   }
+  const unfilter = bridge.onPrivacyFiltered?.(roots => {
+    lockGen++;
+    excludedRoots = roots;
+    out = out.filter(op => !("path" in op) || allowed(op.path));
+    for (const path of queue) if (!allowed(path)) queue.delete(path);
+    for (const root of roots) send([{ op: "removeWithin", path: root }]);
+    sync();
+  });
   async function listVault(): Promise<void> {
     const gen = lockGen;
     const scan = await bridge.workspace?.scan().catch(() => undefined);
@@ -266,6 +277,7 @@ export function startSearch(host: SearchHost, index: SearchIndexClient, options:
       stopped = true;
       unsubscribe();
       unwatch?.();
+      unfilter?.();
       queue.clear();
       index.dispose();
     },

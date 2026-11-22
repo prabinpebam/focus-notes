@@ -6,6 +6,7 @@ import { DATA_FILES } from "@focus-notes/core/inventory";
 import type { FirstNoteAdmission } from "./first-project-note.ts";
 
 export type MetadataTicket = { generation: string; enabled: boolean };
+export type CleanupEvent = "signOut" | "removeWorkspace" | "deleteProject";
 
 export function projectMetadataStore(root: string) {
   const db = new DatabaseSync(join(root, DATA_FILES.projectMetadata), { timeout: 0 });
@@ -27,6 +28,11 @@ export function projectMetadataStore(root: string) {
     db.exec("CREATE TABLE IF NOT EXISTS profiles (profile TEXT PRIMARY KEY, generation TEXT NOT NULL, enabled INTEGER NOT NULL)");
     db.exec("CREATE TABLE IF NOT EXISTS first_notes (project TEXT PRIMARY KEY, roots TEXT NOT NULL, file TEXT NOT NULL)");
     db.exec("CREATE TABLE IF NOT EXISTS first_note_slots (project TEXT PRIMARY KEY, slot INTEGER NOT NULL)");
+    db.exec("CREATE TABLE IF NOT EXISTS cleanup_pending (profile TEXT NOT NULL, scope TEXT NOT NULL, PRIMARY KEY (profile, scope))");
+    db.exec("CREATE TABLE IF NOT EXISTS cleanup_jobs (profile TEXT PRIMARY KEY, event TEXT NOT NULL)");
+    db.exec("CREATE TABLE IF NOT EXISTS live_profiles (session TEXT PRIMARY KEY, pid INTEGER NOT NULL, profile TEXT NOT NULL, generation TEXT NOT NULL)");
+    db.exec("CREATE TABLE IF NOT EXISTS removed_profiles (profile TEXT PRIMARY KEY)");
+    db.exec("CREATE TABLE IF NOT EXISTS live_filters (session TEXT PRIMARY KEY, fingerprint TEXT NOT NULL)");
   });
   // The promise is also awaited by every operation; this prevents an unhandled startup rejection.
   void ready.catch(error => { console.error("Could not initialize project metadata lifecycle:", error instanceof Error ? error.name : "Error"); });
@@ -66,8 +72,108 @@ export function projectMetadataStore(root: string) {
   function change(profile: string, enabled: boolean): Promise<MetadataTicket> {
     return transaction(async () => {
       db.prepare("UPDATE profiles SET generation = ?, enabled = ? WHERE profile = ?").run(randomUUID(), enabled ? 1 : 0, key(profile));
+      if (enabled) db.prepare("DELETE FROM removed_profiles WHERE profile = ?").run(key(profile));
       return read(profile);
     });
+  }
+  function markRemoved(profile: string): void {
+    db.prepare("INSERT OR IGNORE INTO removed_profiles (profile) VALUES (?)").run(key(profile));
+  }
+  async function isRemoved(profile: string): Promise<boolean> {
+    await ready;
+    return Boolean(db.prepare("SELECT profile FROM removed_profiles WHERE profile = ?").get(key(profile)));
+  }
+  function invalidate(profiles: readonly string[], prepare?: () => void): Promise<void> {
+    return transaction(async () => {
+      for (const profile of profiles) {
+        db.prepare("INSERT INTO profiles (profile, generation, enabled) VALUES (?, ?, 0) ON CONFLICT(profile) DO UPDATE SET generation = excluded.generation, enabled = 0").run(key(profile), randomUUID());
+      }
+      prepare?.();
+    });
+  }
+  function pending(profile: string, scope: string, keep: boolean): void {
+    if (keep) db.prepare("INSERT OR IGNORE INTO cleanup_pending (profile, scope) VALUES (?, ?)").run(key(profile), scope);
+    else db.prepare("DELETE FROM cleanup_pending WHERE profile = ? AND scope = ?").run(key(profile), scope);
+  }
+  async function pendingScopes(): Promise<string[]> {
+    await ready;
+    return db.prepare("SELECT profile, scope FROM cleanup_pending ORDER BY profile, scope").all().map(row => `${String(row.profile).slice(0, 12)}:${String(row.scope)}`);
+  }
+  function job(profile: string, event: CleanupEvent, keep: boolean): void {
+    if (keep) db.prepare("INSERT INTO cleanup_jobs (profile, event) VALUES (?, ?) ON CONFLICT(profile) DO UPDATE SET event = excluded.event").run(key(profile), event);
+    else db.prepare("DELETE FROM cleanup_jobs WHERE profile = ?").run(key(profile));
+  }
+  async function jobs(): Promise<{ profile: string; event: CleanupEvent }[]> {
+    await ready;
+    return db.prepare("SELECT profile, event FROM cleanup_jobs").all().map(row => {
+      if (typeof row.profile !== "string" || !["signOut", "removeWorkspace", "deleteProject"].includes(String(row.event))) throw new Error("Invalid pending cleanup.");
+      return { profile: row.profile, event: row.event as CleanupEvent };
+    });
+  }
+  async function watch(profile: string, cleared: () => Promise<void>, filtered: () => Promise<void> = async () => {}) {
+    const session = randomUUID();
+    let observed = await initialize(profile);
+    const removedKey = () => JSON.stringify(db.prepare("SELECT profile FROM removed_profiles ORDER BY profile").all());
+    let removed = db.prepare("SELECT profile FROM removed_profiles LIMIT 1").get() ? "" : removedKey();
+    await transaction(async () => {
+      db.prepare("INSERT INTO live_profiles (session, pid, profile, generation) VALUES (?, ?, ?, ?)").run(session, process.pid, key(profile), observed.generation);
+      db.prepare("INSERT INTO live_filters (session, fingerprint) VALUES (?, ?)").run(session, removed);
+    });
+    let checking: Promise<void> | undefined;
+    let stopped = false;
+    const check = async () => {
+      const nextRemoved = removedKey();
+      if (nextRemoved !== removed) {
+        await filtered();
+        await transaction(async () => { db.prepare("UPDATE live_filters SET fingerprint = ? WHERE session = ?").run(nextRemoved, session); });
+        removed = nextRemoved;
+      }
+      const current = await ticket(profile);
+      if (current.generation === observed.generation) return;
+      if (!current.enabled) await cleared();
+      await transaction(async () => {
+        db.prepare("UPDATE live_profiles SET generation = ? WHERE session = ?").run(current.generation, session);
+      });
+      observed = current;
+    };
+    const timer = setInterval(() => {
+      if (checking || stopped) return;
+      checking = check().catch(error => { console.error("Local cleanup acknowledgement failed:", error instanceof Error ? error.name : "Error"); }).finally(() => { checking = undefined; });
+    }, 100);
+    timer.unref();
+    return async () => {
+      stopped = true;
+      clearInterval(timer);
+      await checking;
+      await transaction(async () => {
+        db.prepare("DELETE FROM live_profiles WHERE session = ?").run(session);
+        db.prepare("DELETE FROM live_filters WHERE session = ?").run(session);
+      });
+    };
+  }
+  async function waitForLive(profiles: readonly string[], includeFiltered = false): Promise<void> {
+    const deadline = Date.now() + 10_000;
+    for (;;) {
+      await ready;
+      const fingerprint = JSON.stringify(db.prepare("SELECT profile FROM removed_profiles ORDER BY profile").all());
+      const rows = db.prepare("SELECT live_profiles.session AS session, pid, profile, live_profiles.generation AS acknowledged, profiles.generation AS current, fingerprint FROM live_profiles JOIN profiles USING(profile) LEFT JOIN live_filters USING(session)").all();
+      let waiting = false;
+      for (const row of rows) {
+        const generationPending = profiles.some(profile => key(profile) === row.profile) && row.acknowledged !== row.current;
+        if (!generationPending && !(includeFiltered && row.fingerprint !== fingerprint)) continue;
+        try { process.kill(Number(row.pid), 0); waiting = true; }
+        catch (error) {
+          if (!error || typeof error !== "object" || !("code" in error) || error.code !== "ESRCH") throw error;
+          await transaction(async () => {
+            db.prepare("DELETE FROM live_profiles WHERE session = ?").run(String(row.session));
+            db.prepare("DELETE FROM live_filters WHERE session = ?").run(String(row.session));
+          });
+        }
+      }
+      if (!waiting) return;
+      if (Date.now() >= deadline) throw new Error("Open project windows have not acknowledged cleanup.");
+      await delay(25);
+    }
   }
   function commit<T>(profile: string, expected: MetadataTicket, work: () => Promise<T>): Promise<T> {
     return transaction(async () => {
@@ -91,5 +197,5 @@ export function projectMetadataStore(root: string) {
     await queue;
     db.close();
   }
-  return { initialize, ticket, change, commit, firstNoteAdmission, transaction, dispose };
+  return { initialize, ticket, change, invalidate, pending, pendingScopes, job, jobs, profileId: key, markRemoved, isRemoved, watch, waitForLive, commit, firstNoteAdmission, transaction, dispose };
 }

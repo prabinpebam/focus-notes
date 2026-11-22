@@ -34,7 +34,7 @@ export interface SettingsState {
   account?: AccountStatus;
   checking: boolean;
   /** Sign out of GitHub?, and whether Git's sign-in goes too (FRE-07). */
-  signOut: { open: boolean; git: boolean; busy: boolean; drafts?: number };
+  signOut: { open: boolean; git: boolean; busy: boolean; drafts?: number; cleanupPending?: string[] };
   /** Remove this workspace from this computer (FRE-07, PRV-02). */
   remove: { open: boolean; busy: boolean; check?: RemovalCheck; drafts?: number };
   /** About's diagnostics: the report's preview (QLT-04). */
@@ -107,6 +107,7 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
     set({ checking: true });
     const a = await fr.account().catch(() => undefined);
     set({ checking: false, ...(a ? { account: a } : {}) });
+    if (a?.cleanupPending?.length) setSignOut({ open: true, cleanupPending: a.cleanupPending });
     // The pill says what Settings found, in any folder, not only a Git one (DEF-33, FRE-13).
     if (a && (a.account || !a.problem)) setLogin(a.account && !a.signedOut ? a.account.login : "");
   };
@@ -167,12 +168,19 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
   reg<{ open: boolean }>("account.setSignOutOpen", ({ open }) => { if (!open && !state().signOut.busy) setSignOut({ open: false }); });
   reg<{ value: string }>("account.setSignOutGit", (a) => { if (a.value === "remove" || a.value === "keep") setSignOut({ git: a.value === "remove" }); });
   reg("account.signOutNow", async () => {
+    if (state().signOut.cleanupPending?.length) return;
     const { git, busy } = state().signOut;
     if (!fr || busy) return;
     setSignOut({ busy: true });
     const before = store.state.account.login || state().account?.account?.login || "";
-    const r = await (tracker ? tracker.run("account.signOut", "task.signingOut", () => fr.signOut({ git })) : fr.signOut({ git })).catch(() => undefined);
+    const r = await (tracker ? tracker.run("account.signOut", "task.signingOut", () => fr.signOut({ git }), undefined, "fn:auth.signOut") : fr.signOut({ git })).catch(() => undefined);
     setSignOut({ busy: false });
+    if (r?.cleanupPending?.length) {
+      setSignOut({ cleanupPending: r.cleanupPending });
+      set({ account: r });
+      setLogin("");
+      return;
+    }
     if (!r || (r.account && !r.signedOut)) return void toast(catalog.format("toast.signOutFailed"), { tone: "error" });
     setSignOut({ open: false });
     set({ account: r });
@@ -181,6 +189,25 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
     await persistAppState(Object.fromEntries(RECENT_STATE_KEYS.map((k) => [k, undefined])) as Partial<AppStateFile>);
     toast(git ? catalog.format("toast.signedOut") : catalog.format("toast.signedOutApp", { login: `@${r.account?.login ?? before}` }));
   }, available);
+  reg("account.retryCleanup", async () => {
+    if (!fr?.retryCleanup || state().signOut.busy || state().remove.busy) return;
+    setSignOut({ busy: true });
+    if (state().remove.open) setRemove({ busy: true });
+    try {
+      const pending = await (tracker ? tracker.run("account.signOut", "task.cleanup", () => fr.retryCleanup!(), undefined, "fn:auth.signOut") : fr.retryCleanup());
+      setSignOut({ busy: false, cleanupPending: pending, open: !state().remove.open && pending.length > 0 });
+      const removal = state().remove.check;
+      if (removal) setRemove({ busy: false, check: { ...removal, cleanupPending: pending } });
+      if (pending.length) return;
+      setRemove({ open: false, busy: false });
+      await checkAccount();
+      toast(catalog.format("toast.cleanupCleared"));
+    } catch {
+      setSignOut({ busy: false });
+      setRemove({ busy: false });
+      toast(catalog.format("toast.cleanupFailed"), { tone: "error" });
+    }
+  });
   /** Sign in again: the Sign in step alone, which offers the account Git still has. */
   reg("account.signIn", async () => {
     set({ open: false });
@@ -236,9 +263,9 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
     // The app's own part first: the recent note, and the first run at Your notes when the window starts again.
     const before = appState();
     await persistAppState({ firstRun: "notes", ...(Object.fromEntries(RECENT_STATE_KEYS.map((k) => [k, undefined])) as Partial<AppStateFile>) });
-    const done = await (tracker ? tracker.run("workspace.remove", "task.removing", () => ws.remove!()) : ws.remove()).catch((): RemovalCheck => ({ ...r.check!, state: "failed" }));
+    const done = await (tracker ? tracker.run("workspace.remove", "task.removing", () => ws.remove!(), undefined, "fn:workspace.remove") : ws.remove()).catch((): RemovalCheck => ({ ...r.check!, state: "failed" }));
     if (done.state === "removed") return; // The window starts again.
-    await persistAppState({ firstRun: before.firstRun, ...Object.fromEntries(RECENT_STATE_KEYS.map((k) => [k, before[k]])) });
+    if (!done.cleanupPending?.length) await persistAppState({ firstRun: before.firstRun, ...Object.fromEntries(RECENT_STATE_KEYS.map((k) => [k, before[k]])) });
     setRemove({ busy: false, check: done });
   });
 
@@ -343,7 +370,8 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
       type: "object",
       properties: {
         open: { type: "boolean" }, git: { type: "string", enum: ["remove", "keep"] }, gitOptions: { type: "array", items: OPTION }, busy: { type: "boolean" }, gitNote: { type: "string" }, label: { type: "string" },
-        drafts: { type: "string" }, hasDrafts: { type: "boolean" },
+        drafts: { type: "string" }, hasDrafts: { type: "boolean" }, canSignOut: { type: "boolean" },
+        cleanupFailed: { type: "boolean" }, cleanupMessage: { type: "string" }, cleanupScopes: { type: "string" },
       },
     },
     setters: { git: "account.setSignOutGit" },
@@ -354,6 +382,7 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
         open: o.open, git: o.git ? "remove" : "keep", busy: o.busy, label: waitLabel(s, "account.signOut", "command.account.signOutNow"),
         gitOptions: ["remove", "keep"].map((id) => ({ id, label: catalog.format(`signOut.git.${id}`) })),
         gitNote: catalog.format(o.git ? "signOut.git.removeNote" : "signOut.git.keepNote"),
+        canSignOut: !o.cleanupPending?.length, cleanupFailed: Boolean(o.cleanupPending?.length), cleanupMessage: catalog.format("cleanup.pending"), cleanupScopes: o.cleanupPending?.join(", ") ?? "",
         ...dropsDrafts(o.drafts, true),
       };
     },
@@ -366,6 +395,7 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
         open: { type: "boolean" }, busy: { type: "boolean" }, state: { type: "string", enum: ["checking", "ready", "unpushed", "notGit", "notWorkspace", "failed", "removed"] },
         message: { type: "string" }, canRemove: { type: "boolean" }, canSync: { type: "boolean" }, checking: { type: "boolean" }, label: { type: "string" },
         drafts: { type: "string" }, hasDrafts: { type: "boolean" },
+        cleanupFailed: { type: "boolean" }, cleanupMessage: { type: "string" }, cleanupScopes: { type: "string" },
       },
     },
     reads: ["ui.settings.remove", "tasks"],
@@ -380,6 +410,7 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
             : catalog.format(`remove.${st}`);
       return {
         open: r.open, busy: r.busy, state: st, message, canRemove: st === "ready", canSync: st === "unpushed", checking: st === "checking", label: waitLabel(s, "workspace.remove", "command.workspace.removeConfirm"),
+        cleanupFailed: Boolean(c?.cleanupPending?.length), cleanupMessage: catalog.format("cleanup.pending"), cleanupScopes: c?.cleanupPending?.join(", ") ?? "",
         // Said once it can be removed: then it's part of what Remove deletes.
         ...dropsDrafts(r.drafts, st === "ready"),
       };

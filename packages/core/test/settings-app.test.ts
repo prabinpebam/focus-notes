@@ -16,7 +16,7 @@ const ADA = { login: "ada", id: 583231, name: "Ada Lovelace" };
 const GRACE = { login: "grace", id: 99, name: "Grace Hopper" };
 const settle = () => new Promise((r) => setTimeout(r, 0));
 
-function shell(opts: { state?: AppStateFile; account?: AccountStatus; removal?: RemovalCheck[]; desktop?: boolean; drafts?: number; standalone?: boolean } = {}) {
+function shell(opts: { state?: AppStateFile; account?: AccountStatus; removal?: RemovalCheck[]; desktop?: boolean; drafts?: number; standalone?: boolean; cleanupPending?: string[] } = {}) {
   const saved: AppStateFile[] = [];
   const calls: string[] = [];
   let account: AccountStatus = opts.account ?? { account: ADA, gcm: true, gh: false, via: "gcm" };
@@ -32,7 +32,12 @@ function shell(opts: { state?: AppStateFile; account?: AccountStatus; removal?: 
     useToken: async () => account,
     signOut: async (o) => {
       calls.push(`signOut:git=${o?.git !== false}`);
-      return (account = o?.git === false ? { ...account, signedOut: true } : { gcm: true, gh: false });
+      return (account = { ...(o?.git === false ? { ...account, signedOut: true } : { gcm: true, gh: false }), cleanupPending: opts.cleanupPending });
+    },
+    retryCleanup: async () => {
+      calls.push("retryCleanup");
+      account = { ...account, cleanupPending: [] };
+      return [];
     },
     // Like the shell: the credential leaves Git's helper, and comes back if no one signed in meanwhile.
     beginSwitch: async () => (calls.push("beginSwitch"), (previous = account), (account = { gcm: true, gh: false })),
@@ -102,6 +107,25 @@ function shell(opts: { state?: AppStateFile; account?: AccountStatus; removal?: 
 }
 
 describe("IA-VIEW-SETTINGS: opening Settings", () => {
+  it("G7.3: reports partial cleanup without a success notification and offers Retry after reopening Settings", async () => {
+    const scope = "0123456789ab:state.json";
+    const t = shell({ cleanupPending: [scope] });
+    await t.app.start();
+    await t.run("settings.open");
+    await t.run("account.signOut");
+    await t.run("account.signOutNow");
+    expect(t.vm("vm.signOut")).toMatchObject({ open: true, cleanupFailed: true, cleanupScopes: scope, busy: false });
+    expect(t.app.store.state.ui.toasts.some(toast => toast.message.includes("Signed out"))).toBe(false);
+    await t.run("account.setSignOutOpen", { open: false });
+    await t.run("settings.open");
+    expect(t.vm("vm.signOut").open).toBe(true);
+    const signOutCalls = t.calls.filter(call => call.startsWith("signOut:")).length;
+    await t.run("account.retryCleanup");
+    expect(t.vm("vm.signOut")).toMatchObject({ open: false, cleanupFailed: false });
+    expect(t.calls).toContain("retryCleanup");
+    expect(t.calls.filter(call => call.startsWith("signOut:"))).toHaveLength(signOutCalls);
+    expect(t.app.store.state.ui.toasts.some(toast => toast.message === "Local traces cleared.")).toBe(true);
+  });
   it("opens from the ⋯ menu's App group and with Mod+, on the desktop, at Account", async () => {
     const t = shell();
     await t.app.start();
@@ -324,7 +348,7 @@ describe("PRV-02, FRE-07: Settings → Project → Remove from this computer", (
     await t.run("workspace.removeSync");
     expect(t.calls).toContain("sync");
     expect(t.vm("vm.removeWorkspace")).toMatchObject({ state: "ready", canRemove: true });
-    expect(t.vm("vm.removeWorkspace").message).toBe("Your notes stay on GitHub, in ada/notes and ada/notes-private. This deletes the folder /home/ada/Documents/Focus Notes from this computer, and what Focus Notes keeps about it here.");
+    expect(t.vm("vm.removeWorkspace").message).toBe("This removes the project from Focus Notes on this computer. Your notes in /home/ada/Documents/Focus Notes, Git history and GitHub repositories stay unchanged.");
     await t.run("workspace.removeConfirm");
     expect(t.calls).toContain("remove");
     // Before the shell removes it, the app forgets the recent note and starts again at Your notes.

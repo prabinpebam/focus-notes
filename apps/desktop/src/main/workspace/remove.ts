@@ -1,9 +1,9 @@
 /**
  * Removing the workspace from this computer (FRE-07, PRV-02; Settings → Workspace). Nothing on
- * GitHub is ever touched: only the local clone goes, and only when both repositories (the notes
+ * GitHub is ever touched: the source clone stays, and removal is allowed only when both repositories (the notes
  * repository and `private/`) have nothing that isn't on their remote: no uncommitted or untracked
  * file, no commit on any branch that no remote has, and no stash. Then the data folder's files the
- * inventory lists for the event are deleted, and nothing else.
+ * inventory lists for the event are cleared, and source notes, Git history and remotes stay.
  */
 import { existsSync, realpathSync } from "node:fs";
 import { rm, rmdir } from "node:fs/promises";
@@ -58,18 +58,13 @@ export async function removalCheck(git: GitRunner, folder: string): Promise<Remo
 }
 
 /**
- * Removes the local clone after checking again (the renderer's word isn't enough), never the root
- * of a drive or a folder that isn't its own repository. The caller stops the watcher and Git first.
+ * Admits removal from the app after checking again; the source clone is never deleted.
+ * The caller stops the watcher and Git before clearing the project's cached traces.
  */
 export async function removeWorkspace(git: GitRunner, folder: string): Promise<RemovalCheck> {
   const check = await removalCheck(git, folder);
   if (check.state !== "ready" || parse(resolve(folder)).root === resolve(folder)) return check;
-  try {
-    await rm(folder, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
-  } catch {
-    return { ...check, state: "failed" };
-  }
-  return existsSync(folder) ? { ...check, state: "failed" } : { ...check, state: "removed" };
+  return { ...check, state: "removed" };
 }
 
 /**

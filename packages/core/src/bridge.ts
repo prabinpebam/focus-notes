@@ -28,6 +28,11 @@ export interface ProjectCreateProgress {
  * tests implement it in memory. The app never talks to Node or the network directly.
  */
 export interface PlatformBridge {
+  canCache?(): Promise<boolean>;
+  onPrivacyCleared?(listener: () => void): () => void;
+  onPrivacyResumed?(listener: () => void): () => void;
+  removedRoots?(): Promise<string[]>;
+  onPrivacyFiltered?(listener: (roots: readonly string[]) => void): () => void;
   platform: Platform;
   /** Dirty watcher reads observe changes without acknowledging new text-file bytes for saving. */
   readNote(path: string, acknowledge?: boolean): Promise<string>;
@@ -656,6 +661,7 @@ export interface DeletionResult {
  * repository, a folder that isn't a Focus Notes workspace, done, or failed.
  */
 export interface RemovalCheck {
+  cleanupPending?: string[];
   state: "ready" | "unpushed" | "notGit" | "notWorkspace" | "removed" | "failed";
   /** Changes not on the remote: uncommitted files, commits not pushed, and stashes, in both repositories. */
   waiting: number;

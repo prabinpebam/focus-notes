@@ -8,11 +8,12 @@
  * the sign-in helpers fakes on PATH: nothing touches the network or a real account.
  */
 import { test, expect, type Page } from "./fixtures.ts";
-import { execFileSync, spawnSync } from "node:child_process";
-import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { execFileSync, spawn, spawnSync } from "node:child_process";
+import { once } from "node:events";
+import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { CHROMIUM_FOLDERS, DATA_FILES, DATA_FOLDERS, LOCK_FILES, filesRemovedBy } from "../../../packages/core/src/inventory.ts";
-import { launch, quit, tempDirs, type Launched } from "./helpers.ts";
+import { fileRow, launch, quit, tempDirs, type Launched } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
 import { card, existingInstance, GRACE, heading, noTokenInArgs, opened, press, start, world, type World } from "./github-world.ts";
 
@@ -106,6 +107,170 @@ async function accountStep(l: Launched, done: () => Promise<void>): Promise<void
 const ACCOUNT_STEP_MS = 45_000;
 
 test.describe.configure({ mode: "serial" });
+
+async function secondProfile(w: World) {
+  const profile = join(w.dirs.userData, DATA_FOLDERS.projectProfiles, "second");
+  const docs = join(w.root, "second-project");
+  mkdirSync(profile, { recursive: true });
+  w.git(w.root, "clone", "--quiet", "--recurse-submodules", join(w.remotes, "ada", "notes.git"), docs);
+  w.git(join(docs, "private"), "checkout", "--quiet", "main");
+  const note = join(docs, "private", "notes", "secret.md");
+  writeFileSync(join(profile, DATA_FILES.projectFolder), docs);
+  writeFileSync(join(profile, DATA_FILES.workspace), JSON.stringify({ version: 1, folder: docs }));
+  writeFileSync(join(profile, DATA_FILES.state), JSON.stringify({ version: 1, firstRun: "done", lastNotePath: note, filesPins: [join(docs, "notes", "hello.md")], fontSize: 17 }));
+  const dirs = { ...w.dirs, docs, userData: profile };
+  const env = { ...w.env, FOCUS_NOTES_PROJECTS_PROFILE: w.dirs.userData };
+  return { profile, docs, note, dirs, env, l: await launch(dirs, env, { firstRun: false }) };
+}
+async function searchSecret(page: Page, present: boolean) {
+  await page.keyboard.press("Escape");
+  await page.keyboard.press(`${mod}+/`);
+  const dialog = page.getByRole("dialog", { name: "Actions", exact: true });
+  await dialog.getByRole("combobox").fill("Secret");
+  const result = dialog.getByRole("option", { name: /^Secret/ });
+  if (present) await expect(result).toBeVisible({ timeout: 15_000 });
+  else await expect(result).toHaveCount(0);
+  await page.keyboard.press("Escape");
+}
+async function pinHello(page: Page) {
+  await page.keyboard.press(`${mod}+o`);
+  const tree = page.getByRole("tree", { name: "Notes and folders", exact: true });
+  await expect(tree).toBeVisible();
+  const publicRoot = fileRow(tree, "Public");
+  if (await publicRoot.count() && await publicRoot.getAttribute("aria-expanded") === "false") await publicRoot.press("ArrowRight");
+  const row = fileRow(tree, "Hello");
+  await row.hover();
+  await row.getByRole("button", { name: "Pin Hello", exact: true }).click();
+  await expect(row.getByRole("button", { name: "Unpin Hello", exact: true })).toBeVisible();
+  await page.keyboard.press("Escape");
+}
+function closeOwned(l: Launched) {
+  for (const extra of [["-WhatIf"], []]) execFileSync("pwsh", ["-NoProfile", "-File", resolve(import.meta.dirname, "../../../tools/dev/close-test-apps.ps1"), "-OnlyPid", String(l.pid), ...extra], { stdio: "inherit" });
+}
+async function finishOwned(l: Launched) {
+  try { if (!l.page.isClosed() && l.app.process().exitCode === null) await quit(l); }
+  finally { closeOwned(l); }
+}
+
+for (const event of ["signOut", "removeWorkspace"] as const) test(`G7 cross-profile ${event}: live caches and restart stay cleared without losing another project's notes`, async () => {
+  test.setTimeout(150_000);
+  const { w, l: first, note } = await setUp();
+  let a = first;
+  const second = await secondProfile(w);
+  let b = second.l;
+  try {
+    await pinHello(a.page);
+    await searchSecret(a.page, true);
+    await searchSecret(b.page, true);
+    const firstState = join(w.dirs.userData, DATA_FILES.state), secondState = join(second.profile, DATA_FILES.state);
+    await expect.poll(() => JSON.parse(readFileSync(firstState, "utf8")).filesPins).toEqual([join(w.dirs.docs, "notes", "hello.md")]);
+    const source = readFileSync(note, "utf8"), otherSource = readFileSync(second.note, "utf8");
+    const heads = [w.git(w.dirs.docs, "rev-parse", "HEAD"), w.git(second.docs, "rev-parse", "HEAD")];
+    const remote = w.git(w.dirs.docs, "remote", "get-url", "origin");
+    if (event === "removeWorkspace") {
+      await b.page.evaluate(async ({ removed, kept }) => {
+        const saved = await window.focusNotes.loadAppState();
+        await window.focusNotes.saveAppState({ ...saved, filesPins: [removed, kept], filesRecent: [removed, kept] });
+      }, { removed: join(w.dirs.docs, "notes", "hello.md"), kept: join(second.docs, "notes", "hello.md") });
+      await b.app.evaluate(({ safeStorage }, { profile, removed, kept }) => {
+        const fs = process.getBuiltinModule("node:fs");
+        const path = process.getBuiltinModule("node:path");
+        const record = { rank: 1234, pinned: true, notes: [removed, kept].map(p => ({ path: p, rank: 1234, pinned: true })) };
+        fs.writeFileSync(path.join(profile, "project-recent.dat"), safeStorage.encryptString(JSON.stringify(record)).toString("base64"));
+      }, { profile: second.profile, removed: note, kept: second.note });
+    }
+    const stale = JSON.parse(readFileSync(firstState, "utf8"));
+    await openSettings(a.page, event === "signOut" ? "Account" : "Project");
+    if (event === "signOut") {
+      await settings(a.page).getByRole("button", { name: "Sign out…" }).click();
+      const dialog = a.page.getByRole("dialog", { name: "Sign out of GitHub?" });
+      await dialog.getByRole("radio", { name: "Keep it for the terminal" }).focus();
+      await dialog.getByRole("radio", { name: "Keep it for the terminal" }).press("Space");
+      await dialog.getByRole("button", { name: "Sign out", exact: true }).click();
+      await toast(a.page, "Signed out of Focus Notes. Git on this computer is still signed in as @ada.");
+    } else {
+      await settings(a.page).getByRole("button", { name: "Remove from this computer…" }).click();
+      const dialog = a.page.getByRole("dialog", { name: "Remove this project?" });
+      await expect(dialog.getByRole("button", { name: "Remove", exact: true })).toBeVisible({ timeout: 15_000 });
+      await dialog.getByRole("button", { name: "Remove", exact: true }).click();
+      try { await expect(dialog).toHaveCount(0, { timeout: 20_000 }); }
+      catch (error) {
+        const pending = await a.page.evaluate(async () => (await window.focusNotes.firstRun!.account())?.cleanupPending);
+        const roots = await b.page.evaluate(() => window.focusNotes.removedRoots!());
+        throw new Error(`${error instanceof Error ? error.message : "Removal failed"}\nPending cleanup: ${JSON.stringify(pending)}\nSource spelling matches: ${roots.some(root => note.toLowerCase().startsWith(root.toLowerCase()))}; cache format: ${readFileSync(join(second.profile, DATA_FILES.projectRecent), "utf8").slice(0, 6)}\n${[...a.log, ...b.log].filter(line => line.includes("cleanup") || line.includes("ranking")).join("\n")}`);
+      }
+    }
+    // An already admitted renderer callback cannot restore pins or a recent note after cleanup.
+    await a.page.evaluate(saved => window.focusNotes.saveAppState(saved), stale);
+    await expect.poll(() => JSON.parse(readFileSync(firstState, "utf8")).filesPins).toBeUndefined();
+    expect(JSON.parse(readFileSync(firstState, "utf8"))).not.toHaveProperty("lastNotePath");
+    await searchSecret(b.page, event !== "signOut");
+    const otherState = JSON.parse(readFileSync(secondState, "utf8"));
+    expect(otherState.fontSize).toBe(17);
+    if (event === "signOut") expect(otherState.filesPins).toBeUndefined();
+    else expect(otherState.filesPins).toEqual([join(second.docs, "notes", "hello.md")]);
+    if (event === "removeWorkspace") {
+      const entries = await b.page.evaluate(() => window.focusNotes.projects!.list());
+      expect(entries.some(entry => entry.folder === realpathSync.native(w.dirs.docs))).toBe(false);
+      expect(entries.find(entry => entry.folder === realpathSync.native(second.docs))).toMatchObject({ rank: 1234, pinned: true, recent: [{ path: second.note, pinned: true }] });
+    }
+    for (const active of [a, b]) await finishOwned(active);
+    a = await launch(w.dirs, { ...w.env, FOCUS_NOTES_PROJECTS_PROFILE: w.dirs.userData }, { firstRun: false });
+    b = await launch(second.dirs, second.env, { firstRun: false });
+    await searchSecret(b.page, event !== "signOut");
+    expect(JSON.parse(readFileSync(firstState, "utf8"))).not.toHaveProperty("filesPins");
+    if (event === "signOut") expect(JSON.parse(readFileSync(secondState, "utf8"))).not.toHaveProperty("filesPins");
+    expect(readFileSync(note, "utf8")).toBe(source);
+    expect(readFileSync(second.note, "utf8")).toBe(otherSource);
+    expect([w.git(w.dirs.docs, "rev-parse", "HEAD"), w.git(second.docs, "rev-parse", "HEAD")]).toEqual(heads);
+    expect(w.git(w.dirs.docs, "remote", "get-url", "origin")).toBe(remote);
+    expect(terminal(w)).toBe(w.gh.token);
+  } finally {
+    for (const active of [a, b]) await finishOwned(active);
+    w.server.close();
+  }
+});
+
+test("G7.3: a locked second profile reports redacted pending scope and Retry clears it after restart", async () => {
+  test.setTimeout(150_000);
+  const { w, l } = await setUp();
+  const second = await secondProfile(w);
+  let b = second.l;
+  let lock: ReturnType<typeof spawn> | undefined;
+  try {
+    await searchSecret(b.page, true);
+    await quit(b); closeOwned(b);
+    const stateFile = join(second.profile, DATA_FILES.state);
+    lock = spawn("pwsh", ["-NoProfile", "-Command", '$file = [System.IO.File]::Open($env:FN_LOCK_PATH, [System.IO.FileMode]::Open, [System.IO.FileAccess]::ReadWrite, [System.IO.FileShare]::None); [Console]::WriteLine("locked"); [Console]::Out.Flush(); [Console]::ReadLine() | Out-Null; $file.Dispose()'], { env: { ...process.env, FN_LOCK_PATH: stateFile }, windowsHide: true, stdio: ["pipe", "pipe", "pipe"] });
+    await Promise.race([once(lock.stdout!, "data"), once(lock, "exit").then(() => { throw new Error("The disposable cache lock did not start."); })]);
+    await openSettings(l.page);
+    await settings(l.page).getByRole("button", { name: "Sign out…" }).click();
+    const dialog = l.page.getByRole("dialog", { name: "Sign out of GitHub?" });
+    await dialog.getByRole("radio", { name: "Keep it for the terminal" }).focus();
+    await dialog.getByRole("radio", { name: "Keep it for the terminal" }).press("Space");
+    await dialog.getByRole("button", { name: "Sign out", exact: true }).click();
+    await expect(dialog.getByText("Some local traces remain. Your notes are unchanged. Close any app holding the cache files, then retry cleanup.")).toBeVisible({ timeout: 15_000 });
+    await dialog.locator("summary").filter({ hasText: "Details" }).click();
+    await expect(dialog).toContainText(/[a-f0-9]{12}:state\.json/);
+    expect(await dialog.innerText()).not.toMatch(/Only mine|ghp_|secret\.md|second-project/);
+    await expect(l.page.getByText("Signed out of Focus Notes. Git on this computer is still signed in as @ada.", { exact: true })).toHaveCount(0);
+    const released = once(lock, "exit");
+    lock.stdin!.end("\n");
+    await released;
+    lock = undefined;
+    await dialog.getByRole("button", { name: "Retry cleanup", exact: true }).click();
+    await toast(l.page, "Local traces cleared.");
+    expect(JSON.parse(readFileSync(stateFile, "utf8"))).not.toHaveProperty("filesPins");
+    b = await launch(second.dirs, second.env, { firstRun: false });
+    await searchSecret(b.page, false);
+    expect(readFileSync(second.note, "utf8")).toBe("# Secret\n\nOnly mine.\n");
+    expect(terminal(w)).toBe(w.gh.token);
+  } finally {
+    if (lock) { const exited = once(lock, "exit"); lock.stdin?.end("\n"); await exited; }
+    for (const active of [l, b]) await finishOwned(active);
+    w.server.close();
+  }
+});
 
 test("A11Y-01, DEF-12: Tab while Settings checks the account rests on the panel, then on Sign in once it appears; focus never falls to the page", async () => {
   const dirs = tempDirs();
@@ -273,7 +438,7 @@ test("PRV-02, FRE-07: signing out with Git's credential deletes exactly what the
     await toast(page, "Signed out of GitHub on this computer, in the app and in the terminal.");
 
     const after = top(w.dirs.userData);
-    expect(after).toEqual(before.filter((f) => !(filesRemovedBy("signOut") as string[]).includes(f)));
+    expect(after).toEqual([...new Set([...before.filter((f) => !(filesRemovedBy("signOut") as string[]).includes(f)), DATA_FILES.account])].sort());
     expect(state(w)).not.toHaveProperty("lastNotePath");
     expect(state(w).firstRun).toBe("done");
     expect(w.fakes.stored()).toBe("{}");
@@ -352,7 +517,7 @@ test("FRE-06: Settings → Open another workspace from GitHub shows the notes th
   }
 });
 
-test("FRE-07, PRV-02: removing the workspace is refused while changes aren't on GitHub, then allowed after Sync now; only the local clone and the inventory's items go", async () => {
+test("FRE-07, PRV-02: removing the workspace preserves source notes and Git after Sync now; only cached traces go", async () => {
   test.setTimeout(150_000);
   const { w, l } = await setUp();
   const { page } = l;
@@ -373,17 +538,18 @@ test("FRE-07, PRV-02: removing the workspace is refused while changes aren't on 
     expect(existsSync(w.dirs.docs)).toBe(true);
 
     await dialog.getByRole("button", { name: "Sync now" }).click();
-    await expect(dialog.getByText(`Your notes stay on GitHub, in ada/notes and ada/notes-private. This deletes the folder ${w.dirs.docs} from this computer, and what Focus Notes keeps about it here.`)).toBeVisible({ timeout: 30_000 });
+    await expect(dialog.getByText(`This removes the project from Focus Notes on this computer. Your notes in ${w.dirs.docs}, Git history and GitHub repositories stay unchanged.`)).toBeVisible({ timeout: 30_000 });
     const priv = join(w.remotes, "ada", "notes-private.git");
     expect(execFileSync("git", ["--git-dir", priv, "show", "main:notes/secret.md"], { encoding: "utf8" })).toContain("Words not on GitHub yet.");
     await dialog.getByRole("button", { name: "Remove", exact: true }).click();
 
     // The window starts again at the first run's Your notes step, which finds the notes on GitHub.
     await heading(page, "We found your notes");
-    expect(existsSync(w.dirs.docs)).toBe(false);
+    expect(existsSync(w.dirs.docs)).toBe(true);
+    expect(existsSync(join(w.dirs.docs, ".git"))).toBe(true);
     const after = top(w.dirs.userData);
     for (const f of after) expect(INVENTORY).toContain(f);
-    expect(after).toEqual(before.filter((f) => !(filesRemovedBy("removeWorkspace") as string[]).includes(f)));
+    expect(after).toEqual([...new Set([...before.filter((f) => !(filesRemovedBy("removeWorkspace") as string[]).includes(f)), DATA_FILES.projectFolder])].sort());
     expect(state(w)).not.toHaveProperty("lastNotePath");
     expect(state(w).firstRun).toBe("notes");
     // Nothing on GitHub is touched, and Git's sign-in stays.

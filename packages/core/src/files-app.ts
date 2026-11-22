@@ -11,6 +11,7 @@ import type { Store } from "./store.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
 import type { TaskTracker } from "./tasks.ts";
 import { sourceOf } from "./notes.ts";
+import { atOrUnder } from "./journal.ts";
 import { blocksOf, groupByDay, type DeletedNote } from "./history.ts";
 import { followImages, planLinkWrites, rewriteLinks, sameRootOf, type LinkWrite, type PathMove } from "./links.ts";
 import {
@@ -157,6 +158,7 @@ export function registerFiles(ctx: Ctx) {
     const path = store.state.note.path;
     if (!path || path === lastVisited || store.state.note.status !== "ready") return;
     lastVisited = path;
+    if (!cacheEnabled || filteredRoots.some(root => atOrUnder(path, root))) return;
     const visits = [path, ...files().visits.filter((p) => p !== path)].slice(0, 20);
     setFiles(() => ({ visits }));
     void ctx.persistAppState({ filesRecent: visits.filter(p => sourceOf(p) !== "private") });
@@ -345,6 +347,23 @@ export function registerFiles(ctx: Ctx) {
     },
   });
   type PinIntent = { path: string; pinned: boolean };
+  let cacheEnabled = true;
+  let filteredRoots: readonly string[] = [];
+  let pinEpoch = 0;
+  void bridge.removedRoots?.().then(roots => { filteredRoots = roots; }).catch(error => console.error("Could not check removed project references:", error instanceof Error ? error.name : "Error"));
+  void bridge.canCache?.().then(enabled => { cacheEnabled = enabled; }).catch(error => console.error("Could not check Files privacy state:", error instanceof Error ? error.name : "Error"));
+  bridge.onPrivacyCleared?.(() => {
+    cacheEnabled = false;
+    pinEpoch++;
+    setFiles(() => ({ pins: [], visits: [] }));
+  });
+  bridge.onPrivacyResumed?.(() => { cacheEnabled = true; });
+  bridge.onPrivacyFiltered?.(roots => {
+    filteredRoots = roots;
+    pinEpoch++;
+    const keep = (path: string) => !roots.some(root => atOrUnder(path, root));
+    setFiles(() => ({ pins: files().pins.filter(keep), visits: files().visits.filter(keep) }));
+  });
   let pinWrites: Promise<void> = Promise.resolve();
   commands.register<{ value: PinIntent }>({
     id: "files.saveItemPin", title: "command.files.pinItem",
@@ -352,11 +371,13 @@ export function registerFiles(ctx: Ctx) {
       if (!value || typeof value.path !== "string" || typeof value.pinned !== "boolean" || !findNode(store.state.workspace.tree, value.path)) throw new Error("Invalid Files pin");
       const started = performance.now();
       const write = async () => {
+        if (!cacheEnabled || filteredRoots.some(root => atOrUnder(value.path, root)) || await bridge.canCache?.() === false) throw new Error("Files pins were cleared. Open the project or sign in again.");
+        const epoch = pinEpoch;
         const pins = value.pinned
           ? files().pins.includes(value.path) ? [...files().pins] : [...files().pins, value.path]
           : files().pins.filter(path => path !== value.path);
         await ctx.persistAppState({ filesPins: pins.filter(path => sourceOf(path) !== "private") });
-        setFiles(() => ({ pins }));
+        if (epoch === pinEpoch && cacheEnabled) setFiles(() => ({ pins }));
       };
       const result = pinWrites.then(write, write);
       pinWrites = result;

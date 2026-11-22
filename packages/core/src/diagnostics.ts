@@ -154,6 +154,7 @@ export function redact(text: string, o: RedactOptions = {}): string {
  * the task tracker's waits, whose targets are fixed command IDs, never a note's name).
  */
 export const MEASURE_NAMES: readonly string[] = [
+  "fn:auth.signOut", "fn:workspace.remove",
   "fn:note.open", "fn:note.convert", "fn:spotlight.open", "fn:actions.ai", "fn:image.print",
   "fn:image.caption.open", "fn:image.caption.generate", "fn:image.edit.save",
   "fn:files.move", "fn:files.rename",
@@ -323,5 +324,8 @@ export class ProblemLog {
   }
   list(): Problem[] {
     return this.#lines.map((p) => ({ ...p }));
+  }
+  clear(): void {
+    this.#lines.length = 0;
   }
 }

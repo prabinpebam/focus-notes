@@ -3914,6 +3914,7 @@
               },
               {
                 "type": "SegmentedControl",
+                "when": { "get": "vm.signOut.canSignOut" },
                 "props": {
                   "label": {
                     "t": "signOut.git.label"
@@ -3928,6 +3929,7 @@
               },
               {
                 "type": "Text",
+                "when": { "get": "vm.signOut.canSignOut" },
                 "props": {
                   "value": {
                     "get": "vm.signOut.gitNote"
@@ -3935,6 +3937,14 @@
                   "tone": "muted",
                   "announce": true
                 }
+              },
+              {
+                "type": "Stack",
+                "when": { "get": "vm.signOut.cleanupFailed" },
+                "props": { "gap": "stackPair" },
+                "children": [
+                  { "type": "StatusRow", "props": { "message": { "get": "vm.signOut.cleanupMessage" }, "actionLabel": { "t": "command.account.retryCleanup" }, "actionBusy": { "get": "vm.signOut.busy" }, "actionBusyLabel": { "get": "vm.signOut.label" }, "detailsLabel": { "t": "uiStates.recovery.details" }, "details": { "get": "vm.signOut.cleanupScopes" } }, "on": { "action": { "run": "account.retryCleanup" } } }
+                ]
               },
               {
                 "type": "Inline",
@@ -3962,6 +3972,7 @@
                   },
                   {
                     "type": "Button",
+                    "when": { "get": "vm.signOut.canSignOut" },
                     "props": {
                       "label": {
                         "get": "vm.signOut.label"
@@ -4028,6 +4039,14 @@
                   },
                   "announce": true
                 }
+              },
+              {
+                "type": "Stack",
+                "when": { "get": "vm.removeWorkspace.cleanupFailed" },
+                "props": { "gap": "stackPair" },
+                "children": [
+                  { "type": "StatusRow", "props": { "message": { "get": "vm.removeWorkspace.cleanupMessage" }, "actionLabel": { "t": "command.account.retryCleanup" }, "actionBusy": { "get": "vm.removeWorkspace.busy" }, "actionBusyLabel": { "t": "task.cleanup" }, "detailsLabel": { "t": "uiStates.recovery.details" }, "details": { "get": "vm.removeWorkspace.cleanupScopes" } }, "on": { "action": { "run": "account.retryCleanup" } } }
+                ]
               },
               {
                 "type": "Text",

@@ -70,6 +70,7 @@ export type SignInProblem = (typeof SIGN_IN_PROBLEMS)[number];
 
 /** Where signing in stands on this computer. */
 export interface AccountStatus {
+  cleanupPending?: string[];
   /** The account Git's credential helper is signed in to, checked against the API (FRE-03, FRE-04). */
   account?: GitHubAccount;
   /** A GitHub CLI session Git doesn't use yet: offered as Continue as @login (FRE-04). */
@@ -218,6 +219,7 @@ export interface FirstRunProgress {
  * token. A pasted token goes to the shell once, which checks it and gives it to Git's helper.
  */
 export interface FirstRunBridge {
+  retryCleanup?(): Promise<string[]>;
   git(): Promise<GitCheck>;
   /** Git's credential (checked with the API) and any GitHub CLI session. */
   account(): Promise<AccountStatus>;

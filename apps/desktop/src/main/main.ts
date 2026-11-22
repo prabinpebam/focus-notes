@@ -71,6 +71,8 @@ import { applyLocalIdentity, checkWorkspace, cloneWorkspace, folderFree, homesFo
 import type { ConflictChoice, DeletionResult, NoteRewrite, RemovalCheck } from "@focus-notes/core";
 import { CHROMIUM_FOLDERS, DATA_FILES, type DataFile } from "@focus-notes/core/inventory";
 import { forgetLocalData, removalCheck, removeWorkspace } from "./workspace/remove.ts";
+import { PrivacyCleanupError, withoutPrivacyTraces, withoutRemovedReferences } from "./privacy-cleanup.ts";
+import { atOrUnder } from "@focus-notes/core/journal";
 import { deletionCheck, deletionGate, isRepoSlug, recycleProject, recycleRefusal, repoStatus } from "./workspace/delete.ts";
 import { backupToRecord, checkFolder, configUrl, driveOf, envSyncRoots, folderNameOk, movedDocuments, nextFree, parseRecord, recordFor, samePath, serializeRecord, shortPath, startDecision, syncService, type FolderCheck, type FolderFacts, type WorkspaceRecord } from "./workspace/record.ts";
 import type { RecoverAccount, RecoverPlace, RecoverProgress, RecoverResult, RecoverStatus } from "@focus-notes/core/recover";
@@ -500,20 +502,23 @@ async function setupWhere(instance?: string): Promise<{ folder: string; chosen: 
  * renderer forgets the recent note in state.json itself, since it owns that file.
  */
 async function forgetLocal(event: "signOut" | "removeWorkspace" | "deleteProject"): Promise<void> {
+  if (projectMetadata) {
+    await projectMetadata.purge(async () => {}, event);
+    return;
+  }
   const remove = async () => {
-    if (setupEngine) await (await setupEngine).reset().catch(() => {});
+    if (setupEngine) await (await setupEngine).reset();
     workspaceIdentity = undefined;
     targetFolder = undefined;
     pendingWorkspace = undefined;
     firstCloneReceipt = undefined;
     // Crash recovery's drafts of this workspace go too (QLT-06); the window asked first when there were some.
-    await drafts?.removeAll().catch(() => {});
+    await drafts?.removeAll();
     await forgetLocalData(app.getPath("userData"), event, true);
-    await session.defaultSession.clearCache().catch(() => {});
-    await session.defaultSession.clearStorageData().catch(() => {});
+    await session.defaultSession.clearCache();
+    await session.defaultSession.clearStorageData();
   };
-  if (projectMetadata) await projectMetadata.purge(remove);
-  else await remove();
+  await remove();
 }
 /**
  * Removes the workspace's local clone (FRE-07): checked again here, with the watcher and Git
@@ -538,9 +543,13 @@ async function removeLocalWorkspace(): Promise<RemovalCheck> {
     startGit();
     return r;
   }
+  try { await forgetLocal("removeWorkspace"); }
+  catch (error) {
+    if (!(error instanceof PrivacyCleanupError)) throw error;
+    return { ...r, state: "failed", cleanupPending: [...error.pending] };
+  }
   chosenHome = undefined;
   record = undefined;
-  await forgetLocal("removeWorkspace");
   process.stdout.write("[focus-notes] workspace-removed\n");
   restartInPlace();
   return r;
@@ -875,7 +884,7 @@ async function readTitle(p: string, seen?: (changed: number) => void): Promise<s
   // When it last changed, for sorting the tree by last change (D-175): from the stat this read makes anyway.
   seen?.(Math.round(st.mtimeMs));
   const key = { path: p, size: st.size, mtimeMs: st.mtimeMs };
-  const known = titles.get(key) ?? parsed.get(key);
+  const known = localTracesCleared ? undefined : titles.get(key) ?? parsed.get(key);
   if (known) return known.title;
   const h = await open(p, "r").catch(() => undefined);
   if (!h) return undefined;
@@ -883,7 +892,7 @@ async function readTitle(p: string, seen?: (changed: number) => void): Promise<s
     const buf = Buffer.alloc(16 * 1024);
     const { bytesRead } = await h.read(buf, 0, buf.length, 0);
     const title = titleOfMarkdown(buf.subarray(0, bytesRead).toString("utf8"));
-    titles.set(key, title ? { title } : {});
+    if (!localTracesCleared) titles.set(key, title ? { title } : {});
     return title;
   } catch {
     return undefined;
@@ -916,6 +925,7 @@ async function listTree(dir: string, out: Entry[] = []): Promise<Entry[]> {
 // changed reads nothing. Titles from the Files panel's scan are kept the same way, on their own.
 type ParsedNote = { text: string; hash: string; title?: string };
 const parsed = new SnapshotCache<ParsedNote>({ maxBytes: 32 * 1024 * 1024, sizeOf: (n) => 2 * n.text.length + 96 });
+let localTracesCleared = false;
 const titles = new SnapshotCache<{ title?: string }>({ maxBytes: 4 * 1024 * 1024, sizeOf: (t) => 2 * (t.title?.length ?? 0) + 96 });
 const parseNote = (text: string): ParsedNote => {
   const title = titleOfMarkdown(text);
@@ -927,7 +937,10 @@ async function readParsed(path: string): Promise<ParsedNote> {
   try {
     const st = await h.stat();
     const key = { path, size: st.size, mtimeMs: st.mtimeMs };
-    return parsed.get(key) ?? parsed.set(key, parseNote(await h.readFile("utf8")));
+    const known = localTracesCleared ? undefined : parsed.get(key);
+    if (known) return known;
+    const value = parseNote(await h.readFile("utf8"));
+    return localTracesCleared ? value : parsed.set(key, value);
   } finally {
     await h.close();
   }
@@ -998,7 +1011,7 @@ const writer = new NoteWriter({
     if (isText(path)) { texts.written(path, content); return; }
     if (!isMarkdown(path)) return;
     const st = await stat(path).catch(() => undefined);
-    if (st) parsed.set({ path, size: st.size, mtimeMs: st.mtimeMs }, parseNote(content));
+    if (st && !localTracesCleared) parsed.set({ path, size: st.size, mtimeMs: st.mtimeMs }, parseNote(content));
   },
 });
 const writeQueues = writer.queues;
@@ -1417,7 +1430,7 @@ async function slowSeam(channel: string): Promise<void> {
   if (typeof ms === "number" && ms > 0) await new Promise((r) => setTimeout(r, Math.min(ms, 60_000)));
 }
 
-let projectMetadata: Pick<ReturnType<typeof projectWindows>, "closed" | "purge" | "resume" | "firstNoteAdmission" | "openFilePath"> | undefined;
+let projectMetadata: Pick<ReturnType<typeof projectWindows>, "closed" | "purge" | "resume" | "firstNoteAdmission" | "openFilePath" | "saveState" | "canCache" | "pendingCleanup" | "retryCleanup"> | undefined;
 function registerIpc(win: () => BrowserWindow | undefined): void {
   const imageBatches = new Map<string, string[]>();
   handleFrom("image:import", async (event, path, inputs, replace) => {
@@ -1547,13 +1560,68 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     if (reviewGitHub && !reviewRemotes) throw new Error("This review build has no local remotes.");
     return reviewRemotes ? `${reviewRemotes.replace(/\\/g, "/")}/${owner}/${name}.git` : remoteUrl(owner, name);
   };
+  const metadataWriter = new NoteWriter();
   const projects = projectWindows(notesHome, async (path, content) => {
-    if (await atomicWrite(path, content)) throw new Error("Launch metadata changed outside the app.");
+    if (await metadataWriter.write(path, content)) throw new Error("Launch metadata changed outside the app.");
   }, process.env.FOCUS_NOTES_CANDIDATE_GITHUB_API ?? fakeApi, setupRunner, () => {
     // A deleted project's window has nothing left to show once another project opens (PRJ-23).
     if (projectDeleted) setTimeout(() => app.quit(), 500);
   }, projectGitHub, projectRemote);
   projectMetadata = projects;
+  const privacyNotice = async (channel: "privacy:cleared" | "privacy:filtered", roots?: string[]) => {
+    const id = randomUUID();
+    const pending = new Set([...windows].filter(window => !window.isDestroyed()).map(window => window.webContents.id));
+    await new Promise<void>((accept, reject) => {
+      const acknowledgement = (event: IpcMainEvent, received: unknown) => {
+        if (received !== id || !fromApp(event)) return;
+        pending.delete(event.sender.id);
+        if (!pending.size) { clearTimeout(timer); ipcMain.removeListener("privacy:ack", acknowledgement); accept(); }
+      };
+      const timer = setTimeout(() => { ipcMain.removeListener("privacy:ack", acknowledgement); reject(new Error("Project windows have not cleared local traces.")); }, 5000);
+      ipcMain.on("privacy:ack", acknowledgement);
+      if (!pending.size) { clearTimeout(timer); ipcMain.removeListener("privacy:ack", acknowledgement); accept(); }
+      for (const window of windows) if (!window.isDestroyed()) window.webContents.send(channel, id, roots);
+    });
+  };
+  projects.onFiltered(async roots => {
+    for (const root of roots) {
+      parsed.delete(root);
+      titles.delete(root);
+      for (const path of lastWritten.keys()) if (atOrUnder(path, root)) lastWritten.delete(path);
+    }
+    await privacyNotice("privacy:filtered", roots);
+  });
+  projects.onCleared(async () => {
+    localTracesCleared = true;
+    parsed.clear();
+    titles.clear();
+    lastWritten.clear();
+    problemLog.clear();
+    account.forgetSession();
+    workspaceIdentity = undefined;
+    targetFolder = undefined;
+    pendingWorkspace = undefined;
+    firstCloneReceipt = undefined;
+    if (setupEngine) { await (await setupEngine).reset(); setupEngine = undefined; }
+    await privacyNotice("privacy:cleared");
+    await session.defaultSession.clearCache();
+    await session.defaultSession.clearStorageData();
+  });
+  handle("privacy:cache", () => projects.canCache());
+  handle("privacy:removedRoots", () => projects.removedRoots());
+  handle("privacy:retry", async () => {
+    try {
+      await projects.retryCleanup();
+      if (await projects.removed()) {
+        chosenHome = undefined;
+        record = undefined;
+        restartInPlace();
+      }
+      return [];
+    }
+    catch (error) { if (!(error instanceof PrivacyCleanupError)) throw error; return [...error.pending]; }
+  });
+  void projects.canCache().then(enabled => { localTracesCleared = !enabled; });
   const markdownCopies = localImportCopies();
   handle("note:saveAsMarkdown", async (input: unknown, content: unknown) => {
     const source = notePath(input);
@@ -1566,7 +1634,11 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   });
   const resumeSignedInProject = async (operation: ReturnType<Account["status"]>) => {
     const status = await operation;
-    if (status.account && !status.signedOut) await projects.resume();
+    if (status.account && !status.signedOut) {
+      await projects.resume();
+      localTracesCleared = false;
+      sendAll("privacy:resumed");
+    }
     return status;
   };
   handle("projects:list", () => projects.list());
@@ -1917,14 +1989,16 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   // The search index's reads (D-107): a batch per call, past the snapshot, which is for opened notes.
   handle("notes:read", async (ps) => {
     if (!Array.isArray(ps) || ps.length > NOTES_PER_READ) throw new Error(`Up to ${NOTES_PER_READ} note paths are required`);
+    if (!(await projects.canCache())) throw new Error("Local search was cleared. Open the project or sign in to search again.");
     const paths = ps.map((p) => { try { return notePath(p); } catch { return undefined; } });
+    const removedRoots = await projects.removedRoots();
     // A few files at a time, so the app's own reads and writes (opening a note, saving) never wait
     // behind a whole batch for Node's file threads.
     const out: (string | null)[] = [];
     for (let i = 0; i < paths.length; i += FILES_AT_ONCE) {
-      out.push(...(await Promise.all(paths.slice(i, i + FILES_AT_ONCE).map((p) => (p ? readFile(p, "utf8").catch(() => null) : null)))));
+      out.push(...(await Promise.all(paths.slice(i, i + FILES_AT_ONCE).map((p) => (p && !removedRoots.some(root => atOrUnder(p, root)) ? readFile(p, "utf8").catch(() => null) : null)))));
     }
-    return out;
+    return await projects.canCache() ? out : out.map(() => null);
   });
   // A save: written only over the text the window expects on disk (D-92, DEF-26).
   handle("note:write", noteSave({
@@ -1933,7 +2007,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     // How much changed decides when it's backed up (D-133): against the text last written here, or on disk.
     before: async (path) => lastWritten.get(path) ?? (isText(path) ? decodeText(await readFile(path)).text : await readFile(path, "utf8").catch(() => "")),
     written: (path, before, content) => {
-      lastWritten.set(path, content);
+      if (!localTracesCleared) lastWritten.set(path, content);
       withGit((g) => g.written(path, changedChars(before, content)));
     },
     landed: async (path) => drafts?.written(path),
@@ -2357,7 +2431,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   handle("setup:reset", async () => (await setup()).reset());
   handle("setup:strength", async (p) => passphraseStrength(passphraseArg(p) ?? ""));
   handle("firstRun:git", () => account.gitCheck());
-  handle("firstRun:account", () => account.status());
+  handle("firstRun:account", async () => ({ ...await account.status(), cleanupPending: await projects.pendingCleanup() }));
   handle("firstRun:useExisting", () => resumeSignedInProject(account.useExisting()));
   handle("firstRun:signIn", (device) => resumeSignedInProject(account.signIn(device === true)));
   handle("firstRun:cancelSignIn", async () => account.cancel());
@@ -2367,7 +2441,10 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   });
   handle("firstRun:signOut", async (options) => {
     const s = await account.signOut({ git: (options as { git?: unknown } | undefined)?.git !== false });
-    if (!s.account || s.signedOut) await forgetLocal("signOut");
+    if (!s.account || s.signedOut) {
+      try { await forgetLocal("signOut"); }
+      catch (error) { if (!(error instanceof PrivacyCleanupError)) throw error; return { ...s, cleanupPending: [...error.pending] }; }
+    }
     return s;
   });
   handle("firstRun:beginSwitch", () => account.beginSwitch());
@@ -2614,7 +2691,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     try {
       const s = JSON.parse(await readFile(stateFile(), "utf8"));
       if (process.env.FOCUS_NOTES_PROJECT_NOTE) s.lastNotePath = notePath(process.env.FOCUS_NOTES_PROJECT_NOTE);
-      return s && s.version === 1 ? s : { version: 1 };
+      return s && s.version === 1 ? withoutRemovedReferences(await projects.canCache() ? s : withoutPrivacyTraces(s), await projects.removedRoots()) : { version: 1 };
     } catch {
       return { version: 1 };
     }
@@ -2626,7 +2703,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     if (!s || typeof s !== "object" || (s as { version?: unknown }).version !== 1) throw new Error("Unknown state version");
     const secondary = secondaryPages.has(e.sender.id);
     const onDisk = secondary ? await readFile(stateFile(), "utf8").then((t) => JSON.parse(t) as Record<string, unknown>).catch(() => undefined) : undefined;
-    await atomicWrite(stateFile(), JSON.stringify(stateFromWindow(s as Record<string, unknown>, onDisk, secondary), null, 2));
+    await projects.saveState(stateFromWindow(s as Record<string, unknown>, onDisk, secondary), async content => { await atomicWrite(stateFile(), JSON.stringify(content, null, 2)); });
   });
   // Copying a link's address (EDT-13), a path, or a note's text (D-192). Text only, and never read back: the renderer can't read the clipboard.
   handle("clipboard:write", async (text) => {

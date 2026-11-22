@@ -249,6 +249,11 @@ export class Account {
     this.#signIn = undefined;
     p?.kill();
   }
+  forgetSession(): void {
+    this.cancel();
+    this.#previous = undefined;
+    this.#session = undefined;
+  }
 
   /**
    * A fine-grained token the person created and pasted: checked with the API, then stored only in

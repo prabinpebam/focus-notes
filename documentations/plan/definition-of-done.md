@@ -243,6 +243,8 @@ SHR-20/25/26, SHR-04 and SEC-06 deliver UC-SHARE-02/10. WP-P.22 owns the live le
 
 **Try it:** with two disposable projects, pin and search notes in each, remove one and check that only its traces disappear. Sign out, restart and verify neither project's private search, Recent or Files pins remain.
 
+**Implementation evidence, 22 November:** static checks, monorepo typecheck, desktop build and 60 targeted metadata/account/Settings/search/diagnostics tests pass. Five built journeys pass together, including cross-profile sign-out/restart, isolated removal/restart with foreign encrypted Recent and Files references, real Windows locked-file pending-scope/Retry/restart, and existing sign-in and Sync-before-removal behavior. Source bytes, Git heads and remotes remain unchanged. The root profile family shares Git's account; optional credential removal remains separate. The frozen-head seven-job CI and coordinator-owned normal-Shell acceptance are recorded separately in [gate evidence](gate-evidence.md#cross-profile-privacy-cleanup-22-november), not inferred from local tests.
+
 **Against the promise, 7 November:** F1 and F4's folder acceptance are landed, but first-real deletion is not certified. G1–G7 close production gaps in that order; real-account rows remain visibly owner-dependent. G0 closes only after the durable spec and plan mappings are checked and on main. Fakes are implementation evidence, never substitutes for the owner's first real action.
 
 ## Project startup follow-up, 7 November

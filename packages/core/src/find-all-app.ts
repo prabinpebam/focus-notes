@@ -86,6 +86,17 @@ export function registerFindAll(ctx: Ctx): { useSearch(service: SearchService): 
   } }));
   let service: SearchService | undefined;
   let asked = 0;
+  bridge.onPrivacyCleared?.(() => {
+    asked++;
+    service = undefined;
+    clearTimeout(timer);
+    set({ results: undefined, searching: false, activeId: "" });
+  });
+  bridge.onPrivacyFiltered?.(() => {
+    asked++;
+    clearTimeout(timer);
+    set({ results: undefined, searching: false, activeId: "" });
+  });
   let timer: ReturnType<typeof setTimeout> | undefined;
   /** The result opened last, so F4 opens the active one first, then moves on. */
   let opened = "";

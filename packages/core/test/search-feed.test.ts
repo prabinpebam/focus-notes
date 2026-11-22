@@ -67,6 +67,31 @@ const keys = (hits: SearchHit[]) => hits.map((h) => h.key);
 const setTree = (app: App, tree: WorkspaceTree) => app.store.update((s) => ({ ...s, workspace: { ...s.workspace, tree } }));
 
 describe("indexing the workspace", () => {
+  it("G7.2: removes only the removed project's index and fences a late watcher read from repopulating it", async () => {
+    const removed = `${PRIV}/gone.md`, kept = `${PUB}/kept.md`;
+    const d = desktop({ [removed]: "# Gone\n\nprivate sentinel\n", [kept]: "# Kept\n\npublic sentinel\n" });
+    let filter = (_roots: readonly string[]) => {};
+    d.bridge.onPrivacyFiltered = listener => { filter = listener; return () => {}; };
+    const { search } = await started(d.bridge);
+    expect(keys(await askText(search, "private sentinel"))).toEqual([removed]);
+    const read = d.bridge.readNote;
+    let release = () => {};
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    let entered = () => {};
+    const reading = new Promise<void>(resolve => { entered = resolve; });
+    d.bridge.readNote = async path => { if (path === removed) { entered(); await gate; } return read(path); };
+    d.emit([{ path: removed, kind: "note", exists: true, title: "Gone" }]);
+    await reading;
+    filter([PRIV]);
+    release();
+    await search.whenIndexed();
+    await vi.waitFor(async () => expect(await askText(search, "private sentinel")).toEqual([]));
+    expect(keys(await askText(search, "public sentinel"))).toEqual([kept]);
+    d.emit([{ path: removed, kind: "note", exists: true, title: "Gone" }]);
+    await search.whenIndexed();
+    expect(await ask(search, "Gone")).toEqual([]);
+    expect(keys(await ask(search, "Kept"))).toEqual([kept]);
+  });
   it("indexes every note and folder in the roots: titles, paths relative to their root, headings, and full text", async () => {
     const d = desktop({
       [`${PRIV}/essays/on-focus.md`]: "# On focus\n\n## Deep work\n\nOne line at a time.\n",

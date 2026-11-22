@@ -2,6 +2,7 @@ import type { App, AppState } from "./app.ts";
 import { opErrorCode, type OpErrorCode, type PlatformBridge, type ProjectEntry, type ProjectStats } from "./bridge.ts";
 import type { MessageCatalog } from "./messages.ts";
 import { busyProps, type TaskTracker } from "./tasks.ts";
+import { atOrUnder } from "./journal.ts";
 
 /** A count quicker than this shows no placeholder: the line just appears (perceived performance, D-346). */
 export const STATS_PLACEHOLDER_MS = 300;
@@ -52,6 +53,25 @@ export function registerProjectOpen(ctx: {
   // takes longer than STATS_PLACEHOLDER_MS with nothing to show holds the line's place with a placeholder.
   // A failed count leaves no line and no error: the card still opens.
   const counts = new Map<string, { value?: ProjectStats; counting: boolean; slow: boolean; shownAt: number }>();
+  bridge.onPrivacyCleared?.(() => {
+    listing++;
+    action++;
+    counts.clear();
+    state.entries = [];
+    state.loading = false;
+    state.pending = false;
+    changed();
+  });
+  bridge.onPrivacyFiltered?.(roots => {
+    listing++;
+    action++;
+    state.entries = state.entries.filter(entry => !roots.some(root => atOrUnder(entry.folder, root))).map(entry => ({
+      ...entry,
+      recent: entry.recent?.filter(note => !roots.some(root => atOrUnder(note.path, root))),
+      lastNote: entry.lastNote && roots.some(root => atOrUnder(entry.lastNote!, root)) ? undefined : entry.lastNote,
+    }));
+    changed();
+  });
   const count = (entries: ProjectEntry[]) => {
     const stats = bridge.projects?.stats;
     if (!stats) return;

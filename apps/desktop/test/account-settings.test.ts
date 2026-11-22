@@ -195,7 +195,7 @@ describe("FRE-07, PRV-02: removing the workspace from this computer", () => {
     expect(await removeWorkspace(runner, plain)).toMatchObject({ state: "notGit" });
     expect(existsSync(join(plain, "Welcome.md"))).toBe(true);
   });
-  it("deletes the local clone and nothing on the remote, and refuses while anything is unpushed", { timeout: 60_000 }, async () => {
+  it("preserves the local clone and remote, and refuses while anything is unpushed", { timeout: 60_000 }, async () => {
     const i = instance();
     write(join(i.ws, "notes", "draft.md"), "# Draft\n");
     expect(await removeWorkspace(runner, i.ws)).toMatchObject({ state: "unpushed" });
@@ -205,7 +205,8 @@ describe("FRE-07, PRV-02: removing the workspace from this computer", () => {
     git(i.ws, "push", "-q");
     const before = count(i.notesRemote);
     expect(await removeWorkspace(runner, i.ws)).toMatchObject({ state: "removed" });
-    expect(existsSync(i.ws)).toBe(false);
+    expect(existsSync(i.ws)).toBe(true);
+    expect(existsSync(join(i.ws, ".git"))).toBe(true);
     expect(count(i.notesRemote)).toBe(before);
     expect(execFileSync("git", ["--git-dir", i.notesRemote, "show", "main:notes/draft.md"], { encoding: "utf8" })).toBe("# Draft\n");
   });

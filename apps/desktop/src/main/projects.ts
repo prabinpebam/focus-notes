@@ -14,6 +14,7 @@ import { suggestIdentity } from "@focus-notes/core/first-run";
 import { parseRecord } from "./workspace/record.ts";
 import { localImportCopies } from "./local-import.ts";
 import { projectMetadataStore, type MetadataTicket } from "./project-metadata.ts";
+import { cleanupProfiles, PrivacyCleanupError, purgeProfileTraces, retryProfileCleanup, removedProjectFolders, withoutPrivacyTraces, withoutRemovedReferences } from "./privacy-cleanup.ts";
 import { countProject, githubRepo } from "./project-card.ts";
 import { spawnOffThread } from "./spelling/off-thread.ts";
 import type { GitRunner } from "./git/run.ts";
@@ -143,7 +144,7 @@ export async function projectGitHubClient(candidate: string | undefined, account
 }
 
 export function projectWindows(home: () => string, atomicWrite: (path: string, content: string) => Promise<void>, candidateApi?: string, git?: GitRunner, spawned?: () => void, github?: () => Promise<GitHubApi | undefined>, remoteUrl = (owner: string, repo: string) => `https://github.com/${owner}/${repo}.git`) {
-  const userData = app.getPath("userData");
+  const userData = resolve(process.env.FOCUS_NOTES_USER_DATA ?? app.getPath("userData"));
   const rootProfile = resolve(process.env.FOCUS_NOTES_PROJECTS_PROFILE ?? userData);
   const profiles = join(rootProfile, DATA_FOLDERS.projectProfiles);
   const metadata = projectMetadataStore(rootProfile);
@@ -162,6 +163,43 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
   type Recent = { rank: number; pinned: boolean; notes: { path: string; rank: number; pinned: boolean }[] };
   let ownRecent: Recent | undefined;
   let ownRecentBytes: string | undefined;
+  let onCleared: () => Promise<void> = async () => {};
+  let onFiltered: (folders: string[]) => Promise<void> = async () => {};
+  const stopCleanupWatch = metadata.watch(userData, async () => {
+    acceptingMetadata = false;
+    metadataEpoch++;
+    pendingLaunch = undefined;
+    launchRecord = Promise.resolve(undefined);
+    ownRecent = undefined;
+    ownRecentBytes = undefined;
+    known.clear();
+    counted.clear();
+    await onCleared();
+  }, async () => {
+    const folders = await removedProjectFolders(rootProfile, metadata);
+    if (folders.length) for (const scope of [DATA_FILES.projectRecent, DATA_FILES.projectLastNote]) {
+      try {
+        await metadata.transaction(async () => {
+          metadata.pending(userData, scope, true);
+          await filterProtected(userData, scope, folders);
+          metadata.pending(userData, scope, false);
+        });
+      } catch {
+        await metadata.transaction(async () => metadata.pending(userData, scope, true));
+        throw new PrivacyCleanupError(await metadata.pendingScopes());
+      }
+    }
+    await onFiltered(folders);
+  });
+  void stopCleanupWatch.catch(error => console.error("Could not observe local cleanup:", error instanceof Error ? error.name : "Error"));
+  async function canCache(): Promise<boolean> {
+    const expected = await ownTicket;
+    const current = await metadata.ticket(userData);
+    return current.enabled && current.generation === expected.generation;
+  }
+  async function saveState(content: Record<string, unknown>, write: (content: Record<string, unknown>) => Promise<void>) {
+    await metadata.transaction(async () => { await write(withoutRemovedReferences(await canCache() ? content : withoutPrivacyTraces(content), await removedProjectFolders(rootProfile, metadata))); });
+  }
   const halfLife = 14 * 24 * 60 * 60 * 1000;
   const addScore = (rank: number, points: number) => {
     const now = Date.now();
@@ -186,17 +224,49 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     }
   }
   async function recent(profile: string): Promise<Recent> { return readRecent(profile, await recentBytes(profile)); }
+  const removedPath = (path: string, folders: readonly string[]) => folders.some(folder => {
+    const within = relative(folder, resolve(path));
+    return !isAbsolute(within) && within !== ".." && !within.startsWith(`..${sep}`);
+  });
+  async function protect(content: string): Promise<string> {
+    if (!safeStorage.isEncryptionAvailable()) throw new Error("Protected recent storage is unavailable.");
+    return process.platform === "win32"
+      ? `dpapi:${await windowsProtectedRecord(Buffer.from(content, "utf8").toString("base64"), true)}`
+      : safeStorage.encryptString(content).toString("base64");
+  }
+  // Called with the shared metadata lock already held, including during Retry.
+  async function filterProtected(profile: string, scope: string, folders: readonly string[]) {
+    if (scope === DATA_FILES.projectRecent) {
+      const previous = await recentBytes(profile);
+      if (previous === undefined) return;
+      const record = await readRecent(profile, previous);
+      const notes = record.notes.filter(note => !removedPath(note.path, folders));
+      if (notes.length !== record.notes.length) await atomicWrite(join(profile, scope), await protect(JSON.stringify({ ...record, notes })));
+      if (profile === userData) { ownRecent = undefined; ownRecentBytes = undefined; }
+    } else {
+      const path = join(profile, scope);
+      const bytes = await readFile(path, "utf8").catch(error => missing(error) ? undefined : Promise.reject(error));
+      if (bytes === undefined) return;
+      if (!safeStorage.isEncryptionAvailable()) throw new Error("Protected launch storage is unavailable.");
+      const content = bytes.startsWith("dpapi:")
+        ? Buffer.from(await windowsProtectedRecord(bytes.slice(6), false), "base64").toString("utf8")
+        : safeStorage.decryptString(Buffer.from(bytes, "base64"));
+      const record: unknown = JSON.parse(content);
+      if (!record || typeof record !== "object" || !("path" in record) || typeof record.path !== "string") throw new Error("Invalid protected launch record.");
+      if (removedPath(record.path, folders)) await rm(path, { force: true });
+    }
+  }
   async function saveRecent(profile: string, record: Recent, epoch: number, ticket: MetadataTicket, previous: string | undefined) {
     if (epoch !== metadataEpoch) return;
     if (!safeStorage.isEncryptionAvailable()) throw new Error("Protected recent storage is unavailable.");
-    const content = JSON.stringify(record);
-    const encrypted = process.platform === "win32"
-      ? `dpapi:${await windowsProtectedRecord(Buffer.from(content, "utf8").toString("base64"), true)}`
-      : safeStorage.encryptString(content).toString("base64");
     if (epoch !== metadataEpoch) return;
-    await metadata.commit(profile, ticket, async () => {
+    const encrypted = await metadata.commit(profile, ticket, async () => {
       if (await recentBytes(profile) !== previous) throw new Error("Project ranking changed in another window. Try again.");
+      const roots = await removedProjectFolders(rootProfile, metadata);
+      record = { ...record, notes: record.notes.filter(note => !removedPath(note.path, roots)) };
+      const encrypted = await protect(JSON.stringify(record));
       await atomicWrite(join(profile, DATA_FILES.projectRecent), encrypted);
+      return encrypted;
     });
     if (epoch === metadataEpoch && profile === userData) {
       ownRecent = structuredClone(record);
@@ -274,7 +344,9 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
           ? `dpapi:${await windowsProtectedRecord(Buffer.from(content, "utf8").toString("base64"), true)}`
           : safeStorage.encryptString(content).toString("base64");
         // Protection can finish after a newer cursor or note arrived. Never publish the stale record.
-        if (!pendingLaunch && pending.epoch === metadataEpoch) await metadata.commit(userData, await pending.ticket, () => atomicWrite(lastNoteFile, encrypted));
+        if (!pendingLaunch && pending.epoch === metadataEpoch) await metadata.commit(userData, await pending.ticket, async () => {
+          if (!removedPath(pending.record.path, await removedProjectFolders(rootProfile, metadata))) await atomicWrite(lastNoteFile, encrypted);
+        });
       } catch (error) {
         console.error("Could not persist protected launch record:", error instanceof Error ? error.name : "Error");
       }
@@ -295,6 +367,7 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     if (!isAbsolute(path) || !writingFile(path)) throw new Error("Choose a Markdown or text note.");
     // Old renderer callbacks after sign-out or shutdown must not recreate forgotten records.
     if (!acceptingMetadata) return;
+    if (removedPath(path, await removedProjectFolders(rootProfile, metadata))) return;
     if (!safeStorage.isEncryptionAvailable()) throw new Error("Protected launch storage is unavailable.");
     const previous = snapshot ? undefined : lastRecord();
     const record: LaunchRecord = { path, position: snapshot };
@@ -315,7 +388,7 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     })();
     return closingWrite;
   }
-  function purge(remove: () => Promise<void>): Promise<void> {
+  function purge(remove: () => Promise<void>, event: "signOut" | "removeWorkspace" | "deleteProject" = "deleteProject"): Promise<void> {
     acceptingMetadata = false;
     metadataEpoch++;
     pendingLaunch = undefined;
@@ -326,9 +399,10 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     purging = (async () => {
       await previous?.catch(error => { console.error("Retrying project metadata cleanup:", error instanceof Error ? error.name : "Error"); });
       await ownTicket;
-      await metadata.change(userData, false);
       await drainMetadata();
       await closingWrite?.catch(error => { console.error("Could not settle project shutdown metadata:", error instanceof Error ? error.name : "Error"); });
+      const selected = event === "deleteProject" ? [userData] : await cleanupProfiles(rootProfile, event === "signOut" ? undefined : home());
+      await purgeProfileTraces(rootProfile, selected, event, metadata, atomicWrite, filterProtected);
       await remove();
       await metadata.transaction(async () => {
         const pointer = join(rootProfile, DATA_FILES.lastProject);
@@ -344,6 +418,8 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     const epoch = metadataEpoch;
     const pending = purging;
     await pending;
+    const scopes = await metadata.pendingScopes();
+    if (scopes.length) throw new PrivacyCleanupError(scopes);
     const ticket = await ownTicket;
     if (pending !== purging || epoch !== metadataEpoch) return;
     if (!closingWrite && (!acceptingMetadata || !ticket.enabled)) {
@@ -352,7 +428,12 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
       if (pending === purging && epoch === metadataEpoch) acceptingMetadata = true;
     }
   }
+  async function retryCleanup(): Promise<void> {
+    await retryProfileCleanup(rootProfile, metadata, atomicWrite, filterProtected);
+    purging = undefined;
+  }
   async function dispose(): Promise<void> {
+    await (await stopCleanupWatch)();
     await purging?.catch(() => {});
     await closingWrite?.catch(() => {});
     await drainMetadata();
@@ -371,22 +452,24 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
   async function list(): Promise<ProjectEntry[]> {
     known.clear();
     const own = await here();
-    if (own) known.set(own, userData);
+    if (own && acceptingMetadata && !(await metadata.isRemoved(userData))) known.set(own, userData);
     await mkdir(profiles, { recursive: true });
-    if (userData === rootProfile && !existsSync(join(rootProfile, DATA_FILES.projectFolder)) && own) await writeFile(join(rootProfile, DATA_FILES.projectFolder), own, { flag: "wx" });
+    if (acceptingMetadata && userData === rootProfile && !existsSync(join(rootProfile, DATA_FILES.projectFolder)) && own) await writeFile(join(rootProfile, DATA_FILES.projectFolder), own, { flag: "wx" });
     const rootRecord = parseRecord(await readFile(join(rootProfile, DATA_FILES.workspace), "utf8").catch((error: NodeJS.ErrnoException) => {
       if (error.code === "ENOENT") return "";
       throw error;
     }));
-    if (rootRecord && existsSync(rootRecord.folder)) known.set(await realpath(rootRecord.folder), rootProfile);
+    if (rootRecord && existsSync(rootRecord.folder) && !(await metadata.isRemoved(rootProfile))) known.set(await realpath(rootRecord.folder), rootProfile);
     else if (existsSync(join(rootProfile, DATA_FILES.projectFolder))) {
       const folder = await readFile(join(rootProfile, DATA_FILES.projectFolder), "utf8");
-      if (existsSync(folder)) known.set(await realpath(folder), rootProfile);
+      if (existsSync(folder) && !(await metadata.isRemoved(rootProfile))) known.set(await realpath(folder), rootProfile);
     }
     for (const name of await readdir(profiles)) {
       const profile = join(profiles, name);
       if (!(await stat(profile)).isDirectory()) continue;
-      const folder = await readFile(join(profile, DATA_FILES.projectFolder), "utf8");
+      if (await metadata.isRemoved(profile)) continue;
+      const folder = await readFile(join(profile, DATA_FILES.projectFolder), "utf8").catch(error => missing(error) ? undefined : Promise.reject(error));
+      if (!folder) continue;
       if (existsSync(folder)) known.set(await realpath(folder), profile);
     }
     return Promise.all([...known].map(async ([folder, profile]) => {
@@ -463,7 +546,10 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
       if (!isAbsolute(path) || within === ".." || within.startsWith(`..${sep}`) || resolve(path) === canonical || !writingFile(path)) throw new Error("That note isn't in this project");
       target = path;
     }
-    if (canonical === await here() && !target) return;
+    if (canonical === await here() && !target && await canCache()) return;
+    const scopes = await metadata.pendingScopes();
+    if (scopes.length) throw new PrivacyCleanupError(scopes);
+    await metadata.change(profile, true);
     // One process and single-instance lock per project keep all existing workspace services scoped.
     if (profile === userData && canonical !== await here()) throw new Error("That project profile is already in use");
     const args = [...(app.isPackaged ? [] : [app.getAppPath()]), ...(target ? ["--project-note", target] : [])];
@@ -481,6 +567,13 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     await list();
     if (!known.has(folder)) {
       const profile = join(profiles, key(folder));
+      if (await metadata.isRemoved(profile)) {
+        const scopes = await metadata.pendingScopes();
+        if (scopes.length) throw new PrivacyCleanupError(scopes);
+        await metadata.change(profile, true);
+        await list();
+        return folder;
+      }
       await mkdir(profile, { recursive: true });
       await writeFile(join(profile, DATA_FILES.projectFolder), folder, { encoding: "utf8", flag: "wx" });
       await writeFile(join(profile, DATA_FILES.state), JSON.stringify({ version: 1, firstRun: "done" }), { encoding: "utf8", flag: "wx" });
@@ -772,5 +865,5 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     await open(folder, file);
     return { file, here: false };
   }
-  return { list, known: knownFolder, stats, repo, adopt, openFile, openFilePath, open, choose, upload, pin, localNote, importLocal, edited: (path: string) => score(path, 2), parent: async () => dirname(home()), chooseParent, check, create, continueCreate, pendingCreate, lastNote, position, remember, closed, purge, resume, dispose, firstNoteAdmission: metadata.firstNoteAdmission };
+  return { removedRoots: () => removedProjectFolders(rootProfile, metadata), removed: () => metadata.isRemoved(userData), onFiltered: (listener: (folders: string[]) => Promise<void>) => { onFiltered = listener; }, list, known: knownFolder, stats, repo, adopt, openFile, openFilePath, open, choose, upload, pin, localNote, importLocal, edited: (path: string) => score(path, 2), parent: async () => dirname(home()), chooseParent, check, create, continueCreate, pendingCreate, lastNote, position, remember, closed, purge, resume, dispose, canCache, saveState, pendingCleanup: () => metadata.pendingScopes(), retryCleanup, onCleared: (listener: () => Promise<void>) => { onCleared = listener; }, firstNoteAdmission: metadata.firstNoteAdmission };
 }

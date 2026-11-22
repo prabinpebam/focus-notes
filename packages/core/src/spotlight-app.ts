@@ -20,6 +20,7 @@ import {
 } from "./spotlight.ts";
 import { ANCHORS, actionAvailability, CATALOG, catalogEntry, listable, stepsFor, type ActionScope, type CatalogEntry } from "./actions-catalog.ts";
 import { sharingAvailable } from "./share-manage.ts";
+import { atOrUnder } from "./journal.ts";
 
 export interface SpotlightState {
   open: boolean;
@@ -101,6 +102,20 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
   let search: SpotlightSearch | undefined;
   const frecency = new Frecency();
   let seq = 0;
+  let privacyCleared = false;
+  bridge.onPrivacyCleared?.(() => {
+    privacyCleared = true;
+    seq++;
+    for (const key of frecency.recent()) frecency.forget(key);
+    search = undefined;
+    set({ rows: [], activeId: "", busy: false, answered: "", indexing: undefined });
+  });
+  bridge.onPrivacyResumed?.(() => { privacyCleared = false; });
+  bridge.onPrivacyFiltered?.(roots => {
+    seq++;
+    for (const key of frecency.recent()) if (roots.some(root => atOrUnder(key, root))) frecency.forget(key);
+    set({ rows: [], activeId: "", busy: false, answered: "", indexing: undefined });
+  });
   let opening: number | undefined;
   let selectedByUser = false;
   const selectRow = (id: string) => {
@@ -238,6 +253,7 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
    * newest first, the instance's private ones while unlocked (D-90), as the old Open a note list did.
    */
   const shellNotes = async (): Promise<SpotlightRow[]> => {
+    if (privacyCleared || await bridge.canCache?.() === false) return [];
     const notes = ((await bridge.listNotes?.().catch(() => [])) ?? []).sort((a, b) => b.updated - a.updated);
     const recent = recentNotes().filter((p) => notes.some((n) => n.path === p)).slice(0, 10);
     const row = (path: string, title: string, group: GroupId): SpotlightRow => {
@@ -304,6 +320,7 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
     };
     const keep = follow && selectedByUser;
     if (!s.open || s.actions) return;
+    if (privacyCleared && (s.mode === "notes" || s.mode === "all")) return setRows([], false, false);
     const my = ++seq;
     if (s.mode === "help") return setRows(helpRows(s.query), false, false);
     if (s.mode === "headings" && !s.everywhere) return setRows(localHeadings(s.query), false, false);
@@ -787,7 +804,7 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
     const n = store.state.note;
     if (n.status === "ready" && n.path && n.path !== lastPath) {
       lastPath = n.path;
-      frecency.record(n.path, ctx.now());
+      if (!privacyCleared) frecency.record(n.path, ctx.now());
     }
   });
 

@@ -25,6 +25,17 @@ const listen = (channel: string) => (listener: (...args: unknown[]) => void) => 
   ipcRenderer.on(channel, handler);
   return () => ipcRenderer.removeListener(channel, handler);
 };
+const privacyListeners = new Set<() => void>();
+const privacyFilters = new Set<(roots: readonly string[]) => void>();
+ipcRenderer.on("privacy:cleared", (_event, id: string) => {
+  for (const listener of privacyListeners) listener();
+  spellTarget = undefined;
+  ipcRenderer.send("privacy:ack", id);
+});
+ipcRenderer.on("privacy:filtered", (_event, id: string, roots: string[]) => {
+  for (const listener of privacyFilters) listener(roots);
+  ipcRenderer.send("privacy:ack", id);
+});
 /** The latest compositing the main process sent (D-121), kept for the app, which listens only once it starts. */
 let latestCompositing: unknown;
 ipcRenderer.on("compositing:changed", (_e, c: unknown) => (latestCompositing = c));
@@ -101,6 +112,11 @@ ipcRenderer.on("spelling:replace", (_e, word: unknown, replacement: unknown) => 
 
 contextBridge.exposeInMainWorld("focusNotes", {
   platform,
+  canCache: () => ipcRenderer.invoke("privacy:cache"),
+  onPrivacyCleared: (listener: () => void) => { privacyListeners.add(listener); return () => privacyListeners.delete(listener); },
+  onPrivacyResumed: listen("privacy:resumed"),
+  removedRoots: () => ipcRenderer.invoke("privacy:removedRoots"),
+  onPrivacyFiltered: (listener: (roots: readonly string[]) => void) => { privacyFilters.add(listener); return () => privacyFilters.delete(listener); },
   readImage: (note: string, src: string) => ipcRenderer.invoke("image:read", note, src),
   copyImage: (note: string, src: string, alt: string, caption: string) => ipcRenderer.invoke("image:copy", note, src, alt, caption),
   saveImage: (note: string, src: string) => ipcRenderer.invoke("image:save", note, src),
@@ -402,6 +418,7 @@ contextBridge.exposeInMainWorld("focusNotes", {
   firstRun: {
     git: () => ipcRenderer.invoke("firstRun:git"),
     account: () => ipcRenderer.invoke("firstRun:account"),
+    retryCleanup: () => ipcRenderer.invoke("privacy:retry"),
     useExisting: () => ipcRenderer.invoke("firstRun:useExisting"),
     signIn: (device: boolean) => ipcRenderer.invoke("firstRun:signIn", device),
     cancelSignIn: () => ipcRenderer.invoke("firstRun:cancelSignIn"),

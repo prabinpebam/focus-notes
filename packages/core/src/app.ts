@@ -399,6 +399,15 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   let appState: AppStateFile = { version: 1 };
   /** What this device keeps (`state.json`), and the synced settings file while syncing is on (PRV-03). */
   let deviceState: AppStateFile = { version: 1 };
+  let activeSearch: Parameters<App["useSearch"]>[0] | undefined;
+  bridge.onPrivacyCleared?.(() => {
+    activeSearch?.stop();
+    activeSearch = undefined;
+    for (const key of ["lastNotePath", "filesPins", "filesRecent"] as const) {
+      delete appState[key];
+      delete deviceState[key];
+    }
+  });
   let settingsFile: SettingsFile | undefined;
   /** A patch's undefined values remove those keys (the recent note, forgotten on sign out, PRV-02). */
   const merge = (base: AppStateFile, patch: Partial<AppStateFile>) =>
@@ -1801,6 +1810,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     keySeen: () => menuBar.keySeen(),
     warmUp,
     useSearch: (service) => {
+      activeSearch?.stop();
+      activeSearch = service;
       spotlight.attach(service);
       findAll.useSearch(service);
     },

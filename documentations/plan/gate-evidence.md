@@ -18,6 +18,21 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 
 ## Summary
 
+### Cross-profile privacy cleanup, 22 November
+
+**Implemented; final release gate pending.** Sign-out invalidates every profile sharing the root account; removal tombstones only profiles pointing at the removed source project. Shared generation fencing drains admitted writes, waits for live renderer/index/cache acknowledgements, and prevents stale callbacks from restoring pins or encrypted Recent/Launch records. Source notes, Git history and remotes remain unchanged. Pending cleanup survives restart with hashed profile identifiers and fixed cache scopes; Settings offers Retry without repeating credential removal.
+
+| Evidence | Result |
+| --- | --- |
+| `npm config get registry`; `pnpm install`; `pnpm tokens` | Approved Microsoft npm feed; worktree dependencies and tokens prepared. |
+| `pnpm check`; `pnpm typecheck`; `pnpm --filter @focus-notes/desktop run build` | Passed; generated schemas and notification inventory refreshed. |
+| `pnpm exec vitest run apps/desktop/test/project-metadata.test.ts apps/desktop/test/account-settings.test.ts packages/core/test/settings-app.test.ts packages/core/test/search-feed.test.ts packages/core/test/diagnostics.test.ts` | 60 passed: cross-profile purge, restart-persistent Retry, redaction, unrelated-project preservation, live acknowledgement, admitted-write drain, late-index-read fencing and diagnostics allow-list coverage. Windows folder aliases cover canonical/8.3 paths; the cleanup migrates a legacy root workspace pointer before removing it. A dedicated metadata writer avoids routing project-folder.txt through note-encoding hooks. |
+| `FOCUS_NOTES_E2E=1`, `pnpm --filter @focus-notes/desktop exec playwright test e2e/m3-settings.spec.ts --workers=1 -g "G7\|Focus Notes alone\|removing the workspace preserves"` | Five passed together: two-profile sign-out/restart; isolated removal/restart including foreign encrypted Recent and Files references; a real Windows locked-file pending-scope/Details/Retry/restart journey; existing sign-in-after-sign-out and Sync-before-removal journeys. Exact-PID cleanup ran with `-WhatIf` then actual cleanup. |
+| `node .\slate\scripts\runtime-host.mjs check --repo . --host documentations` | Passed. |
+| Exact-head Windows CI, serialized fast-forward landing and normal-Shell proof | Final acceptance recorded by W-1B and the coordinator against the frozen branch head; not inferred from local checks. The coordinator owns the single candidate launch, so W-1B must not start a duplicate app. |
+
+The pending cleanup table stores only hashed profile identities and fixed inventory scopes. Raw filesystem errors (including injected token/title text) are not persisted or placed in the cleanup error. Tests use disposable profiles, loopback GitHub and local bare remotes only; no real account, owner notes or Preview profile was touched.
+
 ### Standalone text files, 8 November
 
 **Landed and packaged writing verified.** G4 / PRJ-09 / UC-PROJ-08 extends the existing standalone Markdown path rather than importing text or making a project. All five invisible built-app journeys pass together. Runtime `a30004e91cb24b2353780bf0bd2ef0c2bf165f3d` passed all seven Windows jobs in [42461267072](https://github.com/prabinpebam/focus-notes/actions/runs/42461267072) and landed by non-force fast-forward under the coordinator's landing lock. The scheduled Preview reached `a30004e`; its byte-identical scratch copy passed normal-Shell literal writing and restart checks. Installed Windows association registration was not changed or independently verified on the owner's computer.
@@ -914,14 +929,20 @@ The existing four quarantines below retain their exact scope.
 Authorized by the implementation coordinator, not considered fixed. Only these
 four exact test titles use Playwright's `test.fixme` during the quarantine.
 The date guard automatically restores the unchanged assertions after
-10 November (UTC); no budget, selector or other test is relaxed.
+10 November (UTC); no budget, selector or other test is relaxed. On 22 November,
+Coordinator 2 authorized renewing only the two PRF-12 rows and the D-186 row
+below to `2026-11-24T00:00:00Z` for integration, with their original assertions
+and thresholds unchanged. Track 3A owns the PRF-12 root fixes and Track 4A
+owns the D-186 root fix. Release requires those root fixes and zero active
+quarantines; this renewal is not release acceptance. The PRF-14 row is
+historical and its expired guard is unchanged.
 
 | Exact scope | Failure and run | Owner | Expiry | Status |
 | --- | --- | --- | --- | --- |
 | `apps/desktop/e2e/m5-snappy.spec.ts`: "PRF-14: every control answers in the next frame: input to next paint for the toolbar, Files, Spotlight and Settings, p95 at most 50 ms" | p95 56 ms, budget 50 ms; [41654808341](https://github.com/prabinpebam/focus-notes/actions/runs/41654808341), also [41656910779](https://github.com/prabinpebam/focus-notes/actions/runs/41656910779) | Implementation coordinator | 10 November 2026 | Quarantined; actual performance fix queued |
-| `apps/desktop/e2e/doc-minimap.spec.ts`: "D-186: the pin keeps the card open in a column of its own, the text moved clear of it, live, through leaving, Esc, a jump and the next launch; without room the rail returns; unpinning gives the room back" | Minimap row inactive when focused expected; runs 41654808341 and 41656910779 | Implementation coordinator | 10 November 2026 | Quarantined; focus fix queued |
-| `apps/web/e2e/public-pages.spec.ts`: "PRF-12: LCP, INP, and CLS on a throttled profile, and only the first screen's fonts preloaded" | LCP/INP/CLS lab gate; [41654808341](https://github.com/prabinpebam/focus-notes/actions/runs/41654808341) | Implementation coordinator | 10 November 2026 | Quarantined; lab-metrics fix queued |
-| `apps/web/e2e/site.spec.ts`: "PRF-12: the landing page's LCP, INP and CLS on a throttled profile" | LCP/INP/CLS lab gate; run 41654808341 | Implementation coordinator | 10 November 2026 | Quarantined; lab-metrics fix queued |
+| `apps/desktop/e2e/doc-minimap.spec.ts`: "D-186: the pin keeps the card open in a column of its own, the text moved clear of it, live, through leaving, Esc, a jump and the next launch; without room the rail returns; unpinning gives the room back" | Minimap row inactive when focused expected; inherited failures in 44038933839 / 45014686049 | 1.1.0 Phase 3/4/5 Coordinator; Track 4A root-fix owner | `2026-11-24T00:00:00Z` | Integration-only renewal; unchanged assertions; root fix mandatory before release; zero active quarantines required |
+| `apps/web/e2e/public-pages.spec.ts`: "PRF-12: LCP, INP, and CLS on a throttled profile, and only the first screen's fonts preloaded" | LCP/INP/CLS lab gate; inherited failure in [45014686049](https://github.com/prabinpebam/focus-notes/actions/runs/45014686049) | 1.1.0 Phase 3/4/5 Coordinator; Track 3A root-fix owner | `2026-11-24T00:00:00Z` | Integration-only renewal; unchanged assertions/budgets; root fix mandatory before release; zero active quarantines required |
+| `apps/web/e2e/site.spec.ts`: "PRF-12: the landing page's LCP, INP and CLS on a throttled profile" | LCP/INP/CLS lab gate; inherited failure in 45014686049 | 1.1.0 Phase 3/4/5 Coordinator; Track 3A root-fix owner | `2026-11-24T00:00:00Z` | Integration-only renewal; unchanged assertions/budgets; root fix mandatory before release; zero active quarantines required |
 ### WP-P.9 item-dialog candidate
 
 **Production-ready work in progress, not a merge candidate (3 November).** Owner-approved design D-335/D-336; first increment covers SHR-13 and parts of SHR-14/15/24 with real JSON and view models, not mocks. No access-file write, clipboard write, network publication or note write occurs in this increment.
