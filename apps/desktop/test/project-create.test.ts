@@ -420,10 +420,16 @@ it("retries failed reads and reports background writes without losing the latest
     await projects.remember(note, moved);
     expect(await projects.position(note)).toEqual(moved);
     await vi.waitFor(() => expect(error).toHaveBeenCalledWith("Could not persist protected launch record:", "Error"));
-    expect(await projectWindows(() => root, writeFile).position(note)).toEqual(position);
+    const beforeRetry = projectWindows(() => root, writeFile);
+    expect(await beforeRetry.position(note)).toEqual(position);
+    await beforeRetry.dispose();
+    instances.splice(instances.indexOf(beforeRetry), 1);
     fail = false;
     await projects.remember(note, moved);
-    await vi.waitFor(async () => expect(await projectWindows(() => root, writeFile).position(note)).toEqual(moved));
+    await projects.closed();
+    await projects.dispose();
+    instances.splice(instances.indexOf(projects), 1);
+    expect(await projectWindows(() => root, writeFile).position(note)).toEqual(moved);
   } finally { error.mockRestore(); }
 });
 

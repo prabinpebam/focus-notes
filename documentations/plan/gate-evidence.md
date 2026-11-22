@@ -99,10 +99,54 @@ test assertions separated from what the images show. The combined journey now
 writes `g7-provenance.json` explicitly after real Retry and exact own-PID cleanup.
 No private paths, note labels or raw failure text are copied into those receipts.
 
-**Still open:** one final landing-candidate push, exact-head seven-terminal-green
-Windows CI jobs and coordinator-serialized non-force landing. Local eight-test
-evidence is not seven-job CI acceptance, release readiness or native exposure.
+**Still open:** coordinator-approved forward landing-candidate push,
+exact-head seven-terminal-green Windows CI jobs and coordinator-serialized
+non-force landing. Local evidence is not seven-job CI acceptance,
+release readiness or native exposure.
 The retained visible candidate and the owner's Preview remain untouched.
+
+#### Published checkpoint's failed gate and bounded repair
+
+Published `47a3fbd3c30f9a53bf1f34a5abc45439cbf30d81` failed
+[CI run 45025980008](https://github.com/prabinpebam/focus-notes/actions/runs/45025980008):
+five jobs passed; the unit job and journey shard 1 failed.
+No job was cancelled or retried, and no landing occurred.
+
+| Exact failure | Distinction and repair |
+| --- | --- |
+| `project-create.test.ts`: **retries failed reads and reports background writes without losing the latest in-memory position**; expected `{from:8,to:8,scroll:40}`, read `{from:3,to:3,scroll:10}` | Not among the older 832 checkpoint's failures. The polling callback constructed and retained a new live metadata/watch observer on every probe. The fixture now closes its one pre-retry observer, awaits the real normal-close metadata drain, disposes the writer, and asserts the same exact persisted position through a fresh restart. No timeout increase or synthetic acknowledgement. |
+| Non-reduced dark DSK-09 journey, **removing the workspace**: shift `0.013`, Back moved from `232,306 560x32` to `232,576 560x32` | Unlike the older source-deletion expectation, this gate reached the source-preserving assertions. Autonomous first-run arrival can outlive `start()` and insert the checking panel's three skeleton cards after replacement. Only replacement of an active notes step now awaits the existing task tracker's settlement before the swap. No cold-start, interactive wizard, component styling or `0.01` budget change. |
+| Unit step 6m; shard 1 journey step 19m11 | Flagged as more than twice the usual duration; budgets were not changed. |
+
+The scoped repair's nine-file unit command above passed all 157 tests.
+Local pre-repair GPU and software latency probes did not reproduce the CI
+shift; they are not evidence that the published gate was green.
+The revised combined journey exercises the existing native delay seams for
+`firstRun:folder` and `firstRun:repositories`, retains the exact source bytes,
+Git HEAD/remotes, frame/motion limits and PRJ-24 listing assertions, and writes
+hidden replacement captures with post-quit receipts when requested.
+The combined eight cases passed in 4.6m with software compositing; the first
+1622/100-frame receipts measured 1132x812 and were explicitly partial for the
+CI-size requirement. `FOCUS_NOTES_E2E_WINDOW=1024x768` measured 1056x800 because
+the saved bounds exclude the 32px shadow expansion. The corrected existing
+fixture setting, `FOCUS_NOTES_E2E_WINDOW=992x736`, measured actual 1024x768.
+
+| Final repair evidence | Result |
+| --- | --- |
+| The nine-file scoped unit command above | 157 passed; exact position after normal close, disposal and a fresh reader, with no observer per polling probe. |
+| `pnpm check`; `pnpm typecheck`; desktop build; Slate runtime check | Passed. No UI contract/schema or notification inventory changes in this repair. |
+| The eight-case combined command above with `FOCUS_NOTES_DISABLE_GPU=1` | 8 passed in 4.6m, including real G7 Retry/acknowledgement/source preservation and unchanged Create project cases. |
+| `FOCUS_NOTES_E2E=1`, `FOCUS_NOTES_DISABLE_GPU=1`, `FOCUS_NOTES_E2E_WINDOW=992x736`; `pnpm --filter @focus-notes/desktop exec playwright test e2e/dsk09-frames.spec.ts --workers=1 -g 'DSK-09: dark'` | 2 passed. Actual 1024x768 receipts: 1801 dark and 95 reduced-motion frames; no frame problems, shifts above the original 0.01 limit or navigation; source notes and Git preserved; both owned main processes closed. |
+| Web build and the 13-case `public-pages.spec.ts site.spec.ts` command above | Passed with genuine gzip fixtures and unchanged budgets/guards. |
+
+Exact-size hidden captures and post-quit receipts are in
+`focus-notes-work\review\g7-w1b2-durable-failure-22nov\repair-exact-viewport\`.
+Capture records truthfully retain parent source HEAD 47: the repair build was
+executed before its forward source checkpoint, not rebuilt from an already
+committed future hash. The renderer bundle is
+`index-DwwP6gwl.js`, SHA-256
+`987f5d7fa1945a967ec82db672212789f022db918deba064328971353c07d54b`.
+No repaired candidate push or new CI run is accepted yet.
 
 ### PRF-12 Pages-compression fixture repair, 22 November
 

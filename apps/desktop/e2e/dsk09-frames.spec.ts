@@ -9,7 +9,7 @@
  * once the page reports its first themed frame (`fn:window.firstFrame`).
  */
 import { test, expect, type Page } from "./fixtures.ts";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { DATA_FILES } from "../../../packages/core/src/inventory.ts";
 import { quit, windowBox, type Launched } from "./helpers.ts";
@@ -73,9 +73,11 @@ for (const reduced of [false, true]) test(`DSK-09: dark${reduced ? ", with reduc
   w.fakes.store(w.gh.token);
   writeFileSync(join(w.dirs.userData, DATA_FILES.state), JSON.stringify({ version: 1, appearance: "dark" }));
   const l = await start(w);
+  const appProcess = l.app.process();
   expect(await l.app.evaluate(({ BrowserWindow }, opacity) => BrowserWindow.getAllWindows().every(window => window.getOpacity() === opacity), journeyUnseen({ ...process.env, FOCUS_NOTES_E2E: "1" }) ? 0 : 1)).toBe(true);
   const { page } = l;
   const navs = navigations(page);
+  let saveProof: (() => void) | undefined;
   // Reduced motion: swaps are instant, and no frame is caught mid-transition (D-148).
   if (reduced) await page.emulateMedia({ reducedMotion: "reduce" });
   const rec = await recordFrames(page);
@@ -180,8 +182,14 @@ for (const reduced of [false, true]) test(`DSK-09: dark${reduced ? ", with reduc
         .map(path => ({ path, bytes: readFileSync(join(root, path)) })),
     }));
     expect(sources[0]?.notes.length).toBeGreaterThan(0);
+    await l.app.evaluate(() => {
+      (globalThis as { focusNotesSlow?: Record<string, number> }).focusNotesSlow = {
+        "firstRun:folder": 1_200, "firstRun:repositories": 1_200,
+      };
+    });
     await remove.click({ timeout: 30_000 });
     await heading(page, "We found your notes");
+    await l.app.evaluate(() => { delete (globalThis as { focusNotesSlow?: Record<string, number> }).focusNotesSlow; });
     for (const source of sources) {
       expect(existsSync(source.root)).toBe(true);
       expect(w.git(source.root, "rev-parse", "HEAD")).toBe(source.head);
@@ -193,14 +201,30 @@ for (const reduced of [false, true]) test(`DSK-09: dark${reduced ? ", with reduc
     const frames = await rec.stop();
     const problems = await check(l, frames, (label) => schemes.get(label) ?? "dark", { instant: reduced });
     expect.soft(navs, "the page was reloaded for a change of state").toEqual([]);
-    expect.soft(await shiftProblems(shifts), "the layout shifted after the first frame").toEqual([]);
+    const shiftIssues = await shiftProblems(shifts);
+    expect.soft(shiftIssues, "the layout shifted after the first frame").toEqual([]);
     if (motion) expect.soft(await motion.moving(), "with reduced motion, something moved over time").toEqual([]);
     expect(problems).toEqual([]);
+    const evidenceDir = process.env.FOCUS_NOTES_G7_EVIDENCE_DIR;
+    if (evidenceDir) {
+      mkdirSync(evidenceDir, { recursive: true });
+      const name = `g7-replacement-${reduced ? "reduced" : "dark"}`;
+      await page.screenshot({ path: join(evidenceDir, `${name}.png`) });
+      const viewport = await page.evaluate(() => ({ width: innerWidth, height: innerHeight }));
+      const sourceHead = w.git(resolve(import.meta.dirname, "..", "..", ".."), "rev-parse", "HEAD");
+      saveProof = () => writeFileSync(join(evidenceDir, `${name}.json`), JSON.stringify({
+        sourceHead, viewport, frames: frames.length, frameProblems: problems, shiftIssues,
+        navigationCount: navs.length, sourceNotesAndGitPreserved: true,
+        arrivalDelays: { "firstRun:folder": 1_200, "firstRun:repositories": 1_200 },
+        ownedPid: l.pid, appClosed: appProcess.exitCode !== null,
+      }, null, 2));
+    }
   } finally {
     await rec.stop();
     await quit(l);
     w.server.close();
   }
+  saveProof?.();
 });
 
 /** A set-up workspace in the light theme, opened at its private note, signed in with Git's credential. */

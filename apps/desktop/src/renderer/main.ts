@@ -171,6 +171,8 @@ base.onWorkspaceSwitched(() => {
     const scoped = scopedBridge(base, windowState);
     const app = createApp(scoped.bridge, messages.en!, "en", { htmlToMarkdown });
     await app.start().catch((e: unknown) => console.error(e));
+    // Resumed notes discovery outlives start(); its checking skeleton isn't a ready replacement.
+    if (app.store.state.firstRun.active && app.store.state.firstRun.step === "notes") await app.idle();
     const abort = new AbortController();
     const react = swapApp(root, old, { app, views, overlays: OVERLAYS, signal: abort.signal });
     const r: Running = { app, root: react, abort, revoke: scoped.revoke, offTheme: followTheme(app) };
