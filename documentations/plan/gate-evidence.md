@@ -44,6 +44,22 @@ Local checkpoint checks:
 
 The ten scenarios passed across those two selections, **not a final all-ten rerun**. Final safe-path screenshots and bound receipts are in `review\delete-22nov\safe-checkpoint-1912`; previous fake-gh receipts remain historical. Both runs quit their app instances normally and exact-own-PID cleanup reported zero remaining. Remaining handoff work is the final dark/narrow/footer visual pass, stronger actual negative/race/device/persistence acceptance, changed-page headless checks, combined G7 integration and exact-head landing gate. No full suite, push, CI or owner-profile launch is authorized by this evidence.
 
+### Successor negative, device and VM evidence
+
+The complete chronology is retained: these step-up cases legitimately sent one refused retained-token DELETE before authorization. **Zero granted-token DELETE**, not zero total requests, is the safety assertion for numeric-ID/login mismatch, replacement repository and unavailable-after-grant cases. A real organization-policy 403 has one granted-token attempt and retains GitHub-refused/admin recovery; local identity guards instead say **Deletion stopped** with reopen/check-target recovery, in the same approved state geometry.
+
+| Scoped check | Result and boundary |
+| --- | --- |
+| `pnpm exec vitest run packages\core\test\project-delete-app.test.ts -t 'clears the device code'` | Failed before the fix: thrown authorization left `ABCD-EFGH` in the VM |
+| `pnpm exec vitest run apps\desktop\test\project-delete.test.ts packages\core\test\project-delete-app.test.ts` | 49 passed after finally clears code/token; includes listener disposal and an old throw that cannot erase a newer dialog's code/token |
+| `pnpm --filter @focus-notes/desktop exec playwright test project-offline.spec.ts --workers=1 -g 'D-400: actual (loginMismatch\|replacement)'` | 2 passed on the preceding compiled app; receipts in `negative-1927` |
+| `pnpm --filter @focus-notes/desktop exec playwright test project-offline.spec.ts --workers=1 -g 'D-400: actual (loginMismatch\|replacement\|devicePending\|deviceExpired\|deviceAbort\|policy\|unavailable)'` | 5 passed, 2 harness failures: a 5 s wait could not encompass the required 6 s slowdown; the Stop selector used obsolete wording |
+| `pnpm --filter @focus-notes/desktop exec playwright test project-offline.spec.ts --workers=1 -g 'D-400: actual (devicePending\|deviceAbort\|transportFailure\|loginMismatch\|replacement\|policy)'` | 6 passed after correcting only those wait/selector defects and rebuilding the surgical VM/copy fix; receipts in `clearing-copy-1932` |
+
+The last six cases read the mounted actual renderer app VM without a production inspection port or returning secrets: token/code empty, pending released, and late code IPC has no visible or VM effect. The transport case is explicitly a held fixture authorization IPC fault after a visible code, **not** a real GitHub server fault. Listener removal itself is asserted in the controller unit; late-code immunity is the actual renderer outcome. Pending then `slow_down` preserved source bytes before grant and measured **6011 ms** to the next poll, against the unchanged **6000 ms minimum**. Source/recycled bytes and HEAD, fake credentials/config/account bytes and no grant token on disk/logs are asserted after orderly shutdown; exact owned PID cleanup ran. Receipts keep `sixStateComplete: false`. These checks do not replace restart, remaining long-auth races, all-selected/private/export preservation, geometry or combined-head acceptance.
+
+For this coherent cleanup/copy slice, core and desktop typechecks, the desktop build, `pnpm check` and Slate runtime parity passed. Changed-page headless validation waited for each actual page identity (not merely any existing H1), then checked one H1, light/dark rendering, **44** local links on project-model and **94** on gate-evidence, including target anchors and repository source-file existence. Its isolated loopback server and headless browser closed in finally; the owner's docs server was untouched. The six actual journeys bind unchanged main `5a9430ad…` and rebuilt renderer `0b6f9520…`; the build preceded documentation/commit only, not later production edits.
+
 ## How this page is kept
 
 | What | Where it comes from |

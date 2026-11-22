@@ -289,7 +289,7 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
       if (mine !== run) return;
       set({ remoteState: "partial", busy: false });
       toast(catalog.format("project.delete.inApp.partial.detail"), { tone: "error" });
-    } finally { stopCode?.(); if (mine === run) set({ remoteToken: "" }); }
+    } finally { stopCode?.(); if (mine === run) set({ remoteToken: "", remoteCode: "", remoteAuthorizing: false }); }
   }
   reg<{ id?: unknown }>("project.deleteOpenGitHub", "project.delete.github.open", async ({ id }) => {
     const repo = typeof id === "string" ? id : targets().find((r) => repos.get(r) !== "deleted");
@@ -440,15 +440,16 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
     select: () => {
       const c = check;
       const detail: Record<RepoPhase, string> = { open: "project.delete.github.toOpen", waiting: "project.delete.github.waiting", ask: "project.delete.github.gone", deleted: "project.delete.github.deleted" };
+      const changedTarget = state.remoteState === "refused" && state.remoteReason === "identity";
       return {
         open: state.open, step: state.step, kind: c?.kind ?? "linked", problem: state.problem, typed: state.typed, private: state.private,
         remoteState: state.remoteState, remoteTarget: state.remoteTarget,
         remoteCode: state.remoteCode, remoteToken: state.remoteToken, remoteMethod: state.remoteMethod,
-        remoteTitle: catalog.format(state.remoteAuthorizing && state.busy ? "project.delete.inApp.device.waiting" : `project.delete.inApp.${state.remoteState}.title`),
+        remoteTitle: catalog.format(state.remoteAuthorizing && state.busy ? "project.delete.inApp.device.waiting" : changedTarget ? "project.delete.inApp.identity.title" : `project.delete.inApp.${state.remoteState}.title`),
         remoteCodeLabel: state.remoteCode ? catalog.format("project.delete.inApp.device.code", { code: state.remoteCode }) : "",
         remoteTone: state.remoteState === "deleted" ? "success" : state.remoteState === "stepup" || state.remoteState === "deleting" ? "info" : state.remoteState === "partial" ? "warning" : "danger",
         remoteDetail: catalog.format(state.remoteState === "refused" && state.remoteReason ? `project.delete.inApp.reason.${state.remoteReason}` : `project.delete.inApp.${state.remoteState}.detail`),
-        remoteKept: catalog.format(`project.delete.inApp.${state.remoteState}.kept`),
+        remoteKept: catalog.format(changedTarget ? "project.delete.inApp.identity.kept" : `project.delete.inApp.${state.remoteState}.kept`),
         exported: state.exported, exportPath: state.exportPath, busy: state.busy || state.checking,
         name: c?.name ?? "", repo: c?.repo ?? "", privateRepo: c?.privateRepo ?? "",
         otherRepo: c?.repo ?? "", otherOwner: state.owner ? `@${state.owner}` : "", org: state.org, orgRepo: c?.repo ?? "",
