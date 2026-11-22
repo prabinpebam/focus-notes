@@ -73,7 +73,8 @@ import { CHROMIUM_FOLDERS, DATA_FILES, type DataFile } from "@focus-notes/core/i
 import { forgetLocalData, removalCheck, removeWorkspace } from "./workspace/remove.ts";
 import { PrivacyCleanupError, withoutPrivacyTraces, withoutRemovedReferences } from "./privacy-cleanup.ts";
 import { atOrUnder } from "@focus-notes/core/journal";
-import { deletionCheck, deletionGate, isRepoSlug, recycleProject, recycleRefusal, repoStatus, RemoteProjectDeletion } from "./workspace/delete.ts";
+import { deletionCheck, deletionFolderIdentity, deletionGate, isRepoSlug, recycleProject, recycleRefusal, repoStatus, RemoteProjectDeletion, sameDeletionFolder } from "./workspace/delete.ts";
+import { DeletionAuthorizationError, withDeletionAuthorization } from "./workspace/delete-authorization.ts";
 import { backupToRecord, checkFolder, configUrl, driveOf, envSyncRoots, folderNameOk, movedDocuments, nextFree, parseRecord, recordFor, samePath, serializeRecord, shortPath, startDecision, syncService, type FolderCheck, type FolderFacts, type WorkspaceRecord } from "./workspace/record.ts";
 import type { RecoverAccount, RecoverPlace, RecoverProgress, RecoverResult, RecoverStatus } from "@focus-notes/core/recover";
 import { GitHubError } from "@focus-notes/github";
@@ -563,19 +564,19 @@ async function removeLocalWorkspace(): Promise<RemovalCheck> {
 let projectDeleted = false;
 /** Delete project's gate: a workspace or a project New project made, never Local notes (D-pending). */
 const deletionRefused = () => deletionGate({ deleted: projectDeleted, localNotes: process.env.FOCUS_NOTES_LOCAL_NOTES === "1" });
-async function deleteLocalProject(keepPrivate: boolean): Promise<DeletionResult> {
+async function deleteLocalProject(keepPrivate: boolean, current: () => Promise<boolean>): Promise<DeletionResult> {
   const folder = notesHome();
   const places = { home: app.getPath("home"), userData: app.getPath("userData"), documents: app.getPath("documents"), desktop: app.getPath("desktop") };
   if (deletionRefused() || recycleRefusal(folder, places)) return { state: "refused" };
   // Only a folder that is its own repository's top is a project, checked again here.
   if ((await deletionCheck(setupRunner, folder, {})).problem) return { state: "refused" };
-  await Promise.allSettled([...writeQueues.values()]);
+  await Promise.all([...writeQueues.values()]);
   await watcher?.close();
   watcher = undefined;
   const old = gitSync;
   armGit();
   await old?.dispose();
-  const r = await recycleProject(folder, { keepPrivate, trash: (p) => shell.trashItem(p) });
+  const r = await current() ? await recycleProject(folder, { keepPrivate, trash: (p) => shell.trashItem(p) }) : { state: "refused" as const };
   if (r.state !== "deleted") {
     watcher = watchWorkspace(() => windows);
     startGit();
@@ -2464,8 +2465,34 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     const [repo, priv] = await Promise.all([notesRepo().catch(() => undefined), privateRepo().catch(() => undefined)]);
     return deletionCheck(setupRunner, notesHome(), { repo, privateRepo: priv });
   };
-  handle("workspace:deletion", () => deletion());
+  let deletionFolder: { folder: string; identity: Awaited<ReturnType<typeof deletionFolderIdentity>> } | undefined;
+  handle("workspace:deletion", async () => {
+    const c = await deletion();
+    if (!c.problem && (!deletionFolder || deletionFolder.folder !== c.folder)) deletionFolder = { folder: c.folder, identity: await deletionFolderIdentity(c.folder) };
+    return c;
+  });
   const remoteDeletion = new RemoteProjectDeletion();
+  const preservedCopies = new Map<string, { destination: string; bytes: Buffer }>();
+  const preservedDeletion = async (c: Awaited<ReturnType<typeof deletion>>) => {
+    if (!deletionFolder || deletionFolder.folder !== c.folder || !await sameDeletionFolder(c.folder, deletionFolder.identity)) return false;
+    for (const relative of c.unsynced) {
+      const source = join(c.folder, relative);
+      const saved = preservedCopies.get(source);
+      if (!saved || !(await readFile(source)).equals(saved.bytes) || !(await readFile(saved.destination)).equals(saved.bytes)) return false;
+    }
+    return true;
+  };
+  let deleteAuthorization: AbortController | undefined;
+  let deleteGeneration = 0;
+  const openDeletionAuthorization = async () => {
+    if (!deleteAuthorization || deleteAuthorization.signal.aborted) throw new Error("Deletion authorization is not active");
+    const url = "https://github.com/login/device";
+    if (!isWebLink(url)) throw new Error("Invalid authorization destination");
+    if (journey) return void process.stdout.write(`[focus-notes] open-external ${url}\n`);
+    await shell.openExternal(url);
+  };
+  handle("workspace:openDeleteAuthorization", openDeletionAuthorization);
+  const deleteIntent = (folder: string, id: number, login: string) => notesHome() === folder && account.account?.id === id && account.account?.login === login;
   handle("workspace:repoStatus", async (repo: unknown) => {
     if (!isRepoSlug(repo)) throw new Error("Not a repository");
     const c = await deletion();
@@ -2480,7 +2507,54 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     if (!isRepoSlug(repo)) throw new Error("Not a repository");
     const c = await deletion();
     if (c.problem || repo !== c.repo && repo !== c.privateRepo) throw new Error("Not this project's repository");
-    return remoteDeletion.delete(await projectGitHub(), repo);
+    if (!(await preservedDeletion(c))) return { state: "refused" as const, reason: "preservation" as const };
+    const expected = remoteDeletion.account(repo);
+    const generation = deleteGeneration;
+    return remoteDeletion.delete(await projectGitHub(), repo, async () => await preservedDeletion(await deletion()) && generation === deleteGeneration && deleteIntent(c.folder, expected.id, expected.login), true);
+  });
+  handle("workspace:cancelDelete", () => { deleteGeneration++; deleteAuthorization?.abort(); });
+  handle("workspace:confirmRepoDeletion", async (repo: unknown) => {
+    if (!isRepoSlug(repo)) throw new Error("Not a repository");
+    const c = await deletion();
+    if (c.problem || repo !== c.repo && repo !== c.privateRepo) throw new Error("Not this project's repository");
+    const generation = deleteGeneration;
+    const expected = remoteDeletion.account(repo);
+    return remoteDeletion.confirmExternal(await projectGitHub(), repo, async () => await preservedDeletion(await deletion()) && generation === deleteGeneration && deleteIntent(c.folder, expected.id, expected.login));
+  });
+  handle("workspace:deletionAuthorizationMethod", () => process.env.FOCUS_NOTES_GITHUB_OAUTH_CLIENT_ID ? "device" : "token");
+  handle("workspace:authorizeDelete", async (repo: unknown, input: unknown) => {
+    if (!isRepoSlug(repo) || input !== undefined && typeof input !== "string") throw new Error("Invalid deletion authorization");
+    const c = await deletion();
+    if (c.problem || repo !== c.repo && repo !== c.privateRepo) throw new Error("Not this project's repository");
+    if (!(await preservedDeletion(c))) return { state: "refused" as const, reason: "preservation" as const };
+    if (deleteAuthorization) throw new Error("Deletion authorization is already active");
+    const controller = new AbortController();
+    deleteAuthorization = controller;
+    const expected = remoteDeletion.account(repo);
+    const current = () => !controller.signal.aborted && deleteIntent(c.folder, expected.id, expected.login);
+    try {
+      return await withDeletionAuthorization({
+        ...(typeof input === "string" ? { token: input } : {}),
+        clientId: process.env.FOCUS_NOTES_GITHUB_OAUTH_CLIENT_ID,
+        apiFetch, signal: controller.signal, expected, current,
+        oauthFetch: (url, options) => {
+          if (!["https://github.com/login/device/code", "https://github.com/login/oauth/access_token"].includes(url)) throw new Error("Invalid authorization destination");
+          const target = fakeApi && /^http:\/\/127\.0\.0\.1:\d+$/.test(fakeApi) ? fakeApi + new URL(url).pathname : url;
+          return fetch(target, { ...options, redirect: "error", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(30_000)]) });
+        },
+        code: (code) => {
+          win()?.webContents.send("workspace:deleteCode", code);
+          if (code && process.env.FOCUS_NOTES_GITHUB_OAUTH_CLIENT_ID) {
+            void openDeletionAuthorization().catch(() => { console.error("Could not open deletion authorization."); controller.abort(); });
+          }
+        },
+      }, api => remoteDeletion.delete(api, repo, async () => await preservedDeletion(await deletion()) && current()));
+    } catch (error) {
+      if (error instanceof DeletionAuthorizationError) {
+        return error.reason === "declined" || error.reason === "expired" ? { state: "declined" as const } : { state: "refused" as const, reason: error.reason === "identity" ? "identity" as const : "authorization" as const };
+      }
+      throw error;
+    } finally { deleteAuthorization = undefined; }
   });
   handle("workspace:openRepoSettings", async (repo: unknown) => {
     if (!isRepoSlug(repo)) throw new Error("Not a repository");
@@ -2504,13 +2578,26 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     const to = join(parent, nextFree(`${c.name} (not on GitHub)`, (n) => existsSync(join(parent, n))));
     for (const rel of c.unsynced) {
       const from = join(notesHome(), rel);
-      if (!inside(notesHome(), from)) continue;
-      await mkdir(dirname(join(to, rel)), { recursive: true });
-      await copyFile(from, join(to, rel));
+      if (!inside(notesHome(), from)) throw new Error("Invalid preservation path");
+      const destination = join(to, rel);
+      const bytes = await readFile(from);
+      await mkdir(dirname(destination), { recursive: true });
+      await copyFile(from, destination);
+      if (!(await readFile(destination)).equals(bytes) || !(await readFile(from)).equals(bytes)) throw new Error("The note changed during preservation");
+      preservedCopies.set(from, { destination, bytes });
     }
     return to;
   });
-  handle("workspace:deleteLocal", (opts: unknown) => deleteLocalProject(Boolean(opts && typeof opts === "object" && "keepPrivate" in opts && opts.keepPrivate === true)));
+  handle("workspace:deleteLocal", async (opts: unknown) => {
+    if (!opts || typeof opts !== "object" || !("keepPrivate" in opts) || typeof opts.keepPrivate !== "boolean") throw new Error("Invalid local deletion");
+    const c = await deletion();
+    if (c.problem) return { state: "refused" as const };
+    if (!(await preservedDeletion(c))) return { state: "refused" as const };
+    if (c.kind === "linked" && (!remoteDeletion.confirmed(c.repo) || !opts.keepPrivate && c.privateRepo && !remoteDeletion.confirmed(c.privateRepo))) return { state: "refused" as const };
+    const generation = deleteGeneration;
+    const expected = c.kind === "linked" ? remoteDeletion.account(c.repo) : undefined;
+    return deleteLocalProject(opts.keepPrivate, async () => await preservedDeletion(await deletion()) && generation === deleteGeneration && notesHome() === c.folder && (!expected || deleteIntent(c.folder, expected.id, expected.login)));
+  });
   handle("firstRun:identity", () => account.identity());
   handle("firstRun:setIdentity", async (i, scope) => {
     const id = { name: String(i?.name ?? "").trim(), email: String(i?.email ?? "").trim() };

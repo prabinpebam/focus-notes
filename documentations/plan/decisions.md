@@ -52,7 +52,9 @@ D-397 supersedes only D-171's rejection of blank remembered public notes. Restor
 
 Verify the granting account, use the credential only for the selected deletion and its follow-up reads, and discard it. Device polling honors pending, slowdown, expiry, decline and abort. A refusal, account mismatch or unconfirmed remote result retains local notes and offers reasoned GitHub fallback. Tests use disposable loopback OAuth/API and process fakes only; real authorization and F4.2.5 remain owner-only under D-343.
 
-**Implementation status:** the current-credential DELETE/refusal/reconciliation slice is in progress. Step-up routes are not yet certified. [Delete flow](../experience/project-model.md#deleting-a-project), [F4.2](definition-of-done.md#backlog-f42-delete-in-the-app).
+**Safety finding, 22 November:** the conditional gh route fails its isolation prerequisite. In [official gh v2.60.0](https://github.com/cli/cli/blob/v2.60.0/internal/config/config.go), `Login` still calls `activateUser` when secure storage is disabled; that function deletes the shared keyring slot and may read/write the per-user slot. `Logout` also deletes shared and per-user slots. [Current trunk](https://github.com/cli/cli/blob/trunk/internal/config/config.go) retains these operations through `setActiveCredential`. Neither the keyring service name nor these operations are scoped by `GH_CONFIG_DIR`. Consequently, **Delete never invokes gh auth login or logout**, including cleanup, and uses the already approved memory-token recovery when no configured client exists. No owner credential-store experiment was performed. Earlier successful fake-gh login/logout receipts are historical process-stub observations, **not production isolation proof**; that claim is withdrawn.
+
+**Implementation status:** current-credential deletion, configured device authorization and memory-only fine-grained tokens are implemented on the isolated candidate. Device authorization displays its named code and an independently keyboard-accessible link to the validated GitHub verification destination. Account ID/login, repository ID, cancellation, current unpushed bytes and local folder identity are rechecked before destructive work. The API/token never escapes the one-operation callback. Discarding a token is not a claim that GitHub revoked an OAuth application grant; real account/grant semantics remain owner-only F4.2.5. Combined G7 integration and landing are still pending. [Delete flow](../experience/project-model.md#deleting-a-project), [F4.2](definition-of-done.md#backlog-f42-delete-in-the-app).
 
 ## D-394: delete the repository in the app, with one-time step-up
 
@@ -62,7 +64,7 @@ GitHub supports [DELETE /repos/{owner}/{repo}](https://docs.github.com/en/rest/r
 
 **Open on GitHub is fallback only:** organization policy, missing admin rights, declined step-up or another GitHub refusal names the reason and keeps local notes. A 404 is not deletion proof. Recycle only after confirmed deletion of every chosen remote, with verified preservation and folder identity. Partial failure retains local content, exact results and Retry; never recreate a deleted repository as rollback. No new network destination is authorized here. Agents use fakes only; the first real deletion remains the owner's D-343 dependency.
 
-**Affects:** [Deleting a project](../experience/project-model.md#deleting-a-project), SC-PROJ-08, UC-PROJ-13, PRJ-23 / WP-P.23 (MP), [F4.2 backlog](definition-of-done.md#backlog-f42-delete-in-the-app). New dialog states are a strict-design candidate pending approval, not shipped runtime.
+**Affects:** [Deleting a project](../experience/project-model.md#deleting-a-project), SC-PROJ-08, UC-PROJ-13, PRJ-23 / WP-P.23 (MP), [F4.2 backlog](definition-of-done.md#backlog-f42-delete-in-the-app). The approved six states are implemented on the isolated 22 November candidate; they are not yet landed runtime.
 
 ## D-395: one familiar Find layout and one surface at a time
 
