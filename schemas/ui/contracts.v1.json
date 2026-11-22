@@ -13238,7 +13238,8 @@
             "formatToolbar",
             "linkEditor",
             "firstRun",
-            "rewritePrompt"
+            "rewritePrompt",
+            "findAll"
           ],
           "default": "none",
           "description": "Keys registered for this scope work while focus is inside."
@@ -13683,6 +13684,24 @@
           "name": "keyScope rewritePrompt",
           "props": {
             "keyScope": "rewritePrompt",
+            "padding": "insetMd",
+            "shape": "popover"
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "gallery.sample"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "keyScope findAll",
+          "props": {
+            "keyScope": "findAll",
             "padding": "insetMd",
             "shape": "popover"
           },

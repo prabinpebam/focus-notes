@@ -5018,7 +5018,8 @@
             "formatToolbar",
             "linkEditor",
             "firstRun",
-            "rewritePrompt"
+            "rewritePrompt",
+            "findAll"
           ],
           "default": "none",
           "description": "Keys registered for this scope work while focus is inside."
@@ -5063,6 +5064,7 @@
         "keyScope linkEditor",
         "keyScope firstRun",
         "keyScope rewritePrompt",
+        "keyScope findAll",
         "elevation 0",
         "elevation 1",
         "elevation 2",

@@ -58,14 +58,16 @@ What "done" means at every level: a work package, a stage, a release, and the wh
 
 **Try it:** open Find, expand Replace and use a long option label; the row stays aligned and all end actions stay together.
 
+**Evidence:** [built-app field/chevron geometry and 8/16/8 px option grouping](gate-evidence.md#familiar-find-in-all-notes-22-november).
+
 ### Backlog (d): familiar Find in all notes
 
-**Owner correction, 23:31 (D-395).** FND-04 / WP-4.3 (M4), UC-FIND-02; candidate pending owner approval.
+**Owner correction, 23:31 (D-395).** FND-04 / WP-4.3 (M4), UC-FIND-02; D-398 authorizes the prepared candidate's production wiring and automated gates.
 
 | # | Done when | Evidence needed |
 | --- | --- | --- |
-| OB-d.1 | All-notes Find uses the familiar in-note field/options arrangement, adding only its grouped results area; owner approves the candidate before wiring/tests. | Side-by-side view-document candidate and explicit owner approval. |
-| OB-d.2 | A result still opens its note at the matching text; empty/error states retain query and offer recovery. | After approval, scoped all-notes journey asserting the visible result and destination. |
+| OB-d.1 | All-notes Find uses the familiar in-note field/options arrangement, adding only its grouped results area. | Preserved candidate `d66fe47c`, D-398 authorization, and [light/dark built-app geometry, options and bounds](gate-evidence.md#familiar-find-in-all-notes-22-november). |
+| OB-d.2 | A result still opens its note at the matching text; empty/error states retain query and offer recovery. | [Scoped keyboard-result, options-transfer and empty/invalid/error recovery checks](gate-evidence.md#familiar-find-in-all-notes-22-november). |
 
 **Try it:** compare Find with Find in all notes, then choose a result; the controls are familiar and the note opens at the match.
 
@@ -75,7 +77,7 @@ What "done" means at every level: a work package, a stage, a release, and the wh
 
 | # | Done when | Evidence needed |
 | --- | --- | --- |
-| OB-e.1 | Opening either Find closes the other; neither shortcut nor result navigation leaves both surfaces visible. Each retains its own query when switching back. | After design approval, one journey asserting visible exclusivity and both restored query values through shortcuts and result navigation. |
+| OB-e.1 | Opening either Find closes the other; neither shortcut nor result navigation leaves both surfaces visible. Each retains its own query when switching back. | [Built-app visible exclusivity and restored queries through shortcuts, menu, Actions and result navigation](gate-evidence.md#familiar-find-in-all-notes-22-november). |
 
 **Try it:** type different queries into Find and Find in all notes, switch back and forth; only one is open and neither query is lost.
 

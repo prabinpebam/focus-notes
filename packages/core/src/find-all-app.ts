@@ -1,5 +1,5 @@
 /**
- * Find in all notes (FND-04, Find and replace → Find in all notes): Mod+Shift+F opens a side sheet
+ * Find in all notes (FND-04, Find and replace → Find in all notes): Mod+Shift+F opens a familiar panel
  * that searches every note's visible text through the search index, matched exactly as the find bar
  * matches one note. Results are grouped by note, with its path, whether it's public or private, and
  * its count; each line shows the match marked. Enter on a line opens the note at that match with
@@ -28,6 +28,7 @@ export interface FindAllState {
   results?: FindResults;
   /** A search is on its way (or waiting for the index to start). */
   searching: boolean;
+  failed?: boolean;
   activeId: string;
 }
 export const FIND_ALL_CLOSED: FindAllState = { open: false, query: "", caseSensitive: false, wholeWord: false, regex: false, focus: 0, searching: false, activeId: "" };
@@ -106,10 +107,10 @@ export function registerFindAll(ctx: Ctx): { useSearch(service: SearchService): 
     const f = state();
     const { text, roots, within } = parseFindQuery(f.query);
     const mine = ++asked;
-    if (!text) return set({ results: undefined, searching: false, activeId: "" });
+    if (!text) return set({ results: undefined, searching: false, failed: false, activeId: "" });
     // Before the index has started (just after launch), the answer comes once it has.
-    if (!service) return set({ searching: true });
-    set({ searching: true });
+    if (!service) return set({ searching: true, failed: false });
+    set({ searching: true, failed: false });
     try {
       const results = await service.find({ text, caseSensitive: f.caseSensitive, wholeWord: f.wholeWord, regex: f.regex, ...(roots ? { roots } : {}), ...(within !== undefined ? { within } : {}) });
       if (mine !== asked) return;
@@ -117,8 +118,11 @@ export function registerFindAll(ctx: Ctx): { useSearch(service: SearchService): 
       // Asked again as the index grows, the active line stays where it was if it's still there.
       const keep = rows.some((r) => r.id === state().activeId) && state().results?.query.text === results.query.text;
       set({ results, searching: false, activeId: keep ? state().activeId : rows[0]?.id ?? "" });
-    } catch {
-      if (mine === asked) set({ searching: false });
+    } catch (error) {
+      if (mine === asked) {
+        console.error("Could not search notes:", error instanceof Error ? error.name : "Error");
+        set({ searching: false, failed: true, results: undefined, activeId: "" });
+      }
     }
   };
   const schedule = (ms: number) => {
@@ -175,7 +179,16 @@ export function registerFindAll(ctx: Ctx): { useSearch(service: SearchService): 
     // Spotlight's "Find … in all notes" passes its query.
     run: ({ query }) => open(typeof query === "string" ? query : undefined),
   });
-  commands.register({ id: "findAll.close", title: "command.findAll.close", run: close });
+  commands.register({
+    id: "findAll.clearOrClose", title: "command.findAll.close",
+    shortcut: { default: "Escape", handledBy: "findAllField" }, layer: "basic", group: "find",
+    run: () => {
+      if (!state().query) return close();
+      set({ query: "" });
+      schedule(0);
+    },
+  });
+  commands.register({ id: "findAll.close", title: "command.findAll.close", shortcut: { default: "Escape", handledBy: "findAll" }, layer: "basic", group: "find", run: close });
   commands.register<{ value: string }>({
     id: "findAll.setQuery", title: "command.findAll.setQuery",
     run: ({ value }) => {
@@ -194,8 +207,9 @@ export function registerFindAll(ctx: Ctx): { useSearch(service: SearchService): 
       },
     });
   }
-  commands.register({ id: "findAll.next", title: "command.findAll.next", shortcut: { default: "Down", handledBy: "findAllField" }, layer: "basic", group: "find", run: () => void move(1) });
-  commands.register({ id: "findAll.prev", title: "command.findAll.prev", shortcut: { default: "Up", handledBy: "findAllField" }, layer: "basic", group: "find", run: () => void move(-1) });
+  const hasMatches = (s: AppState) => rowsOf(s.ui.findAll.results).length > 0;
+  commands.register({ id: "findAll.next", title: "command.findAll.next", shortcut: { default: "Down", handledBy: "findAllField" }, layer: "basic", group: "find", enabled: hasMatches, run: () => void move(1) });
+  commands.register({ id: "findAll.prev", title: "command.findAll.prev", shortcut: { default: "Up", handledBy: "findAllField" }, layer: "basic", group: "find", enabled: hasMatches, run: () => void move(-1) });
   commands.register({ id: "findAll.openActive", title: "command.findAll.open", shortcut: { default: "Enter", handledBy: "findAllField" }, layer: "basic", group: "find", run: () => chosen(state().activeId) });
   commands.register<{ id: string }>({ id: "findAll.choose", title: "command.findAll.open", run: ({ id }) => chosen(String(id)) });
   commands.register<{ id: string }>({ id: "findAll.setActive", title: "command.findAll.next", run: ({ id }) => { if (typeof id === "string") set({ activeId: id }); } });
@@ -218,7 +232,7 @@ export function registerFindAll(ctx: Ctx): { useSearch(service: SearchService): 
   };
   const ITEM = { type: "object" as const, properties: { id: { type: "string" as const }, label: { type: "string" as const }, description: { type: "string" as const }, header: { type: "boolean" as const }, highlights: { type: "array" as const, items: { type: "array" as const, items: { type: "number" as const } } } } };
   const ACTION = { type: "object" as const, properties: { label: { type: "string" as const }, shortcut: { type: "string" as const } } };
-  const CLOSED = { open: false, query: "", focus: 0, caseSensitive: false, wholeWord: false, regex: false, invalid: false, items: [], activeId: "", summary: "", summaryTone: "muted", empty: true, actions: {} };
+  const CLOSED = { open: false, query: "", focus: 0, caseSensitive: false, wholeWord: false, regex: false, invalid: false, items: [], activeId: "", summary: "", summaryTone: "muted", empty: true, detail: "", recovery: "", actions: {} };
   viewModels.register({
     id: "vm.findAll",
     schema: {
@@ -228,6 +242,7 @@ export function registerFindAll(ctx: Ctx): { useSearch(service: SearchService): 
         caseSensitive: { type: "boolean" }, wholeWord: { type: "boolean" }, regex: { type: "boolean" }, invalid: { type: "boolean" },
         items: { type: "array", items: ITEM }, activeId: { type: "string" }, empty: { type: "boolean" },
         summary: { type: "string" }, summaryTone: { type: "string", enum: ["muted", "danger"] },
+        detail: { type: "string" }, recovery: { type: "string" },
         actions: { type: "object", properties: { case: ACTION, word: ACTION, regex: ACTION, close: ACTION } },
       },
     },
@@ -244,7 +259,8 @@ export function registerFindAll(ctx: Ctx): { useSearch(service: SearchService): 
       ]);
       const invalid = Boolean(text && r?.invalid);
       const summary = !text ? catalog.format("findAll.hint")
-        : invalid ? catalog.format("find.invalid")
+        : f.failed ? catalog.format("findAll.failed")
+          : invalid ? catalog.format("find.invalid")
           : !r ? catalog.format("findAll.searching")
             : [
               r.total ? catalog.format("findAll.count", { count: r.total, notes: r.notes.length }) : catalog.format("findAll.none"),
@@ -253,7 +269,9 @@ export function registerFindAll(ctx: Ctx): { useSearch(service: SearchService): 
             ].join(" · ");
       return {
         open: true, query: f.query, focus: f.focus, caseSensitive: f.caseSensitive, wholeWord: f.wholeWord, regex: f.regex, invalid,
-        items, activeId: f.activeId, empty: !items.length, summary, summaryTone: text && (invalid || r?.total === 0) ? "danger" : "muted",
+        items, activeId: f.activeId, empty: !items.length, summary, summaryTone: text && (f.failed || invalid || r?.total === 0) ? "danger" : "muted",
+        detail: !text || f.searching ? "" : f.failed ? catalog.format("findAll.failedDetail") : invalid ? catalog.format("findAll.invalidDetail") : r?.total === 0 ? catalog.format("findAll.emptyDetail") : "",
+        recovery: catalog.format(f.failed ? "toast.retry" : "findAll.editSearch"),
         actions: { case: action("findAll.toggle.caseSensitive"), word: action("findAll.toggle.wholeWord"), regex: action("findAll.toggle.regex"), close: action("findAll.close") },
       };
     },
