@@ -107,6 +107,19 @@ describe("opening Find in all notes", () => {
     await app.commands.run("find.allNotes", { query: "garden" });
     await vi.waitFor(() => expect(app.store.state.ui.findAll.results?.total).toBe(2));
   });
+  it("clears on the field's first Escape and closes on its second, while close always dismisses", async () => {
+    const { app, type } = await started();
+    await app.commands.run("find.allNotes");
+    await type("garden");
+    expect(app.commands.match({ key: "Escape", ctrlKey: false, altKey: false, shiftKey: false, metaKey: false }, ["findAllField", "findAll"])).toBe("findAll.clearOrClose");
+    await app.commands.run("findAll.clearOrClose");
+    expect(app.store.state.ui.findAll).toMatchObject({ open: true, query: "" });
+    await app.commands.run("findAll.clearOrClose");
+    expect(app.store.state.ui.findAll.open).toBe(false);
+    await app.commands.run("find.allNotes", { query: "garden" });
+    await app.commands.run("findAll.close");
+    expect(app.store.state.ui.findAll).toMatchObject({ open: false, query: "garden" });
+  });
 });
 
 describe("results", () => {
@@ -144,6 +157,32 @@ describe("results", () => {
     await app.commands.run("findAll.toggle.regex");
     await type("foc(");
     expect(vm()).toMatchObject({ invalid: true, summary: "Not a valid regular expression", summaryTone: "danger" });
+    expect(app.store.state.ui.findAll.query).toBe("foc(");
+    await app.commands.run("find.allNotes");
+    expect(app.store.state.ui.findAll.query).toBe("foc(");
+    await app.commands.run("findAll.toggle.regex");
+    await type("garden");
+    expect(vm()).toMatchObject({ invalid: false, summary: "2 matches in 1 note" });
+  });
+  it("shows a recoverable search failure without losing the query or leaving stale matches navigable", async () => {
+    const { app, search, vm, type } = await started();
+    await app.commands.run("find.allNotes");
+    await type("focus");
+    const find = vi.spyOn(search, "find").mockRejectedValueOnce(new Error("worker unavailable"));
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      await type("garden");
+      expect(vm()).toMatchObject({ summary: "Couldn't search your notes", summaryTone: "danger", items: [], recovery: "Retry" });
+      expect(app.store.state.ui.findAll.query).toBe("garden");
+      expect(app.commands.describe("findAll.next").enabled).toBe(false);
+      expect(log).toHaveBeenCalledWith("Could not search notes:", "Error");
+      await app.commands.run("find.allNotes");
+      await vi.waitFor(() => expect(vm().summary).toBe("2 matches in 1 note"));
+      expect(app.store.state.ui.findAll.query).toBe("garden");
+    } finally {
+      find.mockRestore();
+      log.mockRestore();
+    }
   });
   it("matches case, whole words, and regular expressions with the toggles", async () => {
     const { app, vm, type } = await started();

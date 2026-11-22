@@ -1,7 +1,15 @@
 # Decisions
 
 > [!NOTE]
-> **TL;DR.** D-398 settles the 1.1.0 Autopilot scope and publishing defaults, authorizing production wiring of the prepared candidates. Owner corrections D-393–D-395 still govern GitHub references, in-app deletion and Find. Earlier decisions remain historical where explicitly superseded.
+> **TL;DR.** D-398 settles the 1.1.0 Autopilot scope and publishing defaults, authorizing production wiring of the prepared candidates. D-399 exempts query-input search and command surfaces from a decorative visual anchor. Owner corrections D-393–D-395 still govern GitHub references, in-app deletion and Find. Earlier decisions remain historical where explicitly superseded.
+
+## D-399: query-input search and command surfaces exempt from VVS Criterion 1 visual anchor
+
+**Decided (coordinator ruling and assigned ID, 22 November 2026).** Find in all notes and Actions are exempt from VVS Criterion 1, visual anchor. Their query field and familiar compact controls are the primary focal point; adding an illustration or tile merely to reach the anchor-size threshold would contradict D-395's familiar field/options arrangement, D-345's visual-noise rule and the sacred writing window.
+
+The other four criteria remain scored, each at least 10. Their sum is scaled to 100 using the existing exemption rule: multiply by 1.25 and round. Search panels still require VVS at least 70, and empty/no-results states at least 80. This is not an exemption from text economy, recovery, hierarchy, accessibility or measured bounds. The familiar Find recovery states score 95 from 20/20/20/16 on those four criteria; [gate evidence](gate-evidence.md#familiar-find-in-all-notes-22-november) records the measurements and review.
+
+**Affects:** [VVS scope](../design/visual-score.html#scope), [Find and replace](../experience/find-and-replace.md), [DoD backlog](definition-of-done.md#backlog-d-familiar-find-in-all-notes) and [gate evidence](gate-evidence.md#familiar-find-in-all-notes-22-november). No decorative app element or component restyling is authorized.
 
 ## D-398: 1.1.0 Autopilot execution scope, publishing defaults and on-disk stability
 

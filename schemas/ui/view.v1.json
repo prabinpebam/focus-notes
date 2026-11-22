@@ -11282,7 +11282,8 @@
                     "formatToolbar",
                     "linkEditor",
                     "firstRun",
-                    "rewritePrompt"
+                    "rewritePrompt",
+                    "findAll"
                   ]
                 },
                 {

@@ -10,6 +10,7 @@ import { join } from "node:path";
 import { launch, quit } from "./helpers.ts";
 import { instance, write } from "./instance.ts";
 import { axeViolations } from "./axe.ts";
+import { scoreRegion, BUDGETS } from "./visual-score.ts";
 
 const mac = process.platform === "darwin";
 const mod = mac ? "Meta" : "Control";
@@ -17,6 +18,90 @@ const settledAxe = async (page: Page) => {
   await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running"));
   return axeViolations(page);
 };
+
+for (const theme of ["light", "dark"] as const) {
+  test(`OB-d.1/OB-d.2: familiar all-notes row, options and empty/error recovery, ${theme}`, async () => {
+    const { dirs } = instance();
+    write(join(dirs.docs, "notes", "garden.md"), "# Garden\n\nA garden grows.\n");
+    write(join(dirs.userData, "state.json"), JSON.stringify({ version: 1, appearance: theme }));
+    const l = await launch(dirs);
+    try {
+      const { page } = l;
+      await expect.poll(() => page.evaluate(() => document.documentElement.style.colorScheme)).toBe(theme);
+      await expect(page.getByRole("textbox", { name: "Note" })).toBeFocused();
+      await page.keyboard.press(`${mod}+Shift+F`);
+      const panel = page.getByRole("complementary", { name: "Find in all notes" });
+      const field = panel.getByRole("combobox", { name: "Search all notes" });
+      const previous = panel.getByRole("button", { name: "Previous result", exact: true });
+      const next = panel.getByRole("button", { name: "Next result", exact: true });
+      const close = panel.getByRole("button", { name: "Close find in all notes", exact: true });
+      for (const [width, height] of [[1280, 720], [360, 320]] as const) {
+        await l.app.evaluate(({ BrowserWindow }, { width, height }) => BrowserWindow.getAllWindows()[0]!.setSize(width, height), { width, height });
+        await field.fill("garden");
+        await expect(panel.getByRole("status").first()).toHaveText("2 matches in 1 note");
+        const fieldBox = (await field.boundingBox())!;
+        for (const action of [previous, next, close]) {
+          const box = (await action.boundingBox())!;
+          expect(Math.abs(box.y + box.height / 2 - fieldBox.y - fieldBox.height / 2)).toBeLessThanOrEqual(1);
+          expect(await action.evaluate(button => {
+            const r = button.getBoundingClientRect(), hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+            return r.x >= 0 && r.right <= innerWidth && r.y >= 0 && r.bottom <= innerHeight && hit !== null && button.contains(hit);
+          })).toBe(true);
+        }
+        const pairs = await panel.getByRole("switch").first().locator("xpath=ancestor::label").evaluate(label => {
+          const pair = getComputedStyle(label), group = getComputedStyle(label.parentElement!);
+          return { pair: pair.columnGap, group: group.columnGap, wrap: group.rowGap, align: group.alignItems };
+        });
+        expect(pairs).toEqual({ pair: "8px", group: "16px", wrap: "8px", align: "flex-start" });
+        await next.click();
+        await expect(panel.getByRole("option").last()).toHaveAttribute("aria-selected", "true");
+        await previous.click();
+        await expect(panel.getByRole("option").first()).toHaveAttribute("aria-selected", "true");
+        await field.fill("zebra");
+        await expect(panel.getByRole("status").first()).toHaveText("No results");
+        await expect(field).toHaveValue("zebra");
+        await expect(next).toBeDisabled();
+        const emptyScore = await scoreRegion(panel, BUDGETS.empty);
+        expect(emptyScore.economyScore).toBe(20);
+        expect(emptyScore.maxLines).toBeLessThanOrEqual(2);
+        await page.screenshot({ path: `../../test-results/screens/find-all-familiar-empty-${theme}-${width}.png` });
+        await panel.getByRole("button", { name: "Edit search" }).click();
+        await expect(field).toBeFocused();
+        await expect(field).toHaveValue("zebra");
+        await panel.getByRole("switch", { name: "Regular expression", exact: true }).locator("xpath=ancestor::label").click();
+        await field.fill("gard(");
+        await expect(panel.getByRole("status").first()).toHaveText("Not a valid regular expression");
+        await expect(field).toHaveAttribute("aria-invalid", "true");
+        await expect(panel.getByText("Check the pattern or turn off Regular expression.")).toBeVisible();
+        await expect(field).toHaveValue("gard(");
+        expect(await settledAxe(page)).toEqual([]);
+        const invalidScore = await scoreRegion(panel, BUDGETS.empty);
+        expect(invalidScore.economyScore).toBe(20);
+        expect(invalidScore.maxLines).toBeLessThanOrEqual(2);
+        await page.screenshot({ path: `../../test-results/screens/find-all-familiar-${theme}-${width}.png` });
+        await panel.getByRole("button", { name: "Edit search" }).click();
+        await expect(field).toBeFocused();
+        await field.fill("garden");
+        await expect(panel.getByRole("status").first()).toHaveText("2 matches in 1 note");
+        await panel.getByRole("switch", { name: "Regular expression", exact: true }).locator("xpath=ancestor::label").click();
+      }
+      await field.fill("[Gg]arden");
+      for (const name of ["Match case", "Whole word", "Regular expression"]) {
+        await panel.getByRole("switch", { name, exact: true }).locator("xpath=ancestor::label").click();
+      }
+      await expect(panel.getByRole("status").first()).toHaveText("2 matches in 1 note");
+      await next.click();
+      await field.focus();
+      await page.keyboard.press("Enter");
+      await expect(panel).toBeHidden();
+      await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.setSize(1280, 720));
+      const bar = page.getByRole("region", { name: "Find in note" });
+      await expect(bar.getByRole("searchbox", { name: "Find", exact: true })).toHaveValue("[Gg]arden");
+      for (const name of ["Match case", "Whole word", "Regular expression"]) await expect(bar.getByRole("switch", { name, exact: true })).toBeChecked();
+      await expect(page.getByRole("textbox", { name: "Note" }).locator(".ProseMirror-active-search-match")).toHaveText("garden");
+    } finally { await quit(l); }
+  });
+}
 
 test("FND-01/FND-04: Find surfaces are exclusive in both shortcut orders, retaining their queries", async () => {
   const { dirs } = instance();
@@ -49,6 +134,18 @@ test("FND-01/FND-04: Find surfaces are exclusive in both shortcut orders, retain
       await expect(allField).toBeFocused();
       await expect(allField).toHaveValue("all notes query");
     }
+    await page.keyboard.press(`${mod}+.`);
+    await page.getByRole("toolbar", { name: "Toolbar", exact: true }).getByRole("button", { name: "More", exact: true }).click();
+    await page.getByRole("menuitem", { name: /^Find (Ctrl|⌘)/ }).click();
+    await expect(sheet).toBeHidden();
+    await expect(noteField).toHaveValue("note query");
+    await page.keyboard.press(`${mod}+Shift+P`);
+    const actions = page.getByRole("dialog", { name: "Actions", exact: true });
+    await actions.getByRole("combobox").fill("find in all notes");
+    await actions.getByRole("option").filter({ has: page.getByText("Find in all notes", { exact: true }) }).click();
+    await expect(bar).toBeHidden();
+    await expect(sheet).toBeVisible();
+    await expect(allField).toHaveValue("all notes query");
   } finally { await quit(l); }
 });
 
