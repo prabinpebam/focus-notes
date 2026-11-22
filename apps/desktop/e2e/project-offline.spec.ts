@@ -7,7 +7,7 @@
  */
 import { execFileSync, spawn } from "node:child_process";
 import { createHash } from "node:crypto";
-import { appendFileSync, cpSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, renameSync, writeFileSync } from "node:fs";
+import { appendFileSync, cpSync, existsSync, mkdirSync, readdirSync, readFileSync, readlinkSync, realpathSync, renameSync, symlinkSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { join } from "node:path";
 import type { Page } from "@playwright/test";
@@ -82,8 +82,8 @@ async function reachesFirstConfirmation(page: Page, kind: "offline" | "linked") 
 }
 
 /** Observe the real command's settlement and read its VM, without a production port or secret values. */
-async function deletionVm(page: Page, observeOperation = false) {
-  return page.evaluate(observe => {
+async function deletionVm(page: Page, observeOperation = false, command = "project.deleteAuthorize") {
+  return page.evaluate(({ observe, command }) => {
     interface Fiber {
       child?: Fiber;
       sibling?: Fiber;
@@ -113,7 +113,7 @@ async function deletionVm(page: Page, observeOperation = false) {
           const original = app.commands.run;
           observation.deleteOperationSettled = false;
           const observed = async (id: string, args?: Record<string, unknown>) => {
-            if (id !== "project.deleteAuthorize") return original.call(app.commands, id, args);
+            if (id !== command) return original.call(app.commands, id, args);
             try { return await original.call(app.commands, id, args); }
             finally {
               observation.deleteOperationSettled = true;
@@ -132,7 +132,7 @@ async function deletionVm(page: Page, observeOperation = false) {
       if (current.sibling) queue.push(current.sibling);
     }
     throw new Error("Mounted app props were not found");
-  }, observeOperation);
+  }, { observe: observeOperation, command });
 }
 
 async function deletionGeometry(page: Page) {
@@ -145,7 +145,7 @@ async function deletionGeometry(page: Page) {
     if (!root || !body || !footer) throw new Error("Delete geometry regions were not found");
     const box = (node: Element) => {
       const r = node.getBoundingClientRect();
-      return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width };
+      return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height };
     };
     return { root: box(root), dialog: box(element), footer: box(footer), bodyOverflow: body.scrollWidth - body.clientWidth, needsScroll: body.scrollHeight > body.clientHeight + 1, buttons: [...footer.querySelectorAll("button")].filter(button => button.getClientRects().length).map(box) };
   });
@@ -162,10 +162,14 @@ async function deletionGeometry(page: Page) {
   expect(dimensions.buttons.at(-1)!.right).toBeGreaterThan(dimensions.dialog.left + dimensions.dialog.width / 2);
   const body = dialog.locator("[data-dialog-body]");
   await body.focus();
+  await body.press("Home");
+  await expect.poll(() => body.evaluate(element => element.scrollTop)).toBe(0);
+  const beforeEnd = await body.evaluate(element => element.scrollTop);
   if (dimensions.needsScroll) {
     await body.press("End");
     await expect.poll(() => body.evaluate(element => element.scrollTop)).toBeGreaterThan(0);
   }
+  const afterEnd = await body.evaluate(element => element.scrollTop);
   await page.keyboard.press("Tab");
   await expect.poll(() => dialog.evaluate(element => element.contains(document.activeElement))).toBe(true);
   const footer = await dialog.locator("[data-dialog-last]").boundingBox();
@@ -173,7 +177,7 @@ async function deletionGeometry(page: Page) {
   await body.focus();
   await body.press("Home");
   if (dimensions.needsScroll) await expect.poll(() => body.evaluate(element => element.scrollTop)).toBe(0);
-  return dimensions;
+  return { ...dimensions, scroll: { beforeEnd, afterEnd, afterHome: await body.evaluate(element => element.scrollTop) } };
 }
 
 test("D-pending: a project kept on this computer says Saved on this computer, and Delete project reaches its first confirmation", async () => {
@@ -389,6 +393,10 @@ async function actualDeletion(mode: "refused" | "partial" | "oauth" | "declined"
     };
     const capture = async (state: string) => {
       const geometry = narrowDark && await dialog.isVisible() ? await deletionGeometry(page) : undefined;
+      if (geometry && height === 480 && state === "device-verification-devicePending") {
+        expect(geometry.root.height).toBe(448);
+        expect(geometry.needsScroll).toBe(true);
+      }
       if (!process.env.FOCUS_NOTES_DELETE_REVIEW) return;
       const at = process.env.FOCUS_NOTES_DELETE_REVIEW;
       mkdirSync(at, { recursive: true });
@@ -653,8 +661,9 @@ for (const mode of ["current", "declined", "partial", "refused"] as const) {
 }
 test("D-400: actual dark short device flow scrolls its body without moving the footer or Section grouping", () => actualDeletion("devicePending", true, 480));
 
-for (const mode of ["allSelected", "privateStepup", "keepPrivate", "keepPrivateRetry", "keepPrivateForeign", "exportFailure", "exportReadFailure", "exportChanged"] as const) {
+for (const mode of ["allSelected", "privateStepup", "keepPrivate", "keepPrivateRetry", "keepPrivateForeign", "keepPrivateShared", "keepPrivateLinked", "exportFailure", "exportReadFailure", "exportChanged"] as const) {
   test(`D-400: actual ${mode} preserves public private and unpushed copies`, async () => {
+    const unsafePrivate = ["keepPrivateForeign", "keepPrivateShared", "keepPrivateLinked"].includes(mode);
     const dirs = newProject();
     const fakes = makeFakes({ gcm: true, token: "ghp_DELETE0123456789abcdefTOKEN" });
     fakes.store("ghp_DELETE0123456789abcdefTOKEN");
@@ -691,18 +700,44 @@ for (const mode of ["allSelected", "privateStepup", "keepPrivate", "keepPrivateR
       git(dirs.docs, "config", "--file", join(foreign, "config"), "core.worktree", join(dirs.docs, "private"));
       renameSync(join(dirs.docs, "private", ".git"), join(dirs.userData, "original-private-pointer"));
       writeFileSync(join(dirs.docs, "private", ".git"), `gitdir: ${foreign}\n`);
+    } else if (mode === "keepPrivateShared") {
+      const objects = join(dirs.userData, "shared-private-objects");
+      mkdirSync(objects);
+      writeFileSync(join(privateMetadata, "objects", "info", "alternates"), objects);
+    } else if (mode === "keepPrivateLinked") {
+      git(dirs.docs, "config", "--file", join(privateMetadata, "config"), "core.worktree", join(dirs.docs, "private"));
+      renameSync(join(dirs.docs, "private", ".git"), join(dirs.userData, "original-private-pointer"));
+      symlinkSync(privateMetadata, join(dirs.docs, "private", ".git"), process.platform === "win32" ? "junction" : "dir");
     }
     const privateConfig = readFileSync(join(privateMetadata, "config"));
-    const privatePointer = readFileSync(join(dirs.docs, "private", ".git"));
+    const pointerBytes = () => mode === "keepPrivateLinked" ? Buffer.from(readlinkSync(join(dirs.docs, "private", ".git"))) : readFileSync(join(dirs.docs, "private", ".git"));
+    const privatePointer = pointerBytes();
     const publicBytes = readFileSync(join(dirs.docs, "Welcome.md"));
     const privateBytes = readFileSync(join(dirs.docs, "private", "notes", "Private.md"));
     const draft = mode.startsWith("keepPrivate") ? Buffer.from("# Private draft fixture\n\nUncommitted synthetic bytes.\n") : undefined;
     if (draft) writeFileSync(join(dirs.docs, "private", "notes", "Draft.md"), draft);
     const hash = (bytes: Buffer) => createHash("sha256").update(bytes).digest("hex");
-    let gitEvidence: { cwd: string; expectedHead: string; expectedPrivateSha256: string; expectedDraftSha256?: string; actualDraftSha256?: string; commands: { args: string[]; stdout?: string; stdoutSha256?: string }[] } | undefined;
+    let gitEvidence: { cwd: string; expectedHead: string; expectedPrivateSha256: string; expectedDraftSha256?: string; actualDraftSha256?: string; actualDraft?: string; commands: { args: string[]; stdout?: string; stdoutSha256?: string }[] } | undefined;
     const head = git(dirs.docs, "rev-parse", "HEAD").toString();
     const privateHead = git(join(dirs.docs, "private"), "rev-parse", "HEAD").toString();
     const requests: string[] = [];
+    const originalEvidence = () => ({
+      publicHead: git(dirs.docs, "rev-parse", "HEAD").toString(),
+      privateHead: git(join(dirs.docs, "private"), "rev-parse", "HEAD").toString(),
+      pointer: pointerBytes().toString("utf8"),
+      pointerSha256: hash(pointerBytes()),
+      expectedPointerSha256: hash(privatePointer),
+      config: readFileSync(join(privateMetadata, "config")).toString("utf8"),
+      configSha256: hash(readFileSync(join(privateMetadata, "config"))),
+      expectedConfigSha256: hash(privateConfig),
+      privateNoteSha256: hash(readFileSync(join(dirs.docs, "private", "notes", "Private.md"))),
+      draft: draft ? readFileSync(join(dirs.docs, "private", "notes", "Draft.md")).toString("utf8") : undefined,
+      draftSha256: draft ? hash(readFileSync(join(dirs.docs, "private", "notes", "Draft.md"))) : undefined,
+      ownedStaging: readdirSync(join(dirs.docs, ".git")).filter(name => name.startsWith("focus-notes-private-retention-")),
+      publicDeletes: requests.filter(r => r === "DELETE /repos/ada/notes").length,
+      privateDeletes: requests.filter(r => r === "DELETE /repos/ada/notes-private").length,
+    });
+    let sourcePreservationEvidence: ReturnType<typeof originalEvidence> | undefined;
     const deleted = new Set<string>();
     const server = createServer((req, res) => {
       requests.push(`${req.method} ${req.url}`);
@@ -768,15 +803,23 @@ for (const mode of ["allSelected", "privateStepup", "keepPrivate", "keepPrivateR
         await dialog.getByRole("button", { name: "Continue", exact: true }).click();
         if (mode === "exportChanged") writeFileSync(join(exported, "Welcome.md"), "# Changed exported fixture\n");
         await dialog.getByRole("textbox", { name: /^Type .+ to confirm$/ }).fill(name);
+        await deletionVm(l.page, true, "project.deleteConfirm");
         await dialog.getByRole("button", { name: "Delete project", exact: true }).click();
-        if (mode === "keepPrivateForeign") {
-          await expect(dialog).toContainText("private Git history could not be kept safely");
+        await expect.poll(() => deletionVm(l.page), { timeout: 15_000 }).toMatchObject({ operationSettled: true, tokenCleared: true, codeCleared: true, busy: false });
+        if (unsafePrivate) {
+          expect(requests.filter(r => r.startsWith("DELETE "))).toHaveLength(0);
+          await expect(dialog).toContainText("Private Git history could not be kept safely. Nothing was deleted.");
+          await expect(dialog).toContainText("Deletion stopped");
           await expect(dialog).not.toContainText("open in another app");
-          expect(requests.filter(r => r === "DELETE /repos/ada/notes")).toHaveLength(1);
+          expect(requests.filter(r => r === "DELETE /repos/ada/notes")).toHaveLength(0);
           expect(requests.filter(r => r === "DELETE /repos/ada/notes-private")).toHaveLength(0);
-          expect(readFileSync(join(dirs.docs, "private", ".git"))).toEqual(privatePointer);
+          expect(pointerBytes()).toEqual(privatePointer);
           expect(readFileSync(join(privateMetadata, "config"))).toEqual(privateConfig);
           if (draft) expect(readFileSync(join(dirs.docs, "private", "notes", "Draft.md"))).toEqual(draft);
+          sourcePreservationEvidence = originalEvidence();
+          expect(sourcePreservationEvidence.ownedStaging).toEqual([]);
+          expect(sourcePreservationEvidence.publicDeletes).toBe(0);
+          expect(sourcePreservationEvidence.privateDeletes).toBe(0);
         } else if (mode === "exportChanged") {
           await expect(dialog).toContainText("The saved copy no longer matches your project");
           await expect(dialog).toContainText("Deletion stopped");
@@ -802,7 +845,14 @@ for (const mode of ["allSelected", "privateStepup", "keepPrivate", "keepPrivateR
             expect(git(join(dirs.docs, "private"), "rev-parse", "HEAD").toString()).toBe(privateHead);
             expect(readFileSync(join(dirs.docs, "private", ".git"))).toEqual(privatePointer);
             expect(readFileSync(join(privateMetadata, "config"))).toEqual(privateConfig);
+            if (draft) expect(readFileSync(join(dirs.docs, "private", "notes", "Draft.md"))).toEqual(draft);
+            sourcePreservationEvidence = originalEvidence();
+            expect(sourcePreservationEvidence.ownedStaging).toEqual([]);
+            expect(sourcePreservationEvidence.publicDeletes).toBe(1);
+            expect(sourcePreservationEvidence.privateDeletes).toBe(0);
+            await deletionVm(l.page, true, "project.deleteRetry");
             await dialog.getByRole("button", { name: "Retry", exact: true }).click();
+            await expect.poll(() => deletionVm(l.page), { timeout: 15_000 }).toMatchObject({ operationSettled: true });
           }
           await expect(dialog).toContainText("Repository deleted", { timeout: 15_000 });
           if (mode === "privateStepup") await expect.poll(() => deletionVm(l.page)).toMatchObject({ operationSettled: true });
@@ -814,18 +864,18 @@ for (const mode of ["allSelected", "privateStepup", "keepPrivate", "keepPrivateR
           const actualHead = git(kept, "rev-parse", "HEAD").toString();
           const shownNote = git(kept, "show", "HEAD:notes/Private.md");
           const status = git(kept, "status", "--porcelain").toString();
-          const top = git(kept, "rev-parse", "--show-toplevel").toString().trim();
-          const bare = git(kept, "config", "--local", "--get", "core.bare").toString().trim();
+          const top = git(kept, "rev-parse", "--show-toplevel").toString();
+          const bare = git(kept, "config", "--local", "--get", "core.bare").toString();
           expect(actualHead).toBe(privateHead);
           expect(shownNote).toEqual(privateBytes);
           expect(status).toBe(draft ? "?? notes/Draft.md\n" : "");
-          expect(realpathSync.native(top).toLowerCase()).toBe(realpathSync.native(kept).toLowerCase());
-          expect(bare).toBe("false");
+          expect(realpathSync.native(top.trim()).toLowerCase()).toBe(realpathSync.native(kept).toLowerCase());
+          expect(bare.trim()).toBe("false");
           const keptDraft = draft ? readFileSync(join(kept, "notes", "Draft.md")) : undefined;
           if (draft) expect(keptDraft).toEqual(draft);
-          gitEvidence = { cwd: kept, expectedHead: privateHead.trim(), expectedPrivateSha256: hash(privateBytes), ...(draft && keptDraft ? { expectedDraftSha256: hash(draft), actualDraftSha256: hash(keptDraft) } : {}), commands: [
-            { args: ["rev-parse", "HEAD"], stdout: actualHead.trim() },
-            { args: ["show", "HEAD:notes/Private.md"], stdoutSha256: hash(shownNote) },
+          gitEvidence = { cwd: kept, expectedHead: privateHead.trim(), expectedPrivateSha256: hash(privateBytes), ...(draft && keptDraft ? { expectedDraftSha256: hash(draft), actualDraftSha256: hash(keptDraft), actualDraft: keptDraft.toString("utf8") } : {}), commands: [
+            { args: ["rev-parse", "HEAD"], stdout: actualHead },
+            { args: ["show", "HEAD:notes/Private.md"], stdout: shownNote.toString("utf8"), stdoutSha256: hash(shownNote) },
             { args: ["status", "--porcelain"], stdout: status },
             { args: ["rev-parse", "--show-toplevel"], stdout: top },
             { args: ["config", "--local", "--get", "core.bare"], stdout: bare },
@@ -838,13 +888,17 @@ for (const mode of ["allSelected", "privateStepup", "keepPrivate", "keepPrivateR
           await expect.poll(() => deletionVm(l.page)).toMatchObject({ tokenCleared: true, codeCleared: true, busy: false });
         }
       }
-      if (mode === "exportFailure" || mode === "exportReadFailure" || mode === "exportChanged" || mode === "keepPrivateForeign") {
+      if (mode === "exportFailure" || mode === "exportReadFailure" || mode === "exportChanged" || unsafePrivate) {
         expect(readFileSync(join(dirs.docs, "Welcome.md"))).toEqual(publicBytes);
         expect(readFileSync(join(dirs.docs, "private", "notes", "Private.md"))).toEqual(privateBytes);
         expect(git(dirs.docs, "rev-parse", "HEAD").toString()).toBe(head);
         expect(git(join(dirs.docs, "private"), "rev-parse", "HEAD").toString()).toBe(privateHead);
         if (draft) expect(readFileSync(join(dirs.docs, "private", "notes", "Draft.md"))).toEqual(draft);
-        expect(requests.filter(r => r.startsWith("DELETE "))).toHaveLength(mode === "keepPrivateForeign" ? 1 : 0);
+        expect(requests.filter(r => r.startsWith("DELETE "))).toHaveLength(0);
+        if (unsafePrivate) {
+          sourcePreservationEvidence = originalEvidence();
+          expect(sourcePreservationEvidence.ownedStaging).toEqual([]);
+        }
       }
       const at = process.env.FOCUS_NOTES_DELETE_REVIEW;
       if (at) {
@@ -859,7 +913,7 @@ for (const mode of ["allSelected", "privateStepup", "keepPrivate", "keepPrivateR
         expect(l.log.join("\n")).not.toContain("EPHEMERAL0123456789abcdef");
         for (const entry of readdirSync(dirs.userData, { recursive: true, withFileTypes: true }).filter(entry => entry.isFile())) expect(readFileSync(join(entry.parentPath, entry.name)).includes(Buffer.from("EPHEMERAL0123456789abcdef"))).toBe(false);
       }
-      if (at) writeFileSync(join(at, `${mode}-provenance.json`), JSON.stringify({ scenario: mode, source: "built-invisible-renderer", pid: l.pid, requestChain: requests, sourceHead: head, privateHead, gitEvidence, sixStateComplete: false, checks: { exactPublicPrivateUnpushedBytes: true, ...(!["exportFailure", "exportReadFailure", "exportChanged"].includes(mode) ? { exactPublicPrivateExportBytes: true } : {}), preservedHistory: true, privateSelectionRespected: true, noDeleteBeforePreservation: true, ...(mode === "keepPrivateRetry" ? { noRepeatedDeleteOnLocalRetry: true } : {}), ...(mode === "privateStepup" ? { noGrantTokenInDiskOrLogs: true, onlyPrivateTargetAuthorized: true } : {}), fakeCredentialsUnchanged: true, fakeGitConfigUnchanged: true }, nativeReadLock: mode === "exportReadFailure", nativeRecycleBin: false, privateHistoryLocation: mode === "keepPrivateForeign" ? "original foreign metadata, refused without migration" : selected ? ".git/modules/private in synthetic recycled parent" : "self-contained .git in the kept private folder", compiled: deletionBuild() }, null, 2));
+      if (at) writeFileSync(join(at, `${mode}-provenance.json`), JSON.stringify({ scenario: mode, source: "built-invisible-renderer", pid: l.pid, requestChain: requests, sourceHead: head, privateHead, gitEvidence, sourcePreservationEvidence, sixStateComplete: false, checks: { exactPublicPrivateUnpushedBytes: true, ...(!["exportFailure", "exportReadFailure", "exportChanged"].includes(mode) ? { exactPublicPrivateExportBytes: true } : {}), preservedHistory: true, privateSelectionRespected: true, noDeleteBeforePreservation: true, ...(unsafePrivate ? { zeroRemoteDeleteOnPreflightRefusal: true } : {}), ...(mode === "keepPrivateRetry" ? { noRepeatedDeleteOnLocalRetry: true } : {}), ...(mode === "privateStepup" ? { noGrantTokenInDiskOrLogs: true, onlyPrivateTargetAuthorized: true } : {}), fakeCredentialsUnchanged: true, fakeGitConfigUnchanged: true }, nativeReadLock: mode === "exportReadFailure", nativeRecycleBin: false, privateHistoryLocation: unsafePrivate ? "original unsupported metadata, refused without migration" : selected ? ".git/modules/private in synthetic recycled parent" : "self-contained .git in the kept private folder", compiled: deletionBuild() }, null, 2));
     } finally {
       if (unlock) await unlock();
       if (!closed) await quit(l);

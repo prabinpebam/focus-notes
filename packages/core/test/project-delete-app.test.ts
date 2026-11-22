@@ -169,6 +169,11 @@ describe("PRJ-23: deleting a linked project", () => {
       const preservation = await confirmed([{ state: "refused", reason: "preservation" }]);
       expect(preservation.vm().remoteTitle).toBe("Deletion stopped");
       expect(preservation.vm().remoteKept).toBe("Your local project is kept. Save a fresh copy before deleting.");
+      const history = await confirmed([{ state: "refused", reason: "privateHistory" }]);
+      expect(history.vm().remoteTitle).toBe("Deletion stopped");
+      expect(history.vm().remoteDetail).toBe("Private Git history could not be kept safely. Nothing was deleted.");
+      expect(history.vm().remoteKept).toBe("Your project is kept. Fix its private Git setup before retrying.");
+      expect(history.calls.some(call => call.startsWith("deleteLocal"))).toBe(false);
     });
     it("closing during authorization cancels it, clears the entered token, and ignores a late remote success", async () => {
       const t = await confirmed([{ state: "stepup" }]);
