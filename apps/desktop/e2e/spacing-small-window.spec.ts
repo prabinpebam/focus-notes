@@ -17,7 +17,8 @@ for (const theme of ["light", "dark"] as const) {
         await l.page.screenshot({ path: `../../test-results/screens/spacing-batch-${theme}-${name.replaceAll(" ", "-")}.png` });
         problems.push(...(await visualProblems(l.page)).map(problem => `${name}: ${problem}`));
         if (name === "find in all notes") {
-          const content = l.page.locator("[data-sheet-body] > [data-sheet-content]");
+          const content = l.page.getByRole("complementary", { name: "Find in all notes" })
+            .locator('[data-key-scope="findAll"] > div');
           expect(await content.evaluate(el => getComputedStyle(el).paddingBottom)).toBe("16px");
           await content.evaluate(el => { (el as HTMLElement).style.paddingBottom = "0px"; });
           expect(await visualProblems(l.page)).toEqual(expect.arrayContaining([expect.stringMatching(/uniform padding:.*bottom 0/)]));
