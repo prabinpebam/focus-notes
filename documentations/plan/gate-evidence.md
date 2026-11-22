@@ -22,6 +22,28 @@ PRJ-23 / F4.2 / D-400, isolated work branch from `87ee96a2`; not landed and not 
 
 Still open: one-time authorization routes, long-authorization intent/cancellation races, full runtime six-state progression, main-process all-selected-remote/local-preservation gate, and combined G7 integration. No CI run, push, quarantine or release action.
 
+## In-app Delete safe authorization candidate, 22 November
+
+**Isolated and unlanded.** The candidate wires the approved states and D-400's current-credential, configured-device and memory-token paths. Official gh login/logout are blocked: [v2.60.0 and trunk source](decisions.md#d-400-one-time-deletion-authorization-without-expanding-retained-sign-in) show shared keyring mutation despite protective flags. Earlier `deleted-gh` and `ghdeclined` captures/provenance are retained as **historical inaccurate-stub observations**, not active production-isolation certification. The replacement `ghblocked` journey verifies the memory-token recovery with an installed fake helper and unchanged fake parent settings.
+
+Actual captures live under `focus-notes-work\review\delete-22nov`. Safe-path receipts bind the compiled main/preload/renderer hashes, actual HTTP chain and asserted synthetic source/recycled bytes and HEAD. They distinguish unchanged fake GCM/git configuration and app-owned account-file bytes from legitimate project-state cleanup; all app-data files are inspected for the grant token **after orderly app shutdown**, so locked Chromium files are not skipped. No account token is printed. Individual receipts keep `sixStateComplete: false`; they do not certify the complete release queue or owner-only F4.2.5.
+
+Local checkpoint checks:
+
+| Command | Result |
+| --- | --- |
+| `pnpm exec vitest run apps\desktop\test\project-delete.test.ts packages\core\test\project-delete-app.test.ts` | 46 passed |
+| `pnpm exec vitest run packages\ui-runtime\test\render.test.ts -t 'keeps a Section'` | 1 passed, 6 deliberately unselected |
+| `pnpm --filter @focus-notes/core run typecheck`, desktop and ui-runtime equivalents | All passed |
+| `pnpm --filter @focus-notes/ui-runtime exec node src\cli\ui-check.ts --write` | Passed; committed UI schemas unchanged |
+| `node .\tools\notification-inventory.mjs --write`; `pnpm check` | Passed; notification inventory regenerated |
+| `pnpm --filter @focus-notes/desktop run build` | Passed; existing chunk-size warning |
+| `node .\slate\scripts\runtime-host.mjs check --repo . --host documentations` | Passed |
+| `pnpm --filter @focus-notes/desktop exec playwright test project-offline.spec.ts --workers=1 -g 'D-394\|D-400'` | 8 passed; current/locked failed an immediate request-count assertion before their asynchronous source precheck finished |
+| `pnpm --filter @focus-notes/desktop exec playwright test project-offline.spec.ts --workers=1 -g 'D-400: actual (current\|locked)'` | 2 passed after awaiting the same exact request count; compiled app unchanged |
+
+The ten scenarios passed across those two selections, **not a final all-ten rerun**. Final safe-path screenshots and bound receipts are in `review\delete-22nov\safe-checkpoint-1912`; previous fake-gh receipts remain historical. Both runs quit their app instances normally and exact-own-PID cleanup reported zero remaining. Remaining handoff work is the final dark/narrow/footer visual pass, stronger actual negative/race/device/persistence acceptance, changed-page headless checks, combined G7 integration and exact-head landing gate. No full suite, push, CI or owner-profile launch is authorized by this evidence.
+
 ## How this page is kept
 
 | What | Where it comes from |

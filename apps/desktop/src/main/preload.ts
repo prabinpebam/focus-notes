@@ -245,11 +245,21 @@ contextBridge.exposeInMainWorld("focusNotes", {
     // Remove this workspace from this computer (FRE-07): the main process checks everything is on GitHub, twice.
     removal: () => ipcRenderer.invoke("workspace:removal"),
     remove: () => ipcRenderer.invoke("workspace:remove"),
-    // Delete project (PRJ-23): GitHub's side happens on GitHub's page; the main process checks again before the Recycle Bin.
+    // Delete project (PRJ-23): identity, permission, and remote receipts stay in the main process.
     deletion: () => ipcRenderer.invoke("workspace:deletion"),
     repoStatus: (repo: string) => ipcRenderer.invoke("workspace:repoStatus", repo),
     deleteRepo: (repo: string) => ipcRenderer.invoke("workspace:deleteRepo", repo),
+    authorizeDelete: (repo: string, token?: string) => ipcRenderer.invoke("workspace:authorizeDelete", repo, token),
+    cancelDelete: () => ipcRenderer.invoke("workspace:cancelDelete"),
+    deletionAuthorizationMethod: () => ipcRenderer.invoke("workspace:deletionAuthorizationMethod"),
+    openDeleteAuthorization: () => ipcRenderer.invoke("workspace:openDeleteAuthorization"),
+    onDeleteCode: (listener: (code: string) => void) => {
+      const handler = (_event: unknown, code: string) => listener(code);
+      ipcRenderer.on("workspace:deleteCode", handler);
+      return () => ipcRenderer.removeListener("workspace:deleteCode", handler);
+    },
     openRepoSettings: (repo: string) => ipcRenderer.invoke("workspace:openRepoSettings", repo),
+    confirmRepoDeletion: (repo: string) => ipcRenderer.invoke("workspace:confirmRepoDeletion", repo),
     exportUnsynced: () => ipcRenderer.invoke("workspace:exportUnsynced"),
     deleteLocal: (opts: { keepPrivate: boolean }) => ipcRenderer.invoke("workspace:deleteLocal", opts),
     onChange: (listener: (changes: unknown[]) => void) => {

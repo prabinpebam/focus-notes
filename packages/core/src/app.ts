@@ -499,10 +499,10 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     store, commands, viewModels, catalog, bridge, tracker, flush, toast,
     projectName: () => appState.projectSettings?.[store.state.workspace.folder ?? ""]?.name,
     // The project is gone (DD-PROJ-15): no note is left to show, so the window opens Open, full size.
-    deleted: async () => {
+    deleted: async (openProjects = true) => {
       store.update((s) => ({ ...s, note: { key: "none", initialMarkdown: "", markdown: "", status: "loading", saveState: "saved" }, ui: { ...s.ui, settings: { ...s.ui.settings, open: false } } }));
       await persistAppState({ lastNotePath: undefined }).catch(() => {});
-      await commands.run("projects.open");
+      if (openProjects) await commands.run("projects.open");
     },
   });
   registerFeedback({ store, bridge, catalog, commands, viewModels, toast, announce, tracker, clock });

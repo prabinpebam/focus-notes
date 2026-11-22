@@ -1,9 +1,9 @@
 /**
  * Deleting a project (PRJ-23, SC-PROJ-08 → UC-PROJ-13, DD-PROJ-09 to 17; approved 5 November): one
  * named project at a time. The consequences come first, then the notes not on GitHub yet, then the
- * project's name typed exactly. A linked project is deleted on GitHub's own page (DD-PROJ-12): the app
- * opens it, watches for the repository to go, and asks the person to confirm before it touches this
- * computer, since a 404 alone may be lost access (DD-PROJ-13). Then the folder and its history go to
+ * project's name typed exactly. D-394/D-400 delete a linked project using one-time authorization and
+ * verified remote receipts; GitHub's page is the refusal fallback. A 404 alone may be lost access
+ * (DD-PROJ-13). Then the folder and its history go to
  * the Recycle Bin (`bridge.workspace.deleteLocal`) and the window shows Open.
  */
 import type { App } from "./app.ts";
@@ -33,7 +33,7 @@ interface Ctx {
   flush: () => Promise<boolean>;
   toast: (message: string, opts?: { tone?: "info" | "error" }) => unknown;
   /** The project is gone: the window drops the note and shows Open (DD-PROJ-15). */
-  deleted: () => Promise<void>;
+  deleted: (openProjects?: boolean) => Promise<void>;
   /** The name Settings → Project shows, which the person types to confirm (DD-PROJ-10). */
   projectName?: () => string | undefined;
   /** Timers, replaceable in tests. */
@@ -46,7 +46,7 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
   const blank = () => ({
     open: false, step: "consequences" as DeleteStep, problem: "" as DeleteProblem, typed: "", private: false, exported: false, exportPath: "",
     busy: false, checking: false, owner: "", org: "", retryAt: 0, lockedFile: "", site: "", links: 0,
-    remoteState: "deleting" as "deleting" | "partial" | "refused", remoteTarget: "",
+    remoteState: "deleting" as "stepup" | "deleting" | "deleted" | "partial" | "refused" | "declined", remoteReason: "", remoteTarget: "", remoteCode: "", remoteToken: "", remoteAuthorizing: false, remoteMethod: "token" as "device" | "token",
   });
   let state = blank();
   let check: DeletionCheck | undefined;
@@ -80,9 +80,9 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
       keepPrivate: Boolean(check.privateRepo) && !state.private, local,
     };
     pending = undefined;
-    await rec.save(record).catch(() => {});
+    await rec.save(record);
   };
-  const forget = async () => { pending = undefined; await ws?.deletionRecord?.clear().catch(() => {}); };
+  const forget = async () => { await ws?.deletionRecord?.clear(); pending = undefined; };
 
   /** Every step of the run, in order, with its state (DD-PROJ-14). A repository already confirmed deleted stays done. */
   const steps = (): RunStep[] => {
@@ -143,6 +143,7 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
     const status = c.kind === "linked"
       ? (!store.state.account.login ? ({ state: "signin" } as RepoStatus) : await ws!.repoStatus?.(c.repo).catch((): RepoStatus => ({ state: "offline" })))
       : undefined;
+    if (ws?.deleteRepo && c.kind === "linked" && c.privateRepo && store.state.account.login) await ws.repoStatus?.(c.privateRepo);
     if (mine !== run) return;
     const p = problemOf(status);
     set({
@@ -167,7 +168,14 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
   }, () => Boolean(ws?.deletion && ws.deleteLocal));
 
   /** Back, Close and Escape change nothing; only waiting on GitHub stops (DD-PROJ-14). Never while the folder is moving. */
-  const close = () => {
+  const close = async () => {
+    if (state.step === "inApp") {
+      if (finished) return commands.run("project.deleteFinish");
+      run++;
+      await ws?.cancelDelete?.();
+      set({ open: false, busy: false, remoteToken: "", remoteCode: "" });
+      return;
+    }
     if (state.busy || state.step === "progress") return;
     if (state.step === "github") { stopPolling(); set({ step: "stopped" }); return; }
     run++;
@@ -175,9 +183,9 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
     stopPolling();
     set({ open: false });
   };
-  reg<{ open: boolean }>("project.deleteSetOpen", "remove.cancel", ({ open }) => { if (!open) close(); });
+  reg<{ open: boolean }>("project.deleteSetOpen", "remove.cancel", ({ open }) => { if (!open) return close(); });
   reg("project.deleteCancel", "remove.cancel", close);
-  reg("project.deleteStop", "project.delete.github.stop", () => { if (state.step === "github") { stopPolling(); set({ step: "stopped" }); } else close(); });
+  reg("project.deleteStop", "project.delete.github.stop", () => { if (state.step === "github") { stopPolling(); set({ step: "stopped" }); } else return close(); });
   reg("project.deleteRetry", "commit.retry", async () => {
     if (state.step === "inApp") return deleteInApp();
     if (state.step === "progress") return commands.run("project.deleteConfirm");
@@ -200,6 +208,7 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
   reg<{ value?: unknown }>("project.deleteType", "project.delete.confirm.button", ({ value }) => set({ typed: typeof value === "string" ? value : "" }));
   reg<{ value?: unknown }>("project.deletePrivate", "project.delete.private.switch", ({ value }) => set({ private: value === true }));
   reg("project.deleteBack", "project.back", () => {
+    if (state.step === "inApp" && !state.busy) { set({ step: "confirm", remoteToken: "" }); return; }
     if (state.step === "confirm") set({ step: check?.unsynced.length ? "unsynced" : "consequences" });
     else if (state.step === "unsynced") set({ step: "consequences" });
   });
@@ -235,17 +244,40 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
     }
     await finish();
   });
-  async function deleteInApp() {
+  reg<{ value?: unknown }>("project.deleteToken", "project.delete.entry", ({ value }) => set({ remoteToken: typeof value === "string" ? value : "" }));
+  reg("project.deleteAuthorize", "project.delete.entry", () => deleteInApp(true));
+  reg("project.deleteOpenAuthorization", "project.delete.inApp.device.open", async () => {
+    if (state.open && state.busy && state.remoteCode) await ws?.openDeleteAuthorization?.();
+  });
+  reg("project.deleteFinish", "project.delete.confirm.button", async () => {
+    if (!finished) return;
+    await commands.run("projects.open");
+    state = blank();
+    changed();
+    toast(catalog.format(finished.privateKept ? "project.delete.donePrivate" : "project.delete.done", { name: finished.name, path: finished.privateKept }));
+  });
+  async function deleteInApp(authorize = false) {
     if (!check || !ws?.deleteRepo || state.busy) return;
-    set({ step: "inApp", remoteState: "deleting", busy: true });
+    const mine = run;
+    const selected = targets();
+    const authorizeRepo = authorize ? state.remoteTarget : undefined;
+    const stopCode = ws.onDeleteCode?.(code => { if (mine === run && state.open && state.busy) set({ remoteCode: code, remoteAuthorizing: Boolean(code) }); });
+    set({ step: "inApp", remoteState: "deleting", busy: true, remoteAuthorizing: authorize });
     try {
-      for (const repo of targets()) {
+      for (const repo of selected) {
         if (repos.get(repo) === "deleted") continue;
         set({ remoteTarget: repo });
-        const go = () => ws.deleteRepo!(repo);
+        const go = () => repo === authorizeRepo && ws.authorizeDelete ? ws.authorizeDelete(repo, state.remoteToken || undefined) : ws.deleteRepo!(repo);
         const result = await (tracker ? tracker.run("project.deleteRemote", "task.deleting", go, undefined, "fn:project.deleteRemote") : go());
+        if (mine !== run || !state.open) return;
+        set({ remoteToken: "", remoteCode: "" });
         if (result.state !== "deleted") {
-          set({ remoteState: result.state, busy: false });
+          if (result.state === "stepup") {
+            const method = await ws.deletionAuthorizationMethod?.() ?? "token";
+            if (mine !== run || !state.open) return;
+            set({ remoteMethod: method });
+          }
+          set({ remoteState: result.state, remoteReason: result.state === "refused" ? result.reason : "", busy: false });
           return;
         }
         repos.set(repo, "deleted");
@@ -254,14 +286,19 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
       set({ busy: false });
       await finish();
     } catch {
+      if (mine !== run) return;
       set({ remoteState: "partial", busy: false });
       toast(catalog.format("project.delete.inApp.partial.detail"), { tone: "error" });
-    }
+    } finally { stopCode?.(); if (mine === run) set({ remoteToken: "" }); }
   }
   reg<{ id?: unknown }>("project.deleteOpenGitHub", "project.delete.github.open", async ({ id }) => {
     const repo = typeof id === "string" ? id : targets().find((r) => repos.get(r) !== "deleted");
     if (!repo || !targets().includes(repo) || !ws?.openRepoSettings) return;
     await ws.openRepoSettings(repo);
+    if (state.step === "inApp") {
+      for (const target of targets()) if (!repos.has(target)) repos.set(target, "open");
+      set({ step: "github", problem: "" });
+    }
     if (repos.get(repo) === "open") repos.set(repo, "waiting");
     changed();
     schedule();
@@ -291,6 +328,10 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
   /** The person says it's deleted: only for a repository GitHub no longer shows (DD-PROJ-13). */
   reg<{ id?: unknown }>("project.deleteConfirmGitHub", "project.delete.github.confirmDeleted", async ({ id }) => {
     if (typeof id !== "string" || repos.get(id) !== "ask") return;
+    if (ws?.confirmRepoDeletion) {
+      const result = await ws.confirmRepoDeletion(id);
+      if (result.state !== "deleted") { toast(catalog.format("project.delete.unavailable"), { tone: "error" }); return; }
+    }
     repos.set(id, "deleted");
     changed();
     // Deleted on GitHub can't be undone here, so from now on a quit or crash leaves a record to finish from.
@@ -300,6 +341,10 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
 
   async function finish() {
     if (!ws?.deleteLocal || !check) return;
+    const mine = run;
+    if (ws.deleteRepo && linked() && !targets().every(repo => repos.get(repo) === "deleted")) return;
+    if (!(await flush())) { toast(catalog.format("project.delete.unsaved"), { tone: "error" }); return; }
+    if (mine !== run || !state.open) return;
     stopPolling();
     set({ step: "progress", busy: true, problem: "", lockedFile: "" });
     const keepPrivate = Boolean(check.privateRepo) && !state.private;
@@ -312,12 +357,11 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
       const all = steps().map((s): RunStep => (s.state === "skipped" ? s : { ...s, state: "done" }));
       finished = { name: n, folder: check.folder, repos: targets(), privateKept: r.privateKept ?? "", steps: all };
       await forget();
-      state = blank();
-      check = undefined;
-      repos.clear();
+      if (ws.deleteRepo && !off) set({ step: "inApp", remoteState: "deleted", busy: false });
+      else { state = blank(); check = undefined; repos.clear(); }
       changed();
-      await deleted();
-      toast(catalog.format(off ? "project.delete.doneOffline" : r.privateKept ? "project.delete.donePrivate" : "project.delete.done", { name: n, path: r.privateKept ?? "" }));
+      await deleted(!ws.deleteRepo || off);
+      if (!ws.deleteRepo || off) toast(catalog.format(off ? "project.delete.doneOffline" : r.privateKept ? "project.delete.donePrivate" : "project.delete.done", { name: n, path: r.privateKept ?? "" }));
       return;
     }
     // Deleted on GitHub, still on this computer: say exactly that, and keep Retry and Show folder (DD-PROJ-17).
@@ -330,7 +374,7 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
   /** A delete an earlier session started and didn't finish (quit or crash): read once at start (DD-PROJ-14). */
   const resumeCheck = async () => {
     if (!ws?.deletionRecord) return;
-    const r = await ws.deletionRecord.load().catch(() => undefined);
+    const r = await ws.deletionRecord.load().catch(() => { toast(catalog.format("project.delete.unavailable"), { tone: "error" }); return undefined; });
     const next = r && r.version === 1 && r.folder ? r : undefined;
     if (!next && !pending) return;
     pending = next;
@@ -379,12 +423,12 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
   viewModels.register({
     id: "vm.projectDelete",
     reads: "*",
-    setters: { typed: "project.deleteType", private: "project.deletePrivate" },
+    setters: { typed: "project.deleteType", private: "project.deletePrivate", remoteToken: "project.deleteToken" },
     schema: {
       type: "object",
       properties: {
         open: bool, step: { type: "string", enum: ["consequences", "unsynced", "confirm", "github", "inApp", "progress", "stopped"] }, kind: { type: "string", enum: ["linked", "offline"] },
-        remoteState: text, remoteTarget: text, remoteTitle: text, remoteDetail: text, remoteKept: text,
+        remoteState: text, remoteTarget: text, remoteTitle: text, remoteTone: { type: "string", enum: ["info", "success", "warning", "danger"] }, remoteDetail: text, remoteKept: text, remoteCode: text, remoteCodeLabel: text, remoteToken: text, remoteMethod: text,
         problem: text, typed: text, private: bool, exported: bool, exportPath: text, busy: bool,
         name: text, repo: text, privateRepo: text, otherRepo: text, otherOwner: text, org: text, orgRepo: text,
         site: text, siteNotes: num, links: num, peopleCount: num, peopleNames: text, privateCount: num,
@@ -399,8 +443,11 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
       return {
         open: state.open, step: state.step, kind: c?.kind ?? "linked", problem: state.problem, typed: state.typed, private: state.private,
         remoteState: state.remoteState, remoteTarget: state.remoteTarget,
-        remoteTitle: catalog.format(`project.delete.inApp.${state.remoteState}.title`),
-        remoteDetail: catalog.format(`project.delete.inApp.${state.remoteState}.detail`),
+        remoteCode: state.remoteCode, remoteToken: state.remoteToken, remoteMethod: state.remoteMethod,
+        remoteTitle: catalog.format(state.remoteAuthorizing && state.busy ? "project.delete.inApp.device.waiting" : `project.delete.inApp.${state.remoteState}.title`),
+        remoteCodeLabel: state.remoteCode ? catalog.format("project.delete.inApp.device.code", { code: state.remoteCode }) : "",
+        remoteTone: state.remoteState === "deleted" ? "success" : state.remoteState === "stepup" || state.remoteState === "deleting" ? "info" : state.remoteState === "partial" ? "warning" : "danger",
+        remoteDetail: catalog.format(state.remoteState === "refused" && state.remoteReason ? `project.delete.inApp.reason.${state.remoteReason}` : `project.delete.inApp.${state.remoteState}.detail`),
         remoteKept: catalog.format(`project.delete.inApp.${state.remoteState}.kept`),
         exported: state.exported, exportPath: state.exportPath, busy: state.busy || state.checking,
         name: c?.name ?? "", repo: c?.repo ?? "", privateRepo: c?.privateRepo ?? "",

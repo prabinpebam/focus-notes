@@ -596,8 +596,14 @@ export interface WorkspaceBridge {
   repoStatus?(repo: string): Promise<RepoStatus>;
   /** D-394: delete a preflighted target, then reconcile its identity. Never returns credentials. */
   deleteRepo?(repo: string): Promise<RemoteDeletionResult>;
+  authorizeDelete?(repo: string, token?: string): Promise<RemoteDeletionResult>;
+  cancelDelete?(): Promise<void>;
+  onDeleteCode?(listener: (code: string) => void): () => void;
+  openDeleteAuthorization?(): Promise<void>;
+  deletionAuthorizationMethod?(): Promise<"device" | "token">;
   /** Opens the repository's own Settings page on GitHub, where its Danger Zone is (DD-PROJ-12). */
   openRepoSettings?(repo: string): Promise<void>;
+  confirmRepoDeletion?(repo: string): Promise<RemoteDeletionResult>;
   /** Copies the notes not on GitHub yet to a folder the person picks, outside the project. Undefined when they cancel. */
   exportUnsynced?(): Promise<string | undefined>;
   /**
@@ -662,7 +668,8 @@ export type RepoStatus =
 
 export type RemoteDeletionResult =
   | { state: "deleted" }
-  | { state: "refused"; reason: "notAdmin" | "permission" | "identity" }
+  | { state: "stepup" | "declined" }
+  | { state: "refused"; reason: "notAdmin" | "permission" | "identity" | "authorization" | "preservation" }
   | { state: "partial" };
 
 /** Deleting the project on this computer: done, a file another app holds, refused (not this project's folder), or failed. */

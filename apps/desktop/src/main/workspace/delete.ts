@@ -1,11 +1,11 @@
 /**
  * Deleting a project (PRJ-23, DD-PROJ-09 to 17; Settings → Project → Delete project…). GitHub's side is
- * the person's, on GitHub's own page (DD-PROJ-12): this only reads whether a repository is still
- * there. This computer's side moves the project's folder to the Recycle Bin, never deletes it outright,
+ * confirmed in the app under D-394/D-400, with GitHub's page as the fallback. This computer's side
+ * moves the project's folder to the Recycle Bin, never deletes it outright,
  * and only the open project's own folder: never a drive's root, the home folder or the app's data.
  */
 import { existsSync, realpathSync } from "node:fs";
-import { readdir, rename } from "node:fs/promises";
+import { readdir, realpath, rename, stat } from "node:fs/promises";
 import { basename, dirname, isAbsolute, join, parse, relative, resolve } from "node:path";
 import type { DeletionCheck, DeletionResult, RemoteDeletionResult, RepoStatus } from "@focus-notes/core";
 import { GitHubError } from "@focus-notes/github";
@@ -26,6 +26,22 @@ const within = (base: string, p: string) => {
 
 /** owner/name as GitHub allows them, never a path. */
 export const isRepoSlug = (s: unknown): s is string => typeof s === "string" && /^[A-Za-z0-9-]{1,39}\/(?!\.\.?$)[A-Za-z0-9._-]{1,100}$/.test(s);
+
+export async function deletionFolderIdentity(folder: string) {
+  const path = await realpath(folder);
+  const info = await stat(path, { bigint: true });
+  return { path, dev: info.dev, ino: info.ino };
+}
+
+export async function sameDeletionFolder(folder: string, expected: Awaited<ReturnType<typeof deletionFolderIdentity>>): Promise<boolean> {
+  try {
+    const current = await deletionFolderIdentity(folder);
+    return current.path === expected.path && current.dev === expected.dev && current.ino === expected.ino;
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") return false;
+    throw error;
+  }
+}
 
 /** How many notes a folder holds, its own dot-folders left out. */
 export async function countNotes(dir: string): Promise<number> {
@@ -90,39 +106,64 @@ export async function deletionCheck(git: GitRunner, folder: string, repos: { rep
 interface ReadsGitHub {
   request<T>(method: string, path: string): Promise<T>;
   user(): Promise<unknown>;
+  readonly deletionPermission?: "granted" | "stepup" | "unknown";
 }
 
 /** Receipts stay in this process: a retry reads first and never replays an accepted DELETE. */
 export class RemoteProjectDeletion {
-  readonly #targets = new Map<string, { id: number; account: number; sent: boolean; accepted: boolean; confirmed: boolean }>();
+  readonly #targets = new Map<string, { id: number; account: number; login?: string; sent: boolean; accepted: boolean; confirmed: boolean }>();
   async prepare(api: ReadsGitHub, repo: string): Promise<void> {
     if (!isRepoSlug(repo)) throw new Error("Not a repository");
     const target = await api.request<{ id: number }>("GET", `/repos/${repo}`);
-    const user = await api.user() as { id?: number };
+    const user = await api.user() as { id?: number; login?: string };
     if (!Number.isSafeInteger(target.id) || !Number.isSafeInteger(user.id)) throw new Error("Invalid deletion identity");
     const previous = this.#targets.get(repo);
-    if (previous?.sent) return;
-    this.#targets.set(repo, { id: target.id, account: user.id!, sent: false, accepted: false, confirmed: false });
+    if (previous) return;
+    this.#targets.set(repo, { id: target.id, account: user.id!, login: user.login, sent: false, accepted: false, confirmed: false });
+  }
+  account(repo: string) {
+    const receipt = this.#targets.get(repo);
+    if (!receipt?.login) throw new Error("Deletion account was not preflighted");
+    return { id: receipt.account, login: receipt.login };
   }
   confirmed(repo: string): boolean { return this.#targets.get(repo)?.confirmed === true; }
-  async delete(api: ReadsGitHub | undefined, repo: string): Promise<RemoteDeletionResult> {
+  /** A person's explicit fallback confirmation, never a 404-driven automatic cleanup. */
+  async confirmExternal(api: ReadsGitHub | undefined, repo: string, intent: () => boolean | Promise<boolean>): Promise<RemoteDeletionResult> {
+    if (!isRepoSlug(repo)) throw new Error("Not a repository");
+    const receipt = this.#targets.get(repo);
+    if (!api || !receipt) return { state: "refused", reason: "identity" };
+    try {
+      await api.request("GET", `/repos/${repo}`);
+      return { state: "partial" };
+    } catch (error) {
+      if (!(error instanceof GitHubError) || error.status !== 404) throw error;
+    }
+    const user = await api.user() as { id?: number; login?: string };
+    if (user.id !== receipt.account || receipt.login && user.login !== receipt.login || !await intent()) return { state: "refused", reason: "identity" };
+    receipt.confirmed = true;
+    return { state: "deleted" };
+  }
+  async delete(api: ReadsGitHub | undefined, repo: string, intent: () => boolean | Promise<boolean> = () => true, stepUp = false): Promise<RemoteDeletionResult> {
     if (!isRepoSlug(repo) || !this.#targets.has(repo)) throw new Error("Repository was not preflighted");
     if (!api) return { state: "refused", reason: "permission" };
     const receipt = this.#targets.get(repo)!;
     try {
-      const user = await api.user() as { id?: number };
-      if (user.id !== receipt.account) return { state: "refused", reason: "identity" };
+      const user = await api.user() as { id?: number; login?: string };
+      if (user.id !== receipt.account || receipt.login && user.login !== receipt.login || !await intent()) return { state: "refused", reason: "identity" };
       let current: { id: number; permissions?: { admin?: boolean } };
       try { current = await api.request("GET", `/repos/${repo}`); }
       catch (error) {
         if (!(error instanceof GitHubError) || error.status !== 404) throw error;
         if (!receipt.accepted) return { state: "partial" };
+        const stillSignedIn = await api.user() as { id?: number; login?: string };
+        if (stillSignedIn.id !== receipt.account || receipt.login && stillSignedIn.login !== receipt.login || !await intent()) return { state: "refused", reason: "identity" };
         receipt.confirmed = true;
         return { state: "deleted" };
       }
       if (current.id !== receipt.id) return { state: "refused", reason: "identity" };
       if (!current.permissions?.admin) return { state: "refused", reason: "notAdmin" };
       if (receipt.sent) return { state: "partial" };
+      if (!await intent()) return { state: "declined" };
       receipt.sent = true;
       try {
         await api.request("DELETE", `/repos/${repo}`);
@@ -130,6 +171,7 @@ export class RemoteProjectDeletion {
       } catch (error) {
         if (error instanceof GitHubError && (error.status === 401 || error.status === 403)) {
           receipt.sent = false;
+          if (stepUp && api.deletionPermission !== "granted" && !/organization|policy|saml|sso/i.test(error.message)) return { state: "stepup" };
           return { state: "refused", reason: "permission" };
         }
         throw error;
@@ -137,8 +179,8 @@ export class RemoteProjectDeletion {
       try { await api.request("GET", `/repos/${repo}`); }
       catch (error) {
         if (!(error instanceof GitHubError) || error.status !== 404) throw error;
-        const stillSignedIn = await api.user() as { id?: number };
-        if (stillSignedIn.id !== receipt.account) return { state: "refused", reason: "identity" };
+        const stillSignedIn = await api.user() as { id?: number; login?: string };
+        if (stillSignedIn.id !== receipt.account || receipt.login && stillSignedIn.login !== receipt.login || !await intent()) return { state: "refused", reason: "identity" };
         receipt.confirmed = true;
         return { state: "deleted" };
       }

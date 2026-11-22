@@ -6,13 +6,15 @@
  * for commits that only exist on this computer.
  */
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { join } from "node:path";
 import type { Page } from "@playwright/test";
 import { test, expect } from "./fixtures.ts";
 import { launch, quit, tempDirs } from "./helpers.ts";
 import { makeFakes } from "../test/fakes/fakes.ts";
+import { DATA_FILES } from "@focus-notes/core/inventory";
 
 const git = (cwd: string, ...args: string[]) => execFileSync("git", ["-c", "user.name=Test", "-c", "user.email=test@example.com", "-c", "commit.gpgsign=false", ...args], { cwd, stdio: "pipe" });
 const UNAVAILABLE = "Couldn't check this project, so nothing was deleted. Try again.";
@@ -104,9 +106,21 @@ test("D-pending: a project whose GitHub repository was never made, its remote al
   } finally { await quit(l); }
 });
 
-test("D-394: actual in-app DELETE refusal keeps disposable bytes and offers GitHub fallback", async () => {
-  const fakes = makeFakes({ gcm: true, token: "ghp_DELETE0123456789abcdefTOKEN" });
+async function actualDeletion(mode: "refused" | "partial" | "oauth" | "declined" | "memory" | "ghblocked" | "mismatch" | "fallback" | "current" | "locked") {
+  const cli = mode === "ghblocked";
+  const fakes = makeFakes({ gcm: true, gh: cli, token: "ghp_DELETE0123456789abcdefTOKEN" });
   fakes.store("ghp_DELETE0123456789abcdefTOKEN");
+  if (cli) {
+    fakes.signInAs("ghp_EPHEMERAL0123456789abcdef", "ada");
+    fakes.session("ghp_RETAINED0123456789abcdef");
+    mkdirSync(fakes.env.GH_CONFIG_DIR!, { recursive: true });
+    writeFileSync(join(fakes.env.GH_CONFIG_DIR!, "hosts.yml"), "retained CLI configuration");
+    for (const key of ["GH_TOKEN", "GITHUB_TOKEN", "GH_ENTERPRISE_TOKEN", "GITHUB_ENTERPRISE_TOKEN"]) fakes.env[key] = "fixture-retained-env";
+  }
+  const credentials = fakes.stored();
+  const gitconfig = readFileSync(fakes.gitconfig);
+  const ghSession = cli ? readFileSync(join(fakes.root, "session.json")) : undefined;
+  const ghConfig = cli ? readFileSync(join(fakes.env.GH_CONFIG_DIR!, "hosts.yml")) : undefined;
   const dirs = newProject();
   const note = join(dirs.docs, "Welcome.md");
   const before = readFileSync(note);
@@ -118,12 +132,24 @@ test("D-394: actual in-app DELETE refusal keeps disposable bytes and offers GitH
   git(dirs.docs, "remote", "add", "origin", remote);
   git(dirs.docs, "push", "-qu", "origin", "main");
   const requests: string[] = [];
+  let deleted = false;
+  let release: (() => void) | undefined;
+  const pending = new Promise<void>(resolve => { release = resolve; });
+  let allowGrant: (() => void) | undefined;
+  const grantReady = new Promise<void>(resolve => { allowGrant = resolve; });
   const server = createServer((req, res) => {
     requests.push(`${req.method} ${req.url}`);
-    const send = (status: number, body: unknown) => { res.writeHead(status, { "content-type": "application/json" }); res.end(JSON.stringify(body)); };
-    if (req.url === "/user") return send(200, { id: 1, login: "ada", name: "Ada" });
-    if (req.url === "/repos/ada/notes" && req.method === "GET") return send(200, { id: 42, owner: { login: "ada", type: "User" }, name: "notes", default_branch: "main", permissions: { admin: true, push: true } });
-    if (req.url === "/repos/ada/notes" && req.method === "DELETE") return send(403, { message: "Forbidden" });
+    const send = (status: number, body: unknown) => { res.writeHead(status, { "content-type": "application/json", "X-OAuth-Scopes": ["refused", "partial", "fallback", "current", "locked"].includes(mode) ? "repo, delete_repo" : "repo" }); res.end(JSON.stringify(body)); };
+    if (req.url === "/login/device/code") return send(200, { device_code: "disposable-device", user_code: "ABCD-EFGH", verification_uri: "https://github.com/login/device", expires_in: 30, interval: 1 });
+    if (req.url === "/login/oauth/access_token") { void grantReady.then(() => send(200, mode === "declined" ? { error: "access_denied" } : { access_token: "ghp_EPHEMERAL0123456789abcdef", scope: "delete_repo" })); return; }
+    if (req.url === "/user") return send(200, { id: mode === "mismatch" && req.headers.authorization?.includes("EPHEMERAL") ? 2 : 1, login: "ada", name: "Ada" });
+    if (req.url === "/repos/ada/notes" && req.method === "GET") return deleted ? send(404, { message: "Not found" }) : send(200, { id: 42, owner: { login: "ada", type: "User" }, name: "notes", default_branch: "main", permissions: { admin: true, push: true } });
+    if (req.url === "/repos/ada/notes" && req.method === "DELETE") {
+      if (mode === "partial") { res.writeHead(204); res.end(); return; }
+      if (mode === "refused" || !["current", "locked"].includes(mode) && !req.headers.authorization?.includes("EPHEMERAL")) return send(403, { message: "Forbidden" });
+      void pending.then(() => { deleted = true; res.writeHead(204); res.end(); });
+      return;
+    }
     send(404, { message: "Not found" });
   });
   await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
@@ -134,10 +160,24 @@ test("D-394: actual in-app DELETE refusal keeps disposable bytes and offers GitH
     FOCUS_NOTES_GITHUB_API: `http://127.0.0.1:${address.port}`,
     FOCUS_NOTES_CANDIDATE_GITHUB_API: `http://127.0.0.1:${address.port}`,
     FOCUS_NOTES_GIT_REMOTES: remotes, FOCUS_NOTES_CANDIDATE_GIT_REMOTES: remotes,
+    ...(mode === "oauth" || mode === "declined" ? { FOCUS_NOTES_GITHUB_OAUTH_CLIENT_ID: "focus-notes-test" } : {}),
   });
+  let closed = false;
   try {
+    const recycle = join(dirs.userData, "recycled-project");
+    await l.app.evaluate(async ({ shell }, paths) => {
+      const fs = process.getBuiltinModule("fs").promises;
+      let attempts = 0;
+      shell.trashItem = async path => {
+        if (path !== paths.folder) throw new Error("Refused foreign fixture folder");
+        if (paths.locked && attempts++ === 0) throw new Error("Fixture file in use");
+        await fs.rename(path, paths.recycle);
+      };
+    }, { folder: dirs.docs, recycle, locked: mode === "locked" });
     const { page } = l;
     await expect(page.getByRole("textbox", { name: "Note", exact: true })).toBeVisible();
+    const accountFile = join(dirs.userData, DATA_FILES.account);
+    const accountBytes = existsSync(accountFile) ? readFileSync(accountFile) : undefined;
     await page.keyboard.press("Control+,");
     const settings = page.getByRole("dialog", { name: "Settings", exact: true });
     await settings.getByRole("tab", { name: "Project", exact: true }).click();
@@ -151,12 +191,9 @@ test("D-394: actual in-app DELETE refusal keeps disposable bytes and offers GitH
     if (!name) throw new Error("Delete confirmation did not name its target");
     await field.fill(name);
     await dialog.getByRole("button", { name: "Delete project", exact: true }).click();
-    await expect(dialog).toContainText("GitHub refused deletion");
-    await expect(dialog.getByRole("button", { name: "Open on GitHub", exact: true })).toBeVisible();
-    expect(requests.filter(r => r === "DELETE /repos/ada/notes")).toHaveLength(1);
-    expect(readFileSync(note)).toEqual(before);
-    expect(git(dirs.docs, "rev-parse", "HEAD").toString()).toBe(head);
-    if (process.env.FOCUS_NOTES_DELETE_REVIEW) {
+    const captures: string[] = [];
+    const capture = async (state: string) => {
+      if (!process.env.FOCUS_NOTES_DELETE_REVIEW) return;
       const at = process.env.FOCUS_NOTES_DELETE_REVIEW;
       mkdirSync(at, { recursive: true });
       const image = await l.app.evaluate(async ({ BrowserWindow }) => {
@@ -164,16 +201,142 @@ test("D-394: actual in-app DELETE refusal keeps disposable bytes and offers GitH
         if (!window) throw new Error("Delete renderer missing");
         return (await window.webContents.capturePage()).toPNG().toString("base64");
       });
-      writeFileSync(join(at, "refused.png"), Buffer.from(image, "base64"));
-      writeFileSync(join(at, "provenance.json"), JSON.stringify({ state: "actual-refused", source: "built-invisible-renderer", pid: l.pid, requests, preservedNote: before.toString(), preservedHead: head, sixStateComplete: false }, null, 2));
+      writeFileSync(join(at, `${state}.png`), Buffer.from(image, "base64"));
+      writeFileSync(join(at, `${state}-provenance.json`), JSON.stringify({ state: `actual-${state}`, source: "built-invisible-renderer", pid: l.pid, requests, preservedNote: before.toString(), preservedHead: head, sixStateComplete: false }, null, 2));
+      captures.push(state);
+    };
+    const persistence = async () => {
+      await quit(l);
+      closed = true;
+      expect(fakes.stored()).toBe(credentials);
+      expect(readFileSync(fakes.gitconfig)).toEqual(gitconfig);
+      expect(existsSync(accountFile) ? readFileSync(accountFile) : undefined).toEqual(accountBytes);
+      if (cli) {
+        expect(readFileSync(join(fakes.root, "session.json"))).toEqual(ghSession);
+        expect(readFileSync(join(fakes.env.GH_CONFIG_DIR!, "hosts.yml"))).toEqual(ghConfig);
+      }
+      for (const entry of readdirSync(dirs.userData, { recursive: true, withFileTypes: true }).filter(entry => entry.isFile())) {
+        expect(readFileSync(join(entry.parentPath, entry.name)).includes(Buffer.from("EPHEMERAL0123456789abcdef"))).toBe(false);
+      }
+      expect(l.log.join("\n")).not.toContain("EPHEMERAL0123456789abcdef");
+      expect(fakes.argv()).not.toMatch(/setup-git|credential.*approve/);
+      expect(fakes.argv()).not.toContain("EPHEMERAL0123456789abcdef");
+      if (cli) {
+        expect(fakes.argv()).not.toMatch(/"auth","(?:login|logout)"/);
+        expect(existsSync(join(fakes.root, "delete-auth.log"))).toBe(false);
+      }
+      const at = process.env.FOCUS_NOTES_DELETE_REVIEW;
+      if (at) {
+        const out = join(import.meta.dirname, "..", "out");
+        const digest = (file: string) => createHash("sha256").update(readFileSync(file)).digest("hex");
+        const rendererHtml = join(out, "renderer", "index.html");
+        const entry = /assets\/(index-[^"]+\.js)/.exec(readFileSync(rendererHtml, "utf8"))?.[1];
+        if (!entry) throw new Error("Compiled renderer entry was not found");
+        const compiled = { main: digest(join(out, "main", "main.mjs")), preload: digest(join(out, "main", "preload.cjs")), renderer: digest(join(out, "renderer", "assets", entry)) };
+        for (const state of captures) {
+          const file = join(at, `${state}-provenance.json`);
+          const receipt = JSON.parse(readFileSync(file, "utf8"));
+          writeFileSync(file, JSON.stringify({ ...receipt, compiled, scenario: mode, checks: { sourceOrRecycledBytesAndHead: true, fakeGcmUnchanged: true, gitConfigUnchanged: true, appAccountFileUnchanged: true, appDiskContainsNoGrantToken: true, logsContainNoGrantToken: true, ...(cli ? { fakeParentGhConfigUnchanged: true, fakeParentGhSessionUnchanged: true, ghAuthLoginAndLogoutBlocked: true, ghTemporaryDirectoryCreated: false } : {}) }, requestChain: requests }, null, 2));
+        }
+      }
+    };
+    const completed = async () => {
+      await expect(dialog).toContainText("Repository deleted");
+      await capture(`deleted-${mode}`);
+      expect(existsSync(dirs.docs)).toBe(false);
+      expect(readFileSync(join(recycle, "Welcome.md"))).toEqual(before);
+      expect(git(recycle, "rev-parse", "HEAD").toString()).toBe(head);
+      await dialog.getByRole("button", { name: "Open projects", exact: true }).click();
+      await expect(dialog).toBeHidden();
+      await expect(page.getByText(`${name} is deleted. Its folder is in the Recycle Bin.`, { exact: true })).toBeVisible();
+      await persistence();
+    };
+    if (mode === "current" || mode === "locked") {
+      await expect(dialog).toContainText("Deleting repository");
+      await expect.poll(() => requests.filter(r => r === "DELETE /repos/ada/notes").length).toBe(1);
+      expect(requests.some(r => r.includes("/login/"))).toBe(false);
+      await capture(`deleting-${mode}`);
+      release?.();
+      if (mode === "locked") {
+        await expect(dialog).toContainText("still on this computer");
+        expect(readFileSync(note)).toEqual(before);
+        await capture("partial-local");
+        await dialog.getByRole("button", { name: "Retry", exact: true }).click();
+      }
+      await completed();
+      expect(requests.filter(r => r === "DELETE /repos/ada/notes")).toHaveLength(1);
+      return;
+    } else if (mode === "refused" || mode === "fallback") {
+      await expect(dialog).toContainText("GitHub refused deletion");
+      await expect(dialog.getByRole("button", { name: "Open on GitHub", exact: true })).toBeVisible();
+      expect(requests.filter(r => r === "DELETE /repos/ada/notes")).toHaveLength(1);
+      await capture("refused");
+      await dialog.getByRole("button", { name: "Open on GitHub", exact: true }).click();
+      await expect.poll(() => l.log.some(line => line.includes("https://github.com/ada/notes/settings"))).toBe(true);
+      if (mode === "fallback") {
+        deleted = true;
+        const confirmExternal = dialog.getByRole("button", { name: "I deleted it", exact: true });
+        await expect(confirmExternal).toBeVisible({ timeout: 10_000 });
+        expect(readFileSync(note)).toEqual(before);
+        await confirmExternal.click();
+        await completed();
+        expect(requests.filter(r => r === "DELETE /repos/ada/notes")).toHaveLength(1);
+        return;
+      }
+    } else if (mode === "partial") {
+      await expect(dialog).toContainText("Repository could not be deleted");
+      await capture("partial");
+      await dialog.getByRole("button", { name: "Retry", exact: true }).click();
+      await expect(dialog).toContainText("Repository could not be deleted");
+      expect(requests.filter(r => r === "DELETE /repos/ada/notes")).toHaveLength(1);
+    } else {
+      await expect(dialog).toContainText("Allow deletion once");
+      await capture(`stepup-${mode}`);
+      if (mode === "memory" || mode === "mismatch" || mode === "ghblocked") await dialog.getByRole("textbox", { name: "One-time token", exact: true }).fill("github_pat_EPHEMERAL0123456789abcdef");
+      await dialog.getByRole("button", { name: "Authorize once", exact: true }).click();
+      if (mode === "oauth" || mode === "declined") {
+        await expect(dialog).toContainText("GitHub code: ABCD-EFGH");
+        await expect(dialog).toContainText("Authorizing deletion");
+        expect(requests.filter(r => r === "DELETE /repos/ada/notes")).toHaveLength(1);
+        const verification = dialog.getByRole("button", { name: "Open authorization", exact: true });
+        await verification.focus();
+        await expect(verification).toBeFocused();
+        await verification.press("Enter");
+        await expect.poll(() => l.log.some(line => line.includes("https://github.com/login/device"))).toBe(true);
+        await capture(`device-verification-${mode}`);
+        allowGrant?.();
+      }
+      if (mode === "declined" || mode === "mismatch") {
+        await expect(dialog).toContainText(mode === "mismatch" ? "The project or GitHub account changed" : "Deletion permission not granted");
+        await capture(mode);
+      } else {
+        await expect.poll(() => requests.filter(r => r === "DELETE /repos/ada/notes").length).toBe(2);
+        await expect(dialog).toContainText("Deleting repository");
+        await capture(`deleting-${mode}`);
+        expect(readFileSync(note)).toEqual(before);
+        release?.();
+        await completed();
+        return;
+      }
     }
-    await dialog.getByRole("button", { name: "Open on GitHub", exact: true }).click();
-    await expect.poll(() => l.log.some(line => line.includes("https://github.com/ada/notes/settings"))).toBe(true);
-    await dialog.getByRole("button", { name: "Keep project", exact: true }).click();
+    expect(readFileSync(note)).toEqual(before);
+    expect(git(dirs.docs, "rev-parse", "HEAD").toString()).toBe(head);
+    if (mode === "refused") {
+      await page.keyboard.press("Escape");
+      await page.keyboard.press("Escape");
+    } else await dialog.getByRole("button", { name: "Keep project", exact: true }).click();
     await expect(dialog).toBeHidden();
     expect(readFileSync(note)).toEqual(before);
+    await persistence();
   } finally {
-    await quit(l);
+    allowGrant?.();
+    release?.();
+    if (!closed) await quit(l);
     await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
   }
-});
+}
+
+test("D-394: actual in-app DELETE refusal keeps disposable bytes and offers GitHub fallback", () => actualDeletion("refused"));
+for (const mode of ["partial", "oauth", "declined", "memory", "ghblocked", "mismatch", "fallback", "current", "locked"] as const) {
+  test(`D-400: actual ${mode} authorization and verification preserve disposable bytes`, () => actualDeletion(mode));
+}

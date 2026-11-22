@@ -250,7 +250,10 @@ function renderNode(node: Node, scope: Scope, deps: RuntimeDeps, r: Resolver, ke
     const d = deps.app.commands.describe(props.command);
     props.commandInfo = { ...d, title: deps.app.messages.format(d.title), shortcut: d.shortcut ? formatChord(d.shortcut, deps.app.bridge.platform) : undefined };
   }
-  for (const [slot, nodes] of Object.entries(node.slots ?? {})) props[slot] = nodes.map((n, i) => renderNode(n, scope, deps, r, i));
+  for (const [slot, nodes] of Object.entries(node.slots ?? {})) {
+    const rendered = nodes.map((n, i) => renderNode(n, scope, deps, r, i)).filter(node => node !== null);
+    if (rendered.length) props[slot] = rendered;
+  }
   const childRegions = regions ?? (contract.regions === "children"
     ? { deps, resolver: r, local: scope.local, setLocal: scope.setLocal, items: scope.items } : undefined);
   const children = (node.children ?? []).map((n, i) =>
