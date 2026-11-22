@@ -70,6 +70,18 @@ D-397 supersedes only D-171's rejection of blank remembered public notes. Restor
 
 **Affects:** [foundations → External links](../design/foundations.md#external-links), [Settings → Project, merged](../experience/project-model.md#settings-project-merged), AGENTS.md rule 6, PRJ-21 / WP-P.21 and [DoD backlog](definition-of-done.md#dod-backlog).
 
+## D-400: one-time deletion authorization without expanding retained sign-in
+
+**Accepted (owner, 22 November 2026, 18:28).** D-21's GCM, gh and pasted-token sign-in remain unchanged. D-394's deletion first uses the current in-memory credential when authorized. A permission refusal offers one-time step-up, with an exact repository and matching account ID and login:
+
+- A configured `FOCUS_NOTES_GITHUB_OAUTH_CLIENT_ID` uses GitHub device authorization for `delete_repo`. No borrowed client ID or automatic OAuth application registration.
+- Otherwise an installed official gh may authorize under one newly created, disposable `GH_CONFIG_DIR`, only if Windows credential-store isolation is proven. Never run `auth setup-git`; strip child-only inherited token overrides. If required for isolation, `--insecure-storage` confines the transient token file to that directory; this is temporary storage, not a retained grant. Logout and exact-directory cleanup report sanitized failures.
+- Without either route, accept a one-time repository-scoped fine-grained Administration: write token in memory, never Git's helper or app storage.
+
+Verify the granting account, use the credential only for the selected deletion and its follow-up reads, and discard it. Device polling honors pending, slowdown, expiry, decline and abort. A refusal, account mismatch or unconfirmed remote result retains local notes and offers reasoned GitHub fallback. Tests use disposable loopback OAuth/API and process fakes only; real authorization and F4.2.5 remain owner-only under D-343.
+
+**Implementation status:** the current-credential DELETE/refusal/reconciliation slice is in progress. Step-up routes are not yet certified. [Delete flow](../experience/project-model.md#deleting-a-project), [F4.2](definition-of-done.md#backlog-f42-delete-in-the-app).
+
 ## D-394: delete the repository in the app, with one-time step-up
 
 **Decided (owner, 7 November 2026, 23:35); supersedes DD-PROJ-12 and the handoff-only portion of PRJ-23.** "Why did dialog, I thought you proposed a design where we delete the rpo from the app itself. Unless GitHub restricts this, we should delete the repo from the app."

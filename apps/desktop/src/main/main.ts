@@ -73,7 +73,7 @@ import { CHROMIUM_FOLDERS, DATA_FILES, type DataFile } from "@focus-notes/core/i
 import { forgetLocalData, removalCheck, removeWorkspace } from "./workspace/remove.ts";
 import { PrivacyCleanupError, withoutPrivacyTraces, withoutRemovedReferences } from "./privacy-cleanup.ts";
 import { atOrUnder } from "@focus-notes/core/journal";
-import { deletionCheck, deletionGate, isRepoSlug, recycleProject, recycleRefusal, repoStatus } from "./workspace/delete.ts";
+import { deletionCheck, deletionGate, isRepoSlug, recycleProject, recycleRefusal, repoStatus, RemoteProjectDeletion } from "./workspace/delete.ts";
 import { backupToRecord, checkFolder, configUrl, driveOf, envSyncRoots, folderNameOk, movedDocuments, nextFree, parseRecord, realInside, recordFor, recoveredNote, samePath, serializeRecord, shortPath, startDecision, syncService, type FolderCheck, type FolderFacts, type WorkspaceRecord } from "./workspace/record.ts";
 import type { RecoverAccount, RecoverPlace, RecoverProgress, RecoverResult, RecoverStatus } from "@focus-notes/core/recover";
 import { GitHubError } from "@focus-notes/github";
@@ -580,7 +580,7 @@ async function deleteLocalProject(keepPrivate: boolean): Promise<DeletionResult>
   // Only a folder that is its own repository's top is a project, checked again here.
   if ((await deletionCheck(setupRunner, folder, {})).problem) return { state: "refused" };
   await Promise.allSettled([...writeQueues.values()]);
-  watcher?.close();
+  await watcher?.close();
   watcher = undefined;
   const old = gitSync;
   armGit();
@@ -2519,12 +2519,22 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     return deletionCheck(setupRunner, notesHome(), { repo, privateRepo: priv });
   };
   handle("workspace:deletion", () => deletion());
+  const remoteDeletion = new RemoteProjectDeletion();
   handle("workspace:repoStatus", async (repo: unknown) => {
     if (!isRepoSlug(repo)) throw new Error("Not a repository");
     const c = await deletion();
     // Only this project's own repositories are read.
     if (repo !== c.repo && repo !== c.privateRepo) throw new Error("Not this project's repository");
-    return repoStatus(await projectGitHub().catch(() => undefined), repo);
+    const api = await projectGitHub();
+    const status = await repoStatus(api, repo);
+    if (api && status.state === "exists") await remoteDeletion.prepare(api, repo);
+    return status;
+  });
+  handle("workspace:deleteRepo", async (repo: unknown) => {
+    if (!isRepoSlug(repo)) throw new Error("Not a repository");
+    const c = await deletion();
+    if (c.problem || repo !== c.repo && repo !== c.privateRepo) throw new Error("Not this project's repository");
+    return remoteDeletion.delete(await projectGitHub(), repo);
   });
   handle("workspace:openRepoSettings", async (repo: unknown) => {
     if (!isRepoSlug(repo)) throw new Error("Not a repository");

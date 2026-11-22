@@ -6,11 +6,13 @@
  * for commits that only exist on this computer.
  */
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { createServer } from "node:http";
 import { join } from "node:path";
 import type { Page } from "@playwright/test";
 import { test, expect } from "./fixtures.ts";
 import { launch, quit, tempDirs } from "./helpers.ts";
+import { makeFakes } from "../test/fakes/fakes.ts";
 
 const git = (cwd: string, ...args: string[]) => execFileSync("git", ["-c", "user.name=Test", "-c", "user.email=test@example.com", "-c", "commit.gpgsign=false", ...args], { cwd, stdio: "pipe" });
 const UNAVAILABLE = "Couldn't check this project, so nothing was deleted. Try again.";
@@ -100,4 +102,78 @@ test("D-pending: a project whose GitHub repository was never made, its remote al
     await reachesFirstConfirmation(page, "linked");
     expect(existsSync(join(dirs.docs, "Welcome.md"))).toBe(true);
   } finally { await quit(l); }
+});
+
+test("D-394: actual in-app DELETE refusal keeps disposable bytes and offers GitHub fallback", async () => {
+  const fakes = makeFakes({ gcm: true, token: "ghp_DELETE0123456789abcdefTOKEN" });
+  fakes.store("ghp_DELETE0123456789abcdefTOKEN");
+  const dirs = newProject();
+  const note = join(dirs.docs, "Welcome.md");
+  const before = readFileSync(note);
+  const head = git(dirs.docs, "rev-parse", "HEAD").toString();
+  const remotes = join(dirs.userData, "remotes");
+  const remote = join(remotes, "ada", "notes.git");
+  mkdirSync(join(remotes, "ada"), { recursive: true });
+  execFileSync("git", ["init", "-q", "--bare", remote]);
+  git(dirs.docs, "remote", "add", "origin", remote);
+  git(dirs.docs, "push", "-qu", "origin", "main");
+  const requests: string[] = [];
+  const server = createServer((req, res) => {
+    requests.push(`${req.method} ${req.url}`);
+    const send = (status: number, body: unknown) => { res.writeHead(status, { "content-type": "application/json" }); res.end(JSON.stringify(body)); };
+    if (req.url === "/user") return send(200, { id: 1, login: "ada", name: "Ada" });
+    if (req.url === "/repos/ada/notes" && req.method === "GET") return send(200, { id: 42, owner: { login: "ada", type: "User" }, name: "notes", default_branch: "main", permissions: { admin: true, push: true } });
+    if (req.url === "/repos/ada/notes" && req.method === "DELETE") return send(403, { message: "Forbidden" });
+    send(404, { message: "Not found" });
+  });
+  await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  if (!address || typeof address === "string") throw new Error("Delete fixture did not bind");
+  const l = await launch(dirs, {
+    ...fakes.env,
+    FOCUS_NOTES_GITHUB_API: `http://127.0.0.1:${address.port}`,
+    FOCUS_NOTES_CANDIDATE_GITHUB_API: `http://127.0.0.1:${address.port}`,
+    FOCUS_NOTES_GIT_REMOTES: remotes, FOCUS_NOTES_CANDIDATE_GIT_REMOTES: remotes,
+  });
+  try {
+    const { page } = l;
+    await expect(page.getByRole("textbox", { name: "Note", exact: true })).toBeVisible();
+    await page.keyboard.press("Control+,");
+    const settings = page.getByRole("dialog", { name: "Settings", exact: true });
+    await settings.getByRole("tab", { name: "Project", exact: true }).click();
+    await settings.getByRole("button", { name: "Delete project…", exact: true }).click();
+    const dialog = page.getByRole("dialog", { name: /^Delete .+\?$/ });
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole("button", { name: "Continue", exact: true }).click();
+    const field = dialog.getByRole("textbox", { name: /^Type .+ to confirm$/ });
+    await expect(field).toBeVisible();
+    const name = (await dialog.getByRole("heading", { name: /^Delete .+\?$/ }).innerText()).replace(/^Delete /, "").replace(/\?$/, "");
+    if (!name) throw new Error("Delete confirmation did not name its target");
+    await field.fill(name);
+    await dialog.getByRole("button", { name: "Delete project", exact: true }).click();
+    await expect(dialog).toContainText("GitHub refused deletion");
+    await expect(dialog.getByRole("button", { name: "Open on GitHub", exact: true })).toBeVisible();
+    expect(requests.filter(r => r === "DELETE /repos/ada/notes")).toHaveLength(1);
+    expect(readFileSync(note)).toEqual(before);
+    expect(git(dirs.docs, "rev-parse", "HEAD").toString()).toBe(head);
+    if (process.env.FOCUS_NOTES_DELETE_REVIEW) {
+      const at = process.env.FOCUS_NOTES_DELETE_REVIEW;
+      mkdirSync(at, { recursive: true });
+      const image = await l.app.evaluate(async ({ BrowserWindow }) => {
+        const window = BrowserWindow.getAllWindows().find(w => w.webContents.getURL().includes("index.html"));
+        if (!window) throw new Error("Delete renderer missing");
+        return (await window.webContents.capturePage()).toPNG().toString("base64");
+      });
+      writeFileSync(join(at, "refused.png"), Buffer.from(image, "base64"));
+      writeFileSync(join(at, "provenance.json"), JSON.stringify({ state: "actual-refused", source: "built-invisible-renderer", pid: l.pid, requests, preservedNote: before.toString(), preservedHead: head, sixStateComplete: false }, null, 2));
+    }
+    await dialog.getByRole("button", { name: "Open on GitHub", exact: true }).click();
+    await expect.poll(() => l.log.some(line => line.includes("https://github.com/ada/notes/settings"))).toBe(true);
+    await dialog.getByRole("button", { name: "Keep project", exact: true }).click();
+    await expect(dialog).toBeHidden();
+    expect(readFileSync(note)).toEqual(before);
+  } finally {
+    await quit(l);
+    await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
+  }
 });

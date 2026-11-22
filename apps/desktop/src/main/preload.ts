@@ -248,6 +248,7 @@ contextBridge.exposeInMainWorld("focusNotes", {
     // Delete project (PRJ-23): GitHub's side happens on GitHub's page; the main process checks again before the Recycle Bin.
     deletion: () => ipcRenderer.invoke("workspace:deletion"),
     repoStatus: (repo: string) => ipcRenderer.invoke("workspace:repoStatus", repo),
+    deleteRepo: (repo: string) => ipcRenderer.invoke("workspace:deleteRepo", repo),
     openRepoSettings: (repo: string) => ipcRenderer.invoke("workspace:openRepoSettings", repo),
     exportUnsynced: () => ipcRenderer.invoke("workspace:exportUnsynced"),
     deleteLocal: (opts: { keepPrivate: boolean }) => ipcRenderer.invoke("workspace:deleteLocal", opts),
