@@ -71,6 +71,8 @@ What "done" means at every level: a work package, a stage, a release, and the wh
 
 **Try it:** compare Find with Find in all notes, then choose a result; the controls are familiar and the note opens at the match.
 
+**Integration status, 22 November:** [combined landed-G7 source checks](gate-evidence.md#familiar-find-in-all-notes-22-november) passed 71 focused units and all 16 related built-app journeys. The final exact-head Windows gate and serialized landing are still pending. The earlier candidate capture is not native exposure or final-build readiness evidence.
+
 ### Backlog (e): one Find surface
 
 **Owner correction, 23:31 (D-395).** FND-01 / WP-1.10 (M1), with FND-04 / WP-4.3 (M4); UC-FIND-04/02.
