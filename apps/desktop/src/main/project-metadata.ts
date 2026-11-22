@@ -1,4 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
+import { watch as watchDirectory } from "node:fs";
+import { writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { setTimeout as delay } from "node:timers/promises";
@@ -42,14 +44,17 @@ export function projectMetadataStore(root: string) {
       // SQLite owns the cross-process lock and releases it even after a hard crash. A busy
       // acquisition yields to the event loop; no synchronous busy timeout blocks note saving.
       await attempt(() => db.exec("BEGIN IMMEDIATE"));
+      let value: T;
       try {
-        const value = await work();
+        value = await work();
         db.exec("COMMIT");
-        return value;
       } catch (error) {
         db.exec("ROLLBACK");
         throw error;
       }
+      // Notify after COMMIT so receivers rescan committed metadata.
+      await writeFile(join(root, DATA_FILES.projectMetadataNotify), `${JSON.stringify(randomUUID())}\n`);
+      return value;
     });
     queue = result.then(() => {}, () => {});
     return result;
@@ -83,12 +88,14 @@ export function projectMetadataStore(root: string) {
     await ready;
     return Boolean(db.prepare("SELECT profile FROM removed_profiles WHERE profile = ?").get(key(profile)));
   }
-  function invalidate(profiles: readonly string[], prepare?: () => void): Promise<void> {
+  function invalidate(profiles: readonly string[], prepare?: (tickets: ReadonlyMap<string, MetadataTicket>) => void): Promise<void> {
     return transaction(async () => {
+      const tickets = new Map<string, MetadataTicket>();
       for (const profile of profiles) {
         db.prepare("INSERT INTO profiles (profile, generation, enabled) VALUES (?, ?, 0) ON CONFLICT(profile) DO UPDATE SET generation = excluded.generation, enabled = 0").run(key(profile), randomUUID());
+        tickets.set(profile, read(profile));
       }
-      prepare?.();
+      prepare?.(tickets);
     });
   }
   function pending(profile: string, scope: string, keep: boolean): void {
@@ -110,7 +117,7 @@ export function projectMetadataStore(root: string) {
       return { profile: row.profile, event: row.event as CleanupEvent };
     });
   }
-  async function watch(profile: string, cleared: () => Promise<void>, filtered: () => Promise<void> = async () => {}) {
+  async function watch(profile: string, cleared: (ticket: MetadataTicket) => Promise<void>, filtered: () => Promise<void> = async () => {}) {
     const session = randomUUID();
     let observed = await initialize(profile);
     const removedKey = () => JSON.stringify(db.prepare("SELECT profile FROM removed_profiles ORDER BY profile").all());
@@ -121,7 +128,9 @@ export function projectMetadataStore(root: string) {
     });
     let checking: Promise<void> | undefined;
     let stopped = false;
+    let dirty = false;
     const check = async () => {
+      await queue;
       const nextRemoved = removedKey();
       if (nextRemoved !== removed) {
         await filtered();
@@ -130,20 +139,36 @@ export function projectMetadataStore(root: string) {
       }
       const current = await ticket(profile);
       if (current.generation === observed.generation) return;
-      if (!current.enabled) await cleared();
+      if (!current.enabled) await cleared(current);
       await transaction(async () => {
         db.prepare("UPDATE live_profiles SET generation = ? WHERE session = ?").run(current.generation, session);
       });
       observed = current;
     };
-    const timer = setInterval(() => {
+    function schedule() {
+      dirty = true;
       if (checking || stopped) return;
-      checking = check().catch(error => { console.error("Local cleanup acknowledgement failed:", error instanceof Error ? error.name : "Error"); }).finally(() => { checking = undefined; });
-    }, 100);
-    timer.unref();
+      checking = (async () => {
+        while (dirty && !stopped) {
+          dirty = false;
+          await check();
+        }
+      })().catch(error => {
+        console.error("Local cleanup acknowledgement failed:", error instanceof Error ? error.name : "Error");
+      }).finally(() => {
+        checking = undefined;
+        if (dirty && !stopped) schedule();
+      });
+    }
+    // Filename filtering can discard delivered events; the committed DB is authoritative.
+    const watcher = watchDirectory(root, schedule);
+    watcher.on("error", error => {
+      console.error("Could not observe local cleanup:", error.name);
+    });
+    schedule();
     return async () => {
       stopped = true;
-      clearInterval(timer);
+      watcher.close();
       await checking;
       await transaction(async () => {
         db.prepare("DELETE FROM live_profiles WHERE session = ?").run(session);

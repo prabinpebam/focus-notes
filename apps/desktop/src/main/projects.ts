@@ -158,6 +158,7 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
   const key = (folder: string) => createHash("sha256").update(process.platform === "win32" ? folder.toLowerCase() : folder).digest("hex").slice(0, 24);
   const lastNoteFile = join(userData, DATA_FILES.projectLastNote);
   let metadataEpoch = 0;
+  let expectedClear: { epoch: number; generation: string } | undefined;
   let purging: Promise<void> | undefined;
   let closingWrite: Promise<void> | undefined;
   type Recent = { rank: number; pinned: boolean; notes: { path: string; rank: number; pinned: boolean }[] };
@@ -165,9 +166,11 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
   let ownRecentBytes: string | undefined;
   let onCleared: () => Promise<void> = async () => {};
   let onFiltered: (folders: string[]) => Promise<void> = async () => {};
-  const stopCleanupWatch = metadata.watch(userData, async () => {
+  let excludedFolders: string[] = [];
+  const stopCleanupWatch = metadata.watch(userData, async current => {
     acceptingMetadata = false;
-    metadataEpoch++;
+    if (expectedClear?.epoch !== metadataEpoch || expectedClear.generation !== current.generation) metadataEpoch++;
+    expectedClear = undefined;
     pendingLaunch = undefined;
     launchRecord = Promise.resolve(undefined);
     ownRecent = undefined;
@@ -177,7 +180,8 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     await onCleared();
   }, async () => {
     const folders = await removedProjectFolders(rootProfile, metadata);
-    if (folders.length) for (const scope of [DATA_FILES.projectRecent, DATA_FILES.projectLastNote]) {
+    excludedFolders = folders;
+    if (folders.length && await canCache()) for (const scope of [DATA_FILES.projectRecent, DATA_FILES.projectLastNote]) {
       try {
         await metadata.transaction(async () => {
           metadata.pending(userData, scope, true);
@@ -260,13 +264,14 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     if (epoch !== metadataEpoch) return;
     if (!safeStorage.isEncryptionAvailable()) throw new Error("Protected recent storage is unavailable.");
     if (epoch !== metadataEpoch) return;
-    const encrypted = await metadata.commit(profile, ticket, async () => {
+    const roots = await removedProjectFolders(rootProfile, metadata);
+    record = { ...record, notes: record.notes.filter(note => !removedPath(note.path, roots)) };
+    const encrypted = await protect(JSON.stringify(record));
+    await metadata.commit(profile, ticket, async () => {
       if (await recentBytes(profile) !== previous) throw new Error("Project ranking changed in another window. Try again.");
-      const roots = await removedProjectFolders(rootProfile, metadata);
-      record = { ...record, notes: record.notes.filter(note => !removedPath(note.path, roots)) };
-      const encrypted = await protect(JSON.stringify(record));
+      const currentRoots = await removedProjectFolders(rootProfile, metadata);
+      if (record.notes.some(note => removedPath(note.path, currentRoots))) throw new Error("Project ranking changed during cleanup. Try again.");
       await atomicWrite(join(profile, DATA_FILES.projectRecent), encrypted);
-      return encrypted;
     });
     if (epoch === metadataEpoch && profile === userData) {
       ownRecent = structuredClone(record);
@@ -367,7 +372,7 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     if (!isAbsolute(path) || !writingFile(path)) throw new Error("Choose a Markdown or text note.");
     // Old renderer callbacks after sign-out or shutdown must not recreate forgotten records.
     if (!acceptingMetadata) return;
-    if (removedPath(path, await removedProjectFolders(rootProfile, metadata))) return;
+    if (removedPath(path, excludedFolders)) return;
     if (!safeStorage.isEncryptionAvailable()) throw new Error("Protected launch storage is unavailable.");
     const previous = snapshot ? undefined : lastRecord();
     const record: LaunchRecord = { path, position: snapshot };
@@ -391,6 +396,7 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
   function purge(remove: () => Promise<void>, event: "signOut" | "removeWorkspace" | "deleteProject" = "deleteProject"): Promise<void> {
     acceptingMetadata = false;
     metadataEpoch++;
+    const epoch = metadataEpoch;
     pendingLaunch = undefined;
     launchRecord = Promise.resolve(undefined);
     ownRecent = undefined;
@@ -402,7 +408,10 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
       await drainMetadata();
       await closingWrite?.catch(error => { console.error("Could not settle project shutdown metadata:", error instanceof Error ? error.name : "Error"); });
       const selected = event === "deleteProject" ? [userData] : await cleanupProfiles(rootProfile, event === "signOut" ? undefined : home());
-      await purgeProfileTraces(rootProfile, selected, event, metadata, atomicWrite, filterProtected);
+      await purgeProfileTraces(rootProfile, selected, event, metadata, atomicWrite, filterProtected, tickets => {
+        const ticket = [...tickets].find(([profile]) => metadata.profileId(profile) === metadata.profileId(userData))?.[1];
+        if (ticket && epoch === metadataEpoch) expectedClear = { epoch, generation: ticket.generation };
+      });
       await remove();
       await metadata.transaction(async () => {
         const pointer = join(rootProfile, DATA_FILES.lastProject);
@@ -425,6 +434,7 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     if (!closingWrite && (!acceptingMetadata || !ticket.enabled)) {
       ownTicket = metadata.change(userData, true);
       await ownTicket;
+      excludedFolders = await removedProjectFolders(rootProfile, metadata);
       if (pending === purging && epoch === metadataEpoch) acceptingMetadata = true;
     }
   }

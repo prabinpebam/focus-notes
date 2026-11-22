@@ -36,6 +36,8 @@ export const DATA_FILES = {
   projectMetadata: "project-metadata.sqlite",
   projectMetadataWal: "project-metadata.sqlite-wal",
   projectMetadataShm: "project-metadata.sqlite-shm",
+  /** Closed-handle metadata-change signal for live profiles; a random event identity only. */
+  projectMetadataNotify: "project-metadata-notify.json",
   /** The workspace folder the first run opened. */
   workspace: "workspace.json",
   /** A name and email for only the notes workspace, until the workspace has them. */
@@ -111,6 +113,7 @@ export const DESKTOP_DATA: readonly InventoryItem[] = [
   { id: "projectMetadata", path: DATA_FILES.projectMetadata, removedBy: ["deleteDataFolder"] },
   { id: "projectMetadataWal", path: DATA_FILES.projectMetadataWal, removedBy: ["deleteDataFolder"] },
   { id: "projectMetadataShm", path: DATA_FILES.projectMetadataShm, removedBy: ["deleteDataFolder"] },
+  { id: "projectMetadataNotify", path: DATA_FILES.projectMetadataNotify, removedBy: ["deleteDataFolder"] },
   { id: "projectProfiles", path: `${DATA_FOLDERS.projectProfiles}/`, removedBy: ["deleteDataFolder"] },
   { id: "recentItems", path: `${DATA_FILES.state}#lastNotePath`, removedBy: ["signOut", "removeWorkspace", "deleteProject", "deleteDataFolder"] },
   { id: "workspaceFolder", path: DATA_FILES.workspace, removedBy: ["removeWorkspace", "deleteProject", "deleteDataFolder"] },

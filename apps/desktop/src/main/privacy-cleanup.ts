@@ -1,7 +1,7 @@
 import { readFile, readdir, realpath, rm, rmdir } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { DATA_FILES, DATA_FOLDERS, filesRemovedBy, withoutRecent } from "@focus-notes/core/inventory";
-import type { projectMetadataStore } from "./project-metadata.ts";
+import type { MetadataTicket, projectMetadataStore } from "./project-metadata.ts";
 
 type Metadata = ReturnType<typeof projectMetadataStore>;
 type FilterProtected = (profile: string, scope: string, folders: readonly string[]) => Promise<void>;
@@ -96,7 +96,7 @@ export async function cleanupProfiles(root: string, folder?: string): Promise<st
   return selected;
 }
 
-export async function purgeProfileTraces(root: string, profiles: readonly string[], event: "signOut" | "removeWorkspace" | "deleteProject", metadata: Metadata, atomicWrite: (path: string, content: string) => Promise<void>, filterProtected?: FilterProtected): Promise<void> {
+export async function purgeProfileTraces(root: string, profiles: readonly string[], event: "signOut" | "removeWorkspace" | "deleteProject", metadata: Metadata, atomicWrite: (path: string, content: string) => Promise<void>, filterProtected?: FilterProtected, invalidated?: (tickets: ReadonlyMap<string, MetadataTicket>) => void): Promise<void> {
   const owned = new Set((await cleanupProfiles(root)).map(profile => resolve(profile)));
   if (profiles.some(profile => !owned.has(resolve(profile)))) throw new Error("Cleanup requires an app-owned profile.");
   const scopes = filesRemovedBy(event).filter(file => file !== DATA_FILES.lastProject);
@@ -124,7 +124,7 @@ export async function purgeProfileTraces(root: string, profiles: readonly string
   }
   if (event === "signOut") scopes.push(DATA_FILES.account);
   // Invalidate first, durably. Other processes' admitted writes must finish before this lock.
-  await metadata.invalidate(profiles, () => {
+  await metadata.invalidate(profiles, tickets => {
     for (const profile of profiles) {
       for (const scope of [...scopes, DATA_FILES.state]) metadata.pending(profile, scope, true);
       metadata.pending(profile, "open-windows", true);
@@ -133,6 +133,7 @@ export async function purgeProfileTraces(root: string, profiles: readonly string
     }
     metadata.pending(root, DATA_FILES.lastProject, true);
     if (event !== "signOut") for (const profile of owned) metadata.pending(profile, "open-windows", true);
+    invalidated?.(tickets);
   });
   try {
     await metadata.waitForLive(profiles, event !== "signOut");

@@ -169,10 +169,25 @@ for (const reduced of [false, true]) test(`DSK-09: dark${reduced ? ", with reduc
     await expect(dialog).toContainText("on GitHub yet");
     await expect(remove).toBeHidden();
     await sync.click();
+    await expect(remove).toBeVisible({ timeout: 30_000 });
+    await expect(remove).toBeEnabled();
     const removedFolder = folderNow();
+    const sources = [removedFolder, privateRoot].map(root => ({
+      root,
+      head: w.git(root, "rev-parse", "HEAD"),
+      remote: w.git(root, "remote", "get-url", "origin"),
+      notes: w.git(root, "ls-files", "--", "notes").trim().split(/\r?\n/).filter(Boolean)
+        .map(path => ({ path, bytes: readFileSync(join(root, path)) })),
+    }));
+    expect(sources[0]?.notes.length).toBeGreaterThan(0);
     await remove.click({ timeout: 30_000 });
     await heading(page, "We found your notes");
-    expect(existsSync(removedFolder)).toBe(false);
+    for (const source of sources) {
+      expect(existsSync(source.root)).toBe(true);
+      expect(w.git(source.root, "rev-parse", "HEAD")).toBe(source.head);
+      expect(w.git(source.root, "remote", "get-url", "origin")).toBe(source.remote);
+      for (const note of source.notes) expect(readFileSync(join(source.root, note.path))).toEqual(note.bytes);
+    }
     await settle(page);
 
     const frames = await rec.stop();

@@ -151,6 +151,14 @@ async function finishOwned(l: Launched) {
   try { if (!l.page.isClosed() && l.app.process().exitCode === null) await quit(l); }
   finally { closeOwned(l); }
 }
+function metadataIdentity(l: Launched) {
+  return l.app.evaluate(({ app }, files) => {
+    const fs = process.getBuiltinModule("node:fs");
+    const path = process.getBuiltinModule("node:path");
+    const root = process.env.FOCUS_NOTES_PROJECTS_PROFILE ?? process.env.FOCUS_NOTES_USER_DATA ?? app.getPath("userData");
+    return { parent: fs.realpathSync.native(root), database: fs.realpathSync.native(path.join(root, files.database)), signal: fs.realpathSync.native(path.join(root, files.signal)) };
+  }, { database: DATA_FILES.projectMetadata, signal: DATA_FILES.projectMetadataNotify });
+}
 
 for (const event of ["signOut", "removeWorkspace"] as const) test(`G7 cross-profile ${event}: live caches and restart stay cleared without losing another project's notes`, async () => {
   test.setTimeout(150_000);
@@ -159,6 +167,10 @@ for (const event of ["signOut", "removeWorkspace"] as const) test(`G7 cross-prof
   const second = await secondProfile(w);
   let b = second.l;
   try {
+    const [firstMetadata, secondMetadata] = await Promise.all([metadataIdentity(a), metadataIdentity(b)]);
+    expect(firstMetadata.parent === secondMetadata.parent, "live profiles share the canonical notification parent").toBe(true);
+    expect(firstMetadata.database === secondMetadata.database, "live profiles share the canonical metadata database").toBe(true);
+    expect(firstMetadata.signal === secondMetadata.signal, "live profiles share the canonical notification file").toBe(true);
     await pinHello(a.page);
     await searchSecret(a.page, true);
     await searchSecret(b.page, true);

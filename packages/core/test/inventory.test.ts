@@ -24,7 +24,7 @@ const ticks = (s: string) => [...s.matchAll(/`([^`]+)`/g)].map((m) => m[1]!);
 
 describe("PRV-02: the desktop's data folder", () => {
   it("names every file and folder the app keeps there, each with what removes it", () => {
-    expect(Object.values(DATA_FILES).sort()).toEqual(["account.json", "agent-limits.json", "agent-limits.lock", "agents.json", "ai.json", "avatar.json", "first-run.json", "keybindings.json", "last-project-note.dat", "last-project.json", "preview-carry-over.json", "project-folder.txt", "project-metadata.sqlite", "project-metadata.sqlite-shm", "project-metadata.sqlite-wal", "project-recent.dat", "recovery-journal.jsonl", "setup.json", "state.json", "tray.json", "window.json", "workspace.json"]);
+    expect(Object.values(DATA_FILES).sort()).toEqual(["account.json", "agent-limits.json", "agent-limits.lock", "agents.json", "ai.json", "avatar.json", "first-run.json", "keybindings.json", "last-project-note.dat", "last-project.json", "preview-carry-over.json", "project-folder.txt", "project-metadata-notify.json", "project-metadata.sqlite", "project-metadata.sqlite-shm", "project-metadata.sqlite-wal", "project-recent.dat", "recovery-journal.jsonl", "setup.json", "state.json", "tray.json", "window.json", "workspace.json"]);
     const paths = DESKTOP_DATA.map((i) => i.path.split("#")[0]);
     expect(Object.values(DATA_FOLDERS)).toEqual(["recovery", "project-profiles"]);
     for (const f of [...Object.values(DATA_FILES), ...[...Object.values(DATA_FOLDERS), ...Object.values(CHROMIUM_FOLDERS)].map((c) => `${c}/`)]) expect(paths).toContain(f);
@@ -45,7 +45,7 @@ describe("PRV-02: the desktop's data folder", () => {
     expect(withoutRecent({ version: 1, lastNotePath: "/n/a.md", fontSize: 18 })).toEqual({ version: 1, fontSize: 18 });
   });
   it("retains cross-profile lifecycle tombstones and SQLite sidecars through every local cleanup", () => {
-    for (const id of ["projectMetadata", "projectMetadataWal", "projectMetadataShm"]) {
+    for (const id of ["projectMetadata", "projectMetadataWal", "projectMetadataShm", "projectMetadataNotify"]) {
       expect(DESKTOP_DATA.find(item => item.id === id)?.removedBy).toEqual(["deleteDataFolder"]);
     }
   });

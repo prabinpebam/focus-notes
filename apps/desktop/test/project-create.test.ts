@@ -189,6 +189,8 @@ it.skipIf(process.platform !== "win32")("keeps a deleted project's metadata fenc
 it("removes a cross-profile launch pointer only when it names the purged profile", async () => {
   const { root } = await setup();
   vi.stubEnv("FOCUS_NOTES_PROJECTS_PROFILE", root);
+  paths.profile = join(root, "project-profiles", "current");
+  await mkdir(paths.profile, { recursive: true });
   const file = join(root, DATA_FILES.lastProject);
   const other = join(root, "another-profile");
   await writeFile(file, JSON.stringify({ profile: other }));

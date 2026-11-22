@@ -29,9 +29,49 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 | `pnpm exec vitest run apps/desktop/test/project-metadata.test.ts apps/desktop/test/account-settings.test.ts packages/core/test/settings-app.test.ts packages/core/test/search-feed.test.ts packages/core/test/diagnostics.test.ts` | 60 passed: cross-profile purge, restart-persistent Retry, redaction, unrelated-project preservation, live acknowledgement, admitted-write drain, late-index-read fencing and diagnostics allow-list coverage. Windows folder aliases cover canonical/8.3 paths; the cleanup migrates a legacy root workspace pointer before removing it. A dedicated metadata writer avoids routing project-folder.txt through note-encoding hooks. |
 | `FOCUS_NOTES_E2E=1`, `pnpm --filter @focus-notes/desktop exec playwright test e2e/m3-settings.spec.ts --workers=1 -g "G7\|Focus Notes alone\|removing the workspace preserves"` | Five passed together: two-profile sign-out/restart; isolated removal/restart including foreign encrypted Recent and Files references; a real Windows locked-file pending-scope/Details/Retry/restart journey; existing sign-in-after-sign-out and Sync-before-removal journeys. Exact-PID cleanup ran with `-WhatIf` then actual cleanup. |
 | `node .\slate\scripts\runtime-host.mjs check --repo . --host documentations` | Passed. |
-| Exact-head Windows CI, serialized fast-forward landing and normal-Shell proof | Final acceptance recorded by W-1B and the coordinator against the frozen branch head; not inferred from local checks. The coordinator owns the single candidate launch, so W-1B must not start a duplicate app. |
+| Exact-head Windows CI, serialized fast-forward landing and normal-Shell proof | Not accepted: the first frozen candidate's CI failed; the safe checkpoint below is local evidence only. The coordinator owns the single candidate launch, so W-1B must not start a duplicate app. |
 
 The pending cleanup table stores only hashed profile identities and fixed inventory scopes. Raw filesystem errors (including injected token/title text) are not persisted or placed in the cleanup error. Tests use disposable profiles, loopback GitHub and local bare remotes only; no real account, owner notes or Preview profile was touched.
+
+#### Safe root checkpoint, not final acceptance
+
+The frozen first candidate `832e0aad2b303f8e6ee5fa075e96fa3c2ce97ba9`
+failed [CI run 45017710063](https://github.com/prabinpebam/focus-notes/actions/runs/45017710063):
+the unit gate had 8 failures, 3,414 passes, 7 skips and 3 unhandled errors.
+Journey shards 1 and 2 failed; shards 3 and 4 and the web gate passed.
+The journey steps took 16m04, 18m00, 18m09 and 15m41 respectively.
+No job was cancelled or retried, and no second candidate was pushed.
+
+The checkpoint repairs idle polling, protection inside the admission lock,
+operation-specific cleanup intent fencing and immediate remember coalescing.
+Only a malformed disposable profile fixture was corrected. The two DSK-09
+source-deletion expectations are superseded by G7: they now require exact
+public/private note bytes, Git HEAD and remotes to remain unchanged.
+PRJ-24 still requires the real project listing completion count to change
+from 0 to 1; its assertion was not relaxed.
+
+A bounded disposable trace proved both watchers registered and received events,
+but literal filename filtering discarded those events before the DB rescan.
+The minimal correction coalesces app-owned parent events and reads committed
+metadata after the local transaction lane. A closed-handle post-COMMIT signal
+contains only a JSON UUID string. No source-note watchers or idle polling
+were added; temporary trace logging and screenshot instrumentation were removed.
+
+| Exact checkpoint command | Result |
+| --- | --- |
+| `pnpm check`; `pnpm typecheck` | Passed. |
+| `pnpm exec vitest run apps/desktop/test/idle.test.ts packages/core/test/inventory.test.ts apps/desktop/test/project-create.test.ts apps/desktop/test/project-metadata.test.ts apps/desktop/test/first-project-note.test.ts apps/desktop/test/account-settings.test.ts packages/core/test/settings-app.test.ts packages/core/test/search-feed.test.ts packages/core/test/diagnostics.test.ts` | 146 passed in 9 files; no unhandled errors reported. |
+| `FOCUS_NOTES_E2E=1`, `pnpm --filter @focus-notes/desktop exec playwright test e2e/m3-settings.spec.ts e2e/dsk09-frames.spec.ts e2e/project-startup.spec.ts --workers=1 -g 'G7\|DSK-09: dark\|Create project'` | 7 passed in 3.3m: two canonical shared-profile sign-out/removal/restart cases, real locked-file Retry, both source-preserving dark/reduced-motion frame cases and both unchanged Create project cases. Owned PIDs were closed through scoped helpers. |
+| `node .\slate\scripts\runtime-host.mjs check --repo . --host documentations`; `git diff --check` | Passed before this evidence-only update. |
+
+**Still open before a final candidate:** explicit post-COMMIT signal/watch/ack
+failure pending-scope and restart/Retry coverage; coalescing/race/disposal
+coverage; truthful typed window-ack versus evidenced file-lock recovery copy;
+bounded expanded Details/body scrolling that keeps the footer reachable;
+related schema/notification/wait documentation updates and combined revalidation.
+The worker stops at the clock limit and releases ownership to the coordinator.
+Local seven-test evidence is not seven-job CI acceptance, release readiness
+or a landing claim.
 
 ### PRF-12 Pages-compression fixture repair, 22 November
 
