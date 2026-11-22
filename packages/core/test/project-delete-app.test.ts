@@ -156,6 +156,17 @@ describe("PRJ-23: deleting a linked project", () => {
       await t.run("project.deleteOpenGitHub", { id: LINKED.repo });
       expect(t.calls).toContain(`open:${LINKED.repo}`);
     });
+    it("names a local identity stop differently from GitHub's permission refusal", async () => {
+      const local = await confirmed([{ state: "refused", reason: "identity" }]);
+      expect(local.vm()).toMatchObject({
+        remoteTitle: "Deletion stopped",
+        remoteDetail: "The project or GitHub account changed.",
+        remoteKept: "Your local project is kept. Reopen Delete project to check the target again.",
+      });
+      const remote = await confirmed([{ state: "refused", reason: "permission" }]);
+      expect(remote.vm().remoteTitle).toBe("GitHub refused deletion");
+      expect(remote.vm().remoteKept).toContain("Ask a repository admin");
+    });
     it("closing during authorization cancels it, clears the entered token, and ignores a late remote success", async () => {
       const t = await confirmed([{ state: "stepup" }]);
       let complete: ((result: RemoteDeletionResult) => void) | undefined;
@@ -180,6 +191,56 @@ describe("PRJ-23: deleting a linked project", () => {
       expect(t.vm()).toMatchObject({ remoteState: "stepup", remoteTarget: LINKED.privateRepo });
       expect(t.calls.filter(call => call.startsWith("authorize"))).toEqual([`authorize:${LINKED.repo}`]);
       expect(t.calls.some(call => call.startsWith("deleteLocal"))).toBe(false);
+    });
+    it("clears the device code and token and disposes its listener when authorization throws", async () => {
+      const t = await started({ remote: [{ state: "stepup" }] });
+      let listener: ((code: string) => void) | undefined;
+      let disposed = 0;
+      t.bridge.workspace!.onDeleteCode = code => {
+        listener = code;
+        return () => { listener = undefined; disposed++; };
+      };
+      t.bridge.workspace!.authorizeDelete = async () => {
+        listener?.("ABCD-EFGH");
+        expect(t.vm().remoteCode).toBe("ABCD-EFGH");
+        throw new Error("Authorization transport failed");
+      };
+      await t.run("project.deleteContinue");
+      await t.run("project.deleteType", { value: "Field notes" });
+      await t.run("project.deleteConfirm");
+      await t.run("project.deleteToken", { value: "disposable-token" });
+      await t.run("project.deleteAuthorize");
+      expect(t.vm()).toMatchObject({ remoteState: "partial", remoteToken: "", remoteCode: "", busy: false });
+      expect(t.toast()).toBeTruthy();
+      expect(listener).toBeUndefined();
+      expect(disposed).toBe(2);
+      expect(t.calls.some(call => call.startsWith("deleteLocal"))).toBe(false);
+    });
+    it("an old authorization throw cannot clear a newer dialog's code or token", async () => {
+      const t = await confirmed([{ state: "stepup" }]);
+      let listener: ((code: string) => void) | undefined;
+      t.bridge.workspace!.onDeleteCode = code => { listener = code; return () => {}; };
+      let fail: ((error: Error) => void) | undefined;
+      t.bridge.workspace!.authorizeDelete = async () => new Promise((_resolve, reject) => { fail = reject; });
+      const old = t.run("project.deleteAuthorize");
+      await settle();
+      await t.run("project.deleteCancel");
+      await t.run("project.delete");
+      await t.run("project.deleteContinue");
+      await t.run("project.deleteType", { value: "Field notes" });
+      await t.run("project.deleteConfirm");
+      let finish: ((result: RemoteDeletionResult) => void) | undefined;
+      t.bridge.workspace!.authorizeDelete = async () => new Promise(resolve => { finish = resolve; });
+      await t.run("project.deleteToken", { value: "new-disposable-token" });
+      const next = t.run("project.deleteAuthorize");
+      await settle();
+      listener?.("NEW-CODE");
+      fail?.(new Error("Old authorization failed"));
+      await old;
+      expect(t.vm()).toMatchObject({ open: true, busy: true, remoteToken: "new-disposable-token", remoteCode: "NEW-CODE" });
+      finish?.({ state: "declined" });
+      await next;
+      expect(t.vm()).toMatchObject({ remoteToken: "", remoteCode: "", busy: false });
     });
   });
   it("deletes the private repository too only when the switch is on", async () => {
