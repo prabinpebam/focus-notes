@@ -10,6 +10,17 @@ import { cleanupProfiles, PrivacyCleanupError, purgeProfileTraces, retryProfileC
 import { DatabaseSync } from "node:sqlite";
 
 const watchFault = vi.hoisted(() => ({ registration: false, fail: undefined as (() => void) | undefined, event: undefined as (() => void) | undefined }));
+const notifyGate = vi.hoisted(() => ({ wait: undefined as Promise<void> | undefined, entered: undefined as (() => void) | undefined }));
+vi.mock("node:fs/promises", async importOriginal => {
+  const actual = await importOriginal<typeof import("node:fs/promises")>();
+  return { ...actual, writeFile: async (...args: Parameters<typeof actual.writeFile>) => {
+    if (String(args[0]).endsWith(DATA_FILES.projectMetadataNotify) && notifyGate.wait) {
+      notifyGate.entered?.();
+      await notifyGate.wait;
+    }
+    return actual.writeFile(...args);
+  } };
+});
 vi.mock("node:fs", async importOriginal => {
   const actual = await importOriginal<typeof import("node:fs")>();
   return { ...actual, watch: (...args: Parameters<typeof actual.watch>) => {
@@ -164,6 +175,37 @@ it("G7: a failed post-COMMIT signal survives restart and Retry repairs it withou
         expect(await restarted.ticket(f.first)).toMatchObject({ enabled: false });
       } finally { await restarted?.dispose(); await f.dispose(); }
     });
+
+it("G7: cleanup status waits for an in-flight successful notification instead of reporting a failure", async () => {
+  const f = await cleanupFixture();
+  const other = projectMetadataStore(f.root);
+  let release = () => {};
+  let entered = () => {};
+  notifyGate.wait = new Promise<void>(resolve => { release = resolve; });
+  const started = new Promise<void>(resolve => { entered = resolve; });
+  notifyGate.entered = entered;
+  const writing = f.metadata.change(f.first, true);
+  try {
+    await started;
+    let settled = false;
+    const scope = `${f.metadata.profileId(f.root).slice(0, 12)}:metadata-notify`;
+    expect(await other.pendingScopes()).toEqual([scope]);
+    const status = f.metadata.pendingScopes().then(scopes => { settled = true; return scopes; });
+    await new Promise<void>(resolve => setImmediate(resolve));
+    const settledDuringNotify = settled;
+    release();
+    await writing;
+    expect(await status).toEqual([]);
+    expect(settledDuringNotify).toBe(false);
+  } finally {
+    release();
+    notifyGate.wait = undefined;
+    notifyGate.entered = undefined;
+    await writing;
+    await other.dispose();
+    await f.dispose();
+  }
+});
 
     it("G7: failed watch registration and runtime errors persist until explicit Retry re-registers", async () => {
       const f = await cleanupFixture();

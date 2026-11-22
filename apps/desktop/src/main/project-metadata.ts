@@ -129,6 +129,7 @@ export function projectMetadataStore(root: string) {
   }
   async function cleanupIssues(): Promise<CleanupIssue[]> {
     await ready;
+    await queue;
     const issues: CleanupIssue[] = db.prepare("SELECT profile, scope, reason FROM cleanup_pending ORDER BY profile, scope").all().map(row => {
       if (!["file-lock", "window-ack", "notify", "watch", "unknown"].includes(String(row.reason))) throw new Error("Invalid cleanup failure reason.");
       return { scope: `${String(row.profile).slice(0, 12)}:${String(row.scope)}`, reason: row.reason as CleanupReason };

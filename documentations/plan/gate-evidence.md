@@ -103,6 +103,45 @@ No private paths, note labels or raw failure text are copied into those receipts
 exact-head seven-terminal-green Windows CI jobs and coordinator-serialized
 non-force landing. Local evidence is not seven-job CI acceptance,
 release readiness or native exposure.
+
+#### Owned notification status repair, 22 November
+
+The third candidate `317dd612115163e130bc13a4f24d1f0660814949`
+failed [CI run 45038101796](https://github.com/prabinpebam/focus-notes/actions/runs/45038101796):
+six terminal jobs passed, but journey shard 4 failed when the Sign out dialog
+intercepted the Theme Dusk option. A single invisible local Theme invocation
+passed both themes; the retained CI artifact has no trace of the overlay's
+origin, so its historical triggering schedule remains unproven.
+
+| Boundary | Proven behavior |
+| --- | --- |
+| SQLite commit → deferred successful UUID notification | The owning store previously reported the transient notification intent as pending cleanup. The deterministic regression failed on the unchanged candidate with a `metadata-notify` scope instead of no pending scopes. |
+| Account status → Settings | Pending cleanup opens Sign out. An asynchronously returned false failure can therefore cover an already-open Theme dialog. |
+| Owned status read → existing transaction lane drain | Cleanup status now waits for its own admitted writes and notifications before reading failure rows. It does not drain another connection or delete its marker. Genuine notification failures still remain durable for restart and Retry. |
+
+`pnpm exec vitest run apps/desktop/test/project-metadata.test.ts` passed all
+13 cases after the one-line queue drain, including the deferred notification,
+foreign connection, failed notification/restart/Retry and existing acknowledgement
+and watcher races. Every runtime cleanup-status call is outside its store's
+transaction callback; the drain does not self-await. The original failing
+assertion and repaired output are retained in the worker's evidence packet.
+
+| Repaired validation | Result |
+| --- | --- |
+| `pnpm exec vitest run apps/desktop/test/idle.test.ts packages/core/test/inventory.test.ts apps/desktop/test/project-create.test.ts apps/desktop/test/project-metadata.test.ts apps/desktop/test/first-project-note.test.ts apps/desktop/test/account-settings.test.ts packages/core/test/settings-app.test.ts packages/core/test/search-feed.test.ts packages/core/test/diagnostics.test.ts` | 158 passed in nine files; genuine failed cleanup remains visible. |
+| `pnpm check`; `pnpm typecheck`; `pnpm --filter @focus-notes/desktop run build` | Passed. The built main contains the queue drain; the renderer hash is unchanged. |
+| `node .\slate\scripts\runtime-host.mjs check --repo . --host documentations`; headless local rendering of this evidence anchor in light/dark | Passed; one visible H1 and the repaired causal text rendered. The ephemeral docs-only server and browser closed; the root server was untouched. |
+| `FOCUS_NOTES_E2E=1`, `FOCUS_NOTES_DISABLE_GPU=1`, `FOCUS_NOTES_E2E_WINDOW=992x736`; `pnpm --filter @focus-notes/desktop exec playwright test review-feedback.spec.ts m3-settings.spec.ts dsk09-frames.spec.ts project-startup.spec.ts --workers=1 -g 'Themes applies real tokens\|G7\|DSK-09: dark\|Create project' --trace on` | Ten passed together in 4.2m: both Theme token/persistence cases, four actual G7 cleanup/Retry cases, both delayed dark/reduced-motion frame cases and both unchanged PRJ-24 Create cases. Dark recorded 1,418 frames; reduced motion recorded 87, without relaxed thresholds. Exact own-PID cleanup ran in `finally`. |
+
+The compiled runtime was built from the dirty repaired source at parent
+`317dd612`, before the new commit. Main SHA-256 is
+`48d774d3b1c0876f62cc42cd7aeea0cd1cf455a676e3e55ab4005ff57285a07e`;
+renderer SHA-256 remains
+`987f5d7fa1945a967ec82db672212789f022db918deba064328971353c07d54b`.
+The real throwing-listener Retry receipt independently records the same main
+hash, actual private-search clearing, unchanged source bytes and owned-PID closure.
+A new exact-head seven-job gate remains pending; the failed candidate was not
+rerun, waived or landed.
 The retained visible candidate and the owner's Preview remain untouched.
 
 #### Published checkpoint's failed gate and bounded repair
