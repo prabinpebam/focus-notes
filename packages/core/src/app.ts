@@ -7,6 +7,7 @@ import { MessageCatalog, type Messages } from "./messages.ts";
 import { opErrorCode, type PlatformBridge, type AppStateFile, type Compositing, type RepoId } from "./bridge.ts";
 import { registerBrowserFeatures, PICKER_CLOSED, UNLOCK_CLOSED, NO_INSTANCE, type PickerState, type UnlockState, type InstanceState } from "./browser.ts";
 import { isReadOnlyPath, sourceOf } from "./notes.ts";
+import { atOrUnder } from "./journal.ts";
 import { registerWorkspaceFeatures, noteReadOnly, NO_WORKSPACE, type WorkspaceState, type WorkspaceFormatOptions } from "./workspace-app.ts";
 import type { Platform } from "./commands.ts";
 import { waits } from "@focus-notes/tokens";
@@ -1885,17 +1886,26 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         // A window opened for a note opens that note (DSK-06, D-179); the first window, the last one.
         let remembered: string | undefined;
         let restoreFailed = false;
+        const currentProjectNote = (path: string | undefined) => {
+          const folder = store.state.workspace.folder;
+          if (!path || !folder) return path;
+          const normalize = (value: string) => {
+            const normalized = value.replace(/\\/g, "/").replace(/\/+$/, "");
+            return bridge.platform === "windows" ? normalized.toLowerCase() : normalized;
+          };
+          return atOrUnder(normalize(path), normalize(folder)) ? path : undefined;
+        };
         if (bridge.projects && !bridge.windows?.initialNote && !bridge.windows?.initialOpen) {
-          try { remembered = await bridge.projects.lastNote(); }
+          try { remembered = currentProjectNote(await bridge.projects.lastNote()); }
           catch { restoreFailed = true; toast(catalog.format("project.launch.restoreFailed"), { tone: "error" }); }
         }
-        const last = bridge.windows?.initialOpen ? undefined : bridge.windows?.initialNote ?? remembered ?? (appState.lastNotePath || undefined);
+        const saved = currentProjectNote(appState.lastNotePath || undefined);
+        const last = bridge.windows?.initialOpen ? undefined : bridge.windows?.initialNote ?? remembered ?? saved;
         let reopened = last !== undefined && (await openNote(last));
         // A crash can leave protected metadata behind a completed rename. The saved disk path is
         // still usable; explicit window targets never fall back to a different note.
-        if (!reopened && !bridge.windows?.initialOpen && !bridge.windows?.initialNote && remembered && appState.lastNotePath && appState.lastNotePath !== remembered) {
+        if (!reopened && !bridge.windows?.initialOpen && !bridge.windows?.initialNote && remembered && saved && saved !== remembered) {
           toast(catalog.format("project.launch.restoreFailed"), { tone: "error" });
-          const saved = appState.lastNotePath;
           reopened = await openNote(saved);
         }
         let startupSuperseded = false;

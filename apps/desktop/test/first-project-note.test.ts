@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mkdtemp, mkdir, open, readdir, readFile, rename, rm, rmdir, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { firstProjectNote as helper, prepareProjectNoteRoots } from "../src/main/first-project-note.ts";
+import { firstProjectFolder, firstProjectNote as helper, prepareProjectNoteRoots } from "../src/main/first-project-note.ts";
 import { projectMetadataStore } from "../src/main/project-metadata.ts";
 import { NoteWriter } from "../src/main/note-write.ts";
 import { spawn } from "node:child_process";
@@ -32,6 +32,40 @@ async function root() {
 }
 
 describe("first project note (PRJ-24)", () => {
+  it("admits an already-open project from its current record only when the profile marker is missing", async () => {
+    const project = await root(), profile = await root();
+    const marker = join(profile, "project-folder.txt"), record = join(profile, "workspace.json");
+    await writeFile(record, JSON.stringify({ version: 1, folder: project }));
+    expect(await firstProjectFolder(marker, record, true, () => project)).toBe(project);
+    expect(await readdir(profile)).toEqual(["workspace.json"]);
+    expect(await firstProjectFolder(marker, record, false, () => project)).toBeUndefined();
+    await writeFile(marker, project);
+    await writeFile(record, "{");
+    expect(await firstProjectFolder(marker, record, false, () => project)).toBe(project);
+  });
+
+  it("never overrides an existing marker that names another project or cannot be read", async () => {
+    const project = await root(), other = await root(), profile = await root();
+    const marker = join(profile, "project-folder.txt"), record = join(profile, "workspace.json");
+    await writeFile(record, JSON.stringify({ version: 1, folder: project }));
+    await writeFile(marker, other);
+    await expect(firstProjectFolder(marker, record, true, () => project)).rejects.toThrow("project root changed");
+    expect(await readFile(marker, "utf8")).toBe(other);
+    await rm(marker);
+    await mkdir(marker);
+    await expect(firstProjectFolder(marker, record, true, () => project)).rejects.toThrow();
+  });
+
+  it("reports missing, malformed and changed current records instead of treating them as an empty project", async () => {
+    const project = await root(), other = await root(), profile = await root();
+    const marker = join(profile, "project-folder.txt"), record = join(profile, "workspace.json");
+    await expect(firstProjectFolder(marker, record, true, () => project)).rejects.toMatchObject({ code: "ENOENT" });
+    await writeFile(record, "{");
+    await expect(firstProjectFolder(marker, record, true, () => project)).rejects.toThrow("project record is unreadable");
+    await writeFile(record, JSON.stringify({ version: 1, folder: other }));
+    await expect(firstProjectFolder(marker, record, true, () => project)).rejects.toThrow("project root changed");
+  });
+
   it("creates one note from two independent admissions when its trusted notes directory is absent", async () => {
     const project = await root();
     const notes = join(project, "notes");

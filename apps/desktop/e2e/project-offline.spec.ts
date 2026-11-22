@@ -252,6 +252,12 @@ async function actualDeletion(mode: "refused" | "partial" | "oauth" | "declined"
   const ghConfig = cli ? readFileSync(join(fakes.env.GH_CONFIG_DIR!, "hosts.yml")) : undefined;
   const dirs = newProject();
   const note = join(dirs.docs, "Welcome.md");
+  const oldDraft = mode === "deviceProjectSwitch" ? join(dirs.docs, "notes", "Draft.md") : undefined;
+  const oldDraftBytes = Buffer.from("# Uncommitted draft\n\nKeep these words in the old project.\n");
+  if (oldDraft) {
+    writeFileSync(oldDraft, oldDraftBytes);
+    appendFileSync(join(dirs.docs, ".git", "info", "exclude"), "\n/notes/Draft.md\n");
+  }
   if (narrowDark) writeFileSync(join(dirs.userData, DATA_FILES.state), JSON.stringify({ version: 1, appearance: "dark" }));
   const before = readFileSync(note);
   const head = git(dirs.docs, "rev-parse", "HEAD").toString();
@@ -380,6 +386,7 @@ async function actualDeletion(mode: "refused" | "partial" | "oauth" | "declined"
     await field.fill(name);
     await dialog.getByRole("button", { name: "Delete project", exact: true }).click();
     const captures: string[] = [];
+    let startupEvidence: unknown;
     const vmChecks: { state: string; open: unknown; busy: unknown; step: unknown; remoteState: unknown; tokenCleared: boolean; codeCleared: boolean }[] = [];
     const cleared = async (state: string) => {
       if ((await deletionVm(page)).operationSettled !== undefined) await expect.poll(() => deletionVm(page)).toMatchObject({ operationSettled: true });
@@ -406,7 +413,7 @@ async function actualDeletion(mode: "refused" | "partial" | "oauth" | "declined"
         return (await window.webContents.capturePage()).toPNG().toString("base64");
       });
       writeFileSync(join(at, `${state}.png`), Buffer.from(image, "base64"));
-      writeFileSync(join(at, `${state}-provenance.json`), JSON.stringify({ state: `actual-${state}`, source: "built-invisible-renderer", pid: l.pid, requests, preservedNote: before.toString(), preservedHead: head, vm: await deletionVm(page), ...(geometry ? { geometry, sections, context: "dark-320px" } : {}), ...(otherProject ? { expectedProjectFolder: otherProject.docs } : {}), sixStateComplete: false }, null, 2));
+      writeFileSync(join(at, `${state}-provenance.json`), JSON.stringify({ state: `actual-${state}`, source: "built-invisible-renderer", compiled: deletionBuild(), pid: l.pid, requests, preservedNote: before.toString(), preservedHead: head, vm: await deletionVm(page), ...(geometry ? { geometry, sections, context: "dark-320px" } : {}), ...(otherProject ? { expectedProjectFolder: otherProject.docs, startupEvidence } : {}), sixStateComplete: false }, null, 2));
       captures.push(state);
     };
     const persistence = async () => {
@@ -562,7 +569,7 @@ async function actualDeletion(mode: "refused" | "partial" | "oauth" | "declined"
           expect(git(originalProject, "rev-parse", "HEAD").toString()).toBe(head);
         }
         if (mode === "deviceProjectSwitch") {
-          if (!otherProject) throw new Error("Replacement project fixture was not created");
+          if (!otherProject || !oldDraft) throw new Error("Replacement project fixture was not created");
           await l.app.evaluate(({ dialog }, folder) => {
             dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [folder] });
           }, otherProject.docs);
@@ -580,6 +587,28 @@ async function actualDeletion(mode: "refused" | "partial" | "oauth" | "declined"
             try { await bridge.workspace.openDeleteAuthorization(); return false; } catch { return true; }
           })).toBe(true);
           await cleared("switched-project");
+          const startup = await page.evaluate(async () => {
+            const bridge = (window as Window & { focusNotes: {
+              windows: { initialNote?: string; initialOpen?: boolean; secondary?: boolean };
+              projects: { lastNote: () => Promise<string | undefined> };
+              loadAppState: () => Promise<{ lastNotePath?: string }>;
+              workspace: { info: () => Promise<unknown> };
+            } }).focusNotes;
+            return { windows: { initialNote: bridge.windows.initialNote, initialOpen: bridge.windows.initialOpen, secondary: bridge.windows.secondary },
+              lastNote: await bridge.projects.lastNote(), appState: await bridge.loadAppState(), workspace: await bridge.workspace.info() };
+          });
+          const profile = await l.app.evaluate(async (_electron, folderName) => {
+            const fs = process.getBuiltinModule("fs").promises;
+            const path = process.getBuiltinModule("path");
+            const folderFile = path.join(process.env.FOCUS_NOTES_USER_DATA!, folderName);
+            return { configuredNote: process.env.FOCUS_NOTES_PROJECT_NOTE, folderFile,
+              projectFolder: await fs.readFile(folderFile, "utf8").catch((error: NodeJS.ErrnoException) => {
+                if (error.code === "ENOENT") return undefined;
+                throw error;
+              }) };
+          }, DATA_FILES.projectFolder);
+          startupEvidence = { startup, profile, expected: otherProject.docs };
+          console.log("Project-switch startup evidence", JSON.stringify(startupEvidence));
           const writer = page.getByRole("textbox", { name: "Note", exact: true });
           await expect(writer).toBeFocused();
           await capture("project-before-writing");
@@ -587,12 +616,16 @@ async function actualDeletion(mode: "refused" | "partial" | "oauth" | "declined"
           expect(grantedRequests.filter(r => r.startsWith("DELETE "))).toHaveLength(0);
           expect(readFileSync(note)).toEqual(before);
           expect(git(dirs.docs, "rev-parse", "HEAD").toString()).toBe(head);
+          expect(readFileSync(oldDraft)).toEqual(oldDraftBytes);
           expect(readFileSync(join(otherProject.docs, "Welcome.md"))).toEqual(otherBytes);
           expect(git(otherProject.docs, "rev-parse", "HEAD").toString()).toBe(otherHead);
           await writer.press("Control+End");
           await writer.press("Enter");
           await writer.pressSequentially("Writing in the replacement project.");
           await expect.poll(() => readdirSync(join(otherProject.docs, "notes")).some(file => file.endsWith(".md") && readFileSync(join(otherProject.docs, "notes", file), "utf8").includes("Writing in the replacement project."))).toBe(true);
+          expect(readFileSync(note)).toEqual(before);
+          expect(git(dirs.docs, "rev-parse", "HEAD").toString()).toBe(head);
+          expect(readFileSync(oldDraft)).toEqual(oldDraftBytes);
           expect(readFileSync(join(otherProject.docs, "Welcome.md"))).toEqual(otherBytes);
           git(otherProject.docs, "merge-base", "--is-ancestor", otherHead!.trim(), "HEAD");
           await capture("project-switched");
