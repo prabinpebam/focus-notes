@@ -10,7 +10,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { GitHubError } from "@focus-notes/github";
 import { createRunner } from "../src/main/git/run.ts";
-import { deletionCheck, deletionGate, isRepoSlug, keptPrivateFolder, recycleProject, recycleRefusal, repoStatus } from "../src/main/workspace/delete.ts";
+import { deletionCheck, deletionGate, isRepoSlug, keptPrivateFolder, recycleProject, recycleRefusal, repoStatus, RemoteProjectDeletion } from "../src/main/workspace/delete.ts";
 
 const git = (cwd: string, ...args: string[]) => execFileSync("git", ["-c", "user.name=T", "-c", "user.email=t@e.st", "-c", "commit.gpgsign=false", ...args], { cwd, stdio: "pipe" });
 function project() {
@@ -136,6 +136,54 @@ describe("DD-PROJ-15: to the Recycle Bin", () => {
     expect(recycleRefusal(join(root, "missing"), places)).toBe("missing");
     expect(recycleRefusal(process.platform === "win32" ? "C:\\" : "/", places)).toBe("root");
     expect(recycleRefusal(folder, { ...places, userData: join(tmpdir(), "elsewhere") })).toBeUndefined();
+  });
+
+  describe("D-394: actual deletion receipts", () => {
+    function remote(opts: { refused?: boolean; visibleAfter?: boolean; uncertain?: boolean } = {}) {
+      const requests: string[] = [];
+      let sent = false;
+      const api = {
+        user: async () => ({ id: 1 }),
+        request: async <T,>(method: string): Promise<T> => {
+          requests.push(method);
+          if (method === "DELETE") {
+            sent = true;
+            if (opts.refused) throw new GitHubError(403, "Forbidden");
+            if (opts.uncertain) throw new GitHubError(0, "offline");
+            return undefined as T;
+          }
+          if (sent && !opts.refused && !opts.visibleAfter) throw new GitHubError(404, "Not found");
+          return { id: 42, permissions: { admin: true } } as T;
+        },
+      };
+      return { api, requests };
+    }
+    it("a 403 retains the local-deletion gate and names permission refusal", async () => {
+      const fake = remote({ refused: true });
+      const deletion = new RemoteProjectDeletion();
+      await deletion.prepare(fake.api, "ada/notes");
+      expect(await deletion.delete(fake.api, "ada/notes")).toEqual({ state: "refused", reason: "permission" });
+      expect(deletion.confirmed("ada/notes")).toBe(false);
+    });
+    it("accepted DELETE followed by a visible target stays partial; Retry never replays it", async () => {
+      const fake = remote({ visibleAfter: true });
+      const deletion = new RemoteProjectDeletion();
+      await deletion.prepare(fake.api, "ada/notes");
+      expect(await deletion.delete(fake.api, "ada/notes")).toEqual({ state: "partial" });
+      expect(await deletion.delete(fake.api, "ada/notes")).toEqual({ state: "partial" });
+      expect(fake.requests.filter(method => method === "DELETE")).toHaveLength(1);
+    });
+    it("only acknowledged DELETE and follow-up absence confirm deletion, never an ambiguous transport failure", async () => {
+      for (const uncertain of [false, true]) {
+        const fake = remote({ uncertain });
+        const deletion = new RemoteProjectDeletion();
+        await deletion.prepare(fake.api, "ada/notes");
+        expect(await deletion.delete(fake.api, "ada/notes")).toEqual({ state: uncertain ? "partial" : "deleted" });
+        expect(deletion.confirmed("ada/notes")).toBe(!uncertain);
+        expect(await deletion.delete(fake.api, "ada/notes")).toEqual({ state: uncertain ? "partial" : "deleted" });
+        expect(fake.requests.filter(method => method === "DELETE")).toHaveLength(1);
+      }
+    });
   });
   it("moves the folder, keeping the private notes beside it when asked", async () => {
     const { root, folder } = project();

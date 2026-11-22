@@ -11,7 +11,7 @@ import type { DeletionCheck, DeletionRecord, PlatformBridge, RepoStatus } from "
 import type { MessageCatalog } from "./messages.ts";
 import type { TaskTracker } from "./tasks.ts";
 
-export type DeleteStep = "consequences" | "unsynced" | "confirm" | "github" | "progress" | "stopped";
+export type DeleteStep = "consequences" | "unsynced" | "confirm" | "github" | "inApp" | "progress" | "stopped";
 export type DeleteProblem = "" | "offline" | "signin" | "notAdmin" | "policy" | "rateLimit" | "window" | "gone" | "partialLocal";
 /** One repository on GitHub's side: not opened yet, waiting for the person, gone (asking them), or confirmed deleted. */
 type RepoPhase = "open" | "waiting" | "ask" | "deleted";
@@ -46,6 +46,7 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
   const blank = () => ({
     open: false, step: "consequences" as DeleteStep, problem: "" as DeleteProblem, typed: "", private: false, exported: false, exportPath: "",
     busy: false, checking: false, owner: "", org: "", retryAt: 0, lockedFile: "", site: "", links: 0,
+    remoteState: "deleting" as "deleting" | "partial" | "refused", remoteTarget: "",
   });
   let state = blank();
   let check: DeletionCheck | undefined;
@@ -178,6 +179,7 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
   reg("project.deleteCancel", "remove.cancel", close);
   reg("project.deleteStop", "project.delete.github.stop", () => { if (state.step === "github") { stopPolling(); set({ step: "stopped" }); } else close(); });
   reg("project.deleteRetry", "commit.retry", async () => {
+    if (state.step === "inApp") return deleteInApp();
     if (state.step === "progress") return commands.run("project.deleteConfirm");
     if (state.step === "github") return commands.run("project.deletePoll");
     if (resuming) return commands.run("project.deleteResume");
@@ -204,6 +206,7 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
   reg("project.deleteContinue", "project.delete.continue", () => {
     // Already unavailable on GitHub goes on: the person confirms it's deleted, repository by repository (DD-PROJ-13).
     if (!linked() || (state.problem && state.problem !== "gone")) return;
+    if (state.step === "unsynced" && !state.exported) return;
     if (state.step === "consequences" && check?.unsynced.length) set({ step: "unsynced" });
     else set({ step: "confirm" });
   });
@@ -220,6 +223,10 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
   /** The name typed exactly; then GitHub for a linked project, or this computer for an offline one. */
   reg("project.deleteConfirm", "project.delete.confirm.button", async () => {
     if (!check || state.busy || state.typed !== name()) return;
+    if (linked() && ws?.deleteRepo && state.step === "confirm") {
+      if (state.problem) return;
+      return deleteInApp();
+    }
     if (linked() && state.step !== "progress") {
       if (state.problem && state.problem !== "policy" && state.problem !== "gone") return;
       for (const r of targets()) if (!repos.has(r)) repos.set(r, state.problem === "gone" && r === check.repo ? "ask" : "open");
@@ -228,9 +235,32 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
     }
     await finish();
   });
+  async function deleteInApp() {
+    if (!check || !ws?.deleteRepo || state.busy) return;
+    set({ step: "inApp", remoteState: "deleting", busy: true });
+    try {
+      for (const repo of targets()) {
+        if (repos.get(repo) === "deleted") continue;
+        set({ remoteTarget: repo });
+        const go = () => ws.deleteRepo!(repo);
+        const result = await (tracker ? tracker.run("project.deleteRemote", "task.deleting", go, undefined, "fn:project.deleteRemote") : go());
+        if (result.state !== "deleted") {
+          set({ remoteState: result.state, busy: false });
+          return;
+        }
+        repos.set(repo, "deleted");
+        await persist();
+      }
+      set({ busy: false });
+      await finish();
+    } catch {
+      set({ remoteState: "partial", busy: false });
+      toast(catalog.format("project.delete.inApp.partial.detail"), { tone: "error" });
+    }
+  }
   reg<{ id?: unknown }>("project.deleteOpenGitHub", "project.delete.github.open", async ({ id }) => {
     const repo = typeof id === "string" ? id : targets().find((r) => repos.get(r) !== "deleted");
-    if (!repo || !repos.has(repo) || !ws?.openRepoSettings) return;
+    if (!repo || !targets().includes(repo) || !ws?.openRepoSettings) return;
     await ws.openRepoSettings(repo);
     if (repos.get(repo) === "open") repos.set(repo, "waiting");
     changed();
@@ -353,7 +383,8 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
     schema: {
       type: "object",
       properties: {
-        open: bool, step: { type: "string", enum: ["consequences", "unsynced", "confirm", "github", "progress", "stopped"] }, kind: { type: "string", enum: ["linked", "offline"] },
+        open: bool, step: { type: "string", enum: ["consequences", "unsynced", "confirm", "github", "inApp", "progress", "stopped"] }, kind: { type: "string", enum: ["linked", "offline"] },
+        remoteState: text, remoteTarget: text, remoteTitle: text, remoteDetail: text, remoteKept: text,
         problem: text, typed: text, private: bool, exported: bool, exportPath: text, busy: bool,
         name: text, repo: text, privateRepo: text, otherRepo: text, otherOwner: text, org: text, orgRepo: text,
         site: text, siteNotes: num, links: num, peopleCount: num, peopleNames: text, privateCount: num,
@@ -367,6 +398,10 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
       const detail: Record<RepoPhase, string> = { open: "project.delete.github.toOpen", waiting: "project.delete.github.waiting", ask: "project.delete.github.gone", deleted: "project.delete.github.deleted" };
       return {
         open: state.open, step: state.step, kind: c?.kind ?? "linked", problem: state.problem, typed: state.typed, private: state.private,
+        remoteState: state.remoteState, remoteTarget: state.remoteTarget,
+        remoteTitle: catalog.format(`project.delete.inApp.${state.remoteState}.title`),
+        remoteDetail: catalog.format(`project.delete.inApp.${state.remoteState}.detail`),
+        remoteKept: catalog.format(`project.delete.inApp.${state.remoteState}.kept`),
         exported: state.exported, exportPath: state.exportPath, busy: state.busy || state.checking,
         name: c?.name ?? "", repo: c?.repo ?? "", privateRepo: c?.privateRepo ?? "",
         otherRepo: c?.repo ?? "", otherOwner: state.owner ? `@${state.owner}` : "", org: state.org, orgRepo: c?.repo ?? "",

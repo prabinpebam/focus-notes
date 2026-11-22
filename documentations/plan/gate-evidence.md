@@ -5,6 +5,23 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 > [!NOTE]
 > **TL;DR.** All 150 requirements in these six stages are named by at least one automated test (`pnpm trace` lists none untraced), and on 2026-10-15 every one of them has a test that passed on Windows in CI run 38639327074 on `be2f820` (now `main`): repository checks, typecheck, 1,054 unit tests, the bench (`pnpm bench --check`), 147 desktop journeys (5 skipped, all macOS-only or packaged) and 27 web journeys. Every demo script is automated and passed there. Even so, none of the 31 *verifying* work packages in M1, MW, M3, M2, and M4 can move to *done* yet, because rows of the [work package definition of done](definition-of-done.md#work-package-definition-of-done) have no evidence: for all of them, recorded review approvals, a dependency audit, and a nightly build that installs and starts on Windows; for the 24 with surfaces, approved visual baselines and the light and dark screenshot review; and for eight, open high CodeQL findings. No gate can pass until these are closed and the owner runs each demo on a clean Windows 11 machine, confirms the proposed decisions, and accepts it.
 
+## In-app Delete partial checkpoint, 22 November
+
+PRJ-23 / F4.2 / D-400, isolated work branch from `87ee96a2`; not landed and not full six-state acceptance. At 18:30 the normal in-app Settings → Project → Delete flow reached an actual loopback `DELETE /repos/ada/notes` 403, displayed the approved refusal/fallback, and kept exact disposable note bytes and Git HEAD. Renderer-only capture and request provenance: `focus-notes-work\review\delete-22nov\refused.png` and `provenance.json`. No native exposure or real-account certification claimed. Exact owned journey PIDs closed; retained Preview/candidate untouched.
+
+| Command | Result |
+| --- | --- |
+| `pnpm --filter @focus-notes/core run typecheck` | PASS after missing-dependency-triggered approved-proxy install and tokens build |
+| `pnpm --filter @focus-notes/desktop run typecheck` | PASS |
+| `pnpm --filter @focus-notes/ui-runtime exec node src/cli/ui-check.ts --write` | PASS, 879 documents |
+| `pnpm exec vitest run apps/desktop/test/project-delete.test.ts packages/core/test/project-delete-app.test.ts` | PASS, 31 tests; 403, accepted-but-visible, no accepted replay, ambiguous transport |
+| `pnpm --filter @focus-notes/desktop run build` | PASS |
+| `pnpm --filter @focus-notes/desktop exec playwright test project-offline.spec.ts --workers=1 -g 'D-394: actual'` | PASS, 1 journey, `FOCUS_NOTES_E2E=1`; unique loopback fake remote and hermetic fake GCM |
+| `pnpm check` | PASS |
+| `node slate/scripts/runtime-host.mjs check --repo . --host documentations` | PASS |
+
+Still open: one-time authorization routes, long-authorization intent/cancellation races, full runtime six-state progression, main-process all-selected-remote/local-preservation gate, and combined G7 integration. No CI run, push, quarantine or release action.
+
 ## How this page is kept
 
 | What | Where it comes from |

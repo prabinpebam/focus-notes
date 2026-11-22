@@ -170,6 +170,8 @@ Owner's 3 November notes, clarified on 5 November; [Projects](../experience/proj
 
 | PRJ-23 | Delete project is separate from Remove from this computer and acts on one named project. Review repositories, private notes (kept by default), site/share consequences and local folder/history; preserve pending writes, unpushed notes and retained private copies, then type the project name. D-394 supersedes DD-PROJ-12: delete the chosen GitHub repository in the app; if needed request one-time delete_repo authorization for this action only, used once and never stored (fine-grained: Administration: write). Open on GitHub is fallback only for policy, missing admin rights, declined step-up or another refusal, with the reason. A 404 alone is not deletion proof; recycle only after confirmed deletion of every chosen remote and rechecked folder identity. Remove entries only after cleanup succeeds; return to Open with one success pill. Offline skips GitHub; cancelled/failed steps preserve local data and exact partial results with Retry. Existing handoff is built; in-app states are a candidate pending owner approval and wiring. [Flow](../experience/project-model.md#deleting-a-project), F4.2 / WP-P.23. | P1 |
 
+PRJ-23's one-time authorization follows [D-400](../plan/decisions.md#d-400-one-time-deletion-authorization-without-expanding-retained-sign-in): configured device OAuth, isolated disposable official gh, or a memory-only repository-scoped token. These do not expand retained D-21 credentials. Actual current-credential refusal/reconciliation evidence is partial; F4.2.2–4 remain open.
+
 ## New writing and sharing direction
 
 | ID | Requirement | Priority |
