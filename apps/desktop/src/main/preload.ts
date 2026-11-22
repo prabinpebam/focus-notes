@@ -248,8 +248,8 @@ contextBridge.exposeInMainWorld("focusNotes", {
     // Delete project (PRJ-23): identity, permission, and remote receipts stay in the main process.
     deletion: () => ipcRenderer.invoke("workspace:deletion"),
     repoStatus: (repo: string) => ipcRenderer.invoke("workspace:repoStatus", repo),
-    deleteRepo: (repo: string) => ipcRenderer.invoke("workspace:deleteRepo", repo),
-    authorizeDelete: (repo: string, token?: string) => ipcRenderer.invoke("workspace:authorizeDelete", repo, token),
+    deleteRepo: (repo: string, opts: { keepPrivate: boolean }) => ipcRenderer.invoke("workspace:deleteRepo", repo, opts),
+    authorizeDelete: (repo: string, token: string | undefined, opts: { keepPrivate: boolean }) => ipcRenderer.invoke("workspace:authorizeDelete", repo, token, opts),
     cancelDelete: () => ipcRenderer.invoke("workspace:cancelDelete"),
     deletionAuthorizationMethod: () => ipcRenderer.invoke("workspace:deletionAuthorizationMethod"),
     openDeleteAuthorization: () => ipcRenderer.invoke("workspace:openDeleteAuthorization"),

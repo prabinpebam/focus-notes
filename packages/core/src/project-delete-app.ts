@@ -260,6 +260,7 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
     if (!check || !ws?.deleteRepo || state.busy) return;
     const mine = run;
     const selected = targets();
+    const options = { keepPrivate: !state.private };
     const authorizeRepo = authorize ? state.remoteTarget : undefined;
     const stopCode = ws.onDeleteCode?.(code => { if (mine === run && state.open && state.busy) set({ remoteCode: code, remoteAuthorizing: Boolean(code) }); });
     set({ step: "inApp", remoteState: "deleting", busy: true, remoteAuthorizing: authorize });
@@ -267,7 +268,7 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
       for (const repo of selected) {
         if (repos.get(repo) === "deleted") continue;
         set({ remoteTarget: repo });
-        const go = () => repo === authorizeRepo && ws.authorizeDelete ? ws.authorizeDelete(repo, state.remoteToken || undefined) : ws.deleteRepo!(repo);
+        const go = () => repo === authorizeRepo && ws.authorizeDelete ? ws.authorizeDelete(repo, state.remoteToken || undefined, options) : ws.deleteRepo!(repo, options);
         const result = await (tracker ? tracker.run("project.deleteRemote", "task.deleting", go, undefined, "fn:project.deleteRemote") : go());
         if (mine !== run || !state.open) return;
         set({ remoteToken: "", remoteCode: "" });
@@ -441,7 +442,7 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
     select: () => {
       const c = check;
       const detail: Record<RepoPhase, string> = { open: "project.delete.github.toOpen", waiting: "project.delete.github.waiting", ask: "project.delete.github.gone", deleted: "project.delete.github.deleted" };
-      const localStop = state.remoteState === "refused" && (state.remoteReason === "identity" || state.remoteReason === "preservation");
+      const localStop = state.remoteState === "refused" && ["identity", "preservation", "privateHistory"].includes(state.remoteReason);
       return {
         open: state.open, step: state.step, kind: c?.kind ?? "linked", problem: state.problem, typed: state.typed, private: state.private,
         remoteState: state.remoteState, remoteTarget: state.remoteTarget,

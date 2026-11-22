@@ -2557,14 +2557,19 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     if (api && status.state === "exists") await remoteDeletion.prepare(api, repo);
     return status;
   });
-  handle("workspace:deleteRepo", async (repo: unknown) => {
-    if (!isRepoSlug(repo)) throw new Error("Not a repository");
+  handle("workspace:deleteRepo", async (repo: unknown, opts: unknown) => {
+    if (!isRepoSlug(repo) || !opts || typeof opts !== "object" || !("keepPrivate" in opts) || typeof opts.keepPrivate !== "boolean") throw new Error("Invalid deletion");
     const c = await deletion();
     if (c.problem || repo !== c.repo && repo !== c.privateRepo) throw new Error("Not this project's repository");
     if (!(await preservedDeletion(c))) return { state: "refused" as const, reason: "preservation" as const };
     const expected = remoteDeletion.account(repo);
     const generation = deleteGeneration;
-    return remoteDeletion.delete(await projectGitHub(), repo, async () => await preservedDeletion(await deletion()) && generation === deleteGeneration && deleteIntent(c.folder, expected.id, expected.login), true);
+    const current = async () => {
+      const fresh = await deletion();
+      return !fresh.problem && fresh.folder === c.folder && fresh.repo === c.repo && fresh.privateRepo === c.privateRepo
+        && await preservedDeletion(fresh) && generation === deleteGeneration && deleteIntent(c.folder, expected.id, expected.login);
+    };
+    return remoteDeletion.delete(await projectGitHub(), repo, current, true, opts.keepPrivate ? c.folder : undefined);
   });
   handle("workspace:cancelDelete", () => { deleteGeneration++; deleteAuthorization?.abort(); });
   handle("workspace:confirmRepoDeletion", async (repo: unknown) => {
@@ -2576,8 +2581,8 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     return remoteDeletion.confirmExternal(await projectGitHub(), repo, async () => await preservedDeletion(await deletion()) && generation === deleteGeneration && deleteIntent(c.folder, expected.id, expected.login));
   });
   handle("workspace:deletionAuthorizationMethod", () => process.env.FOCUS_NOTES_GITHUB_OAUTH_CLIENT_ID ? "device" : "token");
-  handle("workspace:authorizeDelete", async (repo: unknown, input: unknown) => {
-    if (!isRepoSlug(repo) || input !== undefined && typeof input !== "string") throw new Error("Invalid deletion authorization");
+  handle("workspace:authorizeDelete", async (repo: unknown, input: unknown, opts: unknown) => {
+    if (!isRepoSlug(repo) || input !== undefined && typeof input !== "string" || !opts || typeof opts !== "object" || !("keepPrivate" in opts) || typeof opts.keepPrivate !== "boolean") throw new Error("Invalid deletion authorization");
     const c = await deletion();
     if (c.problem || repo !== c.repo && repo !== c.privateRepo) throw new Error("Not this project's repository");
     if (!(await preservedDeletion(c))) return { state: "refused" as const, reason: "preservation" as const };
@@ -2585,7 +2590,8 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     const controller = new AbortController();
     deleteAuthorization = controller;
     const expected = remoteDeletion.account(repo);
-    const current = () => !controller.signal.aborted && deleteIntent(c.folder, expected.id, expected.login);
+    const generation = deleteGeneration;
+    const current = () => !controller.signal.aborted && generation === deleteGeneration && deleteIntent(c.folder, expected.id, expected.login);
     try {
       return await withDeletionAuthorization({
         ...(typeof input === "string" ? { token: input } : {}),
@@ -2602,7 +2608,11 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
             void openDeletionAuthorization().catch(() => { console.error("Could not open deletion authorization."); controller.abort(); });
           }
         },
-      }, api => remoteDeletion.delete(api, repo, async () => await preservedDeletion(await deletion()) && current()));
+      }, api => remoteDeletion.delete(api, repo, async () => {
+        const fresh = await deletion();
+        return !fresh.problem && fresh.folder === c.folder && fresh.repo === c.repo && fresh.privateRepo === c.privateRepo
+          && await preservedDeletion(fresh) && current();
+      }, false, opts.keepPrivate ? c.folder : undefined));
     } catch (error) {
       if (error instanceof DeletionAuthorizationError) {
         return error.reason === "declined" || error.reason === "expired" ? { state: "declined" as const } : { state: "refused" as const, reason: error.reason === "identity" ? "identity" as const : "authorization" as const };
