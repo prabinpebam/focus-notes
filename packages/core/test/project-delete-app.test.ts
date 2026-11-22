@@ -6,7 +6,7 @@
  */
 import { describe, expect, it } from "vitest";
 import {
-  createApp, type AccountStatus, type DeletionCheck, type DeletionRecord, type DeletionResult, type FirstRunBridge, type PlatformBridge, type RepoStatus,
+  createApp, type AccountStatus, type DeletionCheck, type DeletionRecord, type DeletionResult, type FirstRunBridge, type PlatformBridge, type RepoStatus, type RemoteDeletionResult,
 } from "../src/index.ts";
 import en from "../../views/messages/en.json" with { type: "json" };
 
@@ -16,12 +16,13 @@ const LINKED: DeletionCheck = {
   privateCount: 3, siteNotes: 12, unsynced: [],
 };
 
-function shell(opts: { check?: DeletionCheck; status?: RepoStatus[]; result?: DeletionResult[]; account?: AccountStatus; record?: DeletionRecord | null } = {}) {
+function shell(opts: { check?: DeletionCheck; status?: RepoStatus[]; result?: DeletionResult[]; account?: AccountStatus; record?: DeletionRecord | null; remote?: RemoteDeletionResult[]; grant?: RemoteDeletionResult } = {}) {
   const calls: string[] = [];
   /** The resumable record, when the shell has the port: what was last saved, or null once cleared. */
   const saved: { current: DeletionRecord | null | undefined; history: DeletionRecord[] } = { current: opts.record, history: [] };
   const statuses = [...(opts.status ?? [{ state: "exists", owner: "ada", admin: true, organization: false }])];
   const results = [...(opts.result ?? [{ state: "deleted" }])];
+  const remote = [...(opts.remote ?? [])];
   const fr = {
     account: async () => opts.account ?? { account: { login: "ada", id: 1, name: "Ada" }, gcm: true, gh: false, via: "gcm" },
     onSignIn: () => () => {},
@@ -49,6 +50,12 @@ function shell(opts: { check?: DeletionCheck; status?: RepoStatus[]; result?: De
       openRepoSettings: async (repo) => void calls.push(`open:${repo}`),
       exportUnsynced: async () => (calls.push("export"), "/home/ada/Documents/Field notes (not on GitHub)"),
       deleteLocal: async (o) => (calls.push(`deleteLocal:keepPrivate=${o.keepPrivate}`), results.length > 1 ? results.shift()! : results[0]!),
+      ...(opts.remote ? {
+        deleteRepo: async (repo: string) => (calls.push(`DELETE:${repo}`), remote.length > 1 ? remote.shift()! : remote[0]!),
+        authorizeDelete: async (repo: string) => (calls.push(`authorize:${repo}`), opts.grant ?? { state: "declined" as const }),
+        cancelDelete: async () => void calls.push("cancel"),
+        deletionAuthorizationMethod: async () => "token" as const,
+      } : {}),
       reveal: async () => void calls.push("reveal"),
       ...(opts.record !== undefined ? {
         deletionRecord: {
@@ -64,7 +71,7 @@ function shell(opts: { check?: DeletionCheck; status?: RepoStatus[]; result?: De
   const runVm = () => app.viewModels.select("vm.projectDeleteRun", app.store.state) as Record<string, any>;
   const run = async (id: string, args?: Record<string, unknown>) => { await app.commands.run(id, args); await settle(); };
   const toast = () => app.store.state.ui.toasts.at(-1)?.message;
-  return { app, vm, runVm, run, calls, toast, saved };
+  return { app, bridge, vm, runVm, run, calls, toast, saved };
 }
 
 async function started(opts?: Parameters<typeof shell>[0]) {
@@ -112,6 +119,68 @@ describe("PRJ-23: deleting a linked project", () => {
     expect(t2.calls).toContain("deleteLocal:keepPrivate=true");
     expect(t2.vm().open).toBe(false);
     expect(t2.toast()).toContain("Field notes");
+  });
+
+  describe("D-400: actual six-state controller", () => {
+    async function confirmed(remote: RemoteDeletionResult[], grant?: RemoteDeletionResult) {
+      const t = await started({ check: { ...LINKED, privateRepo: "" }, remote, grant });
+      await t.run("project.deleteContinue");
+      await t.run("project.deleteType", { value: "Field notes" });
+      await t.run("project.deleteConfirm");
+      return t;
+    }
+    it("missing permission enters step-up; declining leaves every local copy and clears the token", async () => {
+      const t = await confirmed([{ state: "stepup" }]);
+      expect(t.vm()).toMatchObject({ step: "inApp", remoteState: "stepup" });
+      await t.run("project.deleteToken", { value: "github_pat_disposable" });
+      await t.run("project.deleteAuthorize");
+      expect(t.vm()).toMatchObject({ remoteState: "declined", remoteToken: "" });
+      expect(t.calls.some(call => call.startsWith("deleteLocal"))).toBe(false);
+      await t.run("project.deleteCancel");
+      expect(t.vm().open).toBe(false);
+    });
+    it("confirmed remote deletion recycles once, shows actual completion, and Open dismisses the result", async () => {
+      const t = await confirmed([{ state: "stepup" }], { state: "deleted" });
+      await t.run("project.deleteAuthorize");
+      expect(t.vm()).toMatchObject({ remoteState: "deleted", open: true, busy: false });
+      expect(t.calls.filter(call => call.startsWith("deleteLocal"))).toEqual(["deleteLocal:keepPrivate=false"]);
+      await t.run("project.deleteFinish");
+      expect(t.vm().open).toBe(false);
+    });
+    it("partial verification retries without local cleanup, and refusal exposes fallback only", async () => {
+      const t = await confirmed([{ state: "partial" }, { state: "refused", reason: "permission" }]);
+      expect(t.vm().remoteState).toBe("partial");
+      await t.run("project.deleteRetry");
+      expect(t.vm().remoteState).toBe("refused");
+      expect(t.calls.some(call => call.startsWith("deleteLocal"))).toBe(false);
+      await t.run("project.deleteOpenGitHub", { id: LINKED.repo });
+      expect(t.calls).toContain(`open:${LINKED.repo}`);
+    });
+    it("closing during authorization cancels it, clears the entered token, and ignores a late remote success", async () => {
+      const t = await confirmed([{ state: "stepup" }]);
+      let complete: ((result: RemoteDeletionResult) => void) | undefined;
+      t.bridge.workspace!.authorizeDelete = async () => new Promise(resolve => { complete = resolve; });
+      await t.run("project.deleteToken", { value: "github_pat_disposable" });
+      const active = t.run("project.deleteAuthorize");
+      await Promise.resolve();
+      await t.run("project.deleteCancel");
+      complete?.({ state: "deleted" });
+      await active;
+      expect(t.vm()).toMatchObject({ open: false, remoteToken: "" });
+      expect(t.calls).toContain("cancel");
+      expect(t.calls.some(call => call.startsWith("deleteLocal"))).toBe(false);
+    });
+    it("one-time authorization is only for the repository whose permission step the person approved", async () => {
+      const t = await started({ remote: [{ state: "stepup" }, { state: "stepup" }], grant: { state: "deleted" } });
+      await t.run("project.deletePrivate", { value: true });
+      await t.run("project.deleteContinue");
+      await t.run("project.deleteType", { value: "Field notes" });
+      await t.run("project.deleteConfirm");
+      await t.run("project.deleteAuthorize");
+      expect(t.vm()).toMatchObject({ remoteState: "stepup", remoteTarget: LINKED.privateRepo });
+      expect(t.calls.filter(call => call.startsWith("authorize"))).toEqual([`authorize:${LINKED.repo}`]);
+      expect(t.calls.some(call => call.startsWith("deleteLocal"))).toBe(false);
+    });
   });
   it("deletes the private repository too only when the switch is on", async () => {
     const t = await started({ status: [{ state: "exists", owner: "ada", admin: true, organization: false }, { state: "gone" }] });

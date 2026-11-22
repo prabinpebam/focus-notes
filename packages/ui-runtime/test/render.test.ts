@@ -99,6 +99,13 @@ describe("the renderer (DSY-06)", () => {
     const noHeading = render(app, doc({ type: "Section", children: [{ type: "Text", props: { value: { t: "gallery.action" } } }] }));
     expect(noHeading).not.toContain("data-section-header");
     expect(noHeading).toContain("data-section-body");
+    const hiddenHeading = render(app, doc({
+      type: "Section",
+      slots: { heading: [{ type: "Text", when: { expr: { "!": { get: "vm.bench.show" } } }, props: { value: { t: "gallery.sample" } } }] },
+      children: [{ type: "Text", props: { value: { t: "gallery.action" } } }],
+    }));
+    expect(hiddenHeading).not.toContain("data-section-header");
+    expect(hiddenHeading).toContain("Save note");
   });
 
   it("keeps repeated-item values inside nested project scopes", () => {
