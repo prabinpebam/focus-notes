@@ -6,9 +6,13 @@ import { DatabaseSync } from "node:sqlite";
 import { setTimeout as delay } from "node:timers/promises";
 import { DATA_FILES } from "@focus-notes/core/inventory";
 import type { FirstNoteAdmission } from "./first-project-note.ts";
+import type { CleanupIssue, CleanupReason } from "@focus-notes/core";
 
 export type MetadataTicket = { generation: string; enabled: boolean };
 export type CleanupEvent = "signOut" | "removeWorkspace" | "deleteProject";
+export class MetadataNotificationError extends Error {
+  constructor() { super("Committed local metadata notification is pending."); this.name = "MetadataNotificationError"; }
+}
 
 export function projectMetadataStore(root: string) {
   const db = new DatabaseSync(join(root, DATA_FILES.projectMetadata), { timeout: 0 });
@@ -27,33 +31,51 @@ export function projectMetadataStore(root: string) {
   }
   const ready = attempt(() => {
     db.exec("PRAGMA journal_mode=WAL");
-    db.exec("CREATE TABLE IF NOT EXISTS profiles (profile TEXT PRIMARY KEY, generation TEXT NOT NULL, enabled INTEGER NOT NULL)");
-    db.exec("CREATE TABLE IF NOT EXISTS first_notes (project TEXT PRIMARY KEY, roots TEXT NOT NULL, file TEXT NOT NULL)");
-    db.exec("CREATE TABLE IF NOT EXISTS first_note_slots (project TEXT PRIMARY KEY, slot INTEGER NOT NULL)");
-    db.exec("CREATE TABLE IF NOT EXISTS cleanup_pending (profile TEXT NOT NULL, scope TEXT NOT NULL, PRIMARY KEY (profile, scope))");
-    db.exec("CREATE TABLE IF NOT EXISTS cleanup_jobs (profile TEXT PRIMARY KEY, event TEXT NOT NULL)");
-    db.exec("CREATE TABLE IF NOT EXISTS live_profiles (session TEXT PRIMARY KEY, pid INTEGER NOT NULL, profile TEXT NOT NULL, generation TEXT NOT NULL)");
-    db.exec("CREATE TABLE IF NOT EXISTS removed_profiles (profile TEXT PRIMARY KEY)");
-    db.exec("CREATE TABLE IF NOT EXISTS live_filters (session TEXT PRIMARY KEY, fingerprint TEXT NOT NULL)");
+    db.exec("BEGIN IMMEDIATE");
+    try {
+      db.exec("CREATE TABLE IF NOT EXISTS profiles (profile TEXT PRIMARY KEY, generation TEXT NOT NULL, enabled INTEGER NOT NULL)");
+      db.exec("CREATE TABLE IF NOT EXISTS first_notes (project TEXT PRIMARY KEY, roots TEXT NOT NULL, file TEXT NOT NULL)");
+      db.exec("CREATE TABLE IF NOT EXISTS first_note_slots (project TEXT PRIMARY KEY, slot INTEGER NOT NULL)");
+      db.exec("CREATE TABLE IF NOT EXISTS cleanup_pending (profile TEXT NOT NULL, scope TEXT NOT NULL, PRIMARY KEY (profile, scope))");
+      if (!db.prepare("PRAGMA table_info(cleanup_pending)").all().some(row => row.name === "reason")) db.exec("ALTER TABLE cleanup_pending ADD COLUMN reason TEXT NOT NULL DEFAULT 'unknown'");
+      db.exec("CREATE TABLE IF NOT EXISTS metadata_notify_pending (id INTEGER PRIMARY KEY CHECK(id = 1), revision TEXT NOT NULL)");
+      db.exec("CREATE TABLE IF NOT EXISTS metadata_watch_failures (session TEXT NOT NULL, profile TEXT NOT NULL, kind TEXT NOT NULL, revision TEXT NOT NULL, PRIMARY KEY(session, kind))");
+      db.exec("CREATE TABLE IF NOT EXISTS cleanup_jobs (profile TEXT PRIMARY KEY, event TEXT NOT NULL)");
+      db.exec("CREATE TABLE IF NOT EXISTS live_profiles (session TEXT PRIMARY KEY, pid INTEGER NOT NULL, profile TEXT NOT NULL, generation TEXT NOT NULL)");
+      db.exec("CREATE TABLE IF NOT EXISTS removed_profiles (profile TEXT PRIMARY KEY)");
+      db.exec("CREATE TABLE IF NOT EXISTS live_filters (session TEXT PRIMARY KEY, fingerprint TEXT NOT NULL)");
+      db.exec("COMMIT");
+    } catch (error) { db.exec("ROLLBACK"); throw error; }
   });
   // The promise is also awaited by every operation; this prevents an unhandled startup rejection.
   void ready.catch(error => { console.error("Could not initialize project metadata lifecycle:", error instanceof Error ? error.name : "Error"); });
-  function transaction<T>(work: () => Promise<T>): Promise<T> {
+  async function notify(revision: string): Promise<void> {
+    try { await writeFile(join(root, DATA_FILES.projectMetadataNotify), `${JSON.stringify(revision)}\n`); }
+    catch { throw new MetadataNotificationError(); }
+    await attempt(() => db.exec("BEGIN IMMEDIATE"));
+    try {
+      db.prepare("DELETE FROM metadata_notify_pending WHERE id = 1 AND revision = ?").run(revision);
+      db.exec("COMMIT");
+    } catch (error) { db.exec("ROLLBACK"); throw error; }
+  }
+  function transaction<T>(work: () => Promise<T>, signal = true): Promise<T> {
     const result = queue.then(async () => {
       await ready;
       // SQLite owns the cross-process lock and releases it even after a hard crash. A busy
       // acquisition yields to the event loop; no synchronous busy timeout blocks note saving.
       await attempt(() => db.exec("BEGIN IMMEDIATE"));
       let value: T;
+      const revision = randomUUID();
       try {
         value = await work();
+        if (signal) db.prepare("INSERT INTO metadata_notify_pending (id, revision) VALUES (1, ?) ON CONFLICT(id) DO UPDATE SET revision = excluded.revision").run(revision);
         db.exec("COMMIT");
       } catch (error) {
         db.exec("ROLLBACK");
         throw error;
       }
       // Notify after COMMIT so receivers rescan committed metadata.
-      await writeFile(join(root, DATA_FILES.projectMetadataNotify), `${JSON.stringify(randomUUID())}\n`);
+      if (signal) await notify(revision);
       return value;
     });
     queue = result.then(() => {}, () => {});
@@ -98,13 +120,24 @@ export function projectMetadataStore(root: string) {
       prepare?.(tickets);
     });
   }
-  function pending(profile: string, scope: string, keep: boolean): void {
-    if (keep) db.prepare("INSERT OR IGNORE INTO cleanup_pending (profile, scope) VALUES (?, ?)").run(key(profile), scope);
+  function pending(profile: string, scope: string, keep: boolean, reason: CleanupReason = scope === "open-windows" ? "window-ack" : "unknown"): void {
+    if (keep) db.prepare("INSERT INTO cleanup_pending (profile, scope, reason) VALUES (?, ?, ?) ON CONFLICT(profile, scope) DO UPDATE SET reason = excluded.reason").run(key(profile), scope, reason);
     else db.prepare("DELETE FROM cleanup_pending WHERE profile = ? AND scope = ?").run(key(profile), scope);
   }
   async function pendingScopes(): Promise<string[]> {
+    return (await cleanupIssues()).map(issue => issue.scope);
+  }
+  async function cleanupIssues(): Promise<CleanupIssue[]> {
     await ready;
-    return db.prepare("SELECT profile, scope FROM cleanup_pending ORDER BY profile, scope").all().map(row => `${String(row.profile).slice(0, 12)}:${String(row.scope)}`);
+    const issues: CleanupIssue[] = db.prepare("SELECT profile, scope, reason FROM cleanup_pending ORDER BY profile, scope").all().map(row => {
+      if (!["file-lock", "window-ack", "notify", "watch", "unknown"].includes(String(row.reason))) throw new Error("Invalid cleanup failure reason.");
+      return { scope: `${String(row.profile).slice(0, 12)}:${String(row.scope)}`, reason: row.reason as CleanupReason };
+    });
+    if (db.prepare("SELECT revision FROM metadata_notify_pending WHERE id = 1").get()) issues.push({ scope: `${key(root).slice(0, 12)}:metadata-notify`, reason: "notify" });
+    for (const row of db.prepare("SELECT profile, kind FROM metadata_watch_failures ORDER BY profile, kind").all()) {
+      issues.push({ scope: `${String(row.profile).slice(0, 12)}:${String(row.kind)}`, reason: row.kind === "metadata-watch" ? "watch" : "window-ack" });
+    }
+    return issues;
   }
   function job(profile: string, event: CleanupEvent, keep: boolean): void {
     if (keep) db.prepare("INSERT INTO cleanup_jobs (profile, event) VALUES (?, ?) ON CONFLICT(profile) DO UPDATE SET event = excluded.event").run(key(profile), event);
@@ -117,6 +150,8 @@ export function projectMetadataStore(root: string) {
       return { profile: row.profile, event: row.event as CleanupEvent };
     });
   }
+  const localWatches = new Map<string, () => Promise<void>>();
+  const localStops = new Set<() => Promise<void>>();
   async function watch(profile: string, cleared: (ticket: MetadataTicket) => Promise<void>, filtered: () => Promise<void> = async () => {}) {
     const session = randomUUID();
     let observed = await initialize(profile);
@@ -129,19 +164,38 @@ export function projectMetadataStore(root: string) {
     let checking: Promise<void> | undefined;
     let stopped = false;
     let dirty = false;
+    const failure = (kind: string, revision: string) => transaction(async () => {
+      db.prepare("INSERT INTO metadata_watch_failures (session, profile, kind, revision) VALUES (?, ?, ?, ?) ON CONFLICT(session, kind) DO UPDATE SET revision = excluded.revision WHERE revision != excluded.revision").run(session, key(profile), kind, revision);
+    }, false);
+    const acknowledge = (kind: string, revision: string) => {
+      db.prepare("DELETE FROM metadata_watch_failures WHERE session = ? AND kind = ? AND revision = ?").run(session, kind, revision);
+    };
     const check = async () => {
+      if (stopped) return;
       await queue;
       const nextRemoved = removedKey();
       if (nextRemoved !== removed) {
-        await filtered();
-        await transaction(async () => { db.prepare("UPDATE live_filters SET fingerprint = ? WHERE session = ?").run(nextRemoved, session); });
+        try { await filtered(); }
+        catch (error) { await failure("window-filter", nextRemoved); throw error; }
+        if (stopped) return;
+        await transaction(async () => {
+          if (removedKey() !== nextRemoved) { dirty = true; return; }
+          db.prepare("UPDATE live_filters SET fingerprint = ? WHERE session = ?").run(nextRemoved, session);
+          db.prepare("DELETE FROM metadata_watch_failures WHERE session = ? AND kind = 'window-filter'").run(session);
+        });
         removed = nextRemoved;
       }
       const current = await ticket(profile);
       if (current.generation === observed.generation) return;
-      if (!current.enabled) await cleared(current);
+      if (!current.enabled) {
+        try { await cleared(current); }
+        catch (error) { await failure("window-ack", current.generation); throw error; }
+      }
+      if (stopped) return;
       await transaction(async () => {
+        if (read(profile).generation !== current.generation) { dirty = true; return; }
         db.prepare("UPDATE live_profiles SET generation = ? WHERE session = ?").run(current.generation, session);
+        db.prepare("DELETE FROM metadata_watch_failures WHERE session = ? AND kind = 'window-ack'").run(session);
       });
       observed = current;
     };
@@ -161,20 +215,48 @@ export function projectMetadataStore(root: string) {
       });
     }
     // Filename filtering can discard delivered events; the committed DB is authoritative.
-    const watcher = watchDirectory(root, schedule);
-    watcher.on("error", error => {
-      console.error("Could not observe local cleanup:", error.name);
+    let watcher: ReturnType<typeof watchDirectory> | undefined;
+    const register = async () => {
+      watcher?.close();
+      try {
+        const registered = watchDirectory(root, schedule);
+        watcher = registered;
+        let failed = false;
+        registered.on("error", error => {
+          if (stopped || watcher !== registered) return;
+          failed = true;
+          console.error("Could not observe local cleanup:", error.name);
+          void failure("metadata-watch", session).catch(error => console.error("Could not record local cleanup failure:", error instanceof Error ? error.name : "Error"));
+        });
+        await transaction(async () => {
+          if (!stopped && watcher === registered && !failed) acknowledge("metadata-watch", session);
+        }, false);
+      } catch (error) { await failure("metadata-watch", session); throw error; }
+    };
+    localWatches.set(session, async () => {
+      if (stopped) return;
+      await register();
+      schedule();
+      await checking;
     });
+    try { await register(); }
+    catch (error) { console.error("Could not observe local cleanup:", error instanceof Error ? error.name : "Error"); }
     schedule();
-    return async () => {
+    const stop = async () => {
+      if (stopped) return;
       stopped = true;
-      watcher.close();
+      localStops.delete(stop);
+      localWatches.delete(session);
+      watcher?.close();
       await checking;
       await transaction(async () => {
         db.prepare("DELETE FROM live_profiles WHERE session = ?").run(session);
         db.prepare("DELETE FROM live_filters WHERE session = ?").run(session);
+        db.prepare("DELETE FROM metadata_watch_failures WHERE session = ?").run(session);
       });
     };
+    localStops.add(stop);
+    return stop;
   }
   async function waitForLive(profiles: readonly string[], includeFiltered = false): Promise<void> {
     const deadline = Date.now() + 10_000;
@@ -185,13 +267,16 @@ export function projectMetadataStore(root: string) {
       let waiting = false;
       for (const row of rows) {
         const generationPending = profiles.some(profile => key(profile) === row.profile) && row.acknowledged !== row.current;
-        if (!generationPending && !(includeFiltered && row.fingerprint !== fingerprint)) continue;
-        try { process.kill(Number(row.pid), 0); waiting = true; }
+        try {
+          process.kill(Number(row.pid), 0);
+          if (generationPending || (includeFiltered && row.fingerprint !== fingerprint)) waiting = true;
+        }
         catch (error) {
           if (!error || typeof error !== "object" || !("code" in error) || error.code !== "ESRCH") throw error;
           await transaction(async () => {
             db.prepare("DELETE FROM live_profiles WHERE session = ?").run(String(row.session));
             db.prepare("DELETE FROM live_filters WHERE session = ?").run(String(row.session));
+            db.prepare("DELETE FROM metadata_watch_failures WHERE session = ?").run(String(row.session));
           });
         }
       }
@@ -199,6 +284,11 @@ export function projectMetadataStore(root: string) {
       if (Date.now() >= deadline) throw new Error("Open project windows have not acknowledged cleanup.");
       await delay(25);
     }
+  }
+  async function repairNotifications(profiles: readonly string[]): Promise<void> {
+    await transaction(async () => {});
+    for (const repair of localWatches.values()) await repair();
+    await waitForLive(profiles, true);
   }
   function commit<T>(profile: string, expected: MetadataTicket, work: () => Promise<T>): Promise<T> {
     return transaction(async () => {
@@ -218,9 +308,13 @@ export function projectMetadataStore(root: string) {
     });
   });
   async function dispose(): Promise<void> {
-    await ready.catch(() => {});
-    await queue;
-    db.close();
+    try {
+      for (const stop of [...localStops]) await stop();
+      await ready;
+    } finally {
+      await queue;
+      db.close();
+    }
   }
-  return { initialize, ticket, change, invalidate, pending, pendingScopes, job, jobs, profileId: key, markRemoved, isRemoved, watch, waitForLive, commit, firstNoteAdmission, transaction, dispose };
+  return { initialize, ticket, change, invalidate, pending, pendingScopes, cleanupIssues, repairNotifications, job, jobs, profileId: key, markRemoved, isRemoved, watch, waitForLive, commit, firstNoteAdmission, transaction, dispose };
 }

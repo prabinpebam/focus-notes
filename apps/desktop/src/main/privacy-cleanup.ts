@@ -2,6 +2,8 @@ import { readFile, readdir, realpath, rm, rmdir } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { DATA_FILES, DATA_FOLDERS, filesRemovedBy, withoutRecent } from "@focus-notes/core/inventory";
 import type { MetadataTicket, projectMetadataStore } from "./project-metadata.ts";
+import { MetadataNotificationError } from "./project-metadata.ts";
+import type { CleanupIssue, CleanupReason } from "@focus-notes/core";
 
 type Metadata = ReturnType<typeof projectMetadataStore>;
 type FilterProtected = (profile: string, scope: string, folders: readonly string[]) => Promise<void>;
@@ -18,11 +20,18 @@ async function removeEmptyRecovery(path: string): Promise<void> {
 
 export class PrivacyCleanupError extends Error {
   readonly pending: readonly string[];
-  constructor(pending: readonly string[]) {
+  readonly issues: readonly CleanupIssue[];
+  constructor(pending: readonly string[], issues: readonly CleanupIssue[] = []) {
     super(`Local cleanup pending: ${pending.join(", ")}. Retry cleanup.`);
     this.name = "PrivacyCleanupError";
     this.pending = pending;
+    this.issues = issues;
   }
+}
+const failureReason = (error: unknown): CleanupReason => error && typeof error === "object" && "code" in error && error.code === "EBUSY" ? "file-lock" : "unknown";
+async function cleanupError(metadata: Metadata) {
+  const issues = await metadata.cleanupIssues();
+  return new PrivacyCleanupError(issues.map(issue => issue.scope), issues);
 }
 
 export function withoutPrivacyTraces<T extends object>(state: T): T {
@@ -116,7 +125,10 @@ export async function purgeProfileTraces(root: string, profiles: readonly string
           try {
             await atomicWrite(join(profile, DATA_FILES.projectFolder), folder);
             await metadata.transaction(async () => metadata.pending(profile, DATA_FILES.projectFolder, false));
-          } catch { throw new PrivacyCleanupError(await metadata.pendingScopes()); }
+          } catch (error) {
+            await metadata.transaction(async () => metadata.pending(profile, DATA_FILES.projectFolder, true, failureReason(error)), false);
+            throw await cleanupError(metadata);
+          }
         }
       }
       if (folder) removedFolders.push(...await folderAliases(profile, folder.trim()));
@@ -124,7 +136,7 @@ export async function purgeProfileTraces(root: string, profiles: readonly string
   }
   if (event === "signOut") scopes.push(DATA_FILES.account);
   // Invalidate first, durably. Other processes' admitted writes must finish before this lock.
-  await metadata.invalidate(profiles, tickets => {
+  try { await metadata.invalidate(profiles, tickets => {
     for (const profile of profiles) {
       for (const scope of [...scopes, DATA_FILES.state]) metadata.pending(profile, scope, true);
       metadata.pending(profile, "open-windows", true);
@@ -134,14 +146,17 @@ export async function purgeProfileTraces(root: string, profiles: readonly string
     metadata.pending(root, DATA_FILES.lastProject, true);
     if (event !== "signOut") for (const profile of owned) metadata.pending(profile, "open-windows", true);
     invalidated?.(tickets);
-  });
+  }); } catch (error) {
+    if (!(error instanceof MetadataNotificationError)) throw error;
+    throw await cleanupError(metadata);
+  }
   try {
     await metadata.waitForLive(profiles, event !== "signOut");
     await metadata.transaction(async () => {
       for (const profile of event === "signOut" ? profiles : owned) metadata.pending(profile, "open-windows", false);
     });
   } catch {
-    throw new PrivacyCleanupError(await metadata.pendingScopes());
+    throw await cleanupError(metadata);
   }
   const otherProfiles = event === "signOut" ? [] : [...owned].filter(profile => !profiles.some(selected => same(resolve(selected), profile)));
   for (const profile of otherProfiles) {
@@ -167,8 +182,8 @@ export async function purgeProfileTraces(root: string, profiles: readonly string
         }
         metadata.pending(profile, scope, false);
       });
-    } catch {
-      await metadata.transaction(async () => metadata.pending(profile, scope, true));
+    } catch (error) {
+      await metadata.transaction(async () => metadata.pending(profile, scope, true, failureReason(error)), false);
     }
     }
   }
@@ -190,8 +205,8 @@ export async function purgeProfileTraces(root: string, profiles: readonly string
           else await rm(join(profile, scope), { force: true });
           metadata.pending(profile, scope, false);
         });
-      } catch {
-        // Only fixed inventory scopes and hashed profile identities are persisted or reported.
+      } catch (error) {
+        await metadata.transaction(async () => metadata.pending(profile, scope, true, failureReason(error)), false);
       }
     }
   }
@@ -207,19 +222,28 @@ export async function purgeProfileTraces(root: string, profiles: readonly string
       }
       metadata.pending(root, DATA_FILES.lastProject, false);
     });
-  } catch {
-    await metadata.transaction(async () => metadata.pending(root, DATA_FILES.lastProject, true));
+  } catch (error) {
+    await metadata.transaction(async () => metadata.pending(root, DATA_FILES.lastProject, true, failureReason(error)), false);
   }
   const pending = await metadata.pendingScopes();
-  if (pending.length) throw new PrivacyCleanupError(pending);
-  await metadata.transaction(async () => {
+  if (pending.length) throw await cleanupError(metadata);
+  try { await metadata.transaction(async () => {
     for (const profile of profiles) metadata.job(profile, event, false);
-  });
+  }); } catch (error) {
+    if (!(error instanceof MetadataNotificationError)) throw error;
+    throw await cleanupError(metadata);
+  }
 }
 
 export async function retryProfileCleanup(root: string, metadata: Metadata, atomicWrite: (path: string, content: string) => Promise<void>, filterProtected?: FilterProtected): Promise<void> {
   const jobs = await metadata.jobs();
   const profiles = await cleanupProfiles(root);
+  try { await metadata.repairNotifications(profiles); }
+  catch (error) {
+    const pending = await metadata.pendingScopes();
+    if (!pending.length) throw error;
+    throw await cleanupError(metadata);
+  }
   for (const event of ["signOut", "removeWorkspace", "deleteProject"] as const) {
     const selected = profiles.filter(profile => jobs.some(job => job.event === event && job.profile === metadata.profileId(profile)));
     if (selected.length) {
@@ -228,11 +252,14 @@ export async function retryProfileCleanup(root: string, metadata: Metadata, atom
     }
   }
   const pending = await metadata.pendingScopes();
-  if (pending.length) throw new PrivacyCleanupError(pending);
-  await metadata.transaction(async () => {
+  if (pending.length) throw await cleanupError(metadata);
+  try { await metadata.transaction(async () => {
     for (const profile of profiles) {
       const pendingJob = jobs.find(job => job.profile === metadata.profileId(profile));
       if (pendingJob) metadata.job(profile, pendingJob.event, false);
     }
-  });
+  }); } catch (error) {
+    if (!(error instanceof MetadataNotificationError)) throw error;
+    throw await cleanupError(metadata);
+  }
 }

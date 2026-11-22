@@ -3,11 +3,23 @@ import { once } from "node:events";
 import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 import { DATA_FILES, DATA_FOLDERS } from "@focus-notes/core/inventory";
-import { projectMetadataStore } from "../src/main/project-metadata.ts";
+import { MetadataNotificationError, projectMetadataStore } from "../src/main/project-metadata.ts";
 import { cleanupProfiles, PrivacyCleanupError, purgeProfileTraces, retryProfileCleanup } from "../src/main/privacy-cleanup.ts";
 import { DatabaseSync } from "node:sqlite";
+
+const watchFault = vi.hoisted(() => ({ registration: false, fail: undefined as (() => void) | undefined, event: undefined as (() => void) | undefined }));
+vi.mock("node:fs", async importOriginal => {
+  const actual = await importOriginal<typeof import("node:fs")>();
+  return { ...actual, watch: (...args: Parameters<typeof actual.watch>) => {
+    if (watchFault.registration) throw new Error("fixture watch registration failed");
+    const watcher = actual.watch(...args);
+    watchFault.fail = () => watcher.emit("error", new Error("fixture watch error"));
+    watchFault.event = () => watcher.emit("change", "change", "unrelated-app-owned-file");
+    return watcher;
+  } };
+});
 
 async function cleanupFixture() {
   const root = await mkdtemp(join(tmpdir(), "fn-privacy-"));
@@ -130,6 +142,167 @@ it("G7 kernel: invalidation drains an admitted writer in another live process co
     await expect(readFile(join(f.first, DATA_FILES.projectRecent))).rejects.toMatchObject({ code: "ENOENT" });
     await expect(other.commit(f.first, admitted, async () => {})).rejects.toThrow("saved metadata was cleared");
   } finally { release(); await other.dispose(); await f.dispose(); }
+});
+
+it("G7: a failed post-COMMIT signal survives restart and Retry repairs it without cleanup jobs", async () => {
+      const f = await cleanupFixture();
+      let restarted: ReturnType<typeof projectMetadataStore> | undefined;
+      try {
+        await rm(join(f.root, DATA_FILES.projectMetadataNotify));
+        await mkdir(join(f.root, DATA_FILES.projectMetadataNotify));
+        const before = await f.metadata.ticket(f.first);
+        await expect(f.metadata.change(f.first, false)).rejects.toBeInstanceOf(MetadataNotificationError);
+        expect(await f.metadata.ticket(f.first)).toMatchObject({ enabled: false });
+        expect((await f.metadata.ticket(f.first)).generation).not.toBe(before.generation);
+        restarted = projectMetadataStore(f.root);
+        expect(await restarted.jobs()).toEqual([]);
+        expect(await restarted.cleanupIssues()).toEqual([{ scope: `${f.metadata.profileId(f.root).slice(0, 12)}:metadata-notify`, reason: "notify" }]);
+        await rm(join(f.root, DATA_FILES.projectMetadataNotify), { recursive: true });
+        await retryProfileCleanup(f.root, restarted, writeFile);
+        expect(await restarted.pendingScopes()).toEqual([]);
+        expect(JSON.parse(await readFile(join(f.root, DATA_FILES.projectMetadataNotify), "utf8"))).toMatch(/^[a-f0-9-]{36}$/);
+        expect(await restarted.ticket(f.first)).toMatchObject({ enabled: false });
+      } finally { await restarted?.dispose(); await f.dispose(); }
+    });
+
+    it("G7: failed watch registration and runtime errors persist until explicit Retry re-registers", async () => {
+      const f = await cleanupFixture();
+      let stop = async () => {};
+      try {
+        watchFault.registration = true;
+        stop = await f.metadata.watch(f.first, async () => {});
+        expect(await f.metadata.cleanupIssues()).toEqual([{ scope: `${f.metadata.profileId(f.first).slice(0, 12)}:metadata-watch`, reason: "watch" }]);
+        watchFault.registration = false;
+        await retryProfileCleanup(f.root, f.metadata, writeFile);
+        expect(await f.metadata.pendingScopes()).toEqual([]);
+        const supersededFailure = watchFault.fail!;
+        await retryProfileCleanup(f.root, f.metadata, writeFile);
+        supersededFailure();
+        await new Promise<void>(resolve => setTimeout(resolve, 20));
+        expect(await f.metadata.pendingScopes()).toEqual([]);
+        watchFault.fail!();
+        await vi.waitFor(async () => expect(await f.metadata.pendingScopes()).toContain(`${f.metadata.profileId(f.first).slice(0, 12)}:metadata-watch`));
+        await retryProfileCleanup(f.root, f.metadata, writeFile);
+        expect(await f.metadata.pendingScopes()).toEqual([]);
+        await stop(); stop = async () => {};
+        watchFault.fail!();
+        await new Promise<void>(resolve => setTimeout(resolve, 20));
+        expect(await f.metadata.pendingScopes()).toEqual([]);
+      } finally { watchFault.registration = false; await stop(); await f.dispose(); }
+    });
+
+    it("G7: renderer failure records the exact generation and coalesced Retry acknowledges the latest one", async () => {
+      const f = await cleanupFixture();
+      const other = projectMetadataStore(f.root);
+      let stop = async () => {};
+      let fail = true;
+      const seen: string[] = [];
+      let release = () => {};
+      const held = new Promise<void>(resolve => { release = resolve; });
+      let block = false;
+      try {
+        stop = await other.watch(f.first, async ticket => {
+          seen.push(ticket.generation);
+          if (fail) throw new Error("fixture renderer did not acknowledge");
+          if (block) await held;
+        });
+        await f.metadata.change(f.first, false);
+        const failed = await f.metadata.ticket(f.first);
+        await vi.waitFor(async () => expect(await f.metadata.cleanupIssues()).toContainEqual({ scope: `${f.metadata.profileId(f.first).slice(0, 12)}:window-ack`, reason: "window-ack" }));
+        const inspect = new DatabaseSync(join(f.root, DATA_FILES.projectMetadata));
+        try { expect(inspect.prepare("SELECT revision FROM metadata_watch_failures WHERE kind = 'window-ack'").get()?.revision).toBe(failed.generation); }
+        finally { inspect.close(); }
+        fail = false; block = true;
+        const repair = retryProfileCleanup(f.root, other, writeFile);
+        await vi.waitFor(() => expect(seen.length).toBeGreaterThan(1));
+        await f.metadata.change(f.first, false);
+        const latest = await f.metadata.ticket(f.first);
+        for (let i = 0; i < 12; i++) watchFault.event!();
+        release();
+        await repair;
+        expect(seen).toContain(latest.generation);
+        expect(await f.metadata.pendingScopes()).toEqual([]);
+        expect(await f.metadata.ticket(f.first)).toEqual(latest);
+        await stop(); stop = async () => {};
+        const count = seen.length;
+        await f.metadata.change(f.first, false);
+        await new Promise<void>(resolve => setTimeout(resolve, 30));
+        expect(seen).toHaveLength(count);
+      } finally { release(); await stop(); await other.dispose(); await f.dispose(); }
+    });
+it("G7: failed removal filtering retries the latest fingerprint instead of acknowledging superseded authority", async () => {
+  const f = await cleanupFixture();
+  const other = projectMetadataStore(f.root);
+  let fail = true;
+  let calls = 0;
+  let release = () => {};
+  const held = new Promise<void>(resolve => { release = resolve; });
+  try {
+    await other.watch(f.first, async () => {}, async () => {
+      calls++;
+      if (fail) throw new Error("Disposable renderer filter failure");
+      await held;
+    });
+    await f.metadata.transaction(async () => f.metadata.markRemoved(f.second));
+    await vi.waitFor(async () => expect(await f.metadata.pendingScopes()).toContain(`${f.metadata.profileId(f.first).slice(0, 12)}:window-filter`));
+    fail = false;
+    const repair = other.repairNotifications([f.first, f.second]);
+    await vi.waitFor(() => expect(calls).toBeGreaterThan(1));
+    await f.metadata.transaction(async () => f.metadata.markRemoved(f.first));
+    release();
+    await repair;
+    const inspect = new DatabaseSync(join(f.root, DATA_FILES.projectMetadata));
+    try {
+      const current = JSON.stringify(inspect.prepare("SELECT profile FROM removed_profiles ORDER BY profile").all());
+      expect(inspect.prepare("SELECT fingerprint FROM live_filters").get()?.fingerprint).toBe(current);
+      expect(inspect.prepare("SELECT kind FROM metadata_watch_failures").all()).toEqual([]);
+    } finally { inspect.close(); }
+    expect(calls).toBeGreaterThan(2);
+  } finally { release(); await other.dispose(); await f.dispose(); }
+});
+
+it("G7: disposal drains an in-flight renderer callback without publishing a late acknowledgement", async () => {
+  const f = await cleanupFixture();
+  const other = projectMetadataStore(f.root);
+  let release = () => {};
+  const held = new Promise<void>(resolve => { release = resolve; });
+  let entered = () => {};
+  const started = new Promise<void>(resolve => { entered = resolve; });
+  try {
+    await other.watch(f.first, async () => { entered(); await held; });
+    await f.metadata.change(f.first, false);
+    await started;
+    let closed = false;
+    const disposal = other.dispose().then(() => { closed = true; });
+    await new Promise<void>(resolve => setTimeout(resolve, 20));
+    expect(closed).toBe(false);
+    release();
+    await disposal;
+    const inspect = new DatabaseSync(join(f.root, DATA_FILES.projectMetadata));
+    try {
+      expect(inspect.prepare("SELECT session FROM live_profiles").all()).toEqual([]);
+      expect(inspect.prepare("SELECT session FROM metadata_watch_failures").all()).toEqual([]);
+    } finally { inspect.close(); }
+  } finally { release(); await f.dispose(); }
+});
+
+it("G7: Retry prunes a proven dead failed watcher even when its generation was already acknowledged", async () => {
+  const f = await cleanupFixture();
+  const child = spawn(process.execPath, ["-e", ""], { windowsHide: true });
+  const pid = child.pid!;
+  await once(child, "exit");
+  try {
+    const current = await f.metadata.ticket(f.first);
+    const inspect = new DatabaseSync(join(f.root, DATA_FILES.projectMetadata));
+    try {
+      inspect.prepare("INSERT INTO live_profiles (session,pid,profile,generation) VALUES (?,?,?,?)").run("disposable-dead-session", pid, f.metadata.profileId(f.first), current.generation);
+      inspect.prepare("INSERT INTO live_filters (session,fingerprint) VALUES (?,?)").run("disposable-dead-session", "[]");
+      inspect.prepare("INSERT INTO metadata_watch_failures (session,profile,kind,revision) VALUES (?,?,?,?)").run("disposable-dead-session", f.metadata.profileId(f.first), "metadata-watch", "disposable-dead-session");
+    } finally { inspect.close(); }
+    expect(await f.metadata.pendingScopes()).toHaveLength(1);
+    await retryProfileCleanup(f.root, f.metadata, writeFile);
+    expect(await f.metadata.pendingScopes()).toEqual([]);
+  } finally { await f.dispose(); }
 });
 
 it("reads legacy first-note certificates as slot one and persists a numbered slot atomically", async () => {

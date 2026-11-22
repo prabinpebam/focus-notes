@@ -10,6 +10,7 @@
 import { test, expect, type Page } from "./fixtures.ts";
 import { execFileSync, spawn, spawnSync } from "node:child_process";
 import { once } from "node:events";
+import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { CHROMIUM_FOLDERS, DATA_FILES, DATA_FOLDERS, LOCK_FILES, filesRemovedBy } from "../../../packages/core/src/inventory.ts";
@@ -243,7 +244,7 @@ for (const event of ["signOut", "removeWorkspace"] as const) test(`G7 cross-prof
   }
 });
 
-test("G7.3: a locked second profile reports redacted pending scope and Retry clears it after restart", async () => {
+test("G7.3: a locked second profile reports redacted pending scope and Retry clears it after restart", async ({}, testInfo) => {
   test.setTimeout(150_000);
   const { w, l } = await setUp();
   const second = await secondProfile(w);
@@ -255,16 +256,31 @@ test("G7.3: a locked second profile reports redacted pending scope and Retry cle
     const stateFile = join(second.profile, DATA_FILES.state);
     lock = spawn("pwsh", ["-NoProfile", "-Command", '$file = [System.IO.File]::Open($env:FN_LOCK_PATH, [System.IO.FileMode]::Open, [System.IO.FileAccess]::ReadWrite, [System.IO.FileShare]::None); [Console]::WriteLine("locked"); [Console]::Out.Flush(); [Console]::ReadLine() | Out-Null; $file.Dispose()'], { env: { ...process.env, FN_LOCK_PATH: stateFile }, windowsHide: true, stdio: ["pipe", "pipe", "pipe"] });
     await Promise.race([once(lock.stdout!, "data"), once(lock, "exit").then(() => { throw new Error("The disposable cache lock did not start."); })]);
+    await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.setContentSize(640, 480));
     await openSettings(l.page);
     await settings(l.page).getByRole("button", { name: "Sign out…" }).click();
     const dialog = l.page.getByRole("dialog", { name: "Sign out of GitHub?" });
     await dialog.getByRole("radio", { name: "Keep it for the terminal" }).focus();
     await dialog.getByRole("radio", { name: "Keep it for the terminal" }).press("Space");
     await dialog.getByRole("button", { name: "Sign out", exact: true }).click();
-    await expect(dialog.getByText("Some local traces remain. Your notes are unchanged. Close any app holding the cache files, then retry cleanup.")).toBeVisible({ timeout: 15_000 });
+    await expect(dialog.getByText("A local cache file is in use. Your notes are unchanged. Close the app holding it, then retry cleanup.")).toBeVisible({ timeout: 15_000 });
     await dialog.locator("summary").filter({ hasText: "Details" }).click();
     await expect(dialog).toContainText(/[a-f0-9]{12}:state\.json/);
     expect(await dialog.innerText()).not.toMatch(/Only mine|ghp_|secret\.md|second-project/);
+    const retry = dialog.getByRole("button", { name: "Retry cleanup", exact: true });
+    const close = dialog.getByRole("button", { name: "Close", exact: true });
+    await expect(retry).toBeInViewport({ ratio: 1 });
+    await expect(close).toBeInViewport({ ratio: 1 });
+    const footer = await retry.boundingBox();
+    await dialog.locator("summary").evaluate(element => {
+      const body = element.closest("[data-dialog-body]") ?? element.parentElement?.parentElement;
+      body?.scrollTo(0, body.scrollHeight);
+    });
+    expect(await retry.boundingBox()).toEqual(footer);
+    const capture = testInfo.outputPath("g7-file-lock-details-footer.png");
+    await l.page.screenshot({ path: capture });
+    await testInfo.attach("G7 actual Windows file-lock Details and fixed Retry footer", { path: capture, contentType: "image/png" });
+    await testInfo.attach("G7 capture provenance", { body: JSON.stringify({ title: testInfo.title, viewport: await l.page.evaluate(() => ({ width: innerWidth, height: innerHeight })), footer, hidden: process.env.FOCUS_NOTES_E2E === "1", fault: "Disposable second-profile state.json held by FileShare.None" }), contentType: "application/json" });
     await expect(l.page.getByText("Signed out of Focus Notes. Git on this computer is still signed in as @ada.", { exact: true })).toHaveCount(0);
     const released = once(lock, "exit");
     lock.stdin!.end("\n");
@@ -281,6 +297,82 @@ test("G7.3: a locked second profile reports redacted pending scope and Retry cle
     if (lock) { const exited = once(lock, "exit"); lock.stdin?.end("\n"); await exited; }
     for (const active of [l, b]) await finishOwned(active);
     w.server.close();
+  }
+});
+
+test("G7: a failed renderer acknowledgement remains pending with bounded Details and Retry repairs the actual windows", async ({}, testInfo) => {
+  test.setTimeout(150_000);
+  const { w, l } = await setUp();
+  const second = await secondProfile(w);
+  const b = second.l;
+  const captures: unknown[] = [];
+  let verified = false;
+  try {
+    await searchSecret(b.page, true);
+    await b.page.evaluate(() => {
+      const fixture = window as Window & { releasePrivacyFailure?: () => void };
+      fixture.releasePrivacyFailure = window.focusNotes.onPrivacyCleared!(() => { throw new Error("Disposable renderer acknowledgement failure"); });
+    });
+    await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.setContentSize(640, 480));
+    await openSettings(l.page);
+    await settings(l.page).getByRole("button", { name: "Sign out…" }).click();
+    const dialog = l.page.getByRole("dialog", { name: "Sign out of GitHub?" });
+    await dialog.getByRole("radio", { name: "Keep it for the terminal" }).focus();
+    await dialog.getByRole("radio", { name: "Keep it for the terminal" }).press("Space");
+    await dialog.getByRole("button", { name: "Sign out", exact: true }).click();
+    await expect(dialog.getByText("An open project window hasn’t confirmed cleanup. Your notes are unchanged. Retry cleanup or close that window.")).toBeVisible({ timeout: 20_000 });
+    await dialog.locator("summary").filter({ hasText: "Details" }).click();
+    await expect(dialog).toContainText(/[a-f0-9]{12}:window-ack/);
+    const durable = await l.app.evaluate((_, file) => {
+      const { DatabaseSync } = process.getBuiltinModule("node:sqlite");
+      const db = new DatabaseSync(file);
+      try {
+        return db.prepare("SELECT metadata_watch_failures.revision = profiles.generation AS exact FROM metadata_watch_failures JOIN profiles USING(profile) WHERE kind = 'window-ack'").all().map(row => row.exact);
+      } finally { db.close(); }
+    }, join(w.dirs.userData, DATA_FILES.projectMetadata));
+    expect(durable).toEqual([1]);
+    for (const size of [[640, 480], [520, 360]] as const) {
+      await l.app.evaluate(({ BrowserWindow }, size) => BrowserWindow.getAllWindows()[0]!.setContentSize(size.width, size.height), { width: size[0], height: size[1] });
+      await expect(dialog.getByRole("button", { name: "Retry cleanup", exact: true })).toBeInViewport({ ratio: 1 });
+      await expect(dialog.getByRole("button", { name: "Close", exact: true })).toBeInViewport({ ratio: 1 });
+      const retry = dialog.getByRole("button", { name: "Retry cleanup", exact: true });
+      const before = await retry.boundingBox();
+      const body = dialog.locator("[data-dialog-body]").first();
+      const scroll = await body.evaluate(element => {
+        element.scrollTop = element.scrollHeight;
+        return { client: element.clientHeight, content: element.scrollHeight, top: element.scrollTop };
+      });
+      expect(scroll.content).toBeGreaterThan(scroll.client);
+      expect(scroll.top).toBeGreaterThan(0);
+      expect(await retry.boundingBox()).toEqual(before);
+      const path = testInfo.outputPath(`g7-renderer-ack-details-${size[0]}-${size[1]}.png`);
+      await l.page.screenshot({ path });
+      captures.push({ requested: size, viewport: await l.page.evaluate(() => ({ width: innerWidth, height: innerHeight })), scroll, footer: before });
+      await testInfo.attach(`Actual pending window acknowledgement ${size.join("×")}`, { path, contentType: "image/png" });
+      await testInfo.attach(`Provenance ${size.join("×")}`, { body: JSON.stringify({ viewport: await l.page.evaluate(() => ({ width: innerWidth, height: innerHeight })), scroll, footer: before, exactGenerationFailure: durable, fault: "A throwing registered renderer privacy listener prevents its real preload acknowledgement", hidden: process.env.FOCUS_NOTES_E2E === "1" }), contentType: "application/json" });
+    }
+    await b.page.evaluate(() => (window as Window & { releasePrivacyFailure?: () => void }).releasePrivacyFailure!());
+    await dialog.getByRole("button", { name: "Retry cleanup", exact: true }).click();
+    await toast(l.page, "Local traces cleared.");
+    await searchSecret(b.page, false);
+    expect(readFileSync(second.note, "utf8")).toBe("# Secret\n\nOnly mine.\n");
+    expect(terminal(w)).toBe(w.gh.token);
+    verified = true;
+  } finally {
+    for (const active of [l, b]) await finishOwned(active);
+    w.server.close();
+  }
+  if (verified) {
+    const path = testInfo.outputPath("g7-provenance.json");
+    writeFileSync(path, JSON.stringify({
+      workingHead: execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(),
+      builtMainSha256: createHash("sha256").update(readFileSync(resolve(import.meta.dirname, "../out/main/main.mjs"))).digest("hex"),
+      faultSource: "Throwing disposable onPrivacyCleared listener prevents actual preload privacy:ack",
+      currentPurgeGenerationMatchesFailure: true, actualRetryClearedPrivateSearch: true,
+      sourceBytesUnchanged: true, terminalCredentialUnchanged: true, ownPidCleanupComplete: true,
+      hidden: process.env.FOCUS_NOTES_E2E === "1", captures,
+    }, null, 2));
+    await testInfo.attach("Actual G7 Retry and geometry provenance", { path, contentType: "application/json" });
   }
 });
 

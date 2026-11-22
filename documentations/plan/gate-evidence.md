@@ -64,14 +64,45 @@ were added; temporary trace logging and screenshot instrumentation were removed.
 | `FOCUS_NOTES_E2E=1`, `pnpm --filter @focus-notes/desktop exec playwright test e2e/m3-settings.spec.ts e2e/dsk09-frames.spec.ts e2e/project-startup.spec.ts --workers=1 -g 'G7\|DSK-09: dark\|Create project'` | 7 passed in 3.3m: two canonical shared-profile sign-out/removal/restart cases, real locked-file Retry, both source-preserving dark/reduced-motion frame cases and both unchanged Create project cases. Owned PIDs were closed through scoped helpers. |
 | `node .\slate\scripts\runtime-host.mjs check --repo . --host documentations`; `git diff --check` | Passed before this evidence-only update. |
 
-**Still open before a final candidate:** explicit post-COMMIT signal/watch/ack
-failure pending-scope and restart/Retry coverage; coalescing/race/disposal
-coverage; truthful typed window-ack versus evidenced file-lock recovery copy;
-bounded expanded Details/body scrolling that keeps the footer reachable;
-related schema/notification/wait documentation updates and combined revalidation.
-The worker stops at the clock limit and releases ownership to the coordinator.
-Local seven-test evidence is not seven-job CI acceptance, release readiness
-or a landing claim.
+#### Durable failure closure, local acceptance
+
+Notification intent now commits with the metadata change and clears only after
+its exact closed-handle UUID write succeeds. Watch registration/runtime failures
+and renderer/filter failures persist their exact captured authority independently
+of ordinary cleanup jobs. Retry re-registers local watchers, signals committed
+metadata and waits for real acknowledgements; it does not force another window
+to acknowledge. Superseded or disposed watchers cannot publish late failures,
+and verified dead sessions are pruned even when their generation was already
+acknowledged. Schema migration shares the yielding SQLite lock.
+
+Typed copy distinguishes the actual Windows `EBUSY` file lock from pending
+window acknowledgement, notification and watch failures; unknown causes remain
+generic. Existing Dialog header/footer slots keep Close and Retry reachable
+while expanded redacted Details scroll in the bounded body. No component styling,
+source-note watcher, new transport or idle polling was added.
+
+| Final local command | Result |
+| --- | --- |
+| `pnpm exec vitest run apps/desktop/test/idle.test.ts packages/core/test/inventory.test.ts apps/desktop/test/project-create.test.ts apps/desktop/test/project-metadata.test.ts apps/desktop/test/first-project-note.test.ts apps/desktop/test/account-settings.test.ts packages/core/test/settings-app.test.ts packages/core/test/search-feed.test.ts packages/core/test/diagnostics.test.ts` | 157 passed in 9 files, including post-COMMIT failure/restart/no-job Retry, watch registration/error/re-registration, superseded watch errors, exact-generation/filter races, in-flight disposal, dead-PID cleanup and truthful reason copy. |
+| `pnpm --filter @focus-notes/ui-runtime exec node src/cli/ui-check.ts --write`; `node tools/notification-inventory.mjs --write`; `pnpm check`; `pnpm typecheck` | Passed; 879 UI documents and 147 notification calls covered. |
+| `pnpm --filter @focus-notes/desktop run build`; `FOCUS_NOTES_E2E=1`, `pnpm --filter @focus-notes/desktop exec playwright test e2e/m3-settings.spec.ts e2e/dsk09-frames.spec.ts e2e/project-startup.spec.ts --workers=1 -g 'G7\|DSK-09: dark\|Create project'` | 8 passed together in 3.9m on the revised runtime: shared-profile sign-out and isolated removal/restarts; real Windows locked-file Retry; real throwing renderer-listener acknowledgement failure, durable exact-generation record, actual Retry/private-search clearing and 640 × 480 / 520 × 360 Details/footer checks; both source-preserving dark/reduced-motion frame cases and both unchanged PRJ-24 Create project cases. All own app PIDs were closed through scoped helpers. |
+| `pnpm --filter @focus-notes/web run build`; `pnpm --filter @focus-notes/web exec playwright test public-pages.spec.ts site.spec.ts --workers=1` | Passed; 13 web journeys, including genuine gzip PRF-12 checks, without changed budgets or restored guards. |
+| `node .\slate\scripts\runtime-host.mjs check --repo . --host documentations`; task-owned ephemeral loopback/headless Chromium rendering of the five changed spec pages and G7 evidence anchor | Passed; one visible H1 per page in light/dark. Browser and server closed; root docs server untouched. |
+| `git diff --check` | Passed. |
+
+Actual hidden captures and provenance are retained at
+`focus-notes-work\review\g7-w1b2-durable-failure-22nov\`.
+The first PNGs show scrolled geometry only; their original inline Playwright
+JSON attachments were not persisted by the list reporter. That claim was
+withdrawn and corrected in `provenance.json`, with build hashes and the passing
+test assertions separated from what the images show. The combined journey now
+writes `g7-provenance.json` explicitly after real Retry and exact own-PID cleanup.
+No private paths, note labels or raw failure text are copied into those receipts.
+
+**Still open:** one final landing-candidate push, exact-head seven-terminal-green
+Windows CI jobs and coordinator-serialized non-force landing. Local eight-test
+evidence is not seven-job CI acceptance, release readiness or native exposure.
+The retained visible candidate and the owner's Preview remain untouched.
 
 ### PRF-12 Pages-compression fixture repair, 22 November
 

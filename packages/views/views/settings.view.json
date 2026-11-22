@@ -3876,6 +3876,13 @@
           "size": "s",
           "height": "content"
         },
+        "slots": {
+          "footer": [{ "type": "Inline", "props": { "justify": "end", "gap": "inlineItem", "wrap": true }, "children": [
+            { "type": "Button", "props": { "label": { "t": "signOut.cancel" }, "variant": "secondary" }, "on": { "press": { "run": "account.setSignOutOpen", "args": { "open": false } } } },
+            { "type": "Button", "when": { "get": "vm.signOut.canSignOut" }, "props": { "label": { "get": "vm.signOut.label" }, "variant": "danger", "busy": { "get": "vm.signOut.busy" } }, "on": { "press": { "run": "account.signOutNow" } } },
+            { "type": "Button", "when": { "get": "vm.signOut.cleanupFailed" }, "props": { "label": { "t": "command.account.retryCleanup" }, "variant": "primary", "busy": { "get": "vm.signOut.busy" } }, "on": { "press": { "run": "account.retryCleanup" } } }
+          ] }]
+        },
         "on": {
           "openChange": {
             "run": "account.setSignOutOpen",
@@ -3943,51 +3950,7 @@
                 "when": { "get": "vm.signOut.cleanupFailed" },
                 "props": { "gap": "stackPair" },
                 "children": [
-                  { "type": "StatusRow", "props": { "message": { "get": "vm.signOut.cleanupMessage" }, "actionLabel": { "t": "command.account.retryCleanup" }, "actionBusy": { "get": "vm.signOut.busy" }, "actionBusyLabel": { "get": "vm.signOut.label" }, "detailsLabel": { "t": "uiStates.recovery.details" }, "details": { "get": "vm.signOut.cleanupScopes" } }, "on": { "action": { "run": "account.retryCleanup" } } }
-                ]
-              },
-              {
-                "type": "Inline",
-                "props": {
-                  "justify": "end",
-                  "gap": "inlineItem"
-                },
-                "children": [
-                  {
-                    "type": "Button",
-                    "props": {
-                      "label": {
-                        "t": "signOut.cancel"
-                      },
-                      "variant": "secondary"
-                    },
-                    "on": {
-                      "press": {
-                        "run": "account.setSignOutOpen",
-                        "args": {
-                          "open": false
-                        }
-                      }
-                    }
-                  },
-                  {
-                    "type": "Button",
-                    "when": { "get": "vm.signOut.canSignOut" },
-                    "props": {
-                      "label": {
-                        "get": "vm.signOut.label"
-                      },
-                      "variant": "danger",
-                      "busy": {
-                        "get": "vm.signOut.busy"
-                      }
-                    },
-                    "on": {
-                      "press": {
-                        "run": "account.signOutNow"
-                      }
-                    }
-                  }
+                  { "type": "StatusRow", "props": { "message": { "get": "vm.signOut.cleanupMessage" }, "detailsLabel": { "t": "uiStates.recovery.details" }, "details": { "get": "vm.signOut.cleanupScopes" } } }
                 ]
               }
             ]
@@ -4024,6 +3987,14 @@
             }
           }
         },
+        "slots": {
+          "footer": [{ "type": "Inline", "props": { "justify": "end", "gap": "inlineItem", "wrap": true }, "children": [
+            { "type": "Button", "props": { "label": { "t": "remove.cancel" }, "variant": "secondary" }, "on": { "press": { "run": "workspace.setRemoveOpen", "args": { "open": false } } } },
+            { "type": "Button", "when": { "get": "vm.removeWorkspace.canSync" }, "props": { "label": { "t": "command.workspace.removeSync" }, "variant": "primary", "busy": { "get": "vm.removeWorkspace.busy" } }, "on": { "press": { "run": "workspace.removeSync" } } },
+            { "type": "Button", "when": { "get": "vm.removeWorkspace.canRemove" }, "props": { "label": { "get": "vm.removeWorkspace.label" }, "variant": "danger", "busy": { "get": "vm.removeWorkspace.busy" } }, "on": { "press": { "run": "workspace.removeConfirm" } } },
+            { "type": "Button", "when": { "get": "vm.removeWorkspace.cleanupFailed" }, "props": { "label": { "t": "command.account.retryCleanup" }, "variant": "secondary", "busy": { "get": "vm.removeWorkspace.busy" } }, "on": { "press": { "run": "account.retryCleanup" } } }
+          ] }]
+        },
         "children": [
           {
             "type": "Stack",
@@ -4045,7 +4016,7 @@
                 "when": { "get": "vm.removeWorkspace.cleanupFailed" },
                 "props": { "gap": "stackPair" },
                 "children": [
-                  { "type": "StatusRow", "props": { "message": { "get": "vm.removeWorkspace.cleanupMessage" }, "actionLabel": { "t": "command.account.retryCleanup" }, "actionBusy": { "get": "vm.removeWorkspace.busy" }, "actionBusyLabel": { "t": "task.cleanup" }, "detailsLabel": { "t": "uiStates.recovery.details" }, "details": { "get": "vm.removeWorkspace.cleanupScopes" } }, "on": { "action": { "run": "account.retryCleanup" } } }
+                  { "type": "StatusRow", "props": { "message": { "get": "vm.removeWorkspace.cleanupMessage" }, "detailsLabel": { "t": "uiStates.recovery.details" }, "details": { "get": "vm.removeWorkspace.cleanupScopes" } } }
                 ]
               },
               {
@@ -4058,72 +4029,6 @@
                     "get": "vm.removeWorkspace.drafts"
                   }
                 }
-              },
-              {
-                "type": "Inline",
-                "props": {
-                  "justify": "end",
-                  "gap": "inlineItem"
-                },
-                "children": [
-                  {
-                    "type": "Button",
-                    "props": {
-                      "label": {
-                        "t": "remove.cancel"
-                      },
-                      "variant": "secondary"
-                    },
-                    "on": {
-                      "press": {
-                        "run": "workspace.setRemoveOpen",
-                        "args": {
-                          "open": false
-                        }
-                      }
-                    }
-                  },
-                  {
-                    "type": "Button",
-                    "props": {
-                      "label": {
-                        "t": "command.workspace.removeSync"
-                      },
-                      "variant": "primary",
-                      "busy": {
-                        "get": "vm.removeWorkspace.busy"
-                      }
-                    },
-                    "on": {
-                      "press": {
-                        "run": "workspace.removeSync"
-                      }
-                    },
-                    "when": {
-                      "get": "vm.removeWorkspace.canSync"
-                    }
-                  },
-                  {
-                    "type": "Button",
-                    "props": {
-                      "label": {
-                        "get": "vm.removeWorkspace.label"
-                      },
-                      "variant": "danger",
-                      "busy": {
-                        "get": "vm.removeWorkspace.busy"
-                      }
-                    },
-                    "on": {
-                      "press": {
-                        "run": "workspace.removeConfirm"
-                      }
-                    },
-                    "when": {
-                      "get": "vm.removeWorkspace.canRemove"
-                    }
-                  }
-                ]
               }
             ]
           }

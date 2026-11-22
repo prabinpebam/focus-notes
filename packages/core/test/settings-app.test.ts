@@ -8,7 +8,7 @@
 import { describe, expect, it } from "vitest";
 import {
   createApp, SETUP_STEPS,
-  type AccountStatus, type AppStateFile, type FirstRunBridge, type PlatformBridge, type RemovalCheck, type SetupReport, type SyncReport,
+  type AccountStatus, type AppStateFile, type CleanupIssue, type FirstRunBridge, type PlatformBridge, type RemovalCheck, type SetupReport, type SyncReport,
 } from "../src/index.ts";
 import en from "../../views/messages/en.json" with { type: "json" };
 
@@ -16,7 +16,7 @@ const ADA = { login: "ada", id: 583231, name: "Ada Lovelace" };
 const GRACE = { login: "grace", id: 99, name: "Grace Hopper" };
 const settle = () => new Promise((r) => setTimeout(r, 0));
 
-function shell(opts: { state?: AppStateFile; account?: AccountStatus; removal?: RemovalCheck[]; desktop?: boolean; drafts?: number; standalone?: boolean; cleanupPending?: string[] } = {}) {
+function shell(opts: { state?: AppStateFile; account?: AccountStatus; removal?: RemovalCheck[]; desktop?: boolean; drafts?: number; standalone?: boolean; cleanupPending?: string[]; cleanupIssues?: CleanupIssue[] } = {}) {
   const saved: AppStateFile[] = [];
   const calls: string[] = [];
   let account: AccountStatus = opts.account ?? { account: ADA, gcm: true, gh: false, via: "gcm" };
@@ -32,12 +32,12 @@ function shell(opts: { state?: AppStateFile; account?: AccountStatus; removal?: 
     useToken: async () => account,
     signOut: async (o) => {
       calls.push(`signOut:git=${o?.git !== false}`);
-      return (account = { ...(o?.git === false ? { ...account, signedOut: true } : { gcm: true, gh: false }), cleanupPending: opts.cleanupPending });
+      return (account = { ...(o?.git === false ? { ...account, signedOut: true } : { gcm: true, gh: false }), cleanupPending: opts.cleanupPending, cleanupIssues: opts.cleanupIssues });
     },
     retryCleanup: async () => {
       calls.push("retryCleanup");
       account = { ...account, cleanupPending: [] };
-      return [];
+      return { cleanupPending: [], cleanupIssues: [] };
     },
     // Like the shell: the credential leaves Git's helper, and comes back if no one signed in meanwhile.
     beginSwitch: async () => (calls.push("beginSwitch"), (previous = account), (account = { gcm: true, gh: false })),
@@ -107,6 +107,22 @@ function shell(opts: { state?: AppStateFile; account?: AccountStatus; removal?: 
 }
 
 describe("IA-VIEW-SETTINGS: opening Settings", () => {
+  it.each([
+    ["file-lock", "A local cache file is in use."],
+    ["window-ack", "An open project window hasn’t confirmed cleanup."],
+    ["notify", "Couldn’t notify other project windows of cleanup."],
+    ["watch", "Couldn’t observe cleanup in a project window."],
+    ["unknown", "Some local traces remain."],
+  ] as const)("G7: %s recovery copy reports its evidenced cause, never inventing a file lock", async (reason, message) => {
+    const scope = "0123456789ab:metadata";
+    const t = shell({ cleanupPending: [scope], cleanupIssues: [{ scope, reason }] });
+    await t.app.start();
+    await t.run("settings.open");
+    await t.run("account.signOut");
+    await t.run("account.signOutNow");
+    expect(t.vm("vm.signOut").cleanupMessage).toContain(message);
+    expect(t.vm("vm.signOut").cleanupFailed).toBe(true);
+  });
   it("G7.3: reports partial cleanup without a success notification and offers Retry after reopening Settings", async () => {
     const scope = "0123456789ab:state.json";
     const t = shell({ cleanupPending: [scope] });

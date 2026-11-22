@@ -190,7 +190,7 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
         });
       } catch {
         await metadata.transaction(async () => metadata.pending(userData, scope, true));
-        throw new PrivacyCleanupError(await metadata.pendingScopes());
+        throw new PrivacyCleanupError(await metadata.pendingScopes(), await metadata.cleanupIssues());
       }
     }
     await onFiltered(folders);
@@ -428,7 +428,7 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     const pending = purging;
     await pending;
     const scopes = await metadata.pendingScopes();
-    if (scopes.length) throw new PrivacyCleanupError(scopes);
+    if (scopes.length) throw new PrivacyCleanupError(scopes, await metadata.cleanupIssues());
     const ticket = await ownTicket;
     if (pending !== purging || epoch !== metadataEpoch) return;
     if (!closingWrite && (!acceptingMetadata || !ticket.enabled)) {
@@ -875,5 +875,5 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     await open(folder, file);
     return { file, here: false };
   }
-  return { removedRoots: () => removedProjectFolders(rootProfile, metadata), removed: () => metadata.isRemoved(userData), onFiltered: (listener: (folders: string[]) => Promise<void>) => { onFiltered = listener; }, list, known: knownFolder, stats, repo, adopt, openFile, openFilePath, open, choose, upload, pin, localNote, importLocal, edited: (path: string) => score(path, 2), parent: async () => dirname(home()), chooseParent, check, create, continueCreate, pendingCreate, lastNote, position, remember, closed, purge, resume, dispose, canCache, saveState, pendingCleanup: () => metadata.pendingScopes(), retryCleanup, onCleared: (listener: () => Promise<void>) => { onCleared = listener; }, firstNoteAdmission: metadata.firstNoteAdmission };
+  return { removedRoots: () => removedProjectFolders(rootProfile, metadata), removed: () => metadata.isRemoved(userData), onFiltered: (listener: (folders: string[]) => Promise<void>) => { onFiltered = listener; }, list, known: knownFolder, stats, repo, adopt, openFile, openFilePath, open, choose, upload, pin, localNote, importLocal, edited: (path: string) => score(path, 2), parent: async () => dirname(home()), chooseParent, check, create, continueCreate, pendingCreate, lastNote, position, remember, closed, purge, resume, dispose, canCache, saveState, pendingCleanup: () => metadata.pendingScopes(), cleanupIssues: () => metadata.cleanupIssues(), retryCleanup, onCleared: (listener: () => Promise<void>) => { onCleared = listener; }, firstNoteAdmission: metadata.firstNoteAdmission };
 }

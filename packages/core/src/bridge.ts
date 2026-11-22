@@ -3,6 +3,7 @@ import { lastWord } from "./scan.ts";
 import type { WorkspaceChange, WorkspaceScan } from "./workspace.ts";
 import type { SetupBridge } from "./setup.ts";
 import type { FirstRunBridge, FirstRunStep } from "./first-run.ts";
+
 import type { RecoverBridge } from "./recover.ts";
 import type { ConflictChoiceKind, DeletedNote, NoteVersion } from "./history.ts";
 import type { KeybindingsBridge } from "./keybindings-app.ts";
@@ -13,6 +14,10 @@ import type { TextMenuBridge } from "./text-menu-app.ts";
 import type { AccessBridge } from "./share-manage.ts";
 import type { DiagnosticsPreview, TimingSummary } from "./diagnostics.ts";
 import type { FeedbackCopied, FeedbackInput, FeedbackResult } from "./feedback.ts";
+
+export type CleanupReason = "file-lock" | "window-ack" | "notify" | "watch" | "unknown";
+export interface CleanupIssue { scope: string; reason: CleanupReason }
+export interface CleanupStatus { cleanupPending: string[]; cleanupIssues: CleanupIssue[] }
 
 export type ProjectCreateStep = "check" | "folder" | "history" | "repository" | "push" | "profile";
 export type ProjectCreateResult = string | { folder: string; problem: "github"; repository: string };
@@ -661,6 +666,7 @@ export interface DeletionResult {
  * repository, a folder that isn't a Focus Notes workspace, done, or failed.
  */
 export interface RemovalCheck {
+  cleanupIssues?: CleanupIssue[];
   cleanupPending?: string[];
   state: "ready" | "unpushed" | "notGit" | "notWorkspace" | "removed" | "failed";
   /** Changes not on the remote: uncommitted files, commits not pushed, and stashes, in both repositories. */

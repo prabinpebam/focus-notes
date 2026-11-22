@@ -7,7 +7,7 @@
  * for the workspace (`bridge.workspace.removal` and `remove`); signing in again, switching account,
  * and Run setup again show the first run's card (first-run-app.ts).
  */
-import type { AppStateFile, PlatformBridge, RemovalCheck } from "./bridge.ts";
+import type { AppStateFile, CleanupIssue, PlatformBridge, RemovalCheck } from "./bridge.ts";
 import type { CommandRegistry } from "./commands.ts";
 import type { AccountStatus } from "./first-run.ts";
 import type { AccountState } from "./first-run-app.ts";
@@ -34,7 +34,7 @@ export interface SettingsState {
   account?: AccountStatus;
   checking: boolean;
   /** Sign out of GitHub?, and whether Git's sign-in goes too (FRE-07). */
-  signOut: { open: boolean; git: boolean; busy: boolean; drafts?: number; cleanupPending?: string[] };
+  signOut: { open: boolean; git: boolean; busy: boolean; drafts?: number; cleanupPending?: string[]; cleanupIssues?: CleanupIssue[] };
   /** Remove this workspace from this computer (FRE-07, PRV-02). */
   remove: { open: boolean; busy: boolean; check?: RemovalCheck; drafts?: number };
   /** About's diagnostics: the report's preview (QLT-04). */
@@ -107,7 +107,7 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
     set({ checking: true });
     const a = await fr.account().catch(() => undefined);
     set({ checking: false, ...(a ? { account: a } : {}) });
-    if (a?.cleanupPending?.length) setSignOut({ open: true, cleanupPending: a.cleanupPending });
+    if (a?.cleanupPending?.length) setSignOut({ open: true, cleanupPending: a.cleanupPending, cleanupIssues: a.cleanupIssues });
     // The pill says what Settings found, in any folder, not only a Git one (DEF-33, FRE-13).
     if (a && (a.account || !a.problem)) setLogin(a.account && !a.signedOut ? a.account.login : "");
   };
@@ -176,7 +176,7 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
     const r = await (tracker ? tracker.run("account.signOut", "task.signingOut", () => fr.signOut({ git }), undefined, "fn:auth.signOut") : fr.signOut({ git })).catch(() => undefined);
     setSignOut({ busy: false });
     if (r?.cleanupPending?.length) {
-      setSignOut({ cleanupPending: r.cleanupPending });
+      setSignOut({ cleanupPending: r.cleanupPending, cleanupIssues: r.cleanupIssues });
       set({ account: r });
       setLogin("");
       return;
@@ -194,10 +194,11 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
     setSignOut({ busy: true });
     if (state().remove.open) setRemove({ busy: true });
     try {
-      const pending = await (tracker ? tracker.run("account.signOut", "task.cleanup", () => fr.retryCleanup!(), undefined, "fn:auth.signOut") : fr.retryCleanup());
-      setSignOut({ busy: false, cleanupPending: pending, open: !state().remove.open && pending.length > 0 });
+      const status = await (tracker ? tracker.run("account.signOut", "task.cleanup", () => fr.retryCleanup!(), undefined, "fn:auth.signOut") : fr.retryCleanup());
+      const pending = status.cleanupPending;
+      setSignOut({ busy: false, ...status, open: !state().remove.open && pending.length > 0 });
       const removal = state().remove.check;
-      if (removal) setRemove({ busy: false, check: { ...removal, cleanupPending: pending } });
+      if (removal) setRemove({ busy: false, check: { ...removal, ...status } });
       if (pending.length) return;
       setRemove({ open: false, busy: false });
       await checkAccount();
@@ -364,6 +365,12 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
     return t.elapsed ? catalog.format("task.elapsed", { words, seconds: t.elapsed }) : words;
   };
   const dropsDrafts = (n: number | undefined, show: boolean) => (n && show ? { drafts: catalog.format("recovery.dropDrafts", { count: n }), hasDrafts: true } : { drafts: "", hasDrafts: false });
+  const cleanupMessage = (pending: string[] | undefined, issues: CleanupIssue[] | undefined) => {
+    if (!pending?.length || !issues?.length || pending.some(scope => !issues.some(issue => issue.scope === scope))) return catalog.format("cleanup.pending");
+    const reasons = new Set(issues.map(issue => issue.reason));
+    for (const reason of ["notify", "watch", "window-ack"] as const) if (reasons.has(reason)) return catalog.format(`cleanup.${reason}`);
+    return catalog.format(reasons.size === 1 ? `cleanup.${issues[0]!.reason}` : "cleanup.pending");
+  };
   viewModels.register({
     id: "vm.signOut",
     schema: {
@@ -382,7 +389,7 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
         open: o.open, git: o.git ? "remove" : "keep", busy: o.busy, label: waitLabel(s, "account.signOut", "command.account.signOutNow"),
         gitOptions: ["remove", "keep"].map((id) => ({ id, label: catalog.format(`signOut.git.${id}`) })),
         gitNote: catalog.format(o.git ? "signOut.git.removeNote" : "signOut.git.keepNote"),
-        canSignOut: !o.cleanupPending?.length, cleanupFailed: Boolean(o.cleanupPending?.length), cleanupMessage: catalog.format("cleanup.pending"), cleanupScopes: o.cleanupPending?.join(", ") ?? "",
+        canSignOut: !o.cleanupPending?.length, cleanupFailed: Boolean(o.cleanupPending?.length), cleanupMessage: cleanupMessage(o.cleanupPending, o.cleanupIssues), cleanupScopes: o.cleanupPending?.join(", ") ?? "",
         ...dropsDrafts(o.drafts, true),
       };
     },
@@ -410,7 +417,7 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
             : catalog.format(`remove.${st}`);
       return {
         open: r.open, busy: r.busy, state: st, message, canRemove: st === "ready", canSync: st === "unpushed", checking: st === "checking", label: waitLabel(s, "workspace.remove", "command.workspace.removeConfirm"),
-        cleanupFailed: Boolean(c?.cleanupPending?.length), cleanupMessage: catalog.format("cleanup.pending"), cleanupScopes: c?.cleanupPending?.join(", ") ?? "",
+        cleanupFailed: Boolean(c?.cleanupPending?.length), cleanupMessage: cleanupMessage(c?.cleanupPending, c?.cleanupIssues), cleanupScopes: c?.cleanupPending?.join(", ") ?? "",
         // Said once it can be removed: then it's part of what Remove deletes.
         ...dropsDrafts(r.drafts, st === "ready"),
       };

@@ -546,7 +546,7 @@ async function removeLocalWorkspace(): Promise<RemovalCheck> {
   try { await forgetLocal("removeWorkspace"); }
   catch (error) {
     if (!(error instanceof PrivacyCleanupError)) throw error;
-    return { ...r, state: "failed", cleanupPending: [...error.pending] };
+    return { ...r, state: "failed", cleanupPending: [...error.pending], cleanupIssues: [...error.issues] };
   }
   chosenHome = undefined;
   record = undefined;
@@ -1617,9 +1617,9 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
         record = undefined;
         restartInPlace();
       }
-      return [];
+      return { cleanupPending: [], cleanupIssues: [] };
     }
-    catch (error) { if (!(error instanceof PrivacyCleanupError)) throw error; return [...error.pending]; }
+    catch (error) { if (!(error instanceof PrivacyCleanupError)) throw error; return { cleanupPending: [...error.pending], cleanupIssues: [...error.issues] }; }
   });
   void projects.canCache().then(enabled => { localTracesCleared = !enabled; });
   const markdownCopies = localImportCopies();
@@ -2431,7 +2431,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   handle("setup:reset", async () => (await setup()).reset());
   handle("setup:strength", async (p) => passphraseStrength(passphraseArg(p) ?? ""));
   handle("firstRun:git", () => account.gitCheck());
-  handle("firstRun:account", async () => ({ ...await account.status(), cleanupPending: await projects.pendingCleanup() }));
+  handle("firstRun:account", async () => ({ ...await account.status(), cleanupPending: await projects.pendingCleanup(), cleanupIssues: await projects.cleanupIssues() }));
   handle("firstRun:useExisting", () => resumeSignedInProject(account.useExisting()));
   handle("firstRun:signIn", (device) => resumeSignedInProject(account.signIn(device === true)));
   handle("firstRun:cancelSignIn", async () => account.cancel());
@@ -2443,7 +2443,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     const s = await account.signOut({ git: (options as { git?: unknown } | undefined)?.git !== false });
     if (!s.account || s.signedOut) {
       try { await forgetLocal("signOut"); }
-      catch (error) { if (!(error instanceof PrivacyCleanupError)) throw error; return { ...s, cleanupPending: [...error.pending] }; }
+      catch (error) { if (!(error instanceof PrivacyCleanupError)) throw error; return { ...s, cleanupPending: [...error.pending], cleanupIssues: [...error.issues] }; }
     }
     return s;
   });

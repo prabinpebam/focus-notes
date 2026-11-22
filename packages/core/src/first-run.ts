@@ -10,6 +10,8 @@
  * The steps, in order (D-124): Welcome; Connect (Git, checked silently, and the GitHub account);
  * Your notes (the workspaces the account has, or Create my notes); Ready.
  */
+import type { CleanupIssue, CleanupStatus } from "./bridge.ts";
+
 export const FIRST_RUN_STEPS = ["welcome", "connect", "notes", "ready"] as const;
 export type FirstRunStep = (typeof FIRST_RUN_STEPS)[number];
 export const isFirstRunStep = (v: unknown): v is FirstRunStep => (FIRST_RUN_STEPS as readonly unknown[]).includes(v);
@@ -71,6 +73,7 @@ export type SignInProblem = (typeof SIGN_IN_PROBLEMS)[number];
 /** Where signing in stands on this computer. */
 export interface AccountStatus {
   cleanupPending?: string[];
+  cleanupIssues?: CleanupIssue[];
   /** The account Git's credential helper is signed in to, checked against the API (FRE-03, FRE-04). */
   account?: GitHubAccount;
   /** A GitHub CLI session Git doesn't use yet: offered as Continue as @login (FRE-04). */
@@ -219,7 +222,7 @@ export interface FirstRunProgress {
  * token. A pasted token goes to the shell once, which checks it and gives it to Git's helper.
  */
 export interface FirstRunBridge {
-  retryCleanup?(): Promise<string[]>;
+  retryCleanup?(): Promise<CleanupStatus>;
   git(): Promise<GitCheck>;
   /** Git's credential (checked with the API) and any GitHub CLI session. */
   account(): Promise<AccountStatus>;
