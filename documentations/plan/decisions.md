@@ -1,7 +1,7 @@
 # Decisions
 
 > [!NOTE]
-> **TL;DR.** D-398 settles the 1.1.0 Autopilot scope and publishing defaults, authorizing production wiring of the prepared candidates. D-399 exempts query-input search and command surfaces from a decorative visual anchor. Owner corrections D-393–D-395 still govern GitHub references, in-app deletion and Find. Earlier decisions remain historical where explicitly superseded.
+> **TL;DR.** D-398 settles the 1.1.0 Autopilot scope and publishing defaults, authorizing production wiring of the prepared candidates. D-399 exempts query-input search and command surfaces from a decorative visual anchor. Owner corrections D-393–D-395 still govern GitHub references, in-app deletion and Find. D-400/D-401 keep Delete authorization isolated and retained private history self-contained and reversible. Earlier decisions remain historical where explicitly superseded.
 
 ## D-399: query-input search and command surfaces exempt from VVS Criterion 1 visual anchor
 
@@ -49,6 +49,16 @@ D-397 supersedes only D-171's rejection of blank remembered public notes. Restor
 **Decided (owner, 7 November 2026, 23:33).** "If you show a github link, it should be clickable to open that repo. Add all of these to a DoD backlog". Every repository or account reference opens its repository or profile on github.com in the default browser through the existing external-link policy. It has an accessible name and independent keyboard access, separate from its enclosing card's action. Reuse validated identities and the safe external-link route, never arbitrary URL strings.
 
 **Affects:** [foundations → External links](../design/foundations.md#external-links), [Settings → Project, merged](../experience/project-model.md#settings-project-merged), AGENTS.md rule 6, PRJ-21 / WP-P.21 and [DoD backlog](definition-of-done.md#dod-backlog).
+
+## D-401: kept private history is a self-contained, reversible copy
+
+**Accepted (owner, 22 November 2026, 21:01:48; ID assigned by coordinator).** Ordinary Git in a retained private folder must still read its unpushed history and drafts without reaching into the recycled parent. A real-Git fixture exposed a dangling `gitdir: ../.git/modules/private`; earlier forced `--git-dir` receipts proved stored bytes only, not a usable retained repository.
+
+For a canonical parent-owned private submodule, stage a complete copy of its Git metadata and remove the old `core.worktree` dependency **on the copy only**. The original module metadata, configuration, private notes and pointer stay intact until recycling succeeds. Reject symlinked, foreign or shared Git directories and unsupported common-directory, object-alternate, worktree or configuration dependencies; never clone, fetch or migrate them. A failed recycle restores the original private folder and exact pointer/configuration, and removes only transaction-owned staging. Recheck the existing captured account/project/cancellation/generation intent after staging and immediately before recycling; an invalidated intent never trashes the source.
+
+**Evidence required:** ordinary retained-folder `git rev-parse HEAD`, `git show` and `git status`, exact unpushed-note/draft bytes and original configuration, failed-recycle rollback and deferred-copy invalidation, foreign/shared refusals, then the smallest invisible built-app retained-folder outcome. Remote DELETE receipts, the gh/keyring prohibition, owner-only native Recycle Bin certification and the separate old-active-note project-switch defect are unchanged. Preflight before the public destructive request remains an explicitly open boundary; this local transaction is not a remote rollback.
+
+**Affects:** [Delete flow](../experience/project-model.md#deleting-a-project), PRJ-23 / UC-PROJ-13, [F4.2.4](definition-of-done.md#backlog-f42-delete-in-the-app) and [candidate gate evidence](gate-evidence.md#in-app-delete-safe-authorization-candidate-22-november). The isolated implementation is not landed or release-certified.
 
 ## D-400: one-time deletion authorization without expanding retained sign-in
 

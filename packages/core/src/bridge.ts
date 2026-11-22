@@ -669,6 +669,8 @@ export type RemoteDeletionResult =
 /** Deleting the project on this computer: done, a file another app holds, refused (not this project's folder), or failed. */
 export interface DeletionResult {
   state: "deleted" | "locked" | "refused" | "failed";
+  /** Local cleanup refused because private Git history could not be kept safely. */
+  reason?: "privateHistory";
   /** The file another app holds, for `locked`. */
   file?: string;
   /** Where the private notes were kept, with `keepPrivate`. */

@@ -45,7 +45,7 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
   const t = timers ?? { set: (run: () => void, ms: number) => setTimeout(run, ms), clear: (h: unknown) => clearTimeout(h as ReturnType<typeof setTimeout>), now: () => Date.now() };
   const blank = () => ({
     open: false, step: "consequences" as DeleteStep, problem: "" as DeleteProblem, typed: "", private: false, exported: false, exportPath: "",
-    busy: false, checking: false, owner: "", org: "", retryAt: 0, lockedFile: "", site: "", links: 0,
+    busy: false, checking: false, owner: "", org: "", retryAt: 0, lockedFile: "", privateHistoryFailed: false, site: "", links: 0,
     remoteState: "deleting" as "stepup" | "deleting" | "deleted" | "partial" | "refused" | "declined", remoteReason: "", remoteTarget: "", remoteCode: "", remoteToken: "", remoteAuthorizing: false, remoteMethod: "token" as "device" | "token",
   });
   let state = blank();
@@ -215,7 +215,7 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
   reg("project.deleteContinue", "project.delete.continue", () => {
     // Already unavailable on GitHub goes on: the person confirms it's deleted, repository by repository (DD-PROJ-13).
     if (!linked() || (state.problem && state.problem !== "gone")) return;
-    if (state.step === "unsynced" && !state.exported) return;
+    if (state.step === "unsynced" && !state.exported) { toast(catalog.format("project.delete.unsynced.copyFirst"), { tone: "error" }); return; }
     if (state.step === "consequences" && check?.unsynced.length) set({ step: "unsynced" });
     else set({ step: "confirm" });
   });
@@ -346,11 +346,12 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
     if (!(await flush())) { toast(catalog.format("project.delete.unsaved"), { tone: "error" }); return; }
     if (mine !== run || !state.open) return;
     stopPolling();
-    set({ step: "progress", busy: true, problem: "", lockedFile: "" });
+    set({ step: "progress", busy: true, problem: "", lockedFile: "", privateHistoryFailed: false });
     const keepPrivate = Boolean(check.privateRepo) && !state.private;
     await persist(true);
     const go = () => ws.deleteLocal!({ keepPrivate });
-    const r = await (tracker ? tracker.run("project.delete", "task.deleting", go, undefined, "fn:project.deleteLocal") : go()).catch(() => ({ state: "failed" as const, file: undefined, privateKept: undefined }));
+    const r = await (tracker ? tracker.run("project.delete", "task.deleting", go, undefined, "fn:project.deleteLocal") : go()).catch(() => ({ state: "failed" as const, reason: undefined, file: undefined, privateKept: undefined }));
+    if (mine !== run || !state.open) return;
     if (r.state === "deleted") {
       const n = name();
       const off = !linked();
@@ -365,7 +366,7 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
       return;
     }
     // Deleted on GitHub, still on this computer: say exactly that, and keep Retry and Show folder (DD-PROJ-17).
-    set({ busy: false, problem: "partialLocal", lockedFile: r.file ?? catalog.format("project.delete.someFile") });
+    set({ busy: false, problem: "partialLocal", privateHistoryFailed: r.reason === "privateHistory", lockedFile: r.file ?? catalog.format("project.delete.someFile") });
   }
   reg("project.deleteShowFolder", "project.open.showFolder", async () => {
     await ws?.reveal?.().catch(() => {});
@@ -433,24 +434,25 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
         name: text, repo: text, privateRepo: text, otherRepo: text, otherOwner: text, org: text, orgRepo: text,
         site: text, siteNotes: num, links: num, peopleCount: num, peopleNames: text, privateCount: num,
         unsyncedCount: num, unsynced: { type: "array", items: { type: "object", properties: { id: text, label: text, description: text } } },
-        lockedFile: text, retryAt: text,
+        lockedFile: text, localError: text, retryAt: text,
         repos: { type: "array", items: { type: "object", properties: { id: text, label: text, detail: text, icon: text, waiting: bool, canOpen: bool, ask: bool } } },
       },
     },
     select: () => {
       const c = check;
       const detail: Record<RepoPhase, string> = { open: "project.delete.github.toOpen", waiting: "project.delete.github.waiting", ask: "project.delete.github.gone", deleted: "project.delete.github.deleted" };
-      const changedTarget = state.remoteState === "refused" && state.remoteReason === "identity";
+      const localStop = state.remoteState === "refused" && (state.remoteReason === "identity" || state.remoteReason === "preservation");
       return {
         open: state.open, step: state.step, kind: c?.kind ?? "linked", problem: state.problem, typed: state.typed, private: state.private,
         remoteState: state.remoteState, remoteTarget: state.remoteTarget,
         remoteCode: state.remoteCode, remoteToken: state.remoteToken, remoteMethod: state.remoteMethod,
-        remoteTitle: catalog.format(state.remoteAuthorizing && state.busy ? "project.delete.inApp.device.waiting" : changedTarget ? "project.delete.inApp.identity.title" : `project.delete.inApp.${state.remoteState}.title`),
+        remoteTitle: catalog.format(state.remoteAuthorizing && state.busy ? "project.delete.inApp.device.waiting" : localStop ? "project.delete.inApp.stopped.title" : `project.delete.inApp.${state.remoteState}.title`),
         remoteCodeLabel: state.remoteCode ? catalog.format("project.delete.inApp.device.code", { code: state.remoteCode }) : "",
         remoteTone: state.remoteState === "deleted" ? "success" : state.remoteState === "stepup" || state.remoteState === "deleting" ? "info" : state.remoteState === "partial" ? "warning" : "danger",
         remoteDetail: catalog.format(state.remoteState === "refused" && state.remoteReason ? `project.delete.inApp.reason.${state.remoteReason}` : `project.delete.inApp.${state.remoteState}.detail`),
-        remoteKept: catalog.format(changedTarget ? "project.delete.inApp.identity.kept" : `project.delete.inApp.${state.remoteState}.kept`),
+        remoteKept: catalog.format(localStop ? `project.delete.inApp.${state.remoteReason}.kept` : `project.delete.inApp.${state.remoteState}.kept`),
         exported: state.exported, exportPath: state.exportPath, busy: state.busy || state.checking,
+        localError: catalog.format(state.privateHistoryFailed ? "project.delete.problem.privateHistory" : "project.delete.problem.partialLocal", { file: state.lockedFile }),
         name: c?.name ?? "", repo: c?.repo ?? "", privateRepo: c?.privateRepo ?? "",
         otherRepo: c?.repo ?? "", otherOwner: state.owner ? `@${state.owner}` : "", org: state.org, orgRepo: c?.repo ?? "",
         site: state.site, siteNotes: c?.siteNotes ?? 0, links: state.links,
