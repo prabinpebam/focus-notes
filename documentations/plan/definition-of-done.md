@@ -116,6 +116,8 @@ What "done" means at every level: a work package, a stage, a release, and the wh
 
 **D-401 authorized preflight:** the final source passes 80 scoped desktop/core cases. Actual foreign/shared/linked kept-private refusals now prove zero remote DELETE requests, no staging and intact original bytes. The newly built normal retention/rollback/selected-private flows pass; the tightened 320×448 keyboard receipt measures Home→End→Home at 0→82→0. Final static checks, three package types and scoped five-page headless rendering/changed anchors pass, with existing unregistered documentation references explicitly excluded. See [the preflight packet](gate-evidence.md#authorized-kept-private-preflight-22-november). Earlier failed and AFTER-public-DELETE receipts remain historical, not rewritten or waived.
 
+**Actually landed G7 integration:** the clean checkpoint was locally integrated onto exact landed `454513f3…`; combined build/types/80 units/static checks and two retained actual outcomes pass. The authentic new-project-pill/old-mounted-writer regression still fails after full authorization settlement, and stops before typing. [Combined evidence](gate-evidence.md#serial-g7-integration-and-remaining-writer-blocker-22-november) preserves the failure. This is not combined acceptance, CI, landing or full-release certification.
+
 **Try it:** review the actual renderer captures and their compiled/persistence receipts. After the candidate lands, the owner alone deletes one disposable GitHub project from Preview; authorization is one-time in the app, local cleanup waits for confirmation, and Open returns with honest success.
 
 ## Gap closure, 7 November (P0 and P1)
