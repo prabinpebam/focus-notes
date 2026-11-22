@@ -7,7 +7,7 @@
 import { existsSync, realpathSync } from "node:fs";
 import { readdir, rename } from "node:fs/promises";
 import { basename, dirname, isAbsolute, join, parse, relative, resolve } from "node:path";
-import type { DeletionCheck, DeletionResult, RepoStatus } from "@focus-notes/core";
+import type { DeletionCheck, DeletionResult, RemoteDeletionResult, RepoStatus } from "@focus-notes/core";
 import { GitHubError } from "@focus-notes/github";
 import type { GitRunner } from "../git/run.ts";
 
@@ -90,6 +90,64 @@ export async function deletionCheck(git: GitRunner, folder: string, repos: { rep
 interface ReadsGitHub {
   request<T>(method: string, path: string): Promise<T>;
   user(): Promise<unknown>;
+}
+
+/** Receipts stay in this process: a retry reads first and never replays an accepted DELETE. */
+export class RemoteProjectDeletion {
+  readonly #targets = new Map<string, { id: number; account: number; sent: boolean; accepted: boolean; confirmed: boolean }>();
+  async prepare(api: ReadsGitHub, repo: string): Promise<void> {
+    if (!isRepoSlug(repo)) throw new Error("Not a repository");
+    const target = await api.request<{ id: number }>("GET", `/repos/${repo}`);
+    const user = await api.user() as { id?: number };
+    if (!Number.isSafeInteger(target.id) || !Number.isSafeInteger(user.id)) throw new Error("Invalid deletion identity");
+    const previous = this.#targets.get(repo);
+    if (previous?.sent) return;
+    this.#targets.set(repo, { id: target.id, account: user.id!, sent: false, accepted: false, confirmed: false });
+  }
+  confirmed(repo: string): boolean { return this.#targets.get(repo)?.confirmed === true; }
+  async delete(api: ReadsGitHub | undefined, repo: string): Promise<RemoteDeletionResult> {
+    if (!isRepoSlug(repo) || !this.#targets.has(repo)) throw new Error("Repository was not preflighted");
+    if (!api) return { state: "refused", reason: "permission" };
+    const receipt = this.#targets.get(repo)!;
+    try {
+      const user = await api.user() as { id?: number };
+      if (user.id !== receipt.account) return { state: "refused", reason: "identity" };
+      let current: { id: number; permissions?: { admin?: boolean } };
+      try { current = await api.request("GET", `/repos/${repo}`); }
+      catch (error) {
+        if (!(error instanceof GitHubError) || error.status !== 404) throw error;
+        if (!receipt.accepted) return { state: "partial" };
+        receipt.confirmed = true;
+        return { state: "deleted" };
+      }
+      if (current.id !== receipt.id) return { state: "refused", reason: "identity" };
+      if (!current.permissions?.admin) return { state: "refused", reason: "notAdmin" };
+      if (receipt.sent) return { state: "partial" };
+      receipt.sent = true;
+      try {
+        await api.request("DELETE", `/repos/${repo}`);
+        receipt.accepted = true;
+      } catch (error) {
+        if (error instanceof GitHubError && (error.status === 401 || error.status === 403)) {
+          receipt.sent = false;
+          return { state: "refused", reason: "permission" };
+        }
+        throw error;
+      }
+      try { await api.request("GET", `/repos/${repo}`); }
+      catch (error) {
+        if (!(error instanceof GitHubError) || error.status !== 404) throw error;
+        const stillSignedIn = await api.user() as { id?: number };
+        if (stillSignedIn.id !== receipt.account) return { state: "refused", reason: "identity" };
+        receipt.confirmed = true;
+        return { state: "deleted" };
+      }
+      return { state: "partial" };
+    } catch (error) {
+      if (error instanceof GitHubError) return { state: "partial" };
+      throw error;
+    }
+  }
 }
 
 /**

@@ -1158,6 +1158,57 @@
             }
           ]
         },
+        "inApp": {
+          "type": "Stack",
+          "props": { "gap": "stackGroup" },
+          "children": [
+            {
+              "type": "ItemCard",
+              "props": { "title": { "get": "vm.projectDelete.name" }, "icon": "github", "chevron": false },
+              "children": [
+                {
+                  "type": "Text",
+                  "props": { "value": { "get": "vm.projectDelete.remoteTarget" }, "label": { "t": "command.github.reference", "args": { "reference": { "get": "vm.projectDelete.remoteTarget" } } }, "role": "secondary" },
+                  "on": { "press": { "run": "github.open", "args": { "reference": { "get": "vm.projectDelete.remoteTarget" } } } }
+                }
+              ]
+            },
+            { "type": "StatusRow", "props": { "message": { "get": "vm.projectDelete.remoteTitle" } } },
+            {
+              "type": "Stack",
+              "props": { "gap": "stackPair" },
+              "children": [
+                { "type": "Text", "props": { "value": { "get": "vm.projectDelete.remoteDetail" } } },
+                { "type": "Text", "props": { "value": { "get": "vm.projectDelete.remoteKept" }, "tone": "muted" } }
+              ]
+            },
+            {
+              "switch": { "get": "vm.projectDelete.remoteState" },
+              "cases": {
+                "deleting": {
+                  "type": "Inline", "props": { "justify": "end" },
+                  "children": [
+                    { "type": "Button", "props": { "label": { "get": "vm.projectDelete.remoteTitle" }, "variant": "danger", "commit": "pending", "feedback": "border" } }
+                  ]
+                },
+                "partial": {
+                  "type": "Inline", "props": { "gap": "inlineItem", "justify": "end", "wrap": true },
+                  "children": [
+                    { "type": "Button", "props": { "label": { "t": "project.delete.inApp.keep" }, "variant": "secondary" }, "on": { "press": { "run": "project.deleteCancel" } } },
+                    { "type": "Button", "props": { "label": { "t": "commit.retry" }, "variant": "primary" }, "on": { "press": { "run": "project.deleteRetry" } } }
+                  ]
+                },
+                "refused": {
+                  "type": "Inline", "props": { "gap": "inlineItem", "justify": "end", "wrap": true },
+                  "children": [
+                    { "type": "Button", "props": { "label": { "t": "project.delete.inApp.keep" }, "variant": "secondary" }, "on": { "press": { "run": "project.deleteCancel" } } },
+                    { "type": "Button", "props": { "label": { "t": "project.delete.github.open" }, "variant": "primary" }, "on": { "press": { "run": "project.deleteOpenGitHub", "args": { "id": { "get": "vm.projectDelete.remoteTarget" } } } } }
+                  ]
+                }
+              }
+            }
+          ]
+        },
         "github": {
           "type": "Stack",
           "props": {
