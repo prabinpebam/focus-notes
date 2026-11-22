@@ -11,6 +11,18 @@ The other four criteria remain scored, each at least 10. Their sum is scaled to 
 
 **Affects:** [VVS scope](../design/visual-score.html#scope), [Find and replace](../experience/find-and-replace.md), [DoD backlog](definition-of-done.md#backlog-d-familiar-find-in-all-notes) and [gate evidence](gate-evidence.md#familiar-find-in-all-notes-22-november). No decorative app element or component restyling is authorized.
 
+## D-402: missing launch-profile marker uses the already-admitted current project record
+
+**Accepted (owner, 22 November 2026; ID and safety acknowledgement routed by coordinator).** The actual same-window project-switch failure had no explicit window target: protected and disk last-note paths still named the old project, while the admitted new project's profile marker was absent. Automatic restoration must first stay inside the current project; valid explicit launch targets, current-project last notes, read errors and later choices retain their existing behavior.
+
+Only when reading `project-folder.txt` fails with **ENOENT** and an already-admitted in-memory project exists, read and validate the **current persisted workspace record**. Its canonical project folder must match the canonical current home. A present, mismatched or unreadable marker follows the original fail-closed path; it is never overridden. No record/no project still returns no admission. A missing, malformed or unreadable fallback record is an explicit error, not evidence of an empty project.
+
+No profile writes, clearing or rebinding, environment changes, cache reset or privacy-queue changes are authorized. Existing trusted-root preparation, shared first-note admission, identity/current-intent checks, no-overwrite behavior and later-choice protection remain intact. This is a narrow authority recovery after a project has already been admitted, not a general marker fallback.
+
+**Evidence:** three core fail-before cases, a core-only actual Open/no-Note failure, then focused native fail-before tests and a rebuilt actual case that mounts the new Untitled before typing, saves only in the new project and preserves old note/draft bytes and HEAD with zero granted DELETE. [Causal gate evidence](gate-evidence.md#current-project-startup-causal-proof-22-november) keeps the initial unbuilt proposal/reversion and all earlier failures distinct.
+
+**Affects:** [Project entry](../experience/project-model.md#the-owners-direction), D-397 / PRJ-24 / UC-PROJ-01/02 and the [Delete acceptance row](definition-of-done.md#backlog-f42-delete-in-the-app). Local proof is not native Recycle Bin/real-account acceptance, CI, landing or full Delete/release completion.
+
 ## D-398: 1.1.0 Autopilot execution scope, publishing defaults and on-disk stability
 
 **Decided (owner, 22 November 2026; ID assigned by coordinator).** "Create a detailed plan and implement all the items identified until it's release-ready. Execute against DoD and that should make it release-ready."

@@ -141,6 +141,42 @@ Those combined receipts bind main `8841bde2709359ca6355b9f0ca7fb1e440b8d55d7f1eb
 
 The bounded causal trace reaches the legacy `firstRun.openWorkspace` → `switchWorkspace` → renderer restart → startup restoration path. `switchWorkspace` changes the chosen folder/workspace record, while startup can still read a prior profile's cached protected last-note record or saved `lastNotePath`; it opens that path without a current-project boundary check. The first-note admission also checks the profile's recorded project folder. This narrows the diagnosis, **not** a proven safe fix: guessing a cross-profile metadata rewrite would risk admission/privacy behavior. No speculative G7/profile edit, changed failing assertion or typing into the old writer was used. The blocker remains for a separately bounded causal fix; no Delete push/CI occurs before the coordinator's serialized candidate authorization.
 
+### Current-project startup causal proof (22 November)
+
+The same-tree successor began at clean evidence-only `b02414144d6edbdc50a8316de9b3bf8f19d4d236`, parent `3c1a53f2…`, with landed G7 still an ancestor. A read-only observation inside the existing actual deviceProjectSwitch case discriminates the startup targets rather than guessing a cache reset:
+
+| Actual observation | Meaning |
+| --- | --- |
+| `windows.secondary` false; `initialNote`, `initialOpen` and configured note absent | No stale explicit window target or injected note explains this failure |
+| `workspace.info().folder` is the admitted replacement project | Native folder selection completed |
+| `projects.lastNote()` and `loadAppState().lastNotePath` both name the original project's Welcome.md | Protected and disk startup restoration both retain the old project |
+| Active profile `project-folder.txt` absent | First-note admission lacks its launch-profile authority, despite the current saved workspace record |
+
+The diagnostic actual run **failed before typing** on the inherited clean-3c1 compiled app. Its log is `focus-notes-work\logs\delete-startup-cause-2229.log`; **2229 is a filename label, not an execution timestamp** (the causal packet was marked at 22:25). The startup JSON and original/new folder paths are recorded there; initial failure captures remain in `review\delete-22nov\startup-cause-2229`. No real account, owner data or credential store was used.
+
+Three focused core regressions (protected-only, disk-only, both) failed before the containment correction: each mounted the old note instead of the current project's shell-admitted blank note. `pnpm exec vitest run packages\core\test\project-open.test.ts` then passed all **54** cases, including existing restoration, read-error and later-choice guards. Automatic candidates are now checked against the current workspace folder before opening; explicit note targets are unchanged. Nothing clears a cache, profile, environment or saved note.
+
+The core-only desktop build passed. A second exact actual case **failed with Open/no Note**, before grant release or typing: filtering old targets exposes the separate missing native first-note authority rather than solving it. Its transcript is `logs\delete-startup-core-only-2228.log`; that label likewise is not a timestamp assertion. Both runs cleaned only their exact owned PIDs. Three-package core/desktop/ui-runtime typechecks passed after the evidence/test changes.
+
+**Safety hold:** native first-note authority changes require original-main approval routed through the coordinator. A proposed read-only saved-record fallback was briefly edited, never built or run, and fully reverted on the hold. The native source is unchanged. No broad fallback, profile mutation, relaxed canonical admission, old assertion removal, timeout increase, forced click or new UI is accepted. Actual replacement-note writing, old note/draft/HEAD preservation and granted DELETE zero after full settlement remain unverified until that authority is resolved and the exact built case passes. The retained D-401 preflight/post-delete/rollback receipts above are not relabelled by these partial checks.
+
+**Hold resolved by owner-accepted [D-402](decisions.md#d-402-missing-launch-profile-marker-uses-the-already-admitted-current-project-record).** The previous paragraph describes the pre-approval checkpoint, not the final source. The existing marker reader/canonical comparison is extracted into the first-note helper. Only marker ENOENT plus an already-admitted project enables a read-only, strictly parsed current-record path; the original canonical-current-home comparison still runs. Other read failures throw, present markers never fall back, and no-project behavior is unchanged. Trusted-root preparation, shared admission, no-overwrite/duplicate protection and G7 revocation/queue behavior remain intact.
+
+| Scoped evidence after approval | Result |
+| --- | --- |
+| Focused native authority tests before fallback | 2 failed, 1 passed: missing marker returned undefined and missing current record incorrectly resolved; existing-marker refusal passed |
+| `pnpm exec vitest run apps\desktop\test\first-project-note.test.ts` | 35 passed, including canonical roots, concurrent admission, source replacement and original no-overwrite cases |
+| `pnpm --filter @focus-notes/desktop run build` | Passed after native repair, before actual writing proof |
+| Exact actual `deviceProjectSwitch`, `keepPrivateRetry`, `keepPrivateForeign` selection | 3 passed together, 54.4 s; new project mounted before typing, preserved old bytes/HEAD, retained Retry and zero-DELETE foreign refusal |
+
+The actual source-binding receipts are in `review\delete-22nov\d402-actual-2237`. **Before typing**, mounted `notes\Untitled.md` is inside the admitted replacement project; the native authorization promise has settled, code/token are clear and pending is released. The test then writes through the normal editor and observes the saved text only inside the new project's notes. Original Welcome.md, an ignored but uncommitted Draft.md and original Git HEAD are asserted unchanged both before and after writing. `grantedRequestChain` is empty; the earlier legitimate retained-token refused DELETE remains in the full request chain. No metadata-only or initial-admission-only success replaces the mounted-note/save assertions.
+
+Those receipts bind main `f27fa3ba5011ff7a1833ec2a8409b8728cddc3bfdfe1c0af111d1e0e7c38fb41`, preload `930f7110f2b8e16777f15c0ed32b2d7fc43e43d35c0c87eddc34c180907c6c1f`, renderer `e4ed2139c534c84b8209f6d0f3ee799bbeb11147dc9da7b6bb5a8d57e90d39e7`. This build is from dirty `b024` plus the surgical startup repair, not clean `3c1`, a later local checkpoint or the earlier core-only build. Exact owned PIDs 53120/3680/33236 are absent after WhatIf/exact-PID cleanup. No owner app, native credential store, real account or visible test app was touched.
+
+The combined pre-native 134 units passed (80 Delete plus 54 startup cases), and three package types passed. The first static check failed on line-bound notification inventory after the source moved; regeneration retained the same 153 calls, then `pnpm check` passed. Three changed pages passed headless one-H1/light-dark and the new causal anchor; that is not all-site/all-links certification. Final combined native/source checks and the clean local checkpoint are recorded separately; no full suite, push or CI is authorized before the coordinator's serialized candidate acknowledgement. Full Delete/native-owner and Phase 0-5 release acceptance remain open.
+
+**Final local source checks:** `pnpm exec vitest run apps\desktop\test\project-delete.test.ts packages\core\test\project-delete-app.test.ts packages\core\test\project-open.test.ts apps\desktop\test\first-project-note.test.ts` passed **169/169** in 107.89 s. The core/desktop/ui-runtime filtered typecheck passed, and `pnpm check` passed with the unchanged 153-call notification inventory and 879/86/800 UI contract counts. Five changed pages passed headless single-H1/light-dark checks and both new D-402/causal anchors; pre-existing unregistered links are not all-links certification. Source checks include the final initial-marker regression; the actual run preceded that test-only extension and documentation updates, with production sources unchanged.
+
 ## How this page is kept
 
 | What | Where it comes from |

@@ -1,6 +1,21 @@
 import { createHash } from "node:crypto";
-import { lstat, mkdir, open, readdir, realpath } from "node:fs/promises";
+import { lstat, mkdir, open, readdir, readFile, realpath } from "node:fs/promises";
 import { basename, dirname, join, relative } from "node:path";
+import { parseRecord, samePath } from "./workspace/record.ts";
+
+export async function firstProjectFolder(markerFile: string, recordFile: string, hasProject: boolean, home: () => string): Promise<string | undefined> {
+  let project: string;
+  try { project = await readFile(markerFile, "utf8"); }
+  catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    if (!hasProject) return undefined;
+    const saved = parseRecord(await readFile(recordFile, "utf8"));
+    if (!saved) throw new Error("The project record is unreadable");
+    project = saved.folder;
+  }
+  if (!samePath(await realpath(project.trim()), await realpath(home()))) throw new Error("The project root changed");
+  return project.trim();
+}
 
 export type FirstNoteCertificate = { roots: string; file: string; slot?: number };
 export type FirstNoteAdmission = <T>(roots: readonly string[], work: (
