@@ -12,6 +12,7 @@ import { tmpdir } from "node:os";
 import { extname, join, normalize } from "node:path";
 import { publish } from "../../../packages/seal/src/publish.ts";
 import { axeViolations } from "../../desktop/e2e/axe.ts";
+import { staticResponse } from "./static-response.ts";
 
 const TYPES: Record<string, string> = { ".html": "text/html; charset=utf-8", ".css": "text/css", ".woff2": "font/woff2", ".woff": "font/woff", ".json": "application/json", ".md": "text/markdown; charset=utf-8" };
 let site = "";
@@ -29,7 +30,7 @@ test.beforeAll(async () => {
     try {
       if ((await stat(file)).isDirectory()) file = join(file, "index.html");
       const body = await readFile(file);
-      res.writeHead(200, { "content-type": TYPES[extname(file)] ?? "application/octet-stream" }).end(body);
+      staticResponse(req, res, TYPES[extname(file)] ?? "application/octet-stream", body);
     } catch { res.writeHead(404).end(); }
   });
   await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
@@ -140,7 +141,13 @@ test("PRF-12: LCP, INP, and CLS on a throttled profile, and only the first scree
   await cdp.send("Network.emulateNetworkConditions", { offline: false, latency: 150, downloadThroughput: (1.6 * 1024 * 1024) / 8, uploadThroughput: (750 * 1024) / 8 });
   await cdp.send("Emulation.setCPUThrottlingRate", { rate: 4 });
   await page.setViewportSize({ width: 412, height: 823 });
-  await page.goto(origin + PAGE, { waitUntil: "load" });
+  const response = await page.goto(origin + PAGE, { waitUntil: "load" });
+  expect(response?.headers()["content-encoding"]).toBe("gzip");
+  const styles = await page.evaluate(() => (performance.getEntriesByType("resource") as PerformanceResourceTiming[])
+    .filter(entry => entry.name.endsWith(".css"))
+    .map(({ encodedBodySize, decodedBodySize }) => ({ encodedBodySize, decodedBodySize })));
+  expect(styles.length).toBeGreaterThan(0);
+  for (const style of styles) expect(style.encodedBodySize).toBeLessThan(style.decodedBodySize);
   // Preloads: the regular and bold faces, and italic, which the first screen uses; never more.
   const preloads = await page.locator('link[rel="preload"][as="font"]').evaluateAll((ls) => ls.map((l) => (l as HTMLLinkElement).href.split("/").at(-1)!.replace(/-[\w-]{8}\.woff2$/, "")));
   expect(preloads.sort()).toEqual(["roboto-mono-latin-400-italic", "roboto-mono-latin-400-normal", "roboto-mono-latin-700-normal"]);

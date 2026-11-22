@@ -14,6 +14,7 @@ import { extname, join, normalize } from "node:path";
 import { publish } from "../../../packages/seal/src/publish.ts";
 import { buildSite, checkSite } from "../../../tools/site/build.mjs";
 import { axeViolations } from "../../desktop/e2e/axe.ts";
+import { staticResponse } from "./static-response.ts";
 
 const TYPES: Record<string, string> = {
   ".html": "text/html; charset=utf-8", ".css": "text/css", ".js": "text/javascript", ".mjs": "text/javascript", ".woff2": "font/woff2", ".woff": "font/woff",
@@ -38,7 +39,7 @@ test.beforeAll(async () => {
     let file = join(site, path);
     try {
       if ((await stat(file)).isDirectory()) file = join(file, "index.html");
-      res.writeHead(200, { "content-type": TYPES[extname(file)] ?? "application/octet-stream" }).end(await readFile(file));
+      staticResponse(req, res, TYPES[extname(file)] ?? "application/octet-stream", await readFile(file));
     } catch { res.writeHead(404).end(); }
   });
   await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
@@ -121,7 +122,13 @@ test("PRF-12: the landing page's LCP, INP and CLS on a throttled profile", async
   await cdp.send("Network.emulateNetworkConditions", { offline: false, latency: 150, downloadThroughput: (1.6 * 1024 * 1024) / 8, uploadThroughput: (750 * 1024) / 8 });
   await cdp.send("Emulation.setCPUThrottlingRate", { rate: 4 });
   await page.setViewportSize({ width: 412, height: 823 });
-  await page.goto(`${origin}/`, { waitUntil: "load" });
+  const response = await page.goto(`${origin}/`, { waitUntil: "load" });
+  expect(response?.headers()["content-encoding"]).toBe("gzip");
+  const styles = await page.evaluate(() => (performance.getEntriesByType("resource") as PerformanceResourceTiming[])
+    .filter(entry => entry.name.endsWith(".css"))
+    .map(({ encodedBodySize, decodedBodySize }) => ({ encodedBodySize, decodedBodySize })));
+  expect(styles.length).toBeGreaterThan(0);
+  for (const style of styles) expect(style.encodedBodySize).toBeLessThan(style.decodedBodySize);
   const preloads = await page.locator('link[rel="preload"][as="font"]').evaluateAll((ls) => ls.map((l) => (l as HTMLLinkElement).href.split("/").at(-1)!.replace(/-[\w-]{8}\.woff2$/, "")));
   expect(preloads).toEqual([]);
   await page.getByRole("heading", { level: 1 }).click();
