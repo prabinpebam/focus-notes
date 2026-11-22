@@ -180,6 +180,74 @@ describe("DD-PROJ-15: to the Recycle Bin", () => {
       };
       return { api, requests };
     }
+    for (const dependency of ["foreign", "shared", "linked"] as const) {
+      it(`kept-private ${dependency} preflight refuses with zero remote DELETE calls and no staging`, async () => {
+        const { root, folder, priv, metadata } = privateSubmodule();
+        let originalMetadata = metadata;
+        if (dependency === "foreign") {
+          originalMetadata = join(root, "foreign-metadata");
+          renameSync(metadata, originalMetadata);
+          git(root, "config", "--file", join(originalMetadata, "config"), "core.worktree", priv);
+          renameSync(join(priv, ".git"), join(root, "original-pointer"));
+          writeFileSync(join(priv, ".git"), `gitdir: ${originalMetadata}\n`);
+        } else if (dependency === "shared") {
+          const objects = join(root, "shared-objects");
+          mkdirSync(objects);
+          writeFileSync(join(metadata, "objects", "info", "alternates"), objects);
+        } else {
+          renameSync(join(priv, ".git"), join(root, "original-pointer"));
+          symlinkSync(metadata, join(priv, ".git"), process.platform === "win32" ? "junction" : "dir");
+        }
+        const config = readFileSync(join(originalMetadata, "config"));
+        const draft = readFileSync(join(priv, "notes", "Draft.md"));
+        const fake = remote();
+        const deletion = new RemoteProjectDeletion();
+        await deletion.prepare(fake.api, "ada/notes");
+        const result = await deletion.delete(fake.api, "ada/notes", async () => true, false, folder);
+        expect(fake.requests.filter(method => method === "DELETE")).toEqual([]);
+        expect(result).toEqual({ state: "refused", reason: "privateHistory" });
+        expect(readFileSync(join(originalMetadata, "config"))).toEqual(config);
+        expect(readFileSync(join(priv, "notes", "Draft.md"))).toEqual(draft);
+        expect((await fsPromises.readdir(join(folder, ".git"))).filter(name => name.startsWith("focus-notes-private-retention-"))).toEqual([]);
+      });
+    }
+    it("kept-private canonical preflight reads without copying or changing the source", async () => {
+      const { folder, priv, metadata, pointer, config, head } = privateSubmodule();
+      const copy = vi.spyOn(fsPromises, "cp");
+      syncBuiltinESMExports();
+      try {
+        const fake = remote();
+        const deletion = new RemoteProjectDeletion();
+        await deletion.prepare(fake.api, "ada/notes");
+        expect(await deletion.delete(fake.api, "ada/notes", async () => true, false, folder)).toEqual({ state: "deleted" });
+        expect(fake.requests.filter(method => method === "DELETE")).toEqual(["DELETE"]);
+        expect(copy).not.toHaveBeenCalled();
+        expect(readFileSync(join(priv, ".git"))).toEqual(pointer);
+        expect(readFileSync(join(metadata, "config"))).toEqual(config);
+        expect(git(priv, "rev-parse", "HEAD").toString()).toBe(head);
+        expect((await fsPromises.readdir(join(folder, ".git"))).filter(name => name.startsWith("focus-notes-private-retention-"))).toEqual([]);
+      } finally { copy.mockRestore(); syncBuiltinESMExports(); }
+    });
+    it("kept-private deferred eligibility rechecks current intent before any remote DELETE", async () => {
+      const { folder } = privateSubmodule();
+      let release!: () => void;
+      let checking = false;
+      let allowed = true;
+      const wait = new Promise<void>(resolve => { release = resolve; });
+      const read = vi.spyOn(fsPromises, "readdir").mockImplementationOnce(async () => { checking = true; await wait; return []; });
+      syncBuiltinESMExports();
+      const fake = remote();
+      const deletion = new RemoteProjectDeletion();
+      await deletion.prepare(fake.api, "ada/notes");
+      const operation = deletion.delete(fake.api, "ada/notes", async () => allowed, false, folder);
+      try {
+        await expect.poll(() => checking).toBe(true);
+        allowed = false;
+        release();
+        expect(await operation).toEqual({ state: "declined" });
+        expect(fake.requests.filter(method => method === "DELETE")).toEqual([]);
+      } finally { release(); await operation; read.mockRestore(); syncBuiltinESMExports(); }
+    });
     it("a 403 retains the local-deletion gate and names permission refusal", async () => {
       const fake = remote({ refused: true });
       const deletion = new RemoteProjectDeletion();
@@ -435,7 +503,7 @@ describe("DD-PROJ-15: to the Recycle Bin", () => {
       expect((await fsPromises.readdir(join(folder, ".git"))).filter(name => name.startsWith("focus-notes-private-retention-"))).toEqual([]);
     } finally { release(); await operation; copy.mockRestore(); syncBuiltinESMExports(); }
   });
-  for (const dependency of ["alternates", "commondir", "registeredWorktree", "configInclude", "worktree", "partialClone", "foreign", "linked"] as const) {
+  for (const dependency of ["alternates", "commondir", "registeredWorktree", "configInclude", "worktree", "partialClone", "fsmonitor", "hooks", "foreign", "linked"] as const) {
     it(`refuses retained private history with ${dependency} without moving original bytes`, async () => {
       const { root, folder, priv, metadata } = privateSubmodule();
       let sourceMetadata = metadata;
@@ -443,6 +511,7 @@ describe("DD-PROJ-15: to the Recycle Bin", () => {
       else if (dependency === "commondir") writeFileSync(join(metadata, "commondir"), join(root, "foreign-common"));
       else if (dependency === "registeredWorktree") mkdirSync(join(metadata, "worktrees", "other"), { recursive: true });
       else if (dependency === "partialClone") git(priv, "config", "--file", join(metadata, "config"), "remote.origin.promisor", "true");
+      else if (dependency === "fsmonitor" || dependency === "hooks") git(priv, "config", "--file", join(metadata, "config"), dependency === "fsmonitor" ? "core.fsmonitor" : "core.hooksPath", join(root, "foreign"));
       else if (dependency === "foreign") {
         sourceMetadata = join(root, "foreign-metadata");
         renameSync(metadata, sourceMetadata);
@@ -467,6 +536,24 @@ describe("DD-PROJ-15: to the Recycle Bin", () => {
       expect((await fsPromises.readdir(join(folder, ".git"))).filter(name => name.startsWith("focus-notes-private-retention-"))).toEqual([]);
     });
   }
+  for (const [key, value] of [["core.fsmonitor", "true"], ["core.fsmonitor", "foreign-monitor"], ["core.worktree", "foreign-worktree"], ["include.path", "foreign-config"], ["remote.origin.promisor", "true"], ["core.hooksPath", "foreign-hooks"]] as const) {
+    it(`refuses unsafe inherited ${key}=${value} before staging`, async () => {
+      const { folder, priv, metadata, pointer, config } = privateSubmodule();
+      const trash = vi.fn();
+      const count = Number(process.env.GIT_CONFIG_COUNT ?? "0");
+      vi.stubEnv(`GIT_CONFIG_KEY_${count}`, key);
+      vi.stubEnv(`GIT_CONFIG_VALUE_${count}`, value);
+      vi.stubEnv("GIT_CONFIG_COUNT", String(count + 1));
+      try {
+        expect(await recycleProject(folder, { keepPrivate: true, current: async () => true, trash })).toEqual({ state: "failed", reason: "privateHistory" });
+        expect(trash).not.toHaveBeenCalled();
+        expect(readFileSync(join(priv, ".git"))).toEqual(pointer);
+        expect(readFileSync(join(metadata, "config"))).toEqual(config);
+        expect(readFileSync(join(priv, "notes", "Draft.md"), "utf8")).toBe("# Unsaved private draft\n");
+        expect((await fsPromises.readdir(join(folder, ".git"))).filter(name => name.startsWith("focus-notes-private-retention-"))).toEqual([]);
+      } finally { vi.unstubAllEnvs(); }
+    });
+  }
   it("refuses inherited shared object storage instead of certifying a copy through it", async () => {
     const { folder, priv, metadata, pointer, config } = privateSubmodule();
     const trash = vi.fn();
@@ -479,6 +566,39 @@ describe("DD-PROJ-15: to the Recycle Bin", () => {
       expect(readFileSync(join(priv, "notes", "Draft.md"), "utf8")).toBe("# Unsaved private draft\n");
     } finally { vi.unstubAllEnvs(); }
   });
+  it("keeps history with managed bare, credential and disabled monitor controls without changing the host environment", async () => {
+    const { root, folder, head } = privateSubmodule();
+    const count = Number(process.env.GIT_CONFIG_COUNT ?? "0");
+    const controls = [["safe.bareRepository", "explicit"], ["credential.interactive", "false"], ["core.fsmonitor", "false"]];
+    for (const [i, [key, value]] of controls.entries()) {
+      vi.stubEnv(`GIT_CONFIG_KEY_${count + i}`, key);
+      vi.stubEnv(`GIT_CONFIG_VALUE_${count + i}`, value);
+    }
+    vi.stubEnv("GIT_CONFIG_COUNT", String(count + controls.length));
+    const inherited = { ...process.env };
+    try {
+      const result = await recycleProject(folder, { keepPrivate: true, current: async () => true, trash: bin(root).trash });
+      expect(result.state).toBe("deleted");
+      expect(git(result.privateKept!, "rev-parse", "HEAD").toString()).toBe(head);
+      expect(process.env).toEqual(inherited);
+    } finally { vi.unstubAllEnvs(); }
+  });
+  for (const key of ["include.path", "core.hooksPath", "core.worktree"] as const) {
+    it(`refuses effective global ${key} before staging`, async () => {
+      const { root, folder, priv, metadata, pointer, config } = privateSubmodule();
+      const global = join(root, "fixture-global-config");
+      git(root, "config", "--file", global, key, join(root, "foreign"));
+      vi.stubEnv("GIT_CONFIG_GLOBAL", global);
+      const trash = vi.fn();
+      try {
+        expect(await recycleProject(folder, { keepPrivate: true, current: async () => true, trash })).toEqual({ state: "failed", reason: "privateHistory" });
+        expect(trash).not.toHaveBeenCalled();
+        expect(readFileSync(join(priv, ".git"))).toEqual(pointer);
+        expect(readFileSync(join(metadata, "config"))).toEqual(config);
+        expect((await fsPromises.readdir(join(folder, ".git"))).filter(name => name.startsWith("focus-notes-private-retention-"))).toEqual([]);
+      } finally { vi.unstubAllEnvs(); }
+    });
+  }
   it("a folder that can't go puts the private notes back and names the file held", async () => {
     const { folder } = project();
     mkdirSync(join(folder, "private"));

@@ -143,7 +143,7 @@ export class RemoteProjectDeletion {
     receipt.confirmed = true;
     return { state: "deleted" };
   }
-  async delete(api: ReadsGitHub | undefined, repo: string, intent: () => boolean | Promise<boolean> = () => true, stepUp = false): Promise<RemoteDeletionResult> {
+  async delete(api: ReadsGitHub | undefined, repo: string, intent: () => boolean | Promise<boolean> = () => true, stepUp = false, keptPrivateFolder?: string): Promise<RemoteDeletionResult> {
     if (!isRepoSlug(repo) || !this.#targets.has(repo)) throw new Error("Repository was not preflighted");
     if (!api) return { state: "refused", reason: "permission" };
     const receipt = this.#targets.get(repo)!;
@@ -163,6 +163,13 @@ export class RemoteProjectDeletion {
       if (current.id !== receipt.id) return { state: "refused", reason: "identity" };
       if (!current.permissions?.admin) return { state: "refused", reason: "notAdmin" };
       if (receipt.sent) return { state: "partial" };
+      if (keptPrivateFolder !== undefined) {
+        try { await privateHistoryEligibility(keptPrivateFolder); }
+        catch {
+          console.error("Private Git history preflight failed.");
+          return { state: "refused", reason: "privateHistory" };
+        }
+      }
       if (!await intent()) return { state: "declined" };
       receipt.sent = true;
       try {
@@ -272,16 +279,36 @@ async function privateMetadataDependencies(git: GitRunner, metadata: string) {
   if (includes.code !== 1) throw new Error("Private Git configuration has unsupported dependencies");
 }
 
-/** Copy submodule history before moving its worktree; its original metadata/config are never edited. */
-async function stagePrivateHistory(folder: string, priv: string, current?: () => Promise<boolean>) {
+async function privateHistoryEligibility(folder: string, priv = join(folder, "private")) {
+  const missing = (error: unknown) => {
+    if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") return undefined;
+    throw error;
+  };
+  const privateInfo = await lstat(priv).catch(missing);
+  if (!privateInfo) return undefined;
+  if (!privateInfo.isDirectory() || privateInfo.isSymbolicLink()) throw new Error("Private Git paths are not owned by this project");
   const dotGit = join(priv, ".git");
-  if (!existsSync(dotGit)) return undefined;
-  if (["GIT_OBJECT_DIRECTORY", "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_QUARANTINE_PATH", "GIT_CONFIG_PARAMETERS"].some(key => Boolean(process.env[key]))
-    || Boolean(process.env.GIT_CONFIG_COUNT && process.env.GIT_CONFIG_COUNT !== "0")) throw new Error("Private Git environment has shared dependencies");
-  const privateInfo = await lstat(priv);
-  const info = await lstat(dotGit);
-  if (!privateInfo.isDirectory() || privateInfo.isSymbolicLink() || info.isSymbolicLink()) throw new Error("Private Git paths are not owned by this project");
+  const info = await lstat(dotGit).catch(missing);
+  if (!info) return undefined;
+  if (["GIT_OBJECT_DIRECTORY", "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_QUARANTINE_PATH", "GIT_CONFIG_PARAMETERS"].some(key => Boolean(process.env[key]))) throw new Error("Private Git environment has shared dependencies");
+  const count = process.env.GIT_CONFIG_COUNT;
+  if (count !== undefined) {
+    if (!/^(0|[1-9]\d*)$/.test(count) || !Number.isSafeInteger(Number(count))) throw new Error("Private Git environment configuration is invalid");
+    for (let i = 0; i < Number(count); i++) {
+      const key = process.env[`GIT_CONFIG_KEY_${i}`]?.toLowerCase();
+      if (!key || !["safe.barerepository", "credential.interactive", "core.fsmonitor"].includes(key)
+        || process.env[`GIT_CONFIG_VALUE_${i}`] === undefined) throw new Error("Private Git environment has unsupported configuration");
+    }
+  }
+  if (info.isSymbolicLink()) throw new Error("Private Git paths are not owned by this project");
   const git = createRunner();
+  // Inspect every effective scope without following includes or running an enabled monitor.
+  const dependencies = await git({ cwd: priv, args: ["config", "--no-includes", "--get-regexp", "^(include\\.|includeif\\.|extensions\\.(worktreeconfig|partialclone)$|remote\\..*\\.(promisor|partialclonefilter)$|core\\.hookspath$)"], read: true });
+  if (dependencies.code !== 1) throw new Error("Private Git configuration has unsupported dependencies");
+  const monitor = await git({ cwd: priv, args: ["config", "--no-includes", "--type=bool", "--get", "core.fsmonitor"], read: true });
+  if (monitor.code !== 1 && (monitor.code !== 0 || monitor.stdout.trim() !== "false")) throw new Error("Private Git configuration has a monitor dependency");
+  const worktreeScopes = await git({ cwd: priv, args: ["config", "--no-includes", "--show-scope", "--get-all", "core.worktree"], read: true });
+  if (worktreeScopes.code !== 1 && (worktreeScopes.code !== 0 || worktreeScopes.stdout.split("\n").filter(Boolean).some(line => !line.startsWith("local\t")))) throw new Error("Private Git configuration has a foreign worktree dependency");
   if (info.isDirectory()) {
     await privateMetadataDependencies(git, dotGit);
     const worktree = await git({ cwd: priv, args: ["config", "--no-includes", "--file", join(dotGit, "config"), "--get", "core.worktree"], read: true });
@@ -309,10 +336,19 @@ async function stagePrivateHistory(folder: string, priv: string, current?: () =>
   if (worktree.code !== 1 && (worktree.code !== 0 || real(resolve(metadata, worktree.stdout.trim())) !== real(priv))) throw new Error("Private Git metadata belongs to another worktree");
   const head = await git({ cwd: priv, args: ["rev-parse", "HEAD"], read: true });
   if (head.code !== 0 || !/^[0-9a-f]{40,64}$/.test(head.stdout.trim())) throw new Error("Private Git history could not be checked");
+  const config = await readFile(join(metadata, "config"));
+  return { git, metadata, head, pointer, config };
+}
+
+/** Copy submodule history before moving its worktree; its original metadata/config are never edited. */
+async function stagePrivateHistory(folder: string, priv: string, current?: () => Promise<boolean>) {
+  const eligible = await privateHistoryEligibility(folder, priv);
+  if (!eligible) return undefined;
+  const { git, metadata, head, pointer, config } = eligible;
+  const dotGit = join(priv, ".git");
   if (!current || !await current()) throw new Error("Private retention intent changed");
   const identity = await deletionFolderIdentity(folder);
-  const config = await readFile(join(metadata, "config"));
-  const transaction = await mkdtemp(join(parentGit, "focus-notes-private-retention-"));
+  const transaction = await mkdtemp(join(folder, ".git", "focus-notes-private-retention-"));
   const copy = join(transaction, "git");
   try {
     await cp(metadata, copy, { recursive: true, force: false, errorOnExist: true });
