@@ -82,7 +82,7 @@ export function accessStore(o: AccessStoreOptions) {
     try { text = await readFile(messageFile(dir), "utf8"); }
     catch (error) {
       if (error instanceof Error && "code" in error && error.code === "ENOENT") return { value: {}, invalid: false };
-      throw new Error("access:template.failed");
+      throw new Error("access:failed");
     }
     let raw: unknown;
     try { raw = JSON.parse(text); } catch { return { value: {}, invalid: true }; }

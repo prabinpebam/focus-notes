@@ -318,7 +318,7 @@ const IDENTITY_FIELDS = new Set(["id", "grant", "ref", "kid", "build", "name", "
 const identity = (s: string) => s.normalize("NFKC").toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
 function sourceIdentities(sources: readonly string[]): Set<string> {
   const forms = new Set<string>();
-  for (const source of sources) {
+  for (const source of new Set(sources)) {
     if (!source.trim()) continue;
     const variants = new Set([source, source.normalize("NFC"), source.normalize("NFD"), normalizeName(source)]);
     for (const variant of variants) {

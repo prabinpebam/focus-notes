@@ -11,7 +11,7 @@ import { describe, expect, it } from "vitest";
 import { accessStore, siteFromGitConfig, type AccessStoreOptions } from "../src/main/share/access.ts";
 import { publish as publishSite } from "@focus-notes/seal/publish";
 import { secretClipboard } from "../src/main/share/clipboard.ts";
-import { displayShareCode } from "@focus-notes/seal";
+import { displayShareCode, SiteReader } from "@focus-notes/seal";
 
 const SITE = "https://ada.github.io/notes/";
 function store(text?: string, site: () => Promise<string> = async () => SITE, options: Partial<AccessStoreOptions> = {}) {
@@ -296,6 +296,67 @@ describe("the window's view of access.json", () => {
       expect(restored.template).toBe("{name}: {link}");
       await t.s.handoff(id, "information", { template: "{link}" }, text => { sent.push(text); });
       expect(sent).toHaveLength(1);
+    } finally { rmSync(t.dir, { recursive: true, force: true }); }
+  });
+  it("G6.2/G6.4: persisted create, repeated copy, extend, failed deploy and withdraw never duplicate or falsely confirm", async () => {
+    let failDeploy = false;
+    const soon = new Date(Date.now() + 7 * 86_400_000).toISOString(), later = new Date(Date.now() + 30 * 86_400_000).toISOString();
+    const published = () => join(t.dir, "published");
+    const t = store(undefined, async () => SITE, {
+      publish: async () => {
+        if (failDeploy) throw new Error("access:site.unavailable");
+        await publishSite({ private: t.dir, site: published(), owner: "fixture" });
+      },
+      getSite: () => async path => {
+        const file = join(published(), ...path.split("/"));
+        return existsSync(file) ? readFileSync(file, "utf8") : undefined;
+      },
+    });
+    const reader = () => new SiteReader(async path => {
+      const file = join(published(), ...path.split("/"));
+      return existsSync(file) ? readFileSync(file, "utf8") : undefined;
+    });
+    try {
+      mkdirSync(join(t.dir, "notes"));
+      writeFileSync(join(t.dir, "notes", "one.md"), "# One\n");
+      const { id } = await t.s.apply({
+        op: "createItem", item: { path: "one.md", label: "One", folder: false, includeLater: false },
+        notes: ["one.md"], link: true, passcode: { generate: true }, expiresAt: soon,
+      });
+      await t.s.ready(id);
+      const sent: string[] = [];
+      for (const what of ["link", "link", "accessCode"]) await t.s.handoff(id, what, undefined, text => { sent.push(text); });
+      const created = t.file().grants[0];
+      expect(t.file().grants).toHaveLength(1);
+      expect(sent[0]).toBe(sent[1]);
+      expect(sent[2]).toBe(`${displayShareCode(created.shareCode)} ${created.passcode.value}`);
+
+      await t.s.apply({ op: "update", id, expiresAt: later });
+      const extended = t.file().grants[0];
+      expect(t.file().grants).toHaveLength(1);
+      expect(extended).toMatchObject({ id, shareCode: created.shareCode, link: created.link, passcode: created.passcode, expiresAt: later });
+      await expect(t.s.handoff(id, "link", undefined, text => { sent.push(text); })).rejects.toThrow("access:notReady");
+      failDeploy = true;
+      await expect(t.s.ready(id)).rejects.toThrow("access:site.unavailable");
+      await expect(t.s.handoff(id, "link", undefined, text => { sent.push(text); })).rejects.toThrow("access:notReady");
+      expect(t.file().grants[0]).toEqual(extended);
+      expect(sent).toHaveLength(3);
+      failDeploy = false;
+      await t.s.ready(id);
+      await t.s.handoff(id, "link", undefined, text => { sent.push(text); });
+      expect(sent[3]).toBe(sent[0]);
+      expect((await reader().openLinkSession(id, created.link.secret)).share.expiresAt).toBe(later);
+
+      await t.s.apply({ op: "withdraw", id });
+      expect(t.file().grants).toHaveLength(1);
+      expect(t.file().grants[0].revokedAt).toEqual(expect.any(String));
+      await expect(t.s.ready(id)).rejects.toThrow("access:ended");
+      await expect(t.s.handoff(id, "link", undefined, text => { sent.push(text); })).rejects.toThrow("access:notReady");
+      expect(sent).toHaveLength(4);
+      await publishSite({ private: t.dir, site: published(), owner: "fixture" });
+      await expect(reader().openLinkSession(id, created.link.secret)).rejects.toThrow();
+      await expect(reader().openAccessCode(`${displayShareCode(created.shareCode)} ${created.passcode.value}`)).rejects.toThrow();
+      expect(JSON.stringify(await t.s.load())).not.toContain(created.passcode.value);
     } finally { rmSync(t.dir, { recursive: true, force: true }); }
   });
   it("never quotes a damaged file in its error (L6)", async () => {
