@@ -14,7 +14,8 @@ export interface IconLayoutProblem { doc: string; at: string; message: string }
 const CONTAINERS = new Set(["Dialog", "DialogPanel", "PopoverPanel"]);
 const ICONISH = new Set(["Icon", "StepMark", "AppMark", "ProjectMark", "ImageFrame"]);
 const EXEMPT_TYPES = new Set(["Toast", "EmptyState", "StatusRow", "NotificationRegion"]);
-const EXEMPT_IDS = new Set(["recover", "firstRun", "panelFailure", "conflictChoices", "conflictBar"]);
+// The conflict choices bar is Dialog#conflict's toolbar slot, which the walk below never treats as actions.
+const EXEMPT_IDS = new Set(["recover", "firstRun", "panelFailure"]);
 
 /**
  * Views not yet on the shared layout, by document id: the area migrations empty this list (D-408).
