@@ -21,10 +21,9 @@ const EXEMPT_IDS = new Set(["recover", "firstRun", "panelFailure", "conflictChoi
  * Each entry is a known-pending violation, not an exemption.
  */
 export const ICON_LAYOUT_PENDING: ReadonlySet<string> = new Set<string>([
-  "canvas", "settings", "rewrite", "newNote", "shareItem", "projects",
-  "gallery.mock.pnw.deleteDone", "gallery.mock.pnw.deleteOfflineDone", "gallery.mock.pnw.deleteErrPartialGithub",
-  "gallery.mock.open.view", "gallery.mock.open.cardStates",
-  "gallery.mock.share.invite", "gallery.mock.share.invitePersonal",
+  "canvas", "settings",
+  // rewrite: its footer order is migrated; the remaining hit is the Concise/Warmer/Grammar preset toggles, not actions (rule false positive).
+  "rewrite",
 ]);
 
 const isNode = (v: unknown): v is Node => typeof v === "object" && v !== null && !Array.isArray(v);

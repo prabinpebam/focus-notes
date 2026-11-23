@@ -23,6 +23,7 @@ import { projectMocks } from "../mocks/project/index.ts";
 import { imageEditMocks } from "../mocks/image-edit/index.ts";
 import { recoveryAlertMocks } from "../mocks/recovery-alert/index.ts";
 import { shareInformationTemplateMocks } from "../mocks/share-information-template/index.ts";
+import { dialogsCMocks } from "../mocks/dialogs-c/index.ts";
 import { compose } from "./compose.ts";
 
 /** Every view document in the app. Fragments join this when they exist. */
@@ -38,4 +39,4 @@ export const fragments: Record<string, unknown> = {};
 export { mocks, mockData };
 
 /** Design mocks shown in the gallery before anything is wired (strict design mode): one group per area, each with its views, fake data and entries. */
-export const mockGroups = [projectMocks, openMocks, shareMocks, uiStatesMocks, imageEditMocks, recoveryAlertMocks, shareInformationTemplateMocks];
+export const mockGroups = [projectMocks, openMocks, shareMocks, uiStatesMocks, imageEditMocks, recoveryAlertMocks, shareInformationTemplateMocks, dialogsCMocks];
