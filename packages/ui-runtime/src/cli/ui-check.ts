@@ -14,6 +14,7 @@ import { staleFiles, staleMessage, uiSchemaFiles } from "../generated.ts";
 import { missingMigrations } from "../migrate.ts";
 import { galleryViews, registerGallery } from "../gallery.ts";
 import { checkDesignSource } from "./design-source.ts";
+import { checkIconLayout, staleIconLayoutPending } from "../icon-layout-rule.ts";
 
 const inertBridge: PlatformBridge = {
   platform: "windows",
@@ -49,6 +50,10 @@ const inputs = {
 };
 
 const problems = checkUi(inputs);
+// D-408: dialogs and cards on the shared two-column layout, actions trailing with the primary last.
+const layoutDocs = { ...inputs.views, ...fragments } as Record<string, unknown>;
+for (const p of checkIconLayout(layoutDocs)) problems.push({ doc: p.doc, stage: "design", at: p.at, message: p.message });
+for (const id of staleIconLayoutPending(layoutDocs)) problems.push({ doc: id, stage: "design", at: "/", message: "now on the shared layout: remove it from ICON_LAYOUT_PENDING (icon-layout-rule.ts)" });
 const root = join(import.meta.dirname, "..", "..", "..", "..");
 for (const message of checkDesignSource(root)) problems.push({ doc: "design-system source", stage: "design", at: "/", message });
 const coverage = checkFixtureCoverage(contracts, { exists: (p) => existsSync(join(root, p)) });

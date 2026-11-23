@@ -76,7 +76,7 @@
       },
       "padding": {
         "$type": "dimension",
-        "$value": "{space.insetLg}"
+        "$value": "{space.insetXl}"
       },
       "gap": {
         "$type": "dimension",

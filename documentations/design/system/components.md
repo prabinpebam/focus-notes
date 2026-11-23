@@ -148,7 +148,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | SecureKeyField | compound component | `empty`, `pending`, `confirmed`, `failed` | 4 | None |
 | Trigger | compound component | `rest`, `hover`, `pressed`, `focusVisible`, `open`, `problem` | 2 | `pressed`, `focusVisible` |
 | Toolbar | compound component | `rest` | 1 | None |
-| Dialog | compound component | `open`, `entering`, `exiting` | 9 | `entering`, `exiting` |
+| Dialog | compound component | `open`, `entering`, `exiting` | 10 | `entering`, `exiting` |
 
 <!-- /generated:component-inventory -->
 
@@ -307,7 +307,7 @@ Layout props accept only token names: `gap`, `padding`, and `inset` take `space.
 | **Section** | Implemented | Groups by space alone (D-345, [SP-12](../spacing-audit.md#settings-grouping-sp-12)): heading and section-wide context in the heading slot, `stackPair` apart; header to body `stackItem`; body items `stackGroup`; Sections sit `stackSection` apart, or `stackRegion` when they hold labelled fields with hints (Settings → Project). No border, fill or extra inset. | Optional `heading` slot, default item slot, `id`; no spacing overrides |
 | **Inline** | Implemented | Children in a row | `gap`, `align`, `justify`, `wrap`, `padding` |
 | **ToolbarRow** | Implemented | A row with the toolbar role: one tab stop, arrow keys, Home and End between its items. A new `focusRequest` moves focus into it (<kbd>Alt+F10</kbd>) | `label` (required), `focusRequest` |
-| **IconLayout** | Implemented | The app-wide two-column layout for dialogs, alert cards and popover cards ([D-408](../../plan/decisions.md#d-408-dialogs-and-cards-two-columns-icon-first-actions-trailing)). Column 1 holds only the icon or visual; column 2 holds the title and its line (`stackPair`), the body, details, progress and fields (`stackItem`), and the actions `stackGroup` below, at the trailing edge, secondary first and primary last (D-374). Nothing wraps under the icon; with no icon it is one column with the same trailing actions. No border, fill or inset of its own: the enclosing Surface, PopoverPanel or Dialog owns the one inset. | `icon`, `heading`, default and `actions` slots; no props |
+| **IconLayout** | Implemented | The app-wide two-column layout for dialogs, alert cards and popover cards ([D-408](../../plan/decisions.md#d-408-dialogs-and-cards-two-columns-icon-first-actions-trailing)). Column 1 holds only the icon or visual; column 2 holds the title and its line (`stackPair`), the body, details, progress and fields (`stackItem`), and the actions `stackGroup` below, at the trailing edge, secondary first and primary last (D-374). Nothing wraps under the icon; with no icon it is one column with the same trailing actions. No border, fill or inset of its own: the enclosing Surface, PopoverPanel or Dialog owns the one inset, `insetXl` (32 px) for a dialog and `insetLg` (24 px) for a card. A Dialog with its `visual` slot renders through it; `ui:check` enforces the rule. | `icon`, `heading`, default and `actions` slots; no props |
 | **Columns** | Implemented | Children side by side in equal columns while each has room (`layout.sheetMin`), one under the other when it doesn't (D-142): two short fields on one row, so a setup step fits the window | `gap` |
 | **Grid** | Planned | Children in columns. Columns covers equal columns today, and SiteGrid the product site's tiles | `columns` (1 to 6) or `minItem` (a size token), `gap` |
 | **Center** | Implemented | Centers content up to a maximum width | `maxWidth` (for example `layout.measure`), `gutter` |

@@ -106,7 +106,7 @@ const cardsView = {
     { type: "Center", props: { maxWidth: "dialogL", gutter: "none" }, children: [
       { type: "Stack", props: { gap: "stackSection" }, children: [
         { each: get("vm.recoveryAlert.cards"), as: "card", key: "card.id", empty, render: {
-          type: "Surface", props: { variant: "frost", shape: "popover", elevation: "2", padding: "insetMd" }, children: [cardBody("card")],
+          type: "Surface", props: { variant: "frost", shape: "popover", elevation: "2", padding: "insetLg" }, children: [cardBody("card")],
         } },
       ] },
     ] },

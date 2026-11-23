@@ -8,7 +8,7 @@
   "blur": { "$type": "dimension", "$value": "{frost.blur}" },
   "padding": { "$type": "dimension", "$value": "{space.insetSm}" },
   "tilesWidth": { "$type": "dimension", "$value": "{layout.tilePopover}", "$description": "Three theme tiles across (width tiles)." },
-  "paddingComfortable": { "$type": "dimension", "$value": "{space.insetMd}" },
+  "paddingComfortable": { "$type": "dimension", "$value": "{space.insetLg}", "$description": "A details or alert card: the next step up from a menu's inset (D-408)." },
   "offset": { "$type": "dimension", "$value": "{space.scale.s}" },
   "duration": { "$type": "duration", "$value": "{motion.enter}" },
   "exitDuration": { "$type": "duration", "$value": "{motion.exit}" },
