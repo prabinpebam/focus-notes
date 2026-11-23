@@ -33,6 +33,10 @@ export const CATALOGS = {
     env: { FOCUS_NOTES_CAPTURE_STORE: "1" },
     outEnv: "FOCUS_NOTES_STORE_OUT",
   },
+  // The share workflow, every reachable state over fakes (FakeGitHub, a fixture site): setup, Share
+  // dialog, copy, withdraw, invites, Turn off; light and dark, default and narrow window.
+  // The recipient side is apps/web/e2e/share-reader-catalog.spec.ts (same variables, run from apps/web).
+  share: { spec: "e2e/share-catalog.spec.ts", env: { FOCUS_NOTES_CAPTURE_SHARE: "1" }, outEnv: "FOCUS_NOTES_SHARE_OUT" },
 };
 
 /** Where a catalogue's files are collected and uploaded from, relative to the repository's root. */
