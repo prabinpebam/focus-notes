@@ -362,6 +362,9 @@
           "$ref": "#/$defs/c_ScanRadar"
         },
         {
+          "$ref": "#/$defs/c_OpenedFiles"
+        },
+        {
           "$ref": "#/$defs/c_SiteLink"
         },
         {
@@ -10074,6 +10077,108 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {}
+        }
+      }
+    },
+    "c_OpenedFiles": {
+      "type": "object",
+      "description": "Opened files above Pinned in the Files panel (owner, 23 November; D-410): bordered tab buttons with a file icon, the name and a close × on hover or keyboard focus; one click activates; the header's ⋯ holds Close all. Not there when nothing is open.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "OpenedFiles"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "items": {
+              "$ref": "#/$defs/read"
+            },
+            "menu": {
+              "$ref": "#/$defs/read"
+            },
+            "menuLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "closeLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            }
+          },
+          "required": [
+            "label",
+            "items",
+            "closeLabel"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "activate": {
+              "$ref": "#/$defs/actions"
+            },
+            "close": {
+              "$ref": "#/$defs/actions"
+            },
+            "menuAction": {
+              "$ref": "#/$defs/actions"
+            }
+          }
         }
       }
     },

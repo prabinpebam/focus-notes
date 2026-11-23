@@ -233,6 +233,13 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
       { id: "m3", text: "- one\n- two", changed: false },
     ],
     versionEmpty: [],
+    openedFiles: [
+      { id: "spec-ideas.md", kind: "note", level: 1, label: "Spec ideas", title: "spec-ideas.md", current: true },
+      { id: "journal/2026-10-13.md", kind: "note", level: 1, label: "2026-10-13", title: "journal/2026-10-13.md" },
+      { id: "essays/long.md", kind: "note", level: 1, label: "What a calm writing app owes the person who opens it every morning", title: "essays/long.md" },
+    ],
+    openedFilesNone: [],
+    openedFilesMenu: [{ id: "opened", items: [{ id: "files.closeAllOpened", label: "Close all" }] }],
     noteBlocks: [
       { type: "heading", attrs: { level: 2 }, content: [{ type: "text", text: "On focus" }] },
       { type: "paragraph", content: [{ type: "text", text: "Attention is a " }, { type: "text", text: "garden", marks: [{ type: "italic" }] }, { type: "text", text: ", tended " }, { type: "text", text: "daily", marks: [{ type: "bold" }] }, { type: "text", text: ". See " }, { type: "text", text: "the essay", marks: [{ type: "link", attrs: { href: "#on-focus" } }] }, { type: "text", text: " and " }, { type: "text", text: "code", marks: [{ type: "code" }] }, { type: "text", text: "." }] },
@@ -325,6 +332,9 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
         scanTargets: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, detail: { type: "string" }, icon: { type: "string" }, status: { type: "string" }, result: { type: "string" } } } },
         noteBlocks: BLOCK_LIST_SCHEMA,
         versionEmpty: { type: "array", items: { type: "object", properties: { id: { type: "string" }, text: { type: "string" }, changed: { type: "boolean" } } } },
+        openedFiles: { type: "array", items: TREE_ITEM },
+        openedFilesNone: { type: "array", items: TREE_ITEM },
+        openedFilesMenu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, items: { type: "array", items: ITEM } } } },
         themeTiles: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, kind: { type: "string" }, slot: { type: "string" }, badge: { type: "string" }, description: { type: "string" }, group: { type: "string" }, sample: { type: "string" }, colors: { type: "array", items: { type: "object", properties: { id: { type: "string" }, value: { type: "string" } } } } } } },
         themeFirst: { type: "string" },
         themeDark: { type: "string" },

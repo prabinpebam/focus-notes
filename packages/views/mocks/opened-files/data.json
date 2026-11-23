@@ -1,0 +1,66 @@
+{
+  "project": { "filesHeading": "Files" },
+  "deleted": { "closed": true, "open": false },
+  "recovered": { "open": false },
+  "files": {
+    "source": {
+      "visible": true, "icon": "folder", "title": "my-notes", "titlePlain": true, "repoLink": false, "repoLabel": "",
+      "login": "", "loginPlain": false, "profileLink": false, "profileLabel": "", "revealable": false
+    },
+    "docked": true, "width": 300,
+    "pinIcon": "pinOff", "pinLabel": "Undock Files", "pinShortcut": "", "pinCommit": "rest",
+    "newNote": { "disabled": false, "shortcut": "Ctrl+N" },
+    "newFolder": { "disabled": false, "shortcut": "" },
+    "sortLabel": "Sort: Name",
+    "sortMenu": [{ "id": "sort", "items": [{ "id": "files.sort.name", "label": "Name", "checked": true }, { "id": "files.sort.changed", "label": "Last edited" }] }],
+    "multi": false, "selectionText": "", "canMakePublic": false, "canMakePrivate": false,
+    "filter": "", "focusId": "spec-ideas.md", "focusRequest": 0,
+    "editValue": "", "editLabel": "Title", "editError": "",
+    "menu": [{ "id": "row", "items": [{ "id": "files.open", "label": "Open" }] }], "menuLabel": "Actions",
+    "shortcuts": [],
+    "items": [
+      { "id": "root:private", "kind": "section", "level": 1, "label": "Private", "expanded": true, "hasChildren": true },
+      { "id": "ideas", "kind": "folder", "level": 2, "label": "ideas", "parent": "root:private", "expanded": false, "hasChildren": true },
+      { "id": "journal", "kind": "folder", "level": 2, "label": "journal", "parent": "root:private", "expanded": true, "hasChildren": true },
+      { "id": "journal/2026-10-13.md", "kind": "note", "level": 3, "label": "2026-10-13", "parent": "journal", "title": "journal/2026-10-13.md" },
+      { "id": "journal/weekly-review.md", "kind": "note", "level": 3, "label": "Weekly review", "parent": "journal", "title": "journal/weekly-review.md" },
+      { "id": "reading-list.md", "kind": "note", "level": 2, "label": "Reading list", "parent": "root:private", "title": "reading-list.md" },
+      { "id": "spec-ideas.md", "kind": "note", "level": 2, "label": "Spec ideas", "parent": "root:private", "title": "spec-ideas.md", "current": true },
+      { "id": "root:public", "kind": "section", "level": 1, "label": "Public", "expanded": true, "hasChildren": true },
+      { "id": "public:about.md", "kind": "note", "level": 2, "label": "About", "parent": "root:public", "title": "about.md" },
+      { "id": "public:garden.md", "kind": "note", "level": 2, "label": "Garden notes", "parent": "root:public", "title": "garden.md" }
+    ]
+  },
+  "opened": {
+    "menu": [{ "id": "opened", "items": [{ "id": "files.closeAllOpened", "label": "Close all" }] }],
+    "few": [
+      { "id": "spec-ideas.md", "kind": "note", "level": 1, "label": "Spec ideas", "title": "spec-ideas.md", "current": true },
+      { "id": "journal/2026-10-13.md", "kind": "note", "level": 1, "label": "2026-10-13", "title": "journal/2026-10-13.md" },
+      { "id": "reading-list.md", "kind": "note", "level": 1, "label": "Reading list", "title": "reading-list.md" }
+    ],
+    "many": [
+      { "id": "spec-ideas.md", "kind": "note", "level": 1, "label": "Spec ideas", "title": "spec-ideas.md" },
+      { "id": "journal/2026-10-13.md", "kind": "note", "level": 1, "label": "2026-10-13", "title": "journal/2026-10-13.md" },
+      { "id": "reading-list.md", "kind": "note", "level": 1, "label": "Reading list", "title": "reading-list.md" },
+      { "id": "essays/calm.md", "kind": "note", "level": 1, "label": "What a calm writing app owes the person who opens it every morning", "title": "essays/calm.md", "current": true },
+      { "id": "journal/weekly-review.md", "kind": "note", "level": 1, "label": "Weekly review", "title": "journal/weekly-review.md" },
+      { "id": "public:garden.md", "kind": "note", "level": 1, "label": "Garden notes", "title": "garden.md" },
+      { "id": "ideas/naming.md", "kind": "note", "level": 1, "label": "Naming things", "title": "ideas/naming.md" },
+      { "id": "ideas/launch.md", "kind": "note", "level": 1, "label": "Launch checklist", "title": "ideas/launch.md" },
+      { "id": "public:about.md", "kind": "note", "level": 1, "label": "About", "title": "about.md" }
+    ],
+    "none": []
+  },
+  "pinned": [
+    { "id": "ideas", "kind": "folder", "level": 2, "label": "ideas", "parent": "root:pinned", "detail": "Root", "pinned": true, "pinLabel": "Unpin ideas" },
+    { "id": "roadmap.md", "kind": "note", "level": 2, "label": "Roadmap", "parent": "root:pinned", "detail": "Root", "pinned": true, "pinLabel": "Unpin Roadmap" }
+  ],
+  "recent": [
+    { "id": "spec-ideas.md", "kind": "note", "level": 2, "label": "Spec ideas", "parent": "root:recent", "detail": "Root", "pinLabel": "Pin Spec ideas" },
+    { "id": "journal/2026-10-13.md", "kind": "note", "level": 2, "label": "2026-10-13", "parent": "root:recent", "detail": "journal", "pinLabel": "Pin 2026-10-13" },
+    { "id": "reading-list.md", "kind": "note", "level": 2, "label": "Reading list", "parent": "root:recent", "detail": "Root", "pinLabel": "Pin Reading list" },
+    { "id": "journal/weekly-review.md", "kind": "note", "level": 2, "label": "Weekly review", "parent": "root:recent", "detail": "journal", "pinLabel": "Pin Weekly review" },
+    { "id": "public:garden.md", "kind": "note", "level": 2, "label": "Garden notes", "parent": "root:recent", "detail": "Root", "pinLabel": "Pin Garden notes" },
+    { "id": "ideas/naming.md", "kind": "note", "level": 2, "label": "Naming things", "parent": "root:recent", "detail": "ideas", "pinLabel": "Pin Naming things" }
+  ]
+}
