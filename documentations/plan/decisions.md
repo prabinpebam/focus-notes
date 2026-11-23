@@ -76,6 +76,14 @@ For a canonical parent-owned private submodule, stage a complete copy of its Git
 
 **Affects:** [Delete flow](../experience/project-model.md#deleting-a-project), PRJ-23 / UC-PROJ-13, [F4.2.4](definition-of-done.md#backlog-f42-delete-in-the-app) and [candidate gate evidence](gate-evidence.md#in-app-delete-safe-authorization-candidate-22-november). The isolated implementation is not landed or release-certified.
 
+## D-403: PKG-06 permits only person-configured device authorization
+
+**Decided (Coordinator6, 23 November 2026, under D-398's Autopilot scope).** PKG-06's guard bans shipped or registered client IDs and telemetry; the OAuth wire field is allowed only in `apps/desktop/src/main/workspace/delete-authorization.ts`, whose value comes solely from the person's `FOCUS_NOTES_GITHUB_OAUTH_CLIENT_ID` ([D-400](#d-400-one-time-deletion-authorization-without-expanding-retained-sign-in)).
+
+The telemetry, Sentry, PostHog, analytics and Application Insights bans apply everywhere. Other production modules retain the client-field ban, and GitHub client-ID-shaped literals are forbidden throughout tracked code, configuration and documentation (personal public/private notes are not scanned). The allow-listed module has no default or literal client ID. Mutation checks reject a shipped ID, a device default and a client field outside that module.
+
+**Affects:** [PKG-06](../product/requirements.md#packaging-and-distribution-pkg), the repository guard and [Delete authorization evidence](gate-evidence.md#in-app-delete-safe-authorization-candidate-22-november). This clarifies D-21's no-hosting/no-registration invariant; it grants no account write or application registration.
+
 ## D-400: one-time deletion authorization without expanding retained sign-in
 
 **Accepted (owner, 22 November 2026, 18:28).** D-21's GCM, gh and pasted-token sign-in remain unchanged. D-394's deletion first uses the current in-memory credential when authorized. A permission refusal offers one-time step-up, with an exact repository and matching account ID and login:

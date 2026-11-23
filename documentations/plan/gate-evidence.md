@@ -177,6 +177,46 @@ The combined pre-native 134 units passed (80 Delete plus 54 startup cases), and 
 
 **Final local source checks:** `pnpm exec vitest run apps\desktop\test\project-delete.test.ts packages\core\test\project-delete-app.test.ts packages\core\test\project-open.test.ts apps\desktop\test\first-project-note.test.ts` passed **169/169** in 107.89 s. The core/desktop/ui-runtime filtered typecheck passed, and `pnpm check` passed with the unchanged 153-call notification inventory and 879/86/800 UI contract counts. Five changed pages passed headless single-H1/light-dark checks and both new D-402/causal anchors; pre-existing unregistered links are not all-links certification. Source checks include the final initial-marker regression; the actual run preceded that test-only extension and documentation updates, with production sources unchanged.
 
+## Delete gate slice A, 23 November
+
+Exact-head [CI 45119468238](https://github.com/prabinpebam/focus-notes/actions/runs/45119468238) on `4bee002fb6e87028b93b924698f57f84d784a4fd` finished with five successful jobs and two failures: Unit tests in `test (windows-latest)`, and 25 new D-400 cases in journey shard 1. Changes, web and shards 2/3/4 passed. All 22 benchmark result lines passed; cold readiness was **607 ms**, versus **866 ms** in green main [45044534338](https://github.com/prabinpebam/focus-notes/actions/runs/45044534338), both below 3750 ms. This is not a budget-only failure and was not rerun, quarantined or landed.
+
+### Unit repairs
+
+The three exact failures reproduce on `4bee` and all three pass on `454513f3`, tested sequentially in the same owned worktree with submodule recursion disabled. The branch was restored before editing.
+
+| Failure | Root cause and repair |
+| --- | --- |
+| Standalone Settings loses `/n/a.md` | Project-only restoration containment incorrectly ran in standalone windows. Exempt `projects.local` while preserving explicit file targets. |
+| Outside-project note becomes read-only | The same containment incorrectly changed legacy bridges without project management. Apply it only when a project-management bridge exists; the three old-project D-402 refusals still pass. |
+| PKG-06 bans device authorization | The old source guard bans the mandatory OAuth wire field as though it were a shipped registration. Coordinator-assigned [D-403](decisions.md#d-403-pkg-06-permits-only-person-configured-device-authorization) preserves telemetry/shipped-ID bans and permits that field in exactly one module. That module reads the person's environment directly, without caller override, default or literal. Mutation checks reject both GitHub ID shapes, a default and a client field elsewhere. |
+
+No startup assertion was edited. Device test setup now supplies the configured environment instead of injecting a client-ID option; existing behavioral assertions remain.
+
+### All 25 journey failures triaged
+
+| Group | Evidence and classification | Fix or remaining size |
+| --- | --- | --- |
+| 12 authorization/device/memory cases | Six CI failures wait for final success after remote deletion/local recycling; six stop at disabled Continue before authorization. D-400/F4.2 require honest remote confirmation and retention after local failure. The success words exist and pass locally: changing them would not repair the failure. All 12 were run locally; only `ghblocked` failed its five-second success observation while recycling remained pending, then passed against the final build with 4× renderer throttling. | No proven product cause or stale-word defect. CI-specific preflight/recycle readiness remains open; a next slice needs sanitized preflight/copy/recycle-error evidence, not a timeout increase or blind rerun. |
+| 5 narrow/short geometry cases | Definite harness mismatch: CI deliberately keeps journey windows opaque, while these fixtures require opacity zero before resizing. All five pass locally. | One fixture setup line makes its own E2E window transparent before the unchanged safety/geometry checks. All five pass again on the final build at 4× renderer throttling. No product styling or geometry change. |
+| 8 preserve/private/export cases | CI keeps Continue disabled after copy; it does not reach destructive work. All eight were run locally. Seven passed immediately; `exportChanged` failed earlier while opening Settings, not during preservation, then passed with the final build at 4× throttling. Copy bytes, unsafe-private zero DELETE, rollback and exported-copy invalidation assertions are unchanged. | No demonstrated stale expectation. The CI copy acknowledgement/cause is unresolved; do not weaken the preservation gate. A next slice needs copy result/settlement diagnostics and the smallest matching reproduction before sizing a product fix. |
+
+The first 25-case local run passed **23**, failed **2**, in 6.8 minutes. It used the rebuilt startup repair before the final D-403 build; do not relabel it final-source acceptance. A subsequent final-build selection passed **10/10** in 2.2 minutes with `FOCUS_NOTES_E2E_CPU_THROTTLE=4`: the two local failures, device abort, current-credential deletion, all-selected preservation and all five geometry cases. This does not certify the remaining CI causes or a simultaneous 25/25 final run.
+
+### Slice checks and limits
+
+| Command | Result |
+| --- | --- |
+| `pnpm exec vitest run tools\test\repository.test.mjs apps\desktop\test\project-delete.test.ts packages\core\test\settings-app.test.ts packages\core\test\workspace-app.test.ts packages\core\test\project-open.test.ts` | 164 passed; all three unit regressions repaired, unchanged D-402 restoration tests pass. |
+| `pnpm exec vitest run tools\test\repository.test.mjs -t 'PKG-06'` | Final repository-wide shipped-ID scan and mutation checks: 2 passed. |
+| `pnpm --filter @focus-notes/core --filter @focus-notes/desktop run typecheck` | Passed both packages. |
+| `pnpm check` | Passed, 153 notification calls; UI 879 documents / 86 components / 800 commands. |
+| `pnpm --filter @focus-notes/desktop run build` | Passed after the final environment-only device authorization change. |
+| Scoped `project-offline.spec.ts --workers=1` selections | Initial all-25 triage 23 passed / 2 failed; final 4×-throttled selection 10 passed. Exact selectors/logs are in `focus-notes-work\logs\w-1d5-slice-a-*.log`. |
+| Slate runtime and whitespace checks | Passed; changed-page headless checks recorded with the local checkpoint. |
+
+Each local app run used invisible E2E windows and recorded main PIDs, followed by `close-test-apps.ps1 -OnlyPid` WhatIf and cleanup in `finally`. No real account/keyring operation, owner data, root checkout, Preview or 8787 server was touched. This is a local repair/triage checkpoint only: no push, CI rerun, landing, release or owner-only F4.2.5 claim.
+
 ## How this page is kept
 
 | What | Where it comes from |

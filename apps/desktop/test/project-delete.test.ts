@@ -3,7 +3,7 @@
  * in a temporary folder; whether GitHub still has the repository, against a fake API; which folders
  * never go to the Recycle Bin; and the move itself with a fake Recycle Bin. Nothing real is deleted.
  */
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, renameSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -295,8 +295,10 @@ describe("DD-PROJ-15: to the Recycle Bin", () => {
   });
 
   describe("D-400: ephemeral deletion authorization", () => {
+    afterEach(() => vi.unstubAllEnvs());
     const token = "github_pat_DISPOSABLE0123456789abcdef";
-    function options(overrides: Partial<Parameters<typeof withDeletionAuthorization>[0]> = {}) {
+    function options({ clientId, ...overrides }: Partial<Parameters<typeof withDeletionAuthorization>[0]> & { clientId?: string } = {}) {
+      vi.stubEnv("FOCUS_NOTES_GITHUB_OAUTH_CLIENT_ID", clientId);
       const controller = new AbortController();
       return {
         apiFetch: async () => new Response(JSON.stringify({ id: 1, login: "ada", name: "Ada" }), { status: 200 }),
