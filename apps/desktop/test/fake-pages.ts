@@ -1,14 +1,13 @@
 import { createHash } from "node:crypto";
 import { createServer, type Server } from "node:http";
-import { base64ToUtf8 } from "@focus-notes/github";
 import type { FakeGitHub } from "../../../packages/github/test/fake-github.ts";
 
 const sha = (text: string) => createHash("sha1").update(text).digest("hex");
-const blobSha = (text: string) => { const bytes = Buffer.from(text, "utf8"); return createHash("sha1").update(`blob ${bytes.length}\0`).update(bytes).digest("hex"); };
+const blobSha = (bytes: Buffer) => createHash("sha1").update(`blob ${bytes.length}\0`).update(bytes).digest("hex");
 
 /** FakeGitHub plus GitHub's Git Data API and a Pages deployment that serves `site/` of the branch head. */
 export function gitData(github: FakeGitHub) {
-  const blobs = new Map<string, string>();
+  const blobs = new Map<string, Buffer>();
   const commits = new Map<string, { tree: string; parents: string[] }>();
   const trees = new Map<string, Map<string, string>>();
   const heads = new Map<string, string>();
@@ -18,7 +17,7 @@ export function gitData(github: FakeGitHub) {
     const repo = github.repos.get(key);
     if (!repo?.files.size) return undefined;
     const files = new Map<string, string>();
-    for (const path of repo.files) { const text = repo.fileContents.get(path) ?? ""; blobs.set(blobSha(text), text); files.set(path, blobSha(text)); }
+    for (const path of repo.files) { const bytes = Buffer.from(repo.fileContents.get(path) ?? "", "utf8"); blobs.set(blobSha(bytes), bytes); files.set(path, blobSha(bytes)); }
     const tree = sha(`tree ${key} ${[...files].join()}`);
     trees.set(tree, files);
     const commit = sha(`commit ${tree}`);
@@ -42,7 +41,7 @@ export function gitData(github: FakeGitHub) {
     if (method === "GET" && r) return commits.has(r[1]!) ? json(200, { tree: { sha: commits.get(r[1]!)!.tree } }) : json(404, {});
     r = /^trees\/([a-f0-9]+)$/.exec(rest);
     if (method === "GET" && r) return json(200, { tree: [...trees.get(r[1]!)!].map(([path, sha]) => ({ path, sha, type: "blob" })), truncated: false });
-    if (method === "POST" && rest === "blobs") { const text = base64ToUtf8(String(body!.content)); blobs.set(blobSha(text), text); return json(201, { sha: blobSha(text) }); }
+    if (method === "POST" && rest === "blobs") { const bytes = Buffer.from(String(body!.content), "base64"); blobs.set(blobSha(bytes), bytes); return json(201, { sha: blobSha(bytes) }); }
     if (method === "POST" && rest === "trees") {
       const files = new Map(trees.get(String(body!.base_tree)) ?? []);
       for (const e of body!.tree as { path: string; sha: string | null }[]) e.sha === null ? files.delete(e.path) : files.set(e.path, e.sha);
@@ -60,11 +59,13 @@ export function gitData(github: FakeGitHub) {
     }
     return json(404, { message: "Not Found" });
   };
-  const site = (key: string) => {
+  /** The site/ folder of the branch head, as exact bytes. */
+  const siteBytes = (key: string) => {
     const head = heads.get(key);
     const files = head ? trees.get(commits.get(head)!.tree)! : new Map<string, string>();
     return new Map([...files].filter(([path]) => path.startsWith("site/")).map(([path, sha]) => [path.slice(5), blobs.get(sha)!]));
   };
+  const site = (key: string) => new Map([...siteBytes(key)].map(([path, bytes]) => [path, bytes.toString("utf8")]));
   /** Pages serves what the branch head's site/ folder holds; `stale` serves nothing new yet. */
   let stale = false;
   const get = async (url: string) => {
@@ -72,7 +73,7 @@ export function gitData(github: FakeGitHub) {
     if (!at || stale) return undefined;
     return site(`${at[1]}/${at[2]}`).get(at[3]!);
   };
-  return { fetch, get, site, pushes, setStale: (value: boolean) => { stale = value; } };
+  return { fetch, get, site, siteBytes, pushes, setStale: (value: boolean) => { stale = value; } };
 }
 
 /**

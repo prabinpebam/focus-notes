@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { lstat, readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
-import type { GitHubApi } from "@focus-notes/github";
+import { BlobTooLargeError, type GitHubApi } from "@focus-notes/github";
 import type { SealedArtifactPublisher } from "./site.ts";
 import type { SitePairing } from "./setup.ts";
 
@@ -23,8 +23,6 @@ async function artifactFiles(directory: string): Promise<Map<string, Buffer>> {
       if (entry.isDirectory()) await walk(full, path);
       else if (entry.isFile()) {
         const bytes = await readFile(full);
-        // The blob API takes text here; a byte that isn't UTF-8 would be changed in transit.
-        if (!Buffer.from(bytes.toString("utf8"), "utf8").equals(bytes)) throw fail("artifact");
         files.set(path, bytes);
       } else throw fail("artifact");
     }
@@ -86,7 +84,14 @@ export function pagesArtifactPublisher(deps: {
     for (const [path, bytes] of files) {
       const full = `${SITE_DIR}/${path}`;
       const sha = gitBlobSha(bytes);
-      if (existing.get(full) !== sha) entries.push({ path: full, sha: await api.createBlob(owner, name, bytes.toString("utf8")) });
+      if (existing.get(full) !== sha) {
+        let created: string;
+        // Exact bytes, so images and fonts arrive unchanged; one over GitHub's limit is a plain artifact problem.
+        try { created = await api.createBlob(owner, name, bytes); }
+        catch (error) { throw error instanceof BlobTooLargeError ? fail("artifact") : error; }
+        if (created !== sha) throw fail("artifact");
+        entries.push({ path: full, sha: created });
+      }
     }
     for (const path of existing.keys()) if (!files.has(path.slice(SITE_DIR.length + 1))) entries.push({ path, sha: null });
     const tree = await api.createTree(owner, name, base, entries);

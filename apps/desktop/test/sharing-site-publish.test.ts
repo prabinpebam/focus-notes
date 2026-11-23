@@ -2,7 +2,7 @@ import { expect, it } from "vitest";
 import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { GitHubApi } from "@focus-notes/github";
+import { BlobTooLargeError, GitHubApi, MAX_BLOB_BYTES } from "@focus-notes/github";
 import { FakeGitHub } from "../../../packages/github/test/fake-github.ts";
 import { projectSharingLayout } from "../src/main/share/layout.ts";
 import { sharingRuntime } from "../src/main/share/runtime.ts";
@@ -130,19 +130,34 @@ it("a share publish queued behind Turn off can't redeploy the removed site", asy
   } finally { await rm(t.directory, { recursive: true, force: true }); }
 });
 
-it("refuses an artifact that isn't UTF-8 text, or a target that is the private project, before any write", async () => {
+it("WP-9.9: publishes binary files byte for byte", async () => {
+  const t = await fixture();
+  try {
+    const dir = join(t.directory, "artifact");
+    await mkdir(dir);
+    await writeFile(join(dir, "focus-notes.json"), JSON.stringify({ build: "b" }));
+    const bytes = Buffer.from([0xff, 0xd8, 0xff, 0x00, 0xfe, 0x80, 0x0a]);
+    await writeFile(join(dir, "image.jpg"), bytes);
+    t.github.add({ owner: "ada", name: "notes-site", files: ["README.md"] });
+    const publish = pagesArtifactPublisher({ api: t.deps.api, get: t.git.get, delayMs: 1, target: async () => ({ project: "ada/book", owner: "ada", name: "notes-site", site: "https://ada.github.io/notes-site/" }) });
+    await expect(publish("ada/book", { directory: dir, build: "b" })).resolves.toMatchObject({ pages: { status: "built" } });
+    expect(t.git.siteBytes("ada/notes-site").get("image.jpg")).toEqual(bytes);
+  } finally { await rm(t.directory, { recursive: true, force: true }); }
+});
+
+it("refuses a file too large for GitHub, or a target that is the private project, before any write", async () => {
   const t = await fixture();
   try {
     const dir = join(t.directory, "artifact");
     await mkdir(dir);
     await writeFile(join(dir, "focus-notes.json"), "{}");
     await writeFile(join(dir, "image.bin"), Buffer.from([0xff, 0xfe, 0x00]));
-    const api = t.deps.api;
-    const publish = pagesArtifactPublisher({ api, get: t.git.get, target: async () => ({ project: "ada/book", owner: "ada", name: "notes-site", site: "https://ada.github.io/notes-site/" }) });
+    class TooLarge extends GitHubApi { override async createBlob(): Promise<string> { throw new BlobTooLargeError(MAX_BLOB_BYTES + 1); } }
+    const tooLarge = new TooLarge(t.github.token, t.git.fetch);
+    const publish = pagesArtifactPublisher({ api: async () => tooLarge, get: t.git.get, target: async () => ({ project: "ada/book", owner: "ada", name: "notes-site", site: "https://ada.github.io/notes-site/" }) });
     t.github.add({ owner: "ada", name: "notes-site", files: ["README.md"] });
     await expect(publish("ada/book", { directory: dir, build: "b" })).rejects.toThrow("sharing:artifact");
-    const self = pagesArtifactPublisher({ api, get: t.git.get, target: async () => ({ project: "ada/book", owner: "ada", name: "book", site: "https://ada.github.io/book/" }) });
-    await rm(join(dir, "image.bin"));
+    const self = pagesArtifactPublisher({ api: t.deps.api, get: t.git.get, target: async () => ({ project: "ada/book", owner: "ada", name: "book", site: "https://ada.github.io/book/" }) });
     await expect(self("ada/book", { directory: dir, build: "b" })).rejects.toThrow("sharing:refused");
     expect(t.github.calls.filter(c => c.method !== "GET")).toEqual([]);
   } finally { await rm(t.directory, { recursive: true, force: true }); }
