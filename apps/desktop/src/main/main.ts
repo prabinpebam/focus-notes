@@ -53,6 +53,7 @@ import { accessStore, siteFromGitConfig } from "./share/access.ts";
 import { projectPeople } from "./share/people.ts";
 import { projectSharingLayout } from "./share/layout.ts";
 import { sharingRuntime } from "./share/runtime.ts";
+import { pagesPublisher } from "./share/pages-publisher.ts";
 import { githubRepo } from "./project-card.ts";
 import { memoryClipboard, secretClipboard, type TextClipboard } from "./share/clipboard.ts";
 import { ProblemLog, type RedactOptions } from "@focus-notes/core/diagnostics";
@@ -2075,11 +2076,23 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     }
   });
   // The Pages site the public root publishes to (SHR-03, D-139): setup's, or the notes repository's origin on github.com.
+  const sendSharing = (channel: string, value: unknown) => { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send(channel, value); };
   const sharing = sharingRuntime({
     root: notesHome, layout: projectLayout, api: projectGitHub, repository: githubRepo,
     write: async (file, text) => { await assertWritable(file); await atomicWrite(file, text); },
     written: file => withGit(g => g.written(file)), temporary: app.getPath("userData"),
-    step: step => { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send("sharing:setupStep", step); },
+    step: step => sendSharing("sharing:setupStep", step),
+    // G3: Publish and sharing pushes go live to the ready paired site only; setup stays unavailable here.
+    live: pagesPublisher({
+      api: projectGitHub,
+      target: async project => { const s = await sharing.pairing(); return s?.project === project && s.phase === "ready" ? s : undefined; },
+      state: state => { if (state === "queued" || state === "building") sendSharing("sharing:publishStep", "publishing"); },
+    }),
+    reader: () => {
+      const dir = app.isPackaged ? join(process.resourcesPath, "reader") : join(app.getAppPath(), "..", "web", "dist-reader");
+      return existsSync(join(dir, "render.mjs")) ? dir : undefined;
+    },
+    publishStep: step => sendSharing("sharing:publishStep", step),
   });
   const pagesSite = async () => {
     if (!settingsAvailable()) return projectLayout().legacy
@@ -2095,6 +2108,18 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     return sharing.enable(name);
   });
   handle("sharing:setupDisable", () => sharing.disable());
+  // Publish and Unpublish (G3): notes-root-relative paths; staging re-validates each one.
+  const notePaths = (value: unknown): string[] => {
+    if (!Array.isArray(value) || value.length > 10_000 || value.some(p => typeof p !== "string")) throw new Error("sharing:scope");
+    return value as string[];
+  };
+  handle("sharing:published", () => sharing.published());
+  handle("sharing:publish", (selection: unknown) => {
+    const s = selection as { notes?: unknown; folders?: unknown } | null;
+    if (!s || typeof s !== "object") throw new Error("sharing:scope");
+    return sharing.publishNotes({ notes: notePaths(s.notes), ...(s.folders === undefined ? {} : { folders: notePaths(s.folders) }) });
+  });
+  handle("sharing:unpublish", (paths: unknown) => sharing.unpublishNotes(notePaths(paths)));
   // Custom themes (THM-04, D-173): the workspace's theme files, private when it has a private
   // repository. Read only, small files only, never followed out of the folder.
   handle("themes:list", async () => {

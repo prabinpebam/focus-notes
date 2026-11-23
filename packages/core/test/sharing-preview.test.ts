@@ -166,3 +166,90 @@ it("a refused local Publish announces no success and Retry emits one acknowledge
   expect(t.app.store.state.announcement.n).toBe(announced + 3);
   expect(t.app.store.state.ui.toasts.filter(toast => toast.message === en["sharing.publish.saved"])).toHaveLength(1);
 });
+
+async function liveFixture() {
+  const published: string[][] = [], unpublished: string[][] = [], copied: string[] = [];
+  let step: ((s: string) => void) | undefined;
+  let next = deferred<{ commit: string; published: string[]; changed: string[] }>();
+  const bridge: PlatformBridge = {
+    platform: "windows", readNote: async () => "# A\n",
+    writeNote: async () => {}, chooseNote: async () => undefined, newNotePath: async () => "/w/notes/new.md", defaultNotePath: async () => "/w/notes/a.md",
+    loadAppState: async () => ({ version: 1, firstRun: "done", lastNotePath: "/w/notes/a.md" }), saveAppState: async () => {},
+    systemScheme: () => "light", onSystemSchemeChange: () => () => {}, copyText: async text => { copied.push(text); },
+    workspace: {
+      info: async () => ({ folder: "/w" }),
+      scan: async () => ({ folder: "/w", roots: [{ id: "private", path: "/w/notes", readOnly: false }], entries: [{ path: "/w/notes/a.md", kind: "note", title: "A" }] }),
+      writeFormat: async () => {}, renameNote: async () => {},
+    },
+    publishing: {
+      published: async () => [],
+      publish: async selection => { published.push(selection.notes); return next.promise; },
+      unpublish: async paths => { unpublished.push(paths); return next.promise; },
+      onStep: listener => { step = listener; return () => { step = undefined; }; },
+    },
+  };
+  const app = createApp(bridge, en);
+  await app.start();
+  await new Promise(resolve => setTimeout(resolve, 0));
+  app.store.update(s => ({ ...s, ui: { ...s.ui, share: { ...s.ui.share, listing: { available: true, configured: true, site: "https://ada.github.io/quiet-site/", vault: false, grants: [] } } } }));
+  const vm = () => app.viewModels.select("vm.sharingPreview", app.store.state) as Record<string, unknown>;
+  const toasts = () => app.store.state.ui.toasts;
+  return { app, vm, toasts, published, unpublished, copied, step: (s: string) => step?.(s), settle: (value?: Error) => {
+    const current = next; next = deferred();
+    if (value) current.reject(value); else current.resolve({ commit: "c".repeat(40), published: ["a.md"], changed: ["a.md"] });
+  } };
+}
+
+it("G3.1/G3.5: live Publish streams Saving to GitHub then Publishing, survives closing its dialog, then offers Copy link", async () => {
+  const t = await liveFixture();
+  await t.app.commands.run("note.publish");
+  expect(t.vm()).toMatchObject({ publishOpen: true, publishText: "Publish “A” on your public site? Anyone with the link can read it." });
+  const task = t.app.commands.run("sharing.publish");
+  await Promise.resolve();
+  expect(t.published).toEqual([["a.md"]]);
+  expect(t.vm()).toMatchObject({ busy: true, canCancel: false });
+  t.step("publishing");
+  expect((t.vm().parts as { tone: string; busy: boolean }[]).map(p => [p.tone, p.busy])).toEqual([["success", false], ["neutral", true]]);
+  await t.app.commands.run("sharing.publishClose");
+  expect(t.vm()).toMatchObject({ publishOpen: false, busy: true });
+  expect(t.toasts().some(n => n.message.startsWith("Published"))).toBe(false);
+  t.settle();
+  await task;
+  const done = t.toasts().find(n => n.message === "Published “A”")!;
+  expect(done.action).toMatchObject({ command: "sharing.copyPublishedLink", label: "Copy link" });
+  await t.app.commands.run(done.action!.command, done.action!.args);
+  expect(t.copied).toEqual(["https://ada.github.io/quiet-site/n/a/"]);
+});
+
+it("G3.4: a failed Publish with its dialog closed says what happened plainly and Retry sends the same selection", async () => {
+  const t = await liveFixture();
+  await t.app.commands.run("note.publish");
+  const task = t.app.commands.run("sharing.publish");
+  await t.app.commands.run("sharing.publishClose");
+  t.settle(new Error("sharing:offline"));
+  await task;
+  const failed = t.toasts().find(n => n.tone === "error")!;
+  expect(failed.message).toBe("You’re offline. Nothing was published. Connect, then try again.");
+  expect(t.toasts().some(n => n.message.startsWith("Published"))).toBe(false);
+  const retry = t.app.commands.run(failed.action!.command);
+  await Promise.resolve();
+  expect(t.published).toEqual([["a.md"], ["a.md"]]);
+  t.settle();
+  await retry;
+  expect(t.toasts().some(n => n.message === "Published “A”")).toBe(true);
+});
+
+it("G3.2/G3.4: a leak stop never names private content; Unpublish says the note stays and history can't be withdrawn", async () => {
+  const t = await liveFixture();
+  await t.app.commands.run("note.publish");
+  const task = t.app.commands.run("sharing.publish");
+  t.settle(new Error("Leak check failed: private content found in 1 place(s): notes/index.json (path)"));
+  await task;
+  expect(t.vm().problem).toBe("Publishing stopped: the site would include text from your private notes. Nothing was published.");
+  const removal = t.app.commands.run("note.unpublish");
+  await Promise.resolve(); await Promise.resolve();
+  expect(t.unpublished).toEqual([["a.md"]]);
+  t.settle();
+  await removal;
+  expect(t.toasts().some(n => n.message.includes("Your note stays here") && n.message.includes("can’t be withdrawn"))).toBe(true);
+});

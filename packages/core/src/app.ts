@@ -510,7 +510,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   registerItemShare({ store, catalog, commands, viewModels, tracker, access: bridge.access, platform: bridge.platform, flush });
   registerSharingSettings({ store, catalog, commands, viewModels, tracker, access: bridge.access });
   registerSharingPeople({ store, catalog, commands, viewModels, tracker, access: bridge.access });
-  registerSharingPreview({ store, catalog, commands, viewModels, tracker, appState: () => appState, persistAppState, readNote: path => bridge.readNote(path), toast });
+  registerSharingPreview({ store, catalog, commands, viewModels, tracker, appState: () => appState, persistAppState, readNote: path => bridge.readNote(path), toast,
+    ...(bridge.publishing ? { publishing: bridge.publishing } : {}), ...(bridge.copyText ? { copyText: (text: string) => bridge.copyText!(text) } : {}) });
   const workspace = registerWorkspaceFeatures({
     store, commands, viewModels, catalog, bridge, tracker, toast, setNote, persistAppState, afterWrites, ...(options.workspaceFormat ? { format: options.workspaceFormat } : {}),
     // Unsaved edits and a file changed outside: both versions go to the resolver (D-92, FIL-12).

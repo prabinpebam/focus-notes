@@ -1,10 +1,19 @@
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import type { GitHubApi } from "@focus-notes/github";
-import { publish } from "@focus-notes/seal/publish";
+import { publish, type PublishOptions } from "@focus-notes/seal/publish";
 import type { SharingLayout } from "./layout.ts";
+import { publicPublishing, type PublicTaskStep } from "./public-publishing.ts";
+import { stagePublicSelection, type ConfirmedSelection } from "./public-selection.ts";
 import { configurePublicSite, publishSealedArtifact, requirePublishedArtifact, type SealedArtifactPublisher } from "./site.ts";
 import { sharingSetup, sitePairingStore, type SharingSetupStep, type SitePairing } from "./setup.ts";
+
+/** Notes on the current public site, by notes-root-relative path (G3). Recorded only after their deploy. */
+function parsePublished(text: string): string[] {
+  const value = JSON.parse(text) as { version?: unknown; notes?: unknown };
+  if (value.version !== 1 || !Array.isArray(value.notes) || value.notes.some(n => typeof n !== "string")) throw new Error("sharing:record");
+  return value.notes as string[];
+}
 
 export function sharingRuntime(deps: {
   root(): string;
@@ -15,6 +24,11 @@ export function sharingRuntime(deps: {
   written(file: string): void;
   temporary: string;
   publisher?: SealedArtifactPublisher;
+  /** The live publisher for Publish and sharing pushes only; it never makes site setup available. */
+  live?: SealedArtifactPublisher;
+  /** The page renderer's folder (`render.mjs`, `assets/`): plaintext Publish needs its pages for Copy link. */
+  reader?(): string | undefined;
+  publishStep?(step: PublicTaskStep): void;
   /** Must hold the source write lane through verified preservation and deployed removal. */
   removalLane?<T>(work: () => Promise<T>): Promise<T>;
   preserve?(layout: SharingLayout): Promise<void>;
@@ -22,6 +36,7 @@ export function sharingRuntime(deps: {
   step?(step: SharingSetupStep): void;
 }) {
   let current: { root: string; service: ReturnType<typeof sharingSetup> } | undefined;
+  let tasks: ReturnType<typeof publicPublishing> | undefined, tasksRoot: string | undefined;
   const bound = () => {
     const root = deps.root(), layout = deps.layout();
     const privateDir = layout.privateDir;
@@ -44,24 +59,51 @@ export function sharingRuntime(deps: {
       guard();
       return saved;
     };
-    const build = async (pairing: SitePairing) => {
+    const publishedFile = join(privateDir, ".focus-notes", "published.json");
+    const readPublished = async (): Promise<string[]> => {
       guard();
+      let text: string;
+      try { text = await readFile(publishedFile, "utf8"); }
+      catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return []; throw error; }
+      guard();
+      return parsePublished(text);
+    };
+    const writePublished = async (notes: readonly string[]) => {
+      guard();
+      await deps.write(publishedFile, `${JSON.stringify({ version: 1, notes }, null, 2)}\n`);
+      guard();
+      deps.written(publishedFile);
+    };
+    const build = async (pairing: SitePairing, how: "setup" | "publish" = "publish", selection?: ConfirmedSelection): Promise<string> => {
+      guard();
+      const notes = layout.legacy ? [] : selection?.notes ?? await readPublished();
+      const reader = notes.length ? deps.reader?.() : undefined;
+      if (notes.length && (!reader || !layout.privateNotes)) throw new Error("sharing:unavailable");
       const directory = await mkdtemp(join(deps.temporary, "sealed-site-"));
+      const staging = notes.length ? await mkdtemp(join(deps.temporary, "public-notes-")) : undefined;
       try {
-        const artifact = await publish({
+        if (staging) await stagePublicSelection({ notesRoot: layout.privateNotes!, selection: { ...selection, notes }, staging });
+        guard();
+        // `published`: the confirmed notes are public on purpose; every other private note stays leak-checked.
+        const options: PublishOptions & { published?: string[] } = {
           private: privateDir,
-          ...(layout.publicDir ? { notes: join(layout.publicDir, "notes") } : {}),
+          ...(staging ? { notes: staging, published: [...notes], reader: reader! } : layout.publicDir ? { notes: join(layout.publicDir, "notes") } : {}),
           site: directory, owner: pairing.owner, siteUrl: pairing.site,
-        });
+        };
+        const artifact = await publish(options);
         guard();
         deps.step?.("push");
         const sealed = { directory, build: artifact.build };
-        const result = await (deps.publisher ?? publishSealedArtifact)(pairing.project, sealed);
+        const result = await ((how === "publish" ? deps.live : undefined) ?? deps.publisher ?? publishSealedArtifact)(pairing.project, sealed);
         guard();
         requirePublishedArtifact(result, pairing, sealed);
-      } finally { await rm(directory, { recursive: true, force: true }); }
+        return result.status === "published" ? result.commit : "";
+      } finally {
+        await rm(directory, { recursive: true, force: true });
+        if (staging) await rm(staging, { recursive: true, force: true });
+      }
     };
-    return { root, layout, privateDir, guard, store, read, build };
+    return { root, layout, privateDir, guard, store, read, build, readPublished, writePublished };
   };
   const service = () => {
     const ctx = bound();
@@ -84,7 +126,7 @@ export function sharingRuntime(deps: {
           await api.usePagesWorkflow(pairing.owner, pairing.name, Boolean(pages));
           ctx.guard();
         }
-        await ctx.build(pairing);
+        await ctx.build(pairing, "setup");
       },
       preserve: async () => {
         if (!deps.preserve || !deps.removalLane) throw new Error("sharing:unavailable");
@@ -114,5 +156,27 @@ export function sharingRuntime(deps: {
       if (!saved || saved.phase !== "ready") throw new Error("access:site.unavailable");
       await ctx.build(saved);
     },
+    /** Notes on the current public site (G3). */
+    published: async (): Promise<string[]> => bound().readPublished(),
+    /** The running Publish or Unpublish, if any, so a reopened dialog follows it (G3.5). */
+    publishing: () => tasks?.pending(),
+    publishNotes: (selection: ConfirmedSelection) => publicTasks().publish(selection),
+    unpublishNotes: (paths: readonly string[]) => publicTasks().unpublish(paths),
   };
+  function publicTasks() {
+    const ctx = bound();
+    if (ctx.layout.legacy || !deps.live) throw new Error("sharing:unavailable");
+    if (tasks && tasksRoot === ctx.root) return tasks;
+    tasksRoot = ctx.root;
+    return tasks = publicPublishing({
+      current: ctx.readPublished,
+      record: ctx.writePublished,
+      deploy: async (paths, selection) => {
+        const saved = await ctx.read();
+        if (!saved || saved.phase !== "ready") throw new Error("sharing:unavailable");
+        return ctx.build(saved, "publish", { ...selection, notes: [...paths] });
+      },
+      step: step => deps.publishStep?.(step),
+    });
+  }
 }

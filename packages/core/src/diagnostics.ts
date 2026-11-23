@@ -161,6 +161,8 @@ export const MEASURE_NAMES: readonly string[] = [
   "fn:sharing.invite", "fn:sharing.people", "focus-notes:sharing.people",
   "fn:sharing.setup.describe", "fn:sharing.setup.enable",
   "focus-notes:sharing.setup.describe", "focus-notes:sharing.setup.enable",
+  // Publish and Unpublish to the paired site (G3.5): SHARING_WAITS in sharing-preview.ts.
+  "fn:sharing.publishSite", "fn:sharing.unpublishSite", "focus-notes:sharing.publishSite", "focus-notes:sharing.unpublishSite",
   "fn:project.firstNote", "focus-notes:project.firstNote",
   "focus-notes:files.move", "focus-notes:files.rename",
   "focus-notes:image.caption.open", "focus-notes:image.caption.generate",

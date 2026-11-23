@@ -2,7 +2,7 @@ import type { App } from "./app.ts";
 import { opErrorCode, type AppStateFile } from "./bridge.ts";
 import type { MessageCatalog } from "./messages.ts";
 import type { TaskTracker } from "./tasks.ts";
-import { BLOCK_LIST_SCHEMA, publicPage } from "./public-page.ts";
+import { BLOCK_LIST_SCHEMA, publicNoteUrl, publicPage } from "./public-page.ts";
 import { findNode, joinPath, rootOf, type NoteNode, type TreeNode } from "./workspace.ts";
 import type { SharingDraft } from "./sharing-people.ts";
 import type { PMNode } from "@focus-notes/markdown";
@@ -13,12 +13,35 @@ export const SHARING_WAITS = {
   publish: "sharing.publishDraft",
   preview: "sharing.preview",
   apply: "sharing.previewSave",
+  publishSite: "sharing.publishSite",
+  unpublishSite: "sharing.unpublishSite",
 } as const;
+
+export interface PublishTaskResult { commit: string; published: readonly string[]; changed: readonly string[] }
+/** The desktop's Publish and Unpublish (G3): the shell stages, seals, leak-checks, pushes and waits for the exact deploy. */
+export interface PublishingBridge {
+  /** Notes on the current public site, relative to the notes root. */
+  published(): Promise<string[]>;
+  /** Rejects with `sharing:<problem>`, or a leak check failure, and then nothing was pushed or recorded. */
+  publish(selection: { notes: string[]; folders?: string[] }): Promise<PublishTaskResult>;
+  unpublish(paths: string[]): Promise<PublishTaskResult>;
+  /** `saving`, `publishing` (the Pages run for the exact commit) or `removing`. */
+  onStep?(listener: (step: string) => void): () => void;
+}
+const PUBLISH_PROBLEMS = ["offline", "signedout", "refused", "media", "scope", "unavailable", "busy", "unacknowledged"];
+/** The plain problem for a failed Publish or Unpublish: never the note's text, a path or a secret (G3.2). */
+function publishProblem(error: unknown): string {
+  const text = error instanceof Error ? error.message : "";
+  if (/Leak check failed/.test(text)) return "sharing.publish.problem.leak";
+  const code = /sharing:([a-z]+)/.exec(text)?.[1];
+  return `sharing.publish.problem.${code && PUBLISH_PROBLEMS.includes(code) ? code : "failed"}`;
+}
 
 export function registerSharingPreview(ctx: {
   store: App["store"]; commands: App["commands"]; viewModels: App["viewModels"]; catalog: MessageCatalog; tracker: TaskTracker;
   appState: () => AppStateFile; persistAppState: (patch: Partial<AppStateFile>) => Promise<void>;
-  readNote: (path: string) => Promise<string>; toast: (message: string) => unknown;
+  readNote: (path: string) => Promise<string>; toast: (message: string, opts?: { tone?: "info" | "error" | "success" | "warning"; action?: { command: string; label: string; args?: Record<string, unknown> } }) => unknown;
+  publishing?: PublishingBridge; copyText?: (text: string) => Promise<void>;
 }) {
   const { store, commands, viewModels, catalog, tracker } = ctx;
   const state = {
@@ -36,7 +59,16 @@ export function registerSharingPreview(ctx: {
   const folder = () => store.state.workspace.folder ?? "";
   const draft = (): SharingDraft => ctx.appState().sharingDrafts?.[folder()] ?? { owner: "personal", people: [] };
   const local = () => Boolean(store.state.ui.share.listing?.localReview || ctx.appState().sharingDrafts?.[folder()]);
+  /** Live Publish: the desktop, with a ready paired site and no local review draft (G3). */
+  const live = () => !local() && Boolean(ctx.publishing && store.state.ui.share.listing?.configured);
   const requireLocal = () => { if (!local()) throw new Error(catalog.format("share.item.unavailable")); };
+  const requirePublish = () => { if (!local() && !live()) throw new Error(catalog.format("share.item.unavailable")); };
+  /** A tree path relative to its private notes root, or undefined outside one. */
+  const relativeOf = (path: string) => {
+    const root = rootOf(store.state.workspace.tree, path);
+    return root?.id === "private" ? path.slice(root.path.length).split(/[\\/]/).filter(Boolean).join("/") || undefined : undefined;
+  };
+  let unpublishTarget: { path: string; title: string } | undefined;
   const reg = <A extends Record<string, unknown>>(id: string, run: (args: A) => void | Promise<void>) =>
     commands.register<A>({ id, title: "site.preview.title", run });
   const settings = (open: boolean) => store.update(s => ({ ...s, ui: { ...s.ui, settings: { ...s.ui.settings, open, section: "sharing" } } }));
@@ -76,12 +108,12 @@ export function registerSharingPreview(ctx: {
     run: () => commands.run(retry!) });
   reg<{ path?: string }>("sharing.publishOpen", ({ path }) => {
     if (state.busy) return;
-    requireLocal();
+    requirePublish();
     const target = path ?? store.state.note.path;
     const node = target ? findNode(store.state.workspace.tree, target)?.node : undefined;
     if (!node || !target) throw new Error(catalog.format("share.state.deleted"));
     const root = rootOf(store.state.workspace.tree, target);
-    if (!root || root.id === "local") throw new Error(catalog.format("share.item.unavailable"));
+    if (!root || root.id === "local" || live() && root.id !== "private") throw new Error(catalog.format("share.item.unavailable"));
     const relative = target.slice(root.path.length).split(/[\\/]/).filter(Boolean).join("/");
     set({ publishOpen: true, target, name: node.kind === "note" ? node.title || node.name.replace(/\.md$/i, "") : node.name,
       folder: node.kind === "folder", notes: leaves(node, target).length, problem: "", operation: "", cancelled: false,
@@ -89,12 +121,56 @@ export function registerSharingPreview(ctx: {
     });
     store.update(s => ({ ...s, ui: { ...s.ui, toolbarOpen: false, files: { ...s.ui.files, open: s.ui.files.pinned } } }));
   });
-  reg<Record<string, never>>("sharing.publishClose", () => { if (!state.busy) set({ publishOpen: false }); });
+  // A live Publish or Unpublish keeps running when its dialog closes (G3.5); a local draft save doesn't close mid-way.
+  reg<Record<string, never>>("sharing.publishClose", () => {
+    if (!state.busy || state.operation === SHARING_WAITS.publishSite || state.operation === SHARING_WAITS.unpublishSite) set({ publishOpen: false });
+  });
+  /** One leavable live task: not cancellable once started, its problem shown in the dialog or, when closed, a notification with Retry. */
+  const liveTask = async (command: string, operation: "publishSite" | "unpublishSite", message: string, labels: string[], work: () => Promise<void>) => {
+    if (state.busy) return;
+    const target = SHARING_WAITS[operation], publishing = operation === "publishSite";
+    retry = command;
+    parts = labels.map(label => ({ label, status: "waiting" }));
+    set({ busy: true, problem: "", operation: target, cancelRequested: false, cancelled: false, atomic: true });
+    const off = ctx.publishing?.onStep?.(step => {
+      if (step === "publishing" && parts[0]?.status === "running") { completed(0); parts[1]!.status = "running"; changed(); }
+    });
+    try {
+      await tracker.run(publishing ? "sharing.publishSite" : "sharing.unpublishSite", message, work, undefined,
+        publishing ? "fn:sharing.publishSite" : "fn:sharing.unpublishSite", "none");
+      retry = undefined;
+    } catch (error) {
+      parts = parts.map(part => part.status === "running" ? { ...part, status: "failed" } : part);
+      console.error("Publish operation failed", target, opErrorCode(error));
+      const problem = catalog.format(publishProblem(error));
+      set({ problem });
+      if (!state.publishOpen) ctx.toast(problem, { tone: "error", action: { command: "sharing.operationRetry", label: catalog.format("commit.retry") } });
+    } finally {
+      off?.();
+      set({ busy: false, atomic: false });
+    }
+  };
+  const publishLive = async (node: TreeNode) => {
+    const notes = leaves(node, state.target).map(n => relativeOf(n.path)).filter((p): p is string => Boolean(p));
+    const folder = node.kind === "folder" ? relativeOf(state.target) : undefined;
+    const title = state.name;
+    await liveTask("sharing.publish", "publishSite", "sharing.publish.savingGitHub",
+      [catalog.format("sharing.operation.saveGitHub"), catalog.format("sharing.operation.deploy")], async () => {
+      parts[0]!.status = "running"; changed();
+      const result = await ctx.publishing!.publish({ notes, ...(folder ? { folders: [folder] } : {}) });
+      parts = parts.map(part => ({ ...part, status: "done" }));
+      set({ publishOpen: false });
+      const link = node.kind === "note" ? notes[0] : undefined;
+      ctx.toast(catalog.format("sharing.publish.published", { title }), { tone: "success",
+        ...(link && result.published.includes(link) ? { action: { command: "sharing.copyPublishedLink", label: catalog.format("sharing.publish.copyLink"), args: { path: link, title } } } : {}) });
+    });
+  };
   reg<Record<string, never>>("sharing.publish", async () => {
     if (state.busy) return;
-    requireLocal();
+    requirePublish();
     const node = findNode(store.state.workspace.tree, state.target)?.node;
     if (!node) throw new Error(catalog.format("share.state.deleted"));
+    if (!local()) return publishLive(node);
     await busy("sharing.publish", "publish", "sharing.publish.saving", "fn:sharing.publishDraft",
       [catalog.format("sharing.operation.select"), catalog.format("sharing.operation.saveDraft")], async () => {
       start(0);
@@ -107,12 +183,45 @@ export function registerSharingPreview(ctx: {
       ctx.toast(catalog.format("sharing.publish.saved"));
     });
   });
+  // Unpublish (G3.4): the current site loses the note once that deploy succeeds; the note itself stays.
+  reg<Record<string, never>>("sharing.unpublish", async () => {
+    const target = unpublishTarget;
+    if (!target || !live()) return;
+    await liveTask("sharing.unpublish", "unpublishSite", "sharing.unpublish.removing",
+      [catalog.format("sharing.operation.removeGitHub"), catalog.format("sharing.operation.deploy")], async () => {
+      parts[0]!.status = "running"; changed();
+      await ctx.publishing!.unpublish([target.path]);
+      parts = parts.map(part => ({ ...part, status: "done" }));
+      ctx.toast(catalog.format("sharing.unpublish.done", { title: target.title }), { tone: "success" });
+    });
+  });
   commands.register({
-    id: "note.publish", title: "command.note.publish", icon: "globe", enabled: () => local() && Boolean(store.state.note.path),
+    id: "note.unpublish", title: "command.note.unpublish", icon: "globe",
+    enabled: () => live() && !state.busy && Boolean(store.state.note.path && relativeOf(store.state.note.path)),
+    run: async () => {
+      const path = store.state.note.path, rel = path ? relativeOf(path) : undefined;
+      if (!path || !rel) return;
+      const node = findNode(store.state.workspace.tree, path)?.node;
+      unpublishTarget = { path: rel, title: node?.kind === "note" ? node.title || node.name.replace(/\.md$/i, "") : rel };
+      await commands.run("sharing.unpublish");
+    },
+  });
+  reg<{ path: string; title?: string }>("sharing.copyPublishedLink", async ({ path, title }) => {
+    const site = store.state.ui.share.listing?.site;
+    if (!site || !ctx.copyText || typeof path !== "string") return;
+    try {
+      await ctx.copyText(publicNoteUrl(site, path));
+      ctx.toast(catalog.format("toast.publicLinkCopied", { note: title ?? path }));
+    } catch {
+      ctx.toast(catalog.format("spotlight.copyFailed"), { tone: "error" });
+    }
+  });
+  commands.register({
+    id: "note.publish", title: "command.note.publish", icon: "globe", enabled: () => (local() || live()) && Boolean(store.state.note.path),
     disabledReason: "sharing.publish.localOnly", run: () => commands.run("sharing.publishOpen"),
   });
   commands.register({
-    id: "files.publish", title: "command.note.publish", icon: "globe", enabled: () => local(),
+    id: "files.publish", title: "command.note.publish", icon: "globe", enabled: () => local() || live(),
     run: () => commands.run("sharing.publishOpen", { path: store.state.ui.files.selection.focus }),
   });
   reg<Record<string, never>>("sharing.preview", async () => {
@@ -228,7 +337,7 @@ export function registerSharingPreview(ctx: {
         parts: parts.map((part, index) => ({ id: String(index), label: part.label, icon: part.status === "done" ? "check" : part.status === "failed" ? "error" : "document",
           tone: part.status === "done" ? "success" : part.status === "failed" ? "danger" : "neutral", busy: part.status === "running" && state.busy })),
         detail: state.folder ? catalog.format("site.preview.count", { count: state.notes }) : catalog.format("sharing.article"),
-        icon: state.folder ? "folder" : "document", publishText: catalog.format("sharing.publish.text", { title: state.name }),
+        icon: state.folder ? "folder" : "document", publishText: catalog.format(live() ? "sharing.publish.liveText" : "sharing.publish.text", { title: state.name }),
         scheme: state.readerTheme === "system" ? (["ink", "dusk"].includes(state.theme) ? "dark" : "light") : state.readerTheme,
         scopeTheme: dark ? warm ? "dusk" : "ink" : warm ? "sepia" : "paper",
         contentSize: Number(state.size), sections, articles: list, homeArticles: articles.filter(a => !a.section),

@@ -12,6 +12,7 @@ import type { AgentsBridge } from "./agents-app.ts";
 import type { NativeWindowBridge, WindowBridge } from "./window-app.ts";
 import type { TextMenuBridge } from "./text-menu-app.ts";
 import type { AccessBridge } from "./share-manage.ts";
+import type { PublishingBridge } from "./sharing-preview.ts";
 import type { DiagnosticsPreview, TimingSummary } from "./diagnostics.ts";
 import type { FeedbackCopied, FeedbackInput, FeedbackResult } from "./feedback.ts";
 
@@ -140,6 +141,8 @@ export interface PlatformBridge {
   settings?: SettingsBridge;
   /** Share audiences in the private repository's access.json (WP-5.3, D-134). Absent in the browser. */
   access?: AccessBridge;
+  /** Publish and Unpublish to the paired public site (G3, SHR-20/25/26). Absent in the browser. */
+  publishing?: PublishingBridge;
   /** The window the app draws and manages itself on Windows and Linux (DSK-03, D-14). Absent on macOS and in the browser. */
   window?: WindowBridge;
   /** macOS's native window: its menu bar and traffic lights (DSK-02, DSK-05, D-14). Absent elsewhere. */

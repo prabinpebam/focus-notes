@@ -169,7 +169,7 @@ it("refuses before any write: offline, signed out, a private or read-only target
   }
 });
 
-async function project(legacy: boolean) {
+async function project(legacy: boolean, options: { reader?: boolean; notes?: Record<string, string> } = {}) {
   const root = await temp();
   const privateDir = legacy ? join(root, "private") : root;
   await mkdir(join(privateDir, "notes"), { recursive: true });
@@ -177,18 +177,30 @@ async function project(legacy: boolean) {
   await writeFile(join(privateDir, "access.json"), JSON.stringify({ version: 1, grants: [] }));
   const secret = "This private line must never reach the public site.";
   await writeFile(join(privateDir, "notes", "diary.md"), `# Diary\n\n${secret}\n`);
+  for (const [path, text] of Object.entries(options.notes ?? {})) {
+    await mkdir(join(privateDir, "notes", path, ".."), { recursive: true });
+    await writeFile(join(privateDir, "notes", path), text);
+  }
+  let reader: string | undefined;
+  if (options.reader) {
+    reader = await temp();
+    await mkdir(join(reader, "assets"));
+    await writeFile(join(reader, "render.mjs"), "export function renderNotePage({ path }) { const stem = path.replace(/\\.md$/, ''); return { file: `n/${stem}/index.html`, html: `<p>${stem}</p>`, title: stem }; }\n");
+  }
   const pairing: SitePairing = { version: 1, project: "ada/book", owner: "ada", name: "quiet-site", intent: "11111111-1111-1111-1111-111111111111", phase: "ready", site: "https://ada.github.io/quiet-site/" };
   await writeFile(join(privateDir, ".focus-notes", "site-pairing.json"), JSON.stringify(pairing));
   const layout: SharingLayout = legacy
     ? { legacy: true, privateDir, privateNotes: join(privateDir, "notes"), publicDir: root, roots: [] }
     : { legacy: false, privateDir, privateNotes: join(privateDir, "notes"), roots: [] };
   const fake = new FakePagesRepo();
+  const steps: string[] = [];
+  const live = pagesPublisher({ api: async () => new GitHubApi("t", fake.fetch), target: async p => p === "ada/book" ? target() : undefined, delayMs: 1 });
   const runtime = sharingRuntime({
     root: () => root, layout: () => layout, api: async () => new GitHubApi("t", fake.fetch),
-    repository: async () => "ada/book", write: async () => {}, written: () => {}, temporary: await temp(),
-    publisher: pagesPublisher({ api: async () => new GitHubApi("t", fake.fetch), target: async p => p === "ada/book" ? target() : undefined, delayMs: 1 }),
+    repository: async () => "ada/book", write: (file, text) => writeFile(file, text), written: () => {}, temporary: await temp(),
+    publisher: live, live, reader: () => reader, publishStep: step => steps.push(step),
   });
-  return { root, privateDir, secret, fake, runtime };
+  return { root, privateDir, secret, fake, runtime, steps };
 }
 
 it("G3.1 through the runtime: sealing, the leak check and the exact Pages run, with private bytes kept and absent from the push", async () => {
@@ -207,5 +219,58 @@ it("G3.2: a leak found while sealing makes no public push or deployment", async 
   await mkdir(join(root, "notes"), { recursive: true });
   await writeFile(join(root, "notes", "public.md"), `# Public\n\n${secret}\n`);
   await expect(runtime.publish()).rejects.toThrow(/Leak check failed/);
+  expect(fake.calls).toEqual([]);
+});
+
+const trip = "# Trip\n\nShort public text.\n";
+const publishedOf = async (privateDir: string) => JSON.parse(await readFile(join(privateDir, ".focus-notes", "published.json"), "utf8")) as { notes: string[] };
+
+it("G3.1 Publish: exactly the selected note becomes public with its page, recorded after the exact deploy; private bytes kept", async () => {
+  const { privateDir, secret, fake, runtime, steps } = await project(false, { reader: true, notes: { "t/trip.md": trip } });
+  const result = await runtime.publishNotes({ notes: ["t/trip.md"] });
+  expect(result).toMatchObject({ commit: fake.head, published: ["t/trip.md"], changed: ["t/trip.md"] });
+  const site = fake.files();
+  expect(site.get("site/notes/t/trip.md")).toBe(trip);
+  expect(site.has("site/n/t/trip/index.html")).toBe(true);
+  expect([...site.keys()].some(p => p.includes("diary"))).toBe(false);
+  expect([...site.values()].some(text => text.includes(secret))).toBe(false);
+  expect(steps).toEqual(["saving"]);
+  expect(await publishedOf(privateDir)).toEqual({ version: 1, notes: ["t/trip.md"] });
+  expect(await readFile(join(privateDir, "notes", "t", "trip.md"), "utf8")).toBe(trip);
+  expect(runtime.publishing()).toBeUndefined();
+});
+
+it("G3.4 Unpublish: the current site loses the note after its deploy; the private note and old commit stay", async () => {
+  const { privateDir, fake, runtime, steps } = await project(false, { reader: true, notes: { "trip.md": trip } });
+  await runtime.publishNotes({ notes: ["trip.md"] });
+  const before = fake.head;
+  await expect(runtime.unpublishNotes(["trip.md"])).resolves.toMatchObject({ published: [], changed: ["trip.md"] });
+  expect(fake.files().has("site/notes/trip.md")).toBe(false);
+  expect(fake.files().has("site/n/trip/index.html")).toBe(false);
+  expect(fake.files(before).has("site/notes/trip.md")).toBe(true);
+  expect(await publishedOf(privateDir)).toEqual({ version: 1, notes: [] });
+  expect(await readFile(join(privateDir, "notes", "trip.md"), "utf8")).toBe(trip);
+  expect(steps).toEqual(["saving", "removing"]);
+});
+
+it("G3.4: a failed deploy keeps the recorded site unchanged and Retry publishes", async () => {
+  const { privateDir, fake, runtime } = await project(false, { reader: true, notes: { "trip.md": trip } });
+  fake.runs = ["failure"];
+  await expect(runtime.publishNotes({ notes: ["trip.md"] })).rejects.toThrow("sharing:unacknowledged");
+  await expect(readFile(join(privateDir, ".focus-notes", "published.json"))).rejects.toThrow();
+  fake.runs = ["success"];
+  await expect(runtime.publishNotes({ notes: ["trip.md"] })).resolves.toMatchObject({ published: ["trip.md"] });
+});
+
+it("G3.1: without the page renderer, Publish refuses before sealing or any push, never Published", async () => {
+  const { fake, runtime } = await project(false, { notes: { "trip.md": trip } });
+  await expect(runtime.publishNotes({ notes: ["trip.md"] })).rejects.toThrow("sharing:unavailable");
+  expect(fake.calls).toEqual([]);
+});
+
+it("G3.2: a published note quoting another private note is still rejected by the leak check with no push", async () => {
+  const quoted = "This private line must never reach the public site.";
+  const { fake, runtime } = await project(false, { reader: true, notes: { "trip.md": `# Trip\n\n${quoted}\n` } });
+  await expect(runtime.publishNotes({ notes: ["trip.md"] })).rejects.toThrow(/Leak check failed/);
   expect(fake.calls).toEqual([]);
 });

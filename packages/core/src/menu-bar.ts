@@ -46,7 +46,7 @@ export const MENU_BAR: readonly MenuBarMenu[] = [
   },
   {
     id: "file", label: "menu.file",
-    items: ["note.new", "note.newIn", "note.open", "projects.open", "spotlight.quickOpen", "note.openInNewWindow", "-", "note.save", "sync.now", "-", "note.share", "note.publish", "note.copyPublicLink", "files.makePublic", "files.makePrivate", "-", "notes.import", "files.import", "-", "note.print", "print.pageNumbers", "-", { role: "close" }],
+    items: ["note.new", "note.newIn", "note.open", "projects.open", "spotlight.quickOpen", "note.openInNewWindow", "-", "note.save", "sync.now", "-", "note.share", "note.publish", "note.unpublish", "note.copyPublicLink", "files.makePublic", "files.makePrivate", "-", "notes.import", "files.import", "-", "note.print", "print.pageNumbers", "-", { role: "close" }],
   },
   {
     id: "edit", label: "menu.edit",

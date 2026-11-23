@@ -308,6 +308,17 @@ contextBridge.exposeInMainWorld("focusNotes", {
     },
     copy: (id: string, what: string, invite?: unknown) => ipcRenderer.invoke("access:copy", id, what, invite),
   },
+  // Publish and Unpublish (G3): the main process stages, seals, leak-checks, pushes and waits for the exact deploy.
+  publishing: {
+    published: () => ipcRenderer.invoke("sharing:published"),
+    publish: (selection: unknown) => ipcRenderer.invoke("sharing:publish", selection),
+    unpublish: (paths: unknown) => ipcRenderer.invoke("sharing:unpublish", paths),
+    onStep: (listener: (step: string) => void) => {
+      const handler = (_event: unknown, step: unknown) => { if (typeof step === "string") listener(step); };
+      ipcRenderer.on("sharing:publishStep", handler);
+      return () => ipcRenderer.removeListener("sharing:publishStep", handler);
+    },
+  },
   // Local diagnostics (QLT-04, D-140): the main process builds and redacts the report; the window sends only its timings.
   diagnostics: {
     preview: () => ipcRenderer.invoke("diagnostics:preview"),
