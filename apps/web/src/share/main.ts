@@ -40,7 +40,10 @@ const get: SiteFetch = async (path) => {
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.text();
 };
-const opened = ({ share, session }: OpenShare): OpenedShare => ({ notes: share.notes, read: (p) => share.read(p), session, expiresAt: session.expiresAt });
+const opened = ({ share, session }: OpenShare): OpenedShare => ({
+  notes: share.notes, read: (p) => share.read(p), session, expiresAt: session.expiresAt,
+  ...(share.media ? { media: (p: string, ref: string) => share.media!(p, ref) } : {}),
+});
 // Each way in reads the site afresh, so a session reopened after a deploy finds the new build.
 const source: ShareSource = {
   openLink: async (l) => opened(await new SiteReader(get).openLinkSession(l.id, l.secret)),

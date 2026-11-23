@@ -47,6 +47,47 @@ function setup(over: Partial<ShareSource> = {}, stored?: { session: unknown; rem
 const text = (blocks: unknown) => JSON.stringify(blocks);
 
 describe("share reader (SHR-10)", () => {
+  it("WP-9.6: shows a shared note's sealed image from a data URL it decrypted, never by its private path", async () => {
+    const bytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 1, 2, 3, 250]);
+    const markdown = "# Trip\n\n![Desk at dawn](../../assets/images/q7m4k2.png \"Morning\")\n\n![Gone](../../assets/images/gone.png)\n\n![Vector](../../assets/images/v.avif)\n";
+    const media = vi.fn(async (path: string, ref: string) => {
+      if (path !== "Trip.md") throw new Error("key");
+      if (ref === "../../assets/images/q7m4k2.png") return { type: "image/png", bytes };
+      if (ref === "../../assets/images/v.avif") return { type: "image/avif", bytes };
+      throw new Error("key");
+    });
+    const read = vi.fn(async () => markdown);
+    const { r } = setup({ openLink: async () => ({ ...share(["Trip.md"], null, read), media }) });
+    await r.start({ id: "gshare001", secret: "s" }, "");
+    expect(r.state.phase).toBe("note");
+    const images = r.state.note.body.filter((b) => b.type === "image");
+    expect(images).toHaveLength(3);
+    expect(images[0]!.attrs).toMatchObject({ print: true, alt: "Desk at dawn", title: "Morning", printSrc: `data:image/png;base64,${Buffer.from(bytes).toString("base64")}` });
+    // Unavailable or a type the page can't show: its description, never a request for the file.
+    for (const image of images.slice(1)) {
+      expect(image.attrs?.print).toBe(true);
+      expect(image.attrs?.printSrc).toBeUndefined();
+    }
+    expect(read).toHaveBeenCalledTimes(1);
+    expect(media.mock.calls.map(([, ref]) => ref).sort()).toEqual(["../../assets/images/gone.png", "../../assets/images/q7m4k2.png", "../../assets/images/v.avif"]);
+    expect(JSON.stringify(r.state.note.body)).not.toContain("printSrc\":\"../");
+  });
+  it("WP-9.6: a share without sealed images shows each image's description, and a late image never lands after sign-out", async () => {
+    const { r } = setup({ openLink: async () => share(["Trip.md"], null, async () => "# Trip\n\n![Desk](../a.png)\n") });
+    await r.start({ id: "gshare001", secret: "s" }, "");
+    expect(r.state.note.body.find((b) => b.type === "image")?.attrs).toMatchObject({ print: true, alt: "Desk" });
+    let release!: () => void;
+    const late = new Promise<void>((resolve) => { release = resolve; });
+    const slow = setup({ openLink: async () => ({ ...share(["Trip.md"], null, async () => "# Trip\n\n![Desk](../a.png)\n"),
+      media: async () => { await late; return { type: "image/png", bytes: new Uint8Array([1]) }; } }) });
+    const started = slow.r.start({ id: "gshare001", secret: "s" }, "");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    slow.r.signOut();
+    release();
+    await started;
+    expect(slow.r.state.phase).toBe("gate");
+    expect(JSON.stringify(slow.r.state.note)).not.toContain("data:");
+  });
   it("opens with one access code, preserving its secret and keeping the named route separate", async () => {
     const openAccessCode = vi.fn(async () => share(["drafts/Plan.md"]));
     const { r, source } = setup({ openAccessCode });

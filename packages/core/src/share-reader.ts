@@ -12,6 +12,8 @@ import type { JsonSchema } from "./view-models.ts";
 export interface OpenedShare {
   notes: readonly { path: string; title: string; updated: string }[];
   read(path: string): Promise<string>;
+  /** A sealed image the note at `path` references, decrypted (WP-9.6); fails for anything else. */
+  media?(path: string, ref: string): Promise<{ type: string; bytes: Uint8Array }>;
   session: unknown;
   expiresAt: string | null;
 }
@@ -110,6 +112,37 @@ export const SHARE_COMMANDS = ["share.submit", "share.submitCode", "share.setLeg
 const EMPTY: ReaderModel = { title: [], updated: 0, body: [] };
 /** setTimeout's longest delay; a later expiry is checked again when it fires. */
 const MAX_DELAY = 2 ** 31 - 1;
+/** The image types the reader's image block shows from a data URL (NoteContent's print image). */
+const SHOWN_TYPES = new Set(["image/png", "image/jpeg", "image/webp", "image/gif"]);
+
+function base64(bytes: Uint8Array): string {
+  let s = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+
+/**
+ * A shared note's images (WP-9.6): each is opened through the share, decrypted, and shown from a data
+ * URL, so the page never requests a file by its private path. One that can't be opened, or a type the
+ * page can't show, shows its description instead.
+ */
+async function withImages(blocks: ReaderModel["body"], path: string, share: OpenedShare): Promise<ReaderModel["body"]> {
+  const visit = async (n: ReaderModel["body"][number]): Promise<ReaderModel["body"][number]> => {
+    if (n.type === "image") {
+      const { src, ...attrs } = n.attrs ?? {};
+      let printSrc: string | undefined;
+      if (typeof src === "string" && src && share.media) {
+        try {
+          const image = await share.media(path, src);
+          if (SHOWN_TYPES.has(image.type)) printSrc = `data:${image.type};base64,${base64(image.bytes)}`;
+        } catch { /* shown as its description */ }
+      }
+      return { ...n, attrs: { ...attrs, print: true, ...(printSrc ? { printSrc } : {}) } };
+    }
+    return n.content ? { ...n, content: await Promise.all(n.content.map(visit)) } : n;
+  };
+  return Promise.all(blocks.map(visit));
+}
 
 export interface ShareReaderOptions {
   source: ShareSource;
@@ -188,8 +221,12 @@ export function createShareReader(o: ShareReaderOptions) {
       } catch { if (open) fail(); return; }
     }
     if (!open) return;
-    const page = sharedPage(text, entry.path, entry.updated, new Set(open.notes.map((n) => n.path)));
-    set({ phase: "note", note: page.model });
+    const current = open;
+    const page = sharedPage(text, entry.path, entry.updated, new Set(current.notes.map((n) => n.path)));
+    const body = await withImages(page.model.body, entry.path, current);
+    // Signed out, expired or replaced while the images opened: they never land.
+    if (open !== current) return;
+    set({ phase: "note", note: { ...page.model, body } });
   };
 
   const opened = async (attempt: Promise<OpenedShare>, remember: boolean, hash?: string, stored = false) => {

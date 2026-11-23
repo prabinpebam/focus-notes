@@ -10,8 +10,8 @@ import en from "../../../packages/views/messages/en.json" with { type: "json" };
 const csp = DEFAULT_CSP.replace("; frame-ancestors 'none'", "");
 const dir = join(import.meta.dirname, "..", "src");
 // The share reader (WP-5.4, D-125) renders no HTML from text, so no Trusted Types policy exists at all.
-// It shows no images at all, so not even data: URLs (review I9).
-const shareCsp = csp.replace(/trusted-types [^;]+/, "trusted-types 'none'").replace("img-src 'self' data:", "img-src 'self'");
+// Images are only the share's own, decrypted in the page and shown from data: URLs (WP-9.6; was review I9).
+const shareCsp = csp.replace(/trusted-types [^;]+/, "trusted-types 'none'");
 const files = {
   "index.html": renderEntryHtml({ title: "Focus Notes", script: "./main.ts", csp, icon: "./favicon.svg" }),
   "s/index.html": renderEntryHtml({ title: en["share.reader.documentTitle"], script: "../share/main.ts", csp: shareCsp, icon: "../favicon.svg", page: "reader" }),
