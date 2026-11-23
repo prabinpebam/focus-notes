@@ -270,6 +270,22 @@ forced click, screenshot-baseline change or quarantine extension was used.
 | Process cleanup | Every local app run followed by `pwsh tools/dev/close-test-apps.ps1 -OnlyPid <worker-shell-pid> -KeepCandidate 7e224374 -KeepPid 42596`, first with `-WhatIf`, then actual cleanup. Owner candidate PID 42596 was preserved. |
 | Exact-head CI / landing | Not claimed. Per the owner's 23 November batching direction, Coordinator7 stacks this locally verified slice on the rolling merge candidate; no per-slice CI or main push. |
 
+### G2 sharing setup and invitations, 23 November
+
+**Invitations (G2.4–G2.6, invitation portion): landed. Setup (G2.1–G2.3, setup portion of G2.6): local, pending CI, not landed.** The D-335 invitation runtime `ca0e8d05` is on `main`, and every invitation file on `7db907e7` matches it byte for byte. The production setup and Turn off on `fix-g2-setup-23nov` (`f8639e68`, `fa9246df`, `6663f011` on `7db907e7`) is unpushed; its exact-head seven-check gate and owner row G2.8 stay open.
+
+| Evidence | Result |
+| --- | --- |
+| `pnpm exec vitest run packages/core/test/sharing-people.test.ts apps/desktop/test/sharing-people.test.ts packages/github/test/github.test.ts` on `7db907e7` | 35 passed: one request for concurrent invitations, paginated duplicate check, personal Collaborator only, five organization roles, lost response reconciled without another PUT, and invalid/duplicate/existing/offline/refused/signed-out/rate-limited/server negatives retaining input. |
+| Typecheck of github, core and desktop; `pnpm --filter @focus-notes/desktop run build` on `7db907e7` | Passed. |
+| `FOCUS_NOTES_E2E=1`, `pnpm --filter @focus-notes/desktop exec playwright test e2e/sharing-people.spec.ts --workers=1` on `7db907e7` | 2 passed, invisible, with OnlyPid cleanup: the exact personal warning, Cancel sends no PUT, refused then Retry with retained input, writing while pending, and organization Maintain sent exactly. |
+| Exact-head Windows CI for the invitation runtime | `7e224374` (`main`), run [45124828634](https://github.com/prabinpebam/focus-notes/actions/runs/45124828634): seven of seven green, both `sharing-people.spec.ts` journeys passed in shard 4. `7e224374..7db907e7` changes no desktop path. |
+| `fix-g2-setup-23nov` units (reported by W-G2S) | Red first on the old runtime (6 of 12 desktop and 2 of 2 core failed with `sharing:unavailable`); then 131 passed in 11 files, including `sharing-site-publish.test.ts` and `sharing-settings.test.ts`. Core and desktop typecheck, desktop build and `pnpm check` passed. |
+| `fix-g2-setup-23nov` journeys (reported by W-G2S) | 7 passed invisibly: `sharing-setup.spec.ts` (one paired site, Cancel and failure write nothing extra, Turn off empties the site, re-enable never republishes), `item-sharing.spec.ts` and `sharing-people.spec.ts`. Own processes closed. |
+| Exact-head Windows CI for the setup | **Open:** not run; the branch is not on a candidate head. |
+
+All tests use fakes: in-process `FakeGitHub`, `fake-pages.ts`, and a loopback `FOCUS_NOTES_GITHUB_API` server for journeys. No real invitation, repository or Pages deployment was created.
+
 ### Cross-profile privacy cleanup, 22 November
 
 **Implemented; final release gate pending.** Sign-out invalidates every profile sharing the root account; removal tombstones only profiles pointing at the removed source project. Shared generation fencing drains admitted writes, waits for live renderer/index/cache acknowledgements, and prevents stale callbacks from restoring pins or encrypted Recent/Launch records. Source notes, Git history and remotes remain unchanged. Pending cleanup survives restart with hashed profile identifiers and fixed cache scopes; Settings offers Retry without repeating credential removal.

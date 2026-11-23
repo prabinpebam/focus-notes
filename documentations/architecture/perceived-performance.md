@@ -2,12 +2,14 @@
 
 ## New-project sharing confirmation (D-396)
 
-The existing confirmation shows the default site repository and Pages URL read-only. It preserves the writing view and draft, with one busy action and an error in the dialog. Production activation is unavailable before any remote write while G3 is absent; this is not a live publication claim.
+The existing confirmation shows the default site repository and Pages URL read-only. It preserves the writing view and draft, with one busy action and an error in the dialog. On `main`, production activation is unavailable before any remote write. The production setup on `fix-g2-setup-23nov` (local, pending CI, not landed) deploys the paired site and adds the Pages deploy and Turn off rows below; they are proven against fake GitHub and Pages only, not a live publication claim.
 
 | Operation | Class / pattern | Place and words | Measure / target |
 | --- | --- | --- | --- |
 | Read the signed-in project's default site pairing | Responsive → waiting; named section task | Existing confirmation and Preparing sharing; close leaves the note usable, and late results never reopen the dialog | `fn:sharing.setup.describe`; tracker `sharing.setup.describe`; no guessed site or writable name |
 | Confirm / retry paired site setup | Waiting → long; named task with persisted steps | Existing action busy border and subtle Preparing sharing, Save to GitHub or Turn on GitHub Pages; unavailable error retains the exact target and offers Retry or close | `fn:sharing.setup.enable`; tracker `sharing.setup.enable`; no ready capability before matching successful artifact acknowledgement |
+| Deploy the paired site's first sealed build to GitHub Pages | Long; a step inside setup, never a separate indicator | The same setup task and existing copy; a push that Pages doesn't serve yet keeps the error and Retry, and Retry deploys a fresh build | Inside `fn:sharing.setup.enable` (tracker `sharing.setup.enable`); readiness is stored only after the deployed site serves the matching build |
+| Turn off sharing | Waiting → long; reuses the Settings sharing change task | Existing Turn off confirmation stays open with its busy action until the site is actually off, then “Sharing is off. The site is empty, and its history stays on GitHub.” Failed preservation keeps sharing on with the error and Retry | Tracker `sharing.change`; private notes preserved first, then an empty site deployed; never reported off before the desktop acknowledges it |
 
 Granular creation/check/preservation/removal copy remains an approved-design dependency for the later live publisher. This slice reuses existing copy, streams typed steps, and does not invent progress percentages or imply a completed deployment. Leaving invalidates UI completion, not the persisted backend operation.
 
