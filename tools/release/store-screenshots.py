@@ -61,7 +61,8 @@ class Window:
         self.box = drawn_box(px)
         x0, y0, x1, y1 = self.box
         self.size = (x1 - x0, y1 - y0)
-        if not preview and (abs(self.size[0] - WINDOW[0]) > 4 or abs(self.size[1] - WINDOW[1]) > 4):
+        # The project's colour outline (2 px a side, drawn at twice the scale) sits just outside the window.
+        if not preview and (abs(self.size[0] - WINDOW[0]) > 8 or abs(self.size[1] - WINDOW[1]) > 8):
             raise SystemExit(f"{path.name}: the window is {self.size[0]} x {self.size[1]}, not {WINDOW[0]} x {WINDOW[1]}: capture it with the store catalogue on CI (or pass --preview)")
         body = px[y0:y1, x0:x1, :3].astype(np.float64)
         self.mode = "light" if (0.2126 * body[..., 0] + 0.7152 * body[..., 1] + 0.0722 * body[..., 2]).mean() >= 128 else "dark"
