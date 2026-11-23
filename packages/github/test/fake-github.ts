@@ -5,6 +5,7 @@
  * Curve25519 pair, so a test can open the secrets it was given.
  */
 import nacl from "tweetnacl";
+import { createHash } from "node:crypto";
 import type { Fetch } from "../src/api.ts";
 import { base64ToBytes, bytesToBase64, sealNonce } from "../src/secrets.ts";
 import { base64ToUtf8, utf8ToBase64 } from "../src/api.ts";
@@ -27,6 +28,8 @@ export interface FakeRepo {
   ownerType: "User" | "Organization";
   invitations: { id: number; invitee: { login: string }; permissions: string }[];
   collaborators: Set<string>;
+  /** Git Data blobs by object ID, as exact bytes. */
+  blobs: Map<string, Uint8Array>;
   /** When it was last pushed to (ISO 8601), if known. */
   pushedAt?: string;
 }
@@ -81,7 +84,7 @@ export class FakeGitHub {
       owner: r.owner, name: r.name, private: r.private ?? false, isTemplate: r.isTemplate ?? false,
       ...(r.template ? { template: r.template } : {}),
       files: new Set(r.files ?? []), fileContents: new Map(), keys: [], secrets: new Map(), actionsKey: nacl.box.keyPair(), canPush: r.canPush ?? true,
-      ownerType: r.ownerType ?? "User", invitations: [], collaborators: new Set(),
+      ownerType: r.ownerType ?? "User", invitations: [], collaborators: new Set(), blobs: new Map(),
     };
     this.repos.set(`${r.owner}/${r.name}`, repo);
     return repo;
@@ -173,11 +176,24 @@ export class FakeGitHub {
     if (method === "GET" && rest === "") return json(200, toRepo(repo));
     if (method === "GET" && rest === "/git/ref/heads/main") return this.filesOf(repo).size ? json(200, { object: { sha: "a".repeat(40) } }) : json(409, { message: "Git Repository is empty." });
     const file = /^\/contents\/(.+)$/.exec(rest);
+    const blob = /^\/git\/blobs\/([0-9a-f]{40})$/.exec(rest);
+    if (method === "GET" && blob) {
+      const bytes = repo.blobs.get(blob[1]!);
+      return bytes ? json(200, { sha: blob[1], size: bytes.length, content: bytesToBase64(bytes), encoding: "base64" }) : json(404, { message: "Not Found" });
+    }
     if (method === "GET" && file) {
       const path = decodeURIComponent(file[1]!);
       return this.filesOf(repo).has(path) ? json(200, { type: "file", content: utf8ToBase64(repo.fileContents.get(path) ?? ""), encoding: "base64", sha: "a".repeat(40) }) : json(404, { message: "Not Found" });
     }
     if (!repo.canPush && method !== "GET") return json(403, { message: "Must have admin rights to Repository." });
+    if (method === "POST" && rest === "/git/blobs") {
+      // GitHub takes "utf-8" or "base64"; the object ID is Git's, over the decoded bytes.
+      if (typeof body?.content !== "string" || (body.encoding !== "base64" && body.encoding !== "utf-8")) return json(422, { message: "Invalid request." });
+      const bytes = body.encoding === "base64" ? base64ToBytes(body.content) : new TextEncoder().encode(body.content);
+      const sha = createHash("sha1").update(`blob ${bytes.length}\0`).update(bytes).digest("hex");
+      repo.blobs.set(sha, bytes);
+      return json(201, { sha, url: `https://api.github.com/repos/${repo.owner}/${repo.name}/git/blobs/${sha}` });
+    }
     if (method === "PUT" && file) {
       const path = decodeURIComponent(file[1]!);
       if (repo.files.has(path)) return json(422, { message: "File already exists" });

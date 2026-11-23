@@ -2,6 +2,8 @@
  * A small client for the GitHub REST API, used by the desktop app's setup (FRE-08, D-90). It sends
  * the token only to api.github.com and never logs it.
  */
+import { base64ToBytes, bytesToBase64 } from "./secrets.ts";
+
 export const API = "https://api.github.com";
 
 export type Fetch = (input: string, init?: RequestInit) => Promise<Response>;
@@ -71,6 +73,18 @@ export function utf8ToBase64(text: string): string {
   let bin = "";
   for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
   return btoa(bin);
+}
+
+/** GitHub's Git Data API takes blobs up to 100 MB. */
+export const MAX_BLOB_BYTES = 100 * 1024 * 1024;
+
+/** A file too large for one GitHub blob, refused before any request. */
+export class BlobTooLargeError extends Error {
+  readonly size: number;
+  constructor(size: number) {
+    super("This file is too large to publish. GitHub takes files up to 100 MB.");
+    this.size = size;
+  }
 }
 
 export function base64ToUtf8(b64: string): string {
@@ -300,8 +314,17 @@ export class GitHubApi {
     return r.encoding === "base64" ? base64ToUtf8(r.content) : r.content;
   }
 
-  async createBlob(owner: string, repo: string, text: string): Promise<string> {
-    return (await this.request<{ sha: string }>("POST", `/repos/${owner}/${repo}/git/blobs`, { content: utf8ToBase64(text), encoding: "base64" })).sha;
+  /** A blob's exact bytes, for binary files that text decoding would change. */
+  async blobBytes(owner: string, repo: string, sha: string): Promise<Uint8Array> {
+    const r = await this.request<{ content: string; encoding: string }>("GET", `/repos/${owner}/${repo}/git/blobs/${sha}`);
+    return r.encoding === "base64" ? base64ToBytes(r.content) : new TextEncoder().encode(r.content);
+  }
+
+  /** Stores text as its UTF-8 bytes, or bytes exactly as given; both travel as base64. Returns Git's object ID. */
+  async createBlob(owner: string, repo: string, content: string | Uint8Array): Promise<string> {
+    const bytes = typeof content === "string" ? new TextEncoder().encode(content) : content;
+    if (bytes.byteLength > MAX_BLOB_BYTES) throw new BlobTooLargeError(bytes.byteLength);
+    return (await this.request<{ sha: string }>("POST", `/repos/${owner}/${repo}/git/blobs`, { content: bytesToBase64(bytes), encoding: "base64" })).sha;
   }
 
   async createTree(owner: string, repo: string, base: string | undefined, entries: { path: string; sha: string | null }[]): Promise<string> {
