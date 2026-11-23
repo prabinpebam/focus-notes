@@ -108,12 +108,19 @@ const plain = (nodes: PMNode[] = []): string => nodes.map((n) => n.text ?? plain
  * plain text, so a public page never points at, or reveals, a private note.
  */
 export function publicPage(markdown: string, notePath: string, updated: string, publicPaths: ReadonlySet<string>, publicMedia: ReadonlySet<string> = new Set()): PublicPage {
-  // Images published beside the notes (G3.3) sit at notes/<path>, from this page's folder (n/<note>/).
+  // Published images (G3.3) sit at their site path (`notes/…`, or the project's `assets/images/…`), reached from this page's folder (n/<note>/).
   const up = "../".repeat(publicPagePath(notePath).split("/").filter(Boolean).length);
   const image = (src: string): string => {
-    if (!src || SAFE_ABSOLUTE.test(src) || src.startsWith("#")) return "";
-    const resolved = linkTarget(src.split(/[?#]/)[0]!, notePath.split("/").slice(0, -1), (path) => path, () => null);
-    return resolved && publicMedia.has(resolved) ? `${up}notes/${resolved.split("/").map(encodeURIComponent).join("/")}` : "";
+    if (!src || SAFE_ABSOLUTE.test(src) || src.startsWith("#") || src.startsWith("/") || /^[a-z][a-z0-9+.-]*:/i.test(src)) return "";
+    let decoded: string;
+    try { decoded = decodeURI(src.split(/[?#]/)[0]!); } catch { return ""; }
+    const parts: string[] = [];
+    for (const part of ["notes", ...notePath.split("/").slice(0, -1), ...decoded.split("/")]) {
+      if (!part || part === ".") continue;
+      if (part !== "..") parts.push(part);
+      else if (!parts.pop()) return "";
+    }
+    return publicMedia.has(parts.join("/")) ? `${up}${parts.map(encodeURIComponent).join("/")}` : "";
   };
   return readerPage(markdown, notePath, updated, (resolved, hash) => {
     if (!publicPaths.has(resolved)) return null;

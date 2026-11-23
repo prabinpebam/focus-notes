@@ -19,7 +19,7 @@ const all = (dir: string): string[] => readdirSync(dir).flatMap((n) => statSync(
 it("WP-9.6: a code-shared note's image is sealed with it, opens byte-exact, leaks nothing and ends with the share", async () => {
   const base = mkdtempSync(join(tmpdir(), "fn-share-media-")), dir = join(base, "private"), published = join(base, "published");
   const read = (path: string) => { const f = join(published, ...path.split("/")); return Promise.resolve(existsSync(f) ? readFileSync(f, "utf8") : undefined); };
-  const publish = () => publishSite({ private: dir, site: published, owner: "fixture", media: sharedImageDestinations });
+  const publish = () => publishSite({ private: dir, site: published, owner: "fixture", sealedMedia: sharedImageDestinations });
   try {
     mkdirSync(join(dir, "notes", "Trips"), { recursive: true });
     mkdirSync(join(dir, "assets", "images"), { recursive: true });
@@ -69,7 +69,7 @@ it("WP-9.6: a shared note whose image is missing blocks publication without nami
     writeFileSync(join(dir, "notes", "Lisbon.md"), "---\nid: nabcdefghijklmnop\n---\n# Lisbon\n\n![Desk](../assets/images/gone7x.png)\n");
     const s = accessStore({ dir: () => dir, site: async () => SITE, write: async (f, t) => writeFileSync(f, t), written: () => {} });
     await s.apply({ op: "createItem", item: { path: "Lisbon.md", label: "Lisbon", folder: false, includeLater: false }, notes: ["Lisbon.md"], link: true, expiresAt: null });
-    const error = await publishSite({ private: dir, site: join(base, "site"), owner: "fixture", media: sharedImageDestinations }).catch((e: Error) => e);
+    const error = await publishSite({ private: dir, site: join(base, "site"), owner: "fixture", sealedMedia: sharedImageDestinations }).catch((e: Error) => e);
     expect(error).toBeInstanceOf(Error);
     expect(String(error)).not.toMatch(/gone7x|Lisbon/);
   } finally { rmSync(base, { recursive: true, force: true }); }

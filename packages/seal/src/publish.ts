@@ -40,15 +40,15 @@ export interface PublishOptions {
   siteUrl?: string;
   /** Fixed build ID, for tests. */
   build?: string;
-  /** Images the caller places beside the public notes (G3.3, already stripped), by path under `notes`; pages show only these. */
-  media?: readonly string[];
+  /** Published images the caller places in the site (G3.3, already stripped), by site path (`notes/…` or `assets/images/…`); public pages show only these. */
+  publicMedia?: readonly string[];
   /**
    * Private notes the person confirmed public (G3), by path under `private/notes`, each also among `notes`.
    * Only their own text and path may then appear in the public notes and pages (leakCheck).
    */
   published?: readonly string[];
-  /** The images a sealed note references, sealed with it (WP-9.6); missing, sealed notes carry no images. */
-  media?: MediaDestinations;
+  /** The images a sealed (code-shared) note references, sealed with it (WP-9.6); missing, sealed notes carry no images. */
+  sealedMedia?: MediaDestinations;
   log?: (line: string) => void;
 }
 export interface PublishResult { build: string; publicNotes: number; publicPages: number; privateNotes: number; vault: boolean; shares: number }
@@ -150,7 +150,7 @@ export async function publish(o: PublishOptions): Promise<PublishResult> {
     await cp(join(o.reader, "assets"), join(o.site, "assets"), { recursive: true });
     const assets = { css: assetFiles.filter((f) => f.endsWith(".css")), fonts: assetFiles.filter((f) => /\.woff2?$/.test(f)) };
     const publicPaths = new Set(index.notes.map((n) => n.path));
-    const publicMedia = new Set(o.media ?? []);
+    const publicMedia = new Set(o.publicMedia ?? []);
     const entries: { path: string; title: string; updated: string; excerpt?: string }[] = [];
     for (const n of index.notes) {
       const { file, html, title, excerpt } = renderer.renderNotePage({ markdown: texts.get(n.path)!, path: n.path, updated: n.updated, publicPaths, publicMedia, ...(o.siteUrl ? { siteUrl: o.siteUrl } : {}), assets });
@@ -211,7 +211,7 @@ export async function publish(o: PublishOptions): Promise<PublishResult> {
       if (done) return done;
       const kid = randomId(), key = randomBytes(KEY_BYTES);
       await put(join(o.site, ...sealedPath(build, kid).split("/")), await sealFile("note", key, build, kid, encodeText(n.text)));
-      const images = o.media ? await sealNoteMedia(media, n.path, o.media(n.text)) : [];
+      const images = o.sealedMedia ? await sealNoteMedia(media, n.path, o.sealedMedia(n.text)) : [];
       const entry = { kid, key: toB64url(key), path: n.path, title: titleOf(n.path, n.text), updated: await updated(join(root, n.path)), ...(images.length ? { media: images } : {}) };
       sealedByPath.set(n.path, entry);
       return entry;

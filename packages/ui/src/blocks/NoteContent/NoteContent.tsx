@@ -107,7 +107,7 @@ const align = (node: BlockNode) => (typeof node.attrs?.align === "string" ? { "d
 function PublicImage({ node }: { node: BlockNode }) {
   const attrs = node.attrs ?? {};
   const raw = String(attrs.publicSrc);
-  const src = /^(?:\.\.\/)*notes\/[^:\\]+$/.test(raw) ? raw : "";
+  const src = /^(?:\.\.\/)*(?:notes|assets\/images)\/[^:\\]+$/.test(raw) ? raw : "";
   const alt = typeof attrs.alt === "string" ? attrs.alt : "";
   const caption = typeof attrs.title === "string" ? attrs.title : "";
   return <figure className={s.printImage} data-image-mode={attrs.mode === "wide" || attrs.mode === "actual" ? attrs.mode : "column"}>

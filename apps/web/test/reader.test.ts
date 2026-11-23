@@ -28,15 +28,17 @@ describe("public page document", () => {
     expect(html).not.toMatch(/https?:\/\/(?!octo\.github\.io\/notes\/n\/)/);
   });
 
-  it("G3.3: shows a published image from the site's own notes/, and only its description for anything else", () => {
+  it("G3.3: shows a published image from its site path, and only its description for anything else", () => {
     const { html } = renderNotePage({
-      markdown: "# T\n\n![A red barn](images/barn%20one.jpg \"The barn\")\n\n![Remote](https://evil.example/x.png)\n\n![Not published](other.png)\n\n![Escape](../../../secret.png)\n",
-      path: "Guides/Garden.md", updated: "2026-10-01T12:00:00Z", publicPaths: new Set(["Guides/Garden.md"]), publicMedia: new Set(["Guides/images/barn one.jpg"]), assets,
+      markdown: "# T\n\n![A red barn](images/barn%20one.jpg \"The barn\")\n\n![Desk](../../assets/images/q7m4k2.jpg)\n\n![Remote](https://evil.example/x.png)\n\n![Not published](other.png)\n\n![Other asset](../../assets/images/zz.jpg)\n\n![Escape](../../../secret.png)\n",
+      path: "Guides/Garden.md", updated: "2026-10-01T12:00:00Z", publicPaths: new Set(["Guides/Garden.md"]),
+      publicMedia: new Set(["notes/Guides/images/barn one.jpg", "assets/images/q7m4k2.jpg"]), assets,
     });
-    expect([...html.matchAll(/<img [^>]*>/g)]).toHaveLength(1);
+    expect([...html.matchAll(/<img [^>]*>/g)]).toHaveLength(2);
     expect(html).toContain('<img src="../../../notes/Guides/images/barn%20one.jpg" alt="A red barn"');
+    expect(html).toContain('<img src="../../../assets/images/q7m4k2.jpg" alt="Desk"');
     expect(html).toContain("<figcaption>The barn</figcaption>");
-    for (const alt of ["Remote", "Not published", "Escape"]) expect(html).toContain(`<em>${alt}</em>`);
+    for (const alt of ["Remote", "Not published", "Other asset", "Escape"]) expect(html).toContain(`<em>${alt}</em>`);
     expect(html).not.toContain("evil.example");
     expect(html).toMatch(/Content-Security-Policy" content="default-src 'none';[^"]*img-src 'self'/);
   });

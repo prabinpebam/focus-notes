@@ -108,9 +108,9 @@ export function sharingRuntime(deps: {
         guard();
         // Removal deploys an empty site: no public notes, no vault and no share keyrings.
         const artifact = await publish(empty ? { site: directory, owner: pairing.owner, siteUrl: pairing.site } : {
-          private: privateDir, media: sharedImageDestinations,
+          private: privateDir, sealedMedia: sharedImageDestinations,
           // `published`: the confirmed notes are public on purpose; every other private note stays leak-checked.
-          ...(staging ? { notes: staging, published: [...notes], reader: reader!, media: selected?.media ?? [] } : layout.publicDir ? { notes: join(layout.publicDir, "notes") } : {}),
+          ...(staging ? { notes: staging, published: [...notes], reader: reader!, publicMedia: selected?.media ?? [] } : layout.publicDir ? { notes: join(layout.publicDir, "notes") } : {}),
           site: directory, owner: pairing.owner, siteUrl: pairing.site,
         });
         // Stripped images sit at their project paths, so the published notes' relative links resolve (WP-9.9).

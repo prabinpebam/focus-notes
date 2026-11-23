@@ -28,7 +28,7 @@ const grant = (withdrawn: boolean) => ({
 });
 async function seal(withdrawn: boolean) {
   await writeFile(join(root, "private", "access.json"), JSON.stringify({ version: 1, grants: [grant(withdrawn)] }));
-  return publish({ site, private: join(root, "private"), owner: "octo", media: sharedImageDestinations });
+  return publish({ site, private: join(root, "private"), owner: "octo", sealedMedia: sharedImageDestinations });
 }
 
 test.beforeAll(async () => {
