@@ -167,6 +167,9 @@ describe("whether a recovered note is really in the found folder (FRE-12, D-397)
     expect(() => realInside(root, resolve(root, "b.md"), () => { throw err("EACCES"); })).toThrow("EACCES");
     expect(() => realInside(root, resolve(root, "b.md"), (p) => { if (p === root) throw err("EIO"); return p; })).toThrow("EIO");
   });
+  it("throws when the found folder itself is gone, even when the note is gone too", () => {
+    for (const code of ["ENOENT", "ENOTDIR"]) expect(() => realInside(root, resolve(root, "b.md"), () => { throw err(code); })).toThrow("unavailable");
+  });
   it("refuses a note whose real path leaves the folder, and keeps a name starting with two dots", () => {
     expect(realInside(root, resolve(root, "link.md"), (p) => (p === root ? p : abs("Users\\me\\elsewhere\\x.md")))).toBe(false);
     expect(realInside(root, resolve(root, "..draft.md"), (p) => p)).toBe(true);

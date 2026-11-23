@@ -195,10 +195,10 @@ export function realInside(root: string, p: string, realpath: (p: string) => str
       throw error;
     }
   };
-  const r = real(p);
-  if (!r) return false;
   const base = real(root);
   if (!base) throw new Error("The recovered folder is unavailable");
+  const r = real(p);
+  if (!r) return false;
   return within(base, r);
 }
 /** The service that keeps a folder in sync, or undefined. */
