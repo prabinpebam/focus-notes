@@ -215,6 +215,8 @@ SHR-20/25/26, SHR-04 and SEC-06 deliver UC-SHARE-02/10. WP-P.22 owns the live le
 
 **Status, 23 November:** G3.1–G3.6 landed in batch 2 `6aebf805` (exact-head run 45179887054, seven of seven green), fakes only, including published images with metadata removed and the packaged page renderer; see [the landings](gate-evidence.md#batch-1b-and-batch-2-landings-23-november). G3.7 and G3.8 remain the owner's.
 
+**Leak gate, 23 November (D-411):** a line that is only an image reference to an image published in the same build no longer blocks Publish or Unpublish when a now-private note has the same line. Every other shared line still does. Fixed with W-SecCSP's L1 and L2 on `fix-gaps3-23nov`: JPEG thumbnails are dropped, and published images are placed before the leak check, with their paths checked.
+
 **Try it:** the owner publishes one disposable note from Preview, leaves the task and writes elsewhere, then opens Copy link after Published. Unpublish it: the current site loses the note, the private working note stays, and old-history limits are stated plainly.
 
 ### G4: open and save a text file on its own

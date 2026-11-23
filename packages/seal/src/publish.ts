@@ -305,6 +305,8 @@ export class LeakError extends Error {
 const TEXT_FILE = /\.(html?|js|mjs|css|json|md|markdown|txt|xml|svg|map|webmanifest)$/i;
 /** Lines of private text this long or longer must never appear in the site (SEC-06). */
 export const LEAK_MIN_LINE = 24;
+/** A line that is exactly one Markdown image (`![alt](src "title")`) and nothing else (D-411). */
+const IMAGE_ONLY_LINE = /^!\[[^\]]*\]\(\s*<?([^)\s>]+)>?(?:\s+"[^"]*")?\s*\)$/;
 /** Shorter paths ("Todo.md") are too common to mean anything, and would fail on the app's own files. */
 export const LEAK_MIN_PATH = 12;
 
@@ -395,7 +397,8 @@ function identifierValues(file: string, body: string): string[] {
  * name of LEAK_MIN_NAME characters or more, as written, in NFC, and normalized as the lookup does it (SEC-06).
  * `published` names notes the person confirmed public (G3): their own path and lines may appear in the
  * public notes and pages, never in NAME_SCOPE, and they stay source identifiers everywhere. A line they
- * share with any other private note is still a leak. Every file's path is checked too, binary or not:
+ * share with any other private note is still a leak, unless it is only an image reference to an image
+ * published on purpose (D-411). Every file's path is checked too, binary or not:
  * no path may hold another private note's path, and a published image (`media`) may not be named after
  * a private note or its folder.
  */
@@ -408,7 +411,24 @@ export async function leakCheck(
   const pathsOf = (list: typeof notes) => list.map((n) => n.path).filter((p) => p.length >= LEAK_MIN_PATH);
   const linesOf = (list: typeof notes) => [...new Set(list.flatMap((n) => n.text.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length >= LEAK_MIN_LINE)))];
   const hidden = notes.filter((n) => !open.has(n.path)), shown = notes.filter((n) => open.has(n.path));
-  const paths = pathsOf(hidden), lines = linesOf(hidden);
+  const mediaFiles = new Set(media);
+  // D-411: a line that is only an image reference to an image published on purpose is already public.
+  const publishedImageLine = (note: string, line: string) => {
+    const target = IMAGE_ONLY_LINE.exec(line)?.[1];
+    if (!target || /^[a-z][a-z0-9+.-]*:|^[/#]/i.test(target)) return false;
+    let decoded: string;
+    try { decoded = decodeURI(target.split(/[?#]/)[0]!); } catch { return false; }
+    const parts: string[] = [];
+    for (const part of ["notes", ...note.split("/").slice(0, -1), ...decoded.split("/")]) {
+      if (!part || part === ".") continue;
+      if (part !== "..") parts.push(part);
+      else if (!parts.pop()) return false;
+    }
+    return mediaFiles.has(parts.join("/"));
+  };
+  const paths = pathsOf(hidden);
+  const lines = [...new Set(hidden.flatMap((n) => n.text.split(/\r?\n/).map((l) => l.trim())
+    .filter((l) => l.length >= LEAK_MIN_LINE && !publishedImageLine(n.path, l))))];
   const shownPaths = pathsOf(shown), shownLines = linesOf(shown);
   // Secrets of any length: a passcode is at least 12 characters, links and keys 43.
   const keys = [...new Set(secrets.flatMap(secretForms))];
@@ -422,7 +442,6 @@ export async function leakCheck(
   const segmentsOf = (path: string) => path.split("/").flatMap((part) => [part, part.replace(/\.[^.]+$/, "")]);
   const shownSegments = sourceIdentities(shown.flatMap((n) => segmentsOf(n.path)));
   const hiddenSegments = new Set([...sourceIdentities(hidden.flatMap((n) => segmentsOf(n.path)))].filter((x) => !shownSegments.has(x)));
-  const mediaFiles = new Set(media);
   const found: { file: string; kind: LeakKind }[] = [];
   const walk = async (d: string) => {
     for (const e of await readdir(d, { withFileTypes: true })) {

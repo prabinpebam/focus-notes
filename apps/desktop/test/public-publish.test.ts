@@ -136,7 +136,7 @@ it("WP-9.9 Unpublish: images only the unpublished note used leave the site; imag
   const png = (n: number) => Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), chunk("IHDR", Buffer.alloc(13, n)), chunk("IDAT", Buffer.from([n])), chunk("IEND", Buffer.alloc(0))]);
   const t = await project({ notes: {
     "trip.md": `${TRIP}\n![Harbour](../assets/images/harbour.png)\n![Map](../assets/images/map.png)\n`,
-    "walk.md": "# Walk\n\nThe same map again.\n\n![The route we took](../assets/images/map.png)\n",
+    "walk.md": "# Walk\n\nThe same map again.\n\n![Map](../assets/images/map.png)\n",
   } });
   await mkdir(join(t.root, "assets", "images"), { recursive: true });
   await writeFile(join(t.root, "assets", "images", "harbour.png"), png(1));

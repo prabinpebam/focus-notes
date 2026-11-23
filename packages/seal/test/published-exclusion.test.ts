@@ -63,6 +63,27 @@ it("SEC-06/WP-9.9: published images are placed before the leak check, and an ima
   await expect(publish({ ...escape, publicMedia: ["../outside.png"] })).rejects.toThrow("A published image has an unusable path.");
 });
 
+it("D-411: an image-only line shared with a now-private note is no leak when that image is published; anything more still is", async () => {
+  const MAP = "![The harbour map at dusk](../../assets/images/map.png)";
+  const withShared = async (privateLine: string, publishImage = true) => {
+    const o = await project({ publicTrip: `${tripText}\n${MAP}\n` });
+    await writeFile(join(o.private, "notes", TRIP), `${tripText}\n${MAP}\n`);
+    await writeFile(join(o.private, "notes", "journeys", "old-walk.md"), `# Old walk\n\n${privateLine}\n`);
+    const media = join(o.site, "..", "media");
+    await mkdir(join(media, "assets", "images"), { recursive: true });
+    await writeFile(join(media, "assets", "images", "map.png"), Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+    return { ...o, published: [TRIP], ...(publishImage ? { publicMedia: ["assets/images/map.png"], publicMediaFrom: media } : {}) };
+  };
+  await expect(publish(await withShared(MAP))).resolves.toMatchObject({ publicNotes: 1 });
+  // The image isn't published, so the line still says something only private notes say.
+  await expect(publish(await withShared(MAP, false))).rejects.toThrow(/Leak check failed.*\(text\)/);
+  // Words beside the image are private text, image or not.
+  const worded = await withShared(`${MAP} where Ada hid the key`);
+  await writeFile(join(worded.notes, TRIP), `${tripText}\n${MAP} where Ada hid the key\n`);
+  await writeFile(join(worded.private, "notes", TRIP), `${tripText}\n${MAP} where Ada hid the key\n`);
+  await expect(publish(worded)).rejects.toThrow(/Leak check failed.*\(text\)/);
+});
+
 it("SHR-23/G3.2: a published note's text and source-derived identifiers stay forbidden in keyrings, sealed files and the manifest", async () => {
   const notes = [{ path: TRIP, text: tripText }, { path: "diary.md", text: diaryText }];
   const site = async (files: Record<string, string>) => {

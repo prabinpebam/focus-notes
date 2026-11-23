@@ -1,7 +1,18 @@
 # Decisions
 
 > [!NOTE]
-> **TL;DR.** D-407 archives every worker chat once its result is logged and nothing is queued, to save memory; a follow-up is a fresh chat with the handoff. D-406 removes the worker cap: one worker per independent ready item until the owner asks for fewer. D-405 is a narrow 1.1.0 closure-sprint exception for one rolling batch gate; its four-worker cap is superseded by D-406. D-404 runs every coordinator, worker and subagent on Claude Opus 5.5, passed explicitly. D-398 settles the 1.1.0 Autopilot scope and publishing defaults, authorizing production wiring of the prepared candidates. D-399 exempts query-input search and command surfaces from a decorative visual anchor. Owner corrections D-393–D-395 still govern GitHub references, in-app deletion and Find. D-400/D-401 keep Delete authorization isolated and retained private history self-contained and reversible. Earlier decisions remain historical where explicitly superseded.
+> **TL;DR.** D-411 lets the leak gate pass exactly one thing it refused before: a line that's only an image reference to an image published on purpose. D-407 archives every worker chat once its result is logged and nothing is queued, to save memory; a follow-up is a fresh chat with the handoff. D-406 removes the worker cap: one worker per independent ready item until the owner asks for fewer. D-405 is a narrow 1.1.0 closure-sprint exception for one rolling batch gate; its four-worker cap is superseded by D-406. D-404 runs every coordinator, worker and subagent on Claude Opus 5.5, passed explicitly. D-398 settles the 1.1.0 Autopilot scope and publishing defaults, authorizing production wiring of the prepared candidates. D-399 exempts query-input search and command surfaces from a decorative visual anchor. Owner corrections D-393–D-395 still govern GitHub references, in-app deletion and Find. D-400/D-401 keep Delete authorization isolated and retained private history self-contained and reversible. Earlier decisions remain historical where explicitly superseded.
+
+## D-411: a published image's reference line isn't a leak
+
+**Decided (coordinator, 23 November 2026, 20:52; from W-Gaps3's leak-gate finding).** A still-published note and a now-private note can share a byte-identical line, such as `![Map](../assets/images/map.png)`. Unpublishing one of them used to be refused as a text leak, although the line and its image were already public.
+
+- **The exemption:** the leak check skips a private line only when the whole line is one Markdown image, `![alt](target "title")`, and its target, resolved from that note's folder, is among the images published in that same build (`publicMedia`).
+- **What stays a leak:** any other shared line, including an image line with words beside it, an image that isn't published, a web or scheme target, and every path, secret and name check. The alt text is exempt only as part of that identical line, which the published note already shows.
+- **Owner rule:** the leak gate is never weakened beyond this.
+- **Built:** `leakCheck` in `packages/seal/src/publish.ts`. Tests in `published-exclusion.test.ts` cover the exempt case and three still-refused cases, alongside the existing shared-text refusal. The desktop fixture Unpublishes one of two notes sharing `![Map](…)`.
+
+**Affects:** [Definition of Done → G3](definition-of-done.md#g3-publish-and-unpublish-for-real), [Repository and publishing](../architecture/repository-and-publishing.html). SEC-06 is otherwise unchanged.
 
 ## D-407: archive finished worker chats
 
