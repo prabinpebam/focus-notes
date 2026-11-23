@@ -97,6 +97,7 @@ describe("Open", () => {
     });
     await app.start();
     expect(firstNote).toHaveBeenCalledTimes(admitted ? 1 : 0);
+    if (admitted) expect(firstNote).toHaveBeenCalledWith("history");
     expect(vm(app).open).toBe(!admitted);
     if (admitted) expect(app.store.state.note).toMatchObject({ path, markdown: "", status: "ready" });
   });

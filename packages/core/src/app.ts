@@ -1914,7 +1914,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
           const initialPath = store.state.note.path;
           try {
             reopened = await tracker.run("project.firstNote", "command.note.new", async () => {
-              const path = await bridge.projects!.firstNote!();
+              const path = await bridge.projects!.firstNote!(...(lastGone ? ["history" as const] : []));
               startupSuperseded = store.state.note.key !== initialKey || store.state.note.path !== initialPath;
               if (startupSuperseded) return false;
               if (!path) return false;

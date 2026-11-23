@@ -179,8 +179,11 @@ export interface PlatformBridge {
     /** Clones a repository into a new project and opens its window. */
     openGitHub?(owner: string, name: string): Promise<void>;
     lastNote(): Promise<string | undefined>;
-    /** Exclusively creates an ordinary first note only in a positively verified empty project. */
-    firstNote?(): Promise<string | undefined>;
+    /**
+     * Exclusively creates an ordinary first note only in a positively verified empty project. `"history"`:
+     * the remembered last note is gone, so only an empty Untitled is admitted, never a written certified one.
+     */
+    firstNote?(reason?: "history"): Promise<string | undefined>;
     position(path: string): Promise<{ from: number; to: number; scroll: number } | undefined>;
     remember(path: string, position?: { from: number; to: number; scroll: number }): Promise<void>;
     list(): Promise<ProjectEntry[]>;

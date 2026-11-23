@@ -67,7 +67,7 @@ export function firstProjectNote(options: {
   allowNonempty?: boolean;
 }) {
   let admission: Promise<string | undefined> | undefined;
-  async function create(): Promise<string | undefined> {
+  async function create(history: boolean): Promise<string | undefined> {
     const roots = await options.roots();
     if (!roots) return undefined;
     if (!roots.length) throw new Error("The project has no trusted note root");
@@ -146,6 +146,7 @@ export function firstProjectNote(options: {
     }
     // Scan and writable/Git preparation happen before the shared SQLite writer is acquired.
     // Only the final root check/exclusive create (or one-byte winner read) holds admission.
+    let staleCertificate = false;
     return options.admit(canonical, async (certificate, certify) => {
       if (certificate && options.allowNonempty) {
         const certifiedSlot = certificate.slot ?? 1;
@@ -153,18 +154,22 @@ export function firstProjectNote(options: {
         await current();
         // A certificate for this path's earlier project, or for a note since deleted, renamed or replaced,
         // is history, not this project's note: admit writing as without history, never reading or replacing it.
+        // After a remembered note was found gone (history), a certified note already written in is history too.
         let live = false;
         if (certificate.roots === rootIdentity) {
-          try { live = await identity(notePath(certifiedSlot)) === certificate.file; }
-          catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
+          try {
+            const certified = notePath(certifiedSlot);
+            live = await identity(certified) === certificate.file && (!history || (await lstat(certified)).size === 0);
+          } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
         }
         if (live) {
           slot = certifiedSlot;
           path = notePath(slot);
           await options.writable(path);
           await current();
-          return readVerified(certificate.file);
+          return readVerified(certificate.file, history);
         }
+        staleCertificate = true;
         existingBlank = undefined;
         for (slot = 1; slot <= 10_000; slot++) {
           path = notePath(slot);
@@ -191,8 +196,13 @@ export function firstProjectNote(options: {
       }
       if (!initiallyEmpty && !options.allowNonempty) return undefined;
       await current();
-      // Reopen an ordinary blank note, including a pre-commit crash survivor, without certifying it.
-      if (existingBlank) return readVerified(existingBlank, true);
+      // Reopen an ordinary blank note, including a pre-commit crash survivor, without certifying it. Past a stale
+      // certificate the verified blank takes its place, so its saves advance it and a late arrival shares it.
+      if (existingBlank) {
+        const reused = await readVerified(existingBlank, true);
+        if (reused && staleCertificate) certify({ roots: rootIdentity, file: existingBlank, slot });
+        return reused;
+      }
       visited = 0;
       if (!options.allowNonempty && !(await Promise.all(roots.map(root => empty(root)))).every(Boolean)) return undefined;
       let file;
@@ -217,7 +227,10 @@ export function firstProjectNote(options: {
       return path;
     });
   }
-  const start = () => admission ??= create().finally(() => { admission = undefined; });
+  let afterHistory: Promise<string | undefined> | undefined;
+  const start = (reason?: "history") => reason === "history"
+    ? afterHistory ??= create(true).finally(() => { afterHistory = undefined; })
+    : admission ??= create(false).finally(() => { admission = undefined; });
   // The ordinary atomic save replaces the inode. Advance only an already-certified identity,
   // in the same admission lane; arbitrary external replacements never acquire a certificate.
   async function write<T>(path: string, save: () => Promise<T>): Promise<T> {

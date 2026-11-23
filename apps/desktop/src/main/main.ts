@@ -1675,7 +1675,10 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     return status;
   };
   handle("projects:list", () => projects.list());
-  handleFrom("projects:firstNote", event => secondaryPages.has(event.sender.id) ? undefined : createFirstProjectNote());
+  handleFrom("projects:firstNote", (event, reason: unknown) => {
+    if (reason !== undefined && reason !== "history") throw new Error("Invalid first note request");
+    return secondaryPages.has(event.sender.id) ? undefined : createFirstProjectNote(reason);
+  });
   handle("projects:upload", () => projects.upload());
   handle("projects:localNote", () => projects.localNote());
   handle("projects:importLocal", (path: unknown, folder: unknown, request: unknown) => {

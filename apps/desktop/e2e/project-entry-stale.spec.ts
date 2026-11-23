@@ -183,6 +183,89 @@ for (const route of ["Projects card", "Open project…"] as const) {
   });
 }
 
+test("Launch restoration after a different last note was deleted lands in writing and keeps the written first note (P0-entry.5)", async () => {
+  test.setTimeout(90_000);
+  const dirs = tempDirs();
+  writeFileSync(join(dirs.userData, DATA_FILES.state), JSON.stringify({ version: 1, firstRun: "done", lastNotePath: "" }));
+  writeFileSync(join(dirs.userData, DATA_FILES.projectFolder), dirs.docs);
+  writeFileSync(join(dirs.userData, DATA_FILES.workspace), JSON.stringify({ version: 1, folder: dirs.docs, kind: "local" }));
+  let instance: Launched | undefined;
+  try {
+    instance = await launch(dirs);
+    const firstApp = instance.app;
+    await assertWriting(instance.page, () => firstApp.windows().length, dirs.docs, "Kept first words.");
+    const keptFile = () => markdown(dirs.docs).find(file => readFileSync(join(dirs.docs, file), "utf8").trim() === "Kept first words.");
+    await expect.poll(keptFile).toBeTruthy();
+    await instance.page.keyboard.press("Control+N");
+    const note = instance.page.getByRole("textbox", { name: "Note", exact: true });
+    await expect(note).toHaveText("");
+    await instance.page.keyboard.type("Later last note.");
+    await expect.poll(() => markdown(dirs.docs).map(file => readFileSync(join(dirs.docs, file), "utf8")).join("")).toContain("Later last note.");
+    await quitOwned(instance);
+    instance = undefined;
+    const kept = keptFile()!;
+    const keptBytes = readFileSync(join(dirs.docs, kept), "utf8");
+    // The person deletes the later note, which was the last one open.
+    for (const file of markdown(dirs.docs).filter(file => file !== kept)) rmSync(join(dirs.docs, file));
+    instance = await launch(dirs);
+    const app = instance.app;
+    await assertWriting(instance.page, () => app.windows().length, dirs.docs, "Fresh start.");
+    expect(readFileSync(join(dirs.docs, kept), "utf8")).toBe(keptBytes);
+    expect(markdown(dirs.docs)).toHaveLength(2);
+  } finally {
+    if (instance) await quitOwned(instance);
+    rmSync(dirs.userData, { recursive: true, force: true });
+    rmSync(dirs.docs, { recursive: true, force: true });
+  }
+});
+
+test("Recent opens its empty Untitled in writing after the certified note was replaced, without another note (P0-entry.5)", async () => {
+  test.setTimeout(120_000);
+  const dirs = tempDirs();
+  const target = tempDirs();
+  const folder = realpathSync.native(target.docs);
+  const root = join(folder, "notes");
+  const profile = join(dirs.userData, DATA_FOLDERS.projectProfiles, "recent-project");
+  mkdirSync(profile, { recursive: true });
+  mkdirSync(join(folder, ".focus-notes"));
+  writeFileSync(join(folder, ".focus-notes", "workspace.json"), '{"formatVersion":1}\n');
+  mkdirSync(root);
+  writeFileSync(join(profile, DATA_FILES.projectFolder), folder);
+  writeFileSync(join(profile, DATA_FILES.workspace), JSON.stringify({ version: 1, folder, kind: "local" }));
+  writeFileSync(join(profile, DATA_FILES.state), JSON.stringify({ version: 1, firstRun: "done", lastNotePath: "", projectIntroSeen: true }));
+  let origin: Launched | undefined;
+  let child: Awaited<ReturnType<typeof attachProject>> | undefined;
+  try {
+    origin = await launch(dirs, {}, { entrypoint: projectEntryApp(dirs.userData) });
+    const page = origin.page;
+    await page.keyboard.press("Control+Alt+O");
+    let open = page.getByRole("dialog", { name: "Open", exact: true });
+    await open.getByRole("button", { name: `Open ${basename(folder)}`, exact: true }).click();
+    child = await attachProject(profile);
+    await expect(child.page.getByRole("textbox", { name: "Note", exact: true })).toBeFocused();
+    expect(readdirSync(root)).toEqual(["Untitled.md"]);
+    await closeProject(child);
+    child = undefined;
+    forgetChild(profile);
+    // Another program replaces the certified note with a new empty file of the same name.
+    rmSync(join(root, "Untitled.md"));
+    writeFileSync(join(root, "Untitled.md"), "");
+    writeFileSync(join(profile, DATA_FILES.state), JSON.stringify({ version: 1, firstRun: "done", lastNotePath: join(root, "Untitled.md"), projectIntroSeen: true }));
+    await page.keyboard.press("Control+Alt+O");
+    open = page.getByRole("dialog", { name: "Open", exact: true });
+    await open.getByRole("button", { name: "Open Untitled", exact: true }).click();
+    await expect(open).toBeHidden();
+    child = await attachProject(profile);
+    const attached = child;
+    await assertWriting(attached.page, () => attached.browser.contexts()[0]!.pages().length, root, "Recent keeps this.");
+    expect(markdown(root)).toHaveLength(1);
+  } finally {
+    if (child) await closeProject(child);
+    if (origin) await quitOwned(origin);
+    for (const path of [dirs.userData, dirs.docs, target.userData, target.docs]) rmSync(path, { recursive: true, force: true });
+  }
+});
+
 test("Launch restoration of a project whose last note was deleted lands in writing, never Open (P0-entry.5)", async () => {
   test.setTimeout(90_000);
   const dirs = tempDirs();

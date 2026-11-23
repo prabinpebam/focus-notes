@@ -210,6 +210,36 @@ describe("first project note (PRJ-24)", () => {
     expect(await firstProjectNote(options)()).toBe(next);
   });
 
+  it("certifies a blank that replaced a stale certified note, so its saves advance it and a late arrival shares it", async () => {
+    const dir = await root();
+    const options = { roots: async () => [dir], writable: async () => {}, allowNonempty: true };
+    const create = firstProjectNote(options);
+    const path = (await create())!;
+    await rm(path);
+    await writeFile(path, "");
+    expect(await create()).toBe(path);
+    await create.write(path, () => new NoteWriter().write(path, "Typed after reuse", ""));
+    expect(await firstProjectNote(options)()).toBe(path);
+    expect(await readdir(dir)).toEqual(["Untitled.md"]);
+    expect(await readFile(path, "utf8")).toBe("Typed after reuse");
+  });
+
+  it("after a remembered note is gone, admits an empty Untitled beside a written certified one, keeping its bytes", async () => {
+    const dir = await root();
+    const options = { roots: async () => [dir], writable: async () => {}, allowNonempty: true };
+    const create = firstProjectNote(options);
+    const first = (await create())!;
+    await create.write(first, () => new NoteWriter().write(first, "# Kept first note\n", ""));
+    expect(await firstProjectNote(options)()).toBe(first);
+    const blank = await create("history");
+    expect(blank).toBe(join(dir, "Untitled 2.md"));
+    expect(await readFile(blank!, "utf8")).toBe("");
+    expect(await readFile(first, "utf8")).toBe("# Kept first note\n");
+    expect(await create("history")).toBe(blank);
+    expect(await firstProjectNote(options)()).toBe(blank);
+    expect((await readdir(dir)).sort()).toEqual(["Untitled 2.md", "Untitled.md"]);
+  });
+
   it("creates one ordinary empty note under concurrent admissions", async () => {
     const dir = await root();
     const create = firstProjectNote({ roots: async () => [dir], writable: async () => {} });
