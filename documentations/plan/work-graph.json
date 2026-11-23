@@ -268,6 +268,13 @@
       "specs": ["experience/project-model.md", "architecture/perceived-performance.md"], "lookahead": true, "status": "verifying"
     },
     {
+      "id": "WP-P.24", "stage": "Later", "title": "Opened files in Files",
+      "summary": "D-410 (owner, 23 November 19:38): the notes open now as bordered vertical tab buttons above Pinned, with a file icon, the name and a close × on hover and keyboard focus; one click activates; the Opened files header's ⋯ holds Close all with no confirmation; the section is absent with nothing open; open notes leave Recent. Design: OpenedFiles primitive and the gallery mock (Mocks: Opened files) on vq-opened-files-23nov. Not a 1.1.0 blocker: joins 1.1.0 only if the owner approves and its landing doesn't delay the gate.",
+      "requirements": ["FIL-20"], "dependsOn": ["WP-P.6"],
+      "touches": ["core", "views", "ui", "tokens"], "reviews": ["code", "design-system", "accessibility"],
+      "specs": ["design/views/files.html#opened-files"], "lookahead": false, "status": "design"
+    },
+    {
       "id": "WP-AI.15", "stage": "MAI", "title": "Single-list AI default choice",
       "summary": "D-267: one Settings connections list with keyboard-accessible Default row selection, sibling Test/Change/Remove actions and one Find on this PC action. Default and Rewrite's remembered picker share the existing device-local Writer ID. Built after POP release over 86631980: native ItemCard radio area, shared Writer bridge/tracker and explicit save failure/default deletion. UX-LIST evidence checked; integration and owner acceptance pending. D-264/D-265/D-266 preserved.",
       "requirements": ["AIS-16"],

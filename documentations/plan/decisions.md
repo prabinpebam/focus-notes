@@ -1,7 +1,30 @@
 # Decisions
 
 > [!NOTE]
-> **TL;DR.** D-407 archives every worker chat once its result is logged and nothing is queued, to save memory; a follow-up is a fresh chat with the handoff. D-406 removes the worker cap: one worker per independent ready item until the owner asks for fewer. D-405 is a narrow 1.1.0 closure-sprint exception for one rolling batch gate; its four-worker cap is superseded by D-406. D-404 runs every coordinator, worker and subagent on Claude Opus 5.5, passed explicitly. D-398 settles the 1.1.0 Autopilot scope and publishing defaults, authorizing production wiring of the prepared candidates. D-399 exempts query-input search and command surfaces from a decorative visual anchor. Owner corrections D-393–D-395 still govern GitHub references, in-app deletion and Find. D-400/D-401 keep Delete authorization isolated and retained private history self-contained and reversible. Earlier decisions remain historical where explicitly superseded.
+> **TL;DR.** D-410 proposes Opened files: the open notes as bordered vertical tabs above Pinned in Files, Close all under its ⋯ with no confirmation, and open notes left out of Recent (in design, not a 1.1.0 blocker). D-407 archives every worker chat once its result is logged and nothing is queued, to save memory; a follow-up is a fresh chat with the handoff. D-406 removes the worker cap: one worker per independent ready item until the owner asks for fewer. D-405 is a narrow 1.1.0 closure-sprint exception for one rolling batch gate; its four-worker cap is superseded by D-406. D-404 runs every coordinator, worker and subagent on Claude Opus 5.5, passed explicitly. D-398 settles the 1.1.0 Autopilot scope and publishing defaults, authorizing production wiring of the prepared candidates. D-399 exempts query-input search and command surfaces from a decorative visual anchor. Owner corrections D-393–D-395 still govern GitHub references, in-app deletion and Find. D-400/D-401 keep Delete authorization isolated and retained private history self-contained and reversible. Earlier decisions remain historical where explicitly superseded.
+
+## D-410: Opened files as vertical tabs above Pinned
+
+**Proposed, in design (owner, 23 November 2026, 19:38; ID assigned by coordinator).** The owner, verbatim:
+
+> We want to introduce a "currently opened" tabbing fucntionality.
+> - The currently opened files will be shown as vertical tabs above the pinned section in the files left panel
+> - This should look like tab-btns with borders and hover state with file icon, name and "close-icon on hover"
+> - This should get activated on single click
+> - There should be a header "Opened files" with a three dots menu at the right side giving menu to close all opened files. While using this option, since it's hidden under menu and it's non destructive, no need to confirm again.
+> - If a file is currently opened, it's not shown in the recent section.
+
+- **Where:** a section above Pinned in Files, headed **Opened files** in the section label style, with a ⋯ menu at its right holding **Close all**.
+- **Tabs:** one bordered tab button per open note, with a file icon, the name (truncated with an ellipsis) and a close ×. The border is the owner's explicit request and overrides the visual-noise default of no resting border inside a group. Rest, hover, pressed, focus and active share one box (D-354): only the fill, the active name's weight and the focus ring change.
+- **Single click activates.** The active tab has the open note's quiet fill and semibold name, as the tree marks the open note (D-111).
+- **The × shows on hover and on keyboard focus**, its place always kept so the name never moves; on touch screens (no hover) it's always shown.
+- **Close all needs no confirmation** (the owner: it's under a menu and non-destructive). Closing never deletes or discards anything.
+- **Section hidden when no files are open.**
+- **Opened files are excluded from Recent**, so a note never appears twice.
+- **Built as** the `OpenedFiles` primitive (tokens `cmp.openedFiles.*`), shown in the gallery under *Mocks: Opened files* over the app's own Files panel document. Requirement FIL-20, user can UC-FILE-13, scenario SC-FILE-08, component IA-CMP-OPENEDFILES, work package WP-P.24.
+- **Not a 1.1.0 blocker.** It joins 1.1.0 only if the owner approves the design and its landing doesn't delay the release gate; otherwise it follows 1.1.0.
+
+**Affects:** [Files panel](../design/views/files.html#opened-files), [requirements](../product/requirements.md) (FIL-20), [user can](../product/spec/user-can.md) (UC-FILE-13), [scenarios](../product/spec/scenarios.md) (SC-FILE-08), [information architecture](../design/information-architecture.html), [work graph](work-graph.json) (WP-P.24), [roadmap](roadmap.md#waiting-on-the-owner).
 
 ## D-407: archive finished worker chats
 
