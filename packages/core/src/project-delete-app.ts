@@ -140,10 +140,14 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
     check = c && !c.problem ? { ...c, name: projectName?.() || c.name } : c;
     if (!c || c.problem) { set({ checking: false, open: false }); toast(catalog.format("project.delete.unavailable"), { tone: "error" }); return; }
     const listing = await bridge.access?.load().catch(() => undefined);
+    // The window's own account check may not have answered yet: ask, rather than call a signed-in person signed out.
+    const login = c.kind !== "linked" || store.state.account.login ? store.state.account.login
+      : await bridge.firstRun?.account().then((a) => (a.account && !a.signedOut ? a.account.login : ""), () => "");
+    if (mine !== run) return;
     const status = c.kind === "linked"
-      ? (!store.state.account.login ? ({ state: "signin" } as RepoStatus) : await ws!.repoStatus?.(c.repo).catch((): RepoStatus => ({ state: "offline" })))
+      ? (!login ? ({ state: "signin" } as RepoStatus) : await ws!.repoStatus?.(c.repo).catch((): RepoStatus => ({ state: "offline" })))
       : undefined;
-    if (ws?.deleteRepo && c.kind === "linked" && c.privateRepo && store.state.account.login) await ws.repoStatus?.(c.privateRepo);
+    if (ws?.deleteRepo && c.kind === "linked" && c.privateRepo && login) await ws.repoStatus?.(c.privateRepo);
     if (mine !== run) return;
     const p = problemOf(status);
     set({
