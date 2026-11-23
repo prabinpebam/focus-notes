@@ -1,7 +1,7 @@
 {
   "$comment": "The implementation plan in machine-readable form. Agents read this file to choose ready work. Keep it in step with implementation-plan.md; the plan check (WP-0.1) fails CI if they disagree.",
   "version": 1,
-  "updated": "2026-11-07",
+  "updated": "2026-11-23",
   "stages": [
     {
       "id": "M0",
@@ -127,12 +127,12 @@
     },
     {
       "id": "WP-P.4", "stage": "MP", "title": "Private projects in their own windows",
-      "summary": "G1 / F2+S1 (D-378): choose local Git or private GitHub through the production account, preserve local writing with Continue setup on failure. P0 D-397 / PRJ-24: every project entry with no note lands in empty Untitled/caret, NEVER initial Open; preserve valid blank/nonblank restoration and concurrent choices. Real creation/card/picker/Recent/restoration/new-window journeys and centred unclipped Open geometry at all supported sizes/themes required. Trusted-root admission remains exclusive and byte-safe. Production creation and owner first-real evidence remain open; G1.1-G1.9 and P0-entry DoD govern.",
+      "summary": "G1 / F2+S1 (D-378): choose local Git or private GitHub through the production account, preserving local writing with Continue setup on failure; landed with its 7/7 gate. P0 D-397 / PRJ-24: every project entry with no note lands in empty Untitled/caret, never initial Open, including stale history and reused blanks; landed 23 November in batch 1b 09f3ade6 (exact-head run 45165997392, 7/7). Trusted-root admission remains exclusive and byte-safe. The owner's view of the first real creation (G1.8) remains open; G1.1-G1.9 and P0-entry DoD govern.",
       "requirements": ["PRJ-01", "PRJ-02", "PRJ-03", "PRJ-24"],
       "dependsOn": ["WP-8.5", "WP-3.1", "WP-3.2", "WP-3.3"],
       "touches": ["core", "desktop", "views", "schemas"], "reviews": ["code", "security", "design-system", "accessibility"],
       "specs": ["experience/projects.md", "experience/first-run.md", "experience/project-model.md", "plan/definition-of-done.md#g1-new-project-on-this-computer-or-on-github", "architecture/repository-and-publishing.html", "architecture/desktop-and-git.md"],
-      "lookahead": true, "status": "building"
+      "lookahead": true, "status": "verifying"
     },
     {
       "id": "WP-P.5", "stage": "MP", "title": "Recognizable project windows",
@@ -171,17 +171,17 @@
     },
     {
       "id": "WP-P.10", "stage": "MP", "title": "Shares without names",
-      "summary": "G6 / F10: SHR-23 opaque identifier/privacy gate first, then random 8-character collision-checked codes, item-based All shares with Copy again/Extend/Withdraw and the exact SHR-19 template. Preserve existing grants; no source-derived aliases, false live state or secret logs. Existing controls are partial; identifier/media/template and first-real-share/Extend/Withdraw proof remain open. UX approved D-335; build against G6.1-G6.5.",
+      "summary": "G6 / F10: SHR-23 opaque identifier/privacy gate, random 8-character collision-checked codes, persisted item templates and item-based All shares with Copy again/Extend/Withdraw; Turn off withdraws every active share. Runtime landed 23 November in batch 2 6aebf805 (exact-head run 45179887054, 7/7); fakes only. Open: the share-information template's two-column layout and the recipient-voice share message await the owner's design approval (D-408, D-409), then batch 3 wiring; the first real share/Extend/Withdraw (G6.5) is the owner's. UX approved D-335; build against G6.1-G6.5.",
       "requirements": ["SHR-17", "SHR-18", "SHR-19", "SHR-23"], "dependsOn": ["WP-P.9", "WP-5.4"],
       "touches": ["core", "seal", "web", "views"], "reviews": ["code", "security", "accessibility"],
       "specs": ["design/views/sharing.md", "experience/files-and-sharing.md#codes-history-and-share-information", "plan/definition-of-done.md#g6-opaque-share-codes-shares-list-and-information-template", "architecture/repository-and-publishing.html"], "lookahead": true, "status": "building"
     },
     {
       "id": "WP-P.11", "stage": "MP", "title": "GitHub collaborators",
-      "summary": "G2 / F6: send a confirmed invitation exactly once through the signed-in GitHub client, with personal Collaborator or supported organization roles and whole-project/private-note/share-secret warning. A local Invite draft is not sent; preserve fields on invalid/duplicate/offline/refused/rate-limited requests. Approved D-335 dialogs; build against G2.4-G2.9, with first real invite reserved for the owner.",
+      "summary": "G2 / F6: a confirmed invitation is sent exactly once through the signed-in GitHub client, with personal Collaborator or supported organization roles and the whole-project/private-note/share-secret warning; invalid/duplicate/offline/refused/rate-limited requests keep the person and role. Landed at ca0e8d05 (run 45124828634, 7/7) and rechecked in batch 2 6aebf805 (exact-head run 45179887054, 7/7); fakes only. Approved D-335 dialogs; G2.4-G2.7 met on fakes; the first real invite (G2.9) is the owner's.",
       "requirements": ["PRJ-12"], "dependsOn": ["WP-P.4"],
       "touches": ["github", "core", "views"], "reviews": ["code", "security", "design-system"],
-      "specs": ["experience/projects.md", "experience/files-and-sharing.md#invite-a-github-account", "plan/definition-of-done.md#g2-turn-on-sharing-and-invite-a-person"], "lookahead": true, "status": "building"
+      "specs": ["experience/projects.md", "experience/files-and-sharing.md#invite-a-github-account", "plan/definition-of-done.md#g2-turn-on-sharing-and-invite-a-person"], "lookahead": true, "status": "verifying"
     },
     {
       "id": "WP-P.12", "stage": "MP", "title": "A website with its own theme",
@@ -192,14 +192,14 @@
     },
     {
       "id": "WP-P.22", "stage": "MP", "title": "Publish and unpublish on today's workspace",
-      "summary": "G3 / F5+S2 (D-379/D-382): approved Publish/Unpublish through the signed-in production client, leak gate before public commit/push/deploy, exact-commit Pages deployment and page response before Published, one leavable streamed task and recovery. Existing pairs use today's site; new projects require explicit PRJ-10 pairing. Local drafts are not live; safe wiring runs against protocol fakes, and first real Publish/Unpublish and target choice remain owner-dependent. Build against G3.1-G3.8.",
+      "summary": "G3 / F5+S2 (D-379/D-382): live Publish and Unpublish through the signed-in production client and the paired G2 Pages publisher; the leak gate (with deliberate public exclusion) runs before every public commit/push/deploy; Published only after the exact commit's Pages deployment; one leavable streamed task with Retry; Unpublish in the Note menu. Landed 23 November in batch 2 6aebf805 (exact-head run 45179887054, 7/7); fakes only. G3.1-G3.6 met on fakes; the owner's first real Publish and Unpublish (G3.7, G3.8) remain open.",
       "requirements": ["SHR-25", "SHR-26", "SHR-04", "SEC-06"], "dependsOn": ["WP-5.1"],
       "touches": ["core", "desktop", "views", "github"], "reviews": ["code", "security", "design-system", "accessibility"],
-      "specs": ["experience/published-site.md#production-publishing-contract", "plan/definition-of-done.md#g3-publish-and-unpublish-for-real", "design/views/sharing.md", "architecture/perceived-performance.md"], "lookahead": true, "status": "building"
+      "specs": ["experience/published-site.md#production-publishing-contract", "plan/definition-of-done.md#g3-publish-and-unpublish-for-real", "design/views/sharing.md", "architecture/perceived-performance.md"], "lookahead": true, "status": "verifying"
     },
     {
       "id": "WP-P.13", "stage": "MP", "title": "Retire browser writing safely",
-      "summary": "Owner-approved website-only retirement plan: one-click local export of owner's drafts if any, then remove editor/demo/vault/ease-in. No heavy inventory, byte-equivalence or 30-day recovery gates; failed export preserves draft access and share keys remain untouched. 6 November: apps/web, its demo and IndexedDB store still exist; browser retirement is approved but not implemented.",
+      "summary": "Owner-approved website-only retirement plan: one-click local export of owner's drafts if any, then remove editor/demo/vault/ease-in. No heavy inventory, byte-equivalence or 30-day recovery gates; failed export preserves draft access and share keys remain untouched. 23 November: the web export screen awaits the owner's design approval; apps/web, its demo and IndexedDB store still exist.",
       "requirements": ["WEB-01"], "dependsOn": ["WP-5.1"],
       "touches": ["web", "site", "help", "spec"], "reviews": ["code", "security", "accessibility"],
       "specs": ["architecture/web-app.md", "plan/distribution.md", "product/site-and-help.md"], "lookahead": true, "status": "planned"
@@ -234,10 +234,10 @@
     },
     {
       "id": "WP-P.18", "stage": "MP", "title": "Turn sharing on and off",
-      "summary": "G2 / F3: New-project folders can explicitly turn on sharing through the production account client; confirmation names neutral editable public site repo/Pages URL and sealed/plaintext/history consequences. Until available, hide Share with one honest reason. Preserve/reconcile failed setup, seal locally, keep private working notes before Turn off, remove legacy site secrets and never silently republish. Approved D-335; G2.1-G2.3/G2.6-G2.8; owner first activation remains open.",
+      "summary": "G2 / F3: New-project folders explicitly turn on sharing through the production account client; confirmation names the neutral editable public site repository/Pages URL and sealed/plaintext/history consequences; failed setup keeps the site name and Retry reconciles. Turn off keeps private working notes, withdraws every active share and empties the site; re-enable never republishes. Landed 23 November in batch 2 6aebf805 (exact-head run 45179887054, 7/7); fakes only. Approved D-335; G2.1-G2.3 and G2.6-G2.7 met on fakes; the owner's first activation (G2.8) remains open.",
       "requirements": ["PRJ-10"], "dependsOn": ["WP-P.4", "WP-P.9", "WP-P.12", "WP-5.1"],
       "touches": ["core", "desktop", "seal"], "reviews": ["code", "security", "design-system", "accessibility"],
-      "specs": ["experience/projects.md", "experience/files-and-sharing.md#turning-on-sharing-for-a-new-project", "plan/definition-of-done.md#g2-turn-on-sharing-and-invite-a-person", "architecture/repository-and-publishing.html"], "lookahead": true, "status": "building"
+      "specs": ["experience/projects.md", "experience/files-and-sharing.md#turning-on-sharing-for-a-new-project", "plan/definition-of-done.md#g2-turn-on-sharing-and-invite-a-person", "architecture/repository-and-publishing.html"], "lookahead": true, "status": "verifying"
     },
     {
       "id": "WP-P.19", "stage": "MP", "title": "Launch where I left off",
@@ -262,7 +262,7 @@
     },
     {
       "id": "WP-P.23", "stage": "MP", "title": "Delete a project in the app",
-      "summary": "F4.1 handoff/local cleanup and folder acceptance landed (4ed4ad48/6667dc33, seven-job gate 42381219626). D-394 / F4.2 supersedes handoff-only DD-PROJ-12: in-app deletion with one-time least-privilege step-up, never stored; reasoned Open on GitHub fallback only for refusal/decline. New six-state design candidate needs approval before wiring. Preserve unpushed/private notes, typed confirmation, 404 never proof, confirmed remote deletion before recycling, partial results and Retry. F4.x/MP.34 first real deletion remains the owner (D-343); fakes only.",
+      "summary": "F4.1 handoff/local cleanup and folder acceptance landed (4ed4ad48/6667dc33, gate 42381219626). D-394 / F4.2: in-app deletion with one-time least-privilege authorization, never stored (D-400), self-contained kept-private history (D-401) and current-project startup (D-402); six states with resume and already-gone handling landed 23 November in batch 2 6aebf805 (exact-head run 45179887054, 7/7); fakes only. Preserve unpushed/private notes, typed confirmation, 404 never proof, confirmed remote deletion before recycling, partial results and Retry. F4.2.5/MP.34 first real deletion remains the owner's (D-343).",
       "requirements": ["PRJ-23"], "dependsOn": ["WP-P.17", "WP-P.20"],
       "touches": ["core", "desktop", "views", "github"], "reviews": ["code", "security", "design-system", "accessibility"],
       "specs": ["experience/project-model.md", "architecture/perceived-performance.md"], "lookahead": true, "status": "verifying"
@@ -1795,7 +1795,7 @@
       "id": "WP-5.14",
       "stage": "M5",
       "title": "Notes folder recovery and sync status",
-      "summary": "G5 / F8: recorded-folder check before Git/watcher/load; missing/moved/disconnected means recovery, never an empty-project startup. Find/restored/download/sign-in/explicit fresh-folder branches preserve records and bytes; verified private reconciliation and mass-deletion pause keep writing safe. Partial today; build against G5.1-G5.6 and a journey that removes then recovers a disposable folder. Real-account recovery remains owner-dependent if needed.",
+      "summary": "G5 / F8: recorded-folder check before Git/watcher/load; missing/moved/disconnected means recovery, never an empty-project startup. Landed: source access gated on folder verification, Find the folder, a missing last project resuming its own window, Start with an empty folder as a new local Git project in its own window, Download again with offline/signed-out/refused/failed journeys and named recovery waits (batch 1b 09f3ade6 (exact-head run 45165997392, 7/7); batch 2 6aebf805 (exact-head run 45179887054, 7/7)). Open: the G5.4 account/sync alert awaits the owner's two-column alert approval (D-408) and batch 3 wiring; the owner's real recovery (G5.6) if needed.",
       "requirements": [
         "FRE-11",
         "FRE-12",
@@ -2815,10 +2815,10 @@
     },
     {
       "id": "WP-9.6", "stage": "Later", "title": "Encrypted image sharing",
-      "summary": "Encrypt the exact referenced media of a shared note with opaque names; strip metadata from published images. Until it lands, sharing a note with images says so and stops (D-314).",
+      "summary": "A code-shared note carries its exact referenced images, sealed with it under opaque names; the share reader decrypts and shows them in the page; public and sealed media stay separate. Landed 23 November in batch 2 6aebf805 (exact-head run 45179887054, 7/7); fakes only. The owner's first real share with images belongs to G6.5.",
       "requirements": ["IMG-06"], "dependsOn": ["WP-9.3", "WP-P.10", "WP-5.1"],
       "touches": ["seal", "core"], "reviews": ["code", "security"],
-      "specs": ["experience/images.md", "architecture/repository-and-publishing.html"], "lookahead": true, "status": "planned"
+      "specs": ["experience/images.md", "architecture/repository-and-publishing.html"], "lookahead": true, "status": "verifying"
     },
     {
       "id": "WP-9.1",
@@ -2865,10 +2865,10 @@
     },
     {
       "id": "WP-9.9", "stage": "Later", "title": "Images in published notes",
-      "summary": "D-349 images slice 5 and publishing slice 5: publishing a note copies exactly its referenced images, metadata stripped, into the published site's assets/images under their opaque names; unpublish removes unused copies; a missing image stops the publish with Locate image. Waits for the owner's yes to publishing images.",
+      "summary": "Publishing a note includes its referenced JPEG/PNG images, including the project's managed assets/images, with location and camera metadata removed; public pages show published images from the site's own notes/, else their description; the desktop package ships the page renderer at resources/reader. Landed 23 November in batch 2 6aebf805 (exact-head run 45179887054, 7/7); fakes only. Not yet separately evidenced: Unpublish removing unused image copies and Locate image when a referenced image is missing.",
       "requirements": ["IMG-13"], "dependsOn": ["WP-9.7", "WP-P.22"],
       "touches": ["core", "desktop", "seal", "web"], "reviews": ["code", "security"],
-      "specs": ["experience/images.md", "experience/published-site.md", "architecture/repository-and-publishing.html"], "lookahead": true, "status": "planned"
+      "specs": ["experience/images.md", "experience/published-site.md", "architecture/repository-and-publishing.html"], "lookahead": true, "status": "building"
     },
     {
       "id": "WP-9.2",

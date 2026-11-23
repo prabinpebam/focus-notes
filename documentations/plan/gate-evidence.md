@@ -247,9 +247,19 @@ Each local app run used invisible E2E windows and recorded main PIDs, followed b
 
 ## Summary
 
+### Batch 1b and batch 2 landings, 23 November
+
+**Landed on `main`, exact-head Windows CI seven of seven green.** Both heads were fast-forwarded only after their own run passed (attempt 2 of each run). All runtime evidence uses fakes; no real repository, invitation, Pages deployment, share or deletion was made.
+
+| Head | Exact-head run | Landed |
+| --- | --- | --- |
+| `09f3ade6` (batch 1b) | [45165997392](https://github.com/prabinpebam/focus-notes/actions/runs/45165997392), attempt 2: test, changes, web and journey shards 1–4 green | D-397 project entry: stale history and reused blanks start writing, never Open (PRJ-24, P0-entry). D-186 minimap pin dismissal and current-row focus, quarantine removed (UI-13). D-156 reduced-motion sampler and D-162 move journey (test fixes). G5.1–G5.2 recovery: source access gated on verification, Find the folder, missing found folder is an error, named recovery waits (FRE-11, FRE-12). Site offers the Windows download only (D-211). |
+| `6aebf805` (batch 2) | [45179887054](https://github.com/prabinpebam/focus-notes/actions/runs/45179887054), attempt 2: same seven jobs green | G3: live Publish/Unpublish through the paired G2 publisher, leak gate with deliberate public exclusion, exact-commit Pages wait, Unpublish in the Note menu, published JPEG/PNG images with location and camera metadata removed, page renderer packed at `resources/reader`, public page images (G3.1–G3.6, WP-9.9). G2: production setup, Turn off withdraws every share and empties the site, re-enable never republishes; invitations rechecked (G2.1–G2.7). G6: persisted item templates, opaque IDs, item-share lifecycle, sealed images in code shares and the reader (G6.1–G6.4, WP-9.6). In-app Delete six states, resume and already-gone, local refusals (F4.2.1–F4.2.4, D-400–D-402). G5.2–G5.3: Start with an empty folder, a missing last project resuming its own window, Download again journeys. PRF-02 samples kept in `bench.json`; D-406 and D-407 rules; share workflow review catalogue. |
+
+**Still open:** owner-only rows G1.8, G2.8, G2.9, G3.7, G3.8, G5.6, G6.5 and F4.2.5, and Partner Center/IARC, release and tag; the owner's design approval of two-column dialogs (D-408, including the G5 account/sync alert and the G6 share template), the share message (D-409) and the web export screen; batch 3 (those wirings and the DSY-11 bench root fix); Store screenshots; final MSIX and release gates.
 ### D-186 minimap quarantine removal, 23 November
 
-**Locally verified; rolling merge-candidate CI pending.** The D-186
+**Landed 23 November** in batch 1b `09f3ade6`, exact-head run [45165997392](https://github.com/prabinpebam/focus-notes/actions/runs/45165997392) seven of seven green. **Locally verified; rolling merge-candidate CI pending** (pre-landing record). The D-186
 `test.fixme` and its active-quarantine row are removed together with the
 runtime repair. Every journey assertion is unchanged; no timeout increase,
 forced click, screenshot-baseline change or quarantine extension was used.
@@ -272,7 +282,7 @@ forced click, screenshot-baseline change or quarantine extension was used.
 
 ### G2 sharing setup and invitations, 23 November
 
-**Invitations (G2.4–G2.6, invitation portion): landed. Setup (G2.1–G2.3, setup portion of G2.6): local, pending CI, not landed.** The D-335 invitation runtime `ca0e8d05` is on `main`, and every invitation file on `7db907e7` matches it byte for byte. The production setup and Turn off on `fix-g2-setup-23nov` (`f8639e68`, `fa9246df`, `6663f011` on `7db907e7`) is unpushed; its exact-head seven-check gate and owner row G2.8 stay open.
+**Landed 23 November.** Setup and Turn off landed with batch 2 `6aebf805`, exact-head run [45179887054](https://github.com/prabinpebam/focus-notes/actions/runs/45179887054) seven of seven green; owner rows G2.8 and G2.9 stay open. The entry below is the pre-landing record. **Invitations (G2.4–G2.6, invitation portion): landed. Setup (G2.1–G2.3, setup portion of G2.6): local, pending CI, not landed.** The D-335 invitation runtime `ca0e8d05` is on `main`, and every invitation file on `7db907e7` matches it byte for byte. The production setup and Turn off on `fix-g2-setup-23nov` (`f8639e68`, `fa9246df`, `6663f011` on `7db907e7`) is unpushed; its exact-head seven-check gate and owner row G2.8 stay open.
 
 | Evidence | Result |
 | --- | --- |
