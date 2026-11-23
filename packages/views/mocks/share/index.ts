@@ -22,6 +22,7 @@ export const shareMocks = {
     { id: "share.note", label: "3. Share dialog: a note with a passcode", view: "flow", local: { open: "share", target: "focus", passcode: true } },
     { id: "share.review", label: "4. Review contents over the share dialog", view: "flow", local: { open: "share", target: "book", review: true } },
     { id: "share.first", label: "5. First share: turn on sharing for the project", view: "flow", local: { open: "share", target: "book", sharingOn: false } },
+    { id: "share.firstDialog", label: "5b. First share: the turn-on dialog", view: "flow", local: { open: "share", target: "book", sharingOn: false, step: "first" } },
     { id: "share.offline", label: "6. Share dialog: offline", view: "flow", local: { open: "share", target: "book", scenario: "offline" } },
     { id: "share.signedOut", label: "7. Share dialog: signed out", view: "flow", local: { open: "share", target: "book", scenario: "signedOut" } },
     { id: "share.large", label: "8. Share dialog: a large folder", view: "flow", local: { open: "share", target: "book", scenario: "large" } },

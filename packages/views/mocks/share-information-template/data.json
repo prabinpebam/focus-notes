@@ -1,0 +1,57 @@
+{
+ "copy": {
+  "title": "Sharing",
+  "cardTitle": "Share information",
+  "cardDetail": "What Copy share information sends",
+  "badgeDefault": "Default",
+  "badgeEdited": "Edited",
+  "edit": "Edit",
+  "sharesHeading": "All shares",
+  "copyInfo": "Copy share information",
+  "dialogTitle": "Share information",
+  "field": "Message",
+  "fieldHelp": "Use {title}, {link}, {accessCode}, {expires} and {site}. Lines for a method a share doesn't have are left out.",
+  "previewHeading": "Preview",
+  "previewFor": {
+   "both": "For a share with a link and access code",
+   "link": "For a share with a link only",
+   "code": "For a share with an access code only"
+  },
+  "reset": "Reset to default",
+  "resetDisabled": "Already the default message",
+  "save": "Save",
+  "saveDisabled": "Fix the message first",
+  "problemName": "Remove {name}. Shares never ask for a name.",
+  "problemPasscode": "Use {accessCode} instead of {passcode}.",
+  "problemMethod": "Add {link}, or {site} and {accessCode}, so people can open the share.",
+  "copyProblem": "Add a link, or the site address and access code, for this share.",
+  "editTemplate": "Edit message",
+  "useDefault": "Use default this time",
+  "toastSaved": "Share information saved.",
+  "toastCopied": "Share information copied.",
+  "toastCopiedDefault": "Share information copied with the default message.",
+  "previewEmpty": "Nothing to preview yet.",
+  "sharesEmpty": "No shares yet."
+ },
+ "templates": {
+  "default": "“{title}” is shared read-only.\nOpen: {link}\nOr open {site} and enter this access code: {accessCode}\nWorks until {expires}.\nAnyone with the link or access code can read it and forward it.\nExpiry or withdrawal cannot remove copies already downloaded.",
+  "noLink": "“{title}” is shared read-only.\nOpen {site} and enter this access code: {accessCode}\nWorks until {expires}.\nAnyone with the access code can read it and forward it.\nExpiry or withdrawal cannot remove copies already downloaded.",
+  "withName": "Hi {name},\n“{title}” is shared read-only.\nOpen: {link}\nOr open {site} and enter this access code: {accessCode}\nWorks until {expires}.",
+  "noMethod": "“{title}” is shared read-only.\nWorks until {expires}.\nAnyone with the link or access code can read it and forward it."
+ },
+ "previewLines": [
+  { "id": "title", "samples": ["both", "link", "code"], "source": "“{title}” is shared read-only.", "text": "“Trip plans” is shared read-only." },
+  { "id": "link", "samples": ["both", "link"], "source": "Open: {link}", "text": "Open: https://you.github.io/notes/s/#k7Qm2xPa" },
+  { "id": "code", "samples": ["both", "code"], "source": "Or open {site} and enter this access code: {accessCode}", "text": "Or open https://you.github.io/notes/s/ and enter this access code: R4TN8WQZ" },
+  { "id": "codeOnly", "samples": ["both", "code"], "source": "Open {site} and enter this access code: {accessCode}", "text": "Open https://you.github.io/notes/s/ and enter this access code: R4TN8WQZ" },
+  { "id": "until", "samples": ["both", "link", "code"], "source": "Works until {expires}.", "text": "Works until 30 November 2026." },
+  { "id": "forward", "samples": ["both", "link", "code"], "source": "Anyone with the link or access code can read it and forward it.", "text": "Anyone with the link or access code can read it and forward it." },
+  { "id": "forwardCode", "samples": ["both", "link", "code"], "source": "Anyone with the access code can read it and forward it.", "text": "Anyone with the access code can read it and forward it." },
+  { "id": "copies", "samples": ["both", "link", "code"], "source": "Expiry or withdrawal cannot remove copies already downloaded.", "text": "Expiry or withdrawal cannot remove copies already downloaded." }
+ ],
+ "shares": [
+  { "id": "trip", "title": "Trip plans", "detail": "Link · Expires 30 Nov", "badge": "Active", "icon": "document", "canLink": true, "canCode": false },
+  { "id": "book", "title": "Book drafts", "detail": "Access code · Expires 7 Dec", "badge": "Active", "icon": "folder", "canLink": false, "canCode": true },
+  { "id": "focus", "title": "On focus", "detail": "Link and access code · Never expires", "badge": "Active", "icon": "document", "canLink": true, "canCode": true }
+ ]
+}

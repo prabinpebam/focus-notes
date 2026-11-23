@@ -58,8 +58,8 @@
           "type": "Stack", "props": { "gap": "stackGroup" }, "children": [
             { "type": "Text", "props": { "value": { "t": "rewrite.discardWarning" } } },
             { "type": "Inline", "props": { "gap": "inlineItem", "justify": "end" }, "children": [
-              { "type": "Button", "props": { "label": { "t": "rewrite.keepPrompt" }, "variant": "primary", "autoFocus": true }, "on": { "press": { "run": "rewrite.keepPrompt" } } },
-              { "type": "Button", "props": { "label": { "t": "rewrite.discardPrompt" }, "variant": "subtle" }, "on": { "press": { "run": "rewrite.discardPrompt" } } }
+              { "type": "Button", "props": { "label": { "t": "rewrite.discardPrompt" }, "variant": "subtle" }, "on": { "press": { "run": "rewrite.discardPrompt" } } },
+              { "type": "Button", "props": { "label": { "t": "rewrite.keepPrompt" }, "variant": "primary", "autoFocus": true }, "on": { "press": { "run": "rewrite.keepPrompt" } } }
             ] }
           ]
         }]

@@ -28,24 +28,10 @@
    "type": "Inline",
    "props": {
     "gap": "inlineItem",
-    "wrap": true
+    "wrap": true,
+    "justify": "end"
    },
    "children": [
-    {
-     "type": "Button",
-     "props": {
-      "label": {
-       "t": "project.open.newLocal"
-      },
-      "variant": "secondary",
-      "icon": "quickNote"
-     },
-     "on": {
-      "press": {
-       "run": "projects.newLocal"
-      }
-     }
-    },
     {
      "type": "Button",
      "props": {
@@ -103,6 +89,21 @@
      "on": {
       "press": {
        "run": "projects.choose"
+      }
+     }
+    },
+    {
+     "type": "Button",
+     "props": {
+      "label": {
+       "t": "project.open.newLocal"
+      },
+      "variant": "secondary",
+      "icon": "quickNote"
+     },
+     "on": {
+      "press": {
+       "run": "projects.newLocal"
       }
      }
     }

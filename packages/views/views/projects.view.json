@@ -237,7 +237,7 @@
        {
         "type": "Inline",
         "props": {
-         "align": "end"
+         "justify": "end"
         },
         "children": [
          {
