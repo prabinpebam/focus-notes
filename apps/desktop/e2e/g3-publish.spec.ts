@@ -8,7 +8,7 @@ import { serveFakeGitHub } from "../test/fake-pages.ts";
 import { launch, quit, tempDirs, type Launched } from "./helpers.ts";
 import { configure, git, write } from "./instance.ts";
 
-const TRIP = "# Trip to the coast\n\nWe walked along the harbour wall until the light went.\n\n![Harbour](../assets/images/harbour.jpg)\n";
+const TRIP = "# Trip to the coast\n\nWe walked along the harbour wall until the light went.\n\n![Harbour](../../assets/images/harbour.jpg)\n";
 const seg = (marker: number, payload: Buffer) => { const h = Buffer.from([0xff, marker, 0, 0]); h.writeUInt16BE(payload.length + 2, 2); return Buffer.concat([h, payload]); };
 /** A photo carrying camera and GPS EXIF, which must never reach the public site. */
 const PHOTO = Buffer.concat([Buffer.from([0xff, 0xd8]), seg(0xe1, Buffer.from("Exif\0\0MM\0*\0\0\0\x08Canon GPS 38.7N 9.1W", "latin1")),
@@ -22,8 +22,8 @@ async function pairedProject() {
   write(join(root, ".focus-notes", "workspace.json"), '{"formatVersion":1}\n');
   write(join(root, "notes", "journeys", "trip.md"), TRIP);
   write(join(root, "notes", "diary.md"), `# Diary\n\n${SECRET}\n`);
-  mkdirSync(join(root, "notes", "assets", "images"), { recursive: true });
-  writeFileSync(join(root, "notes", "assets", "images", "harbour.jpg"), PHOTO);
+  mkdirSync(join(root, "assets", "images"), { recursive: true });
+  writeFileSync(join(root, "assets", "images", "harbour.jpg"), PHOTO);
   write(join(root, "access.json"), `${JSON.stringify({ version: 1, grants: [] }, null, 2)}\n`);
   write(join(root, ".focus-notes", "site-pairing.json"), JSON.stringify({ version: 1, project: "ada/book", owner: "ada", name: "quiet-site",
     intent: "11111111-1111-1111-1111-111111111111", phase: "ready", site: "https://ada.github.io/quiet-site/" }));
@@ -84,10 +84,10 @@ test("G3.1/G3.5: Publish saves exactly the note to the paired site, keeps runnin
     expect(site.get("notes/journeys/trip.md")).toBe(TRIP);
     expect(site.has("n/journeys/trip/index.html")).toBe(true);
     expect([...site.keys()].some(path => path.includes("diary"))).toBe(false);
-    const photo = fake.git.siteBytes("ada/quiet-site").get("notes/assets/images/harbour.jpg")!;
+    const photo = fake.git.siteBytes("ada/quiet-site").get("assets/images/harbour.jpg")!;
     for (const leak of ["Canon", "GPS", "38.7N", "Exif"]) expect(photo.toString("latin1")).not.toContain(leak);
     expect(photo.subarray(-6)).toEqual(PHOTO.subarray(-6));
-    expect(readFileSync(join(root, "notes", "assets", "images", "harbour.jpg"))).toEqual(PHOTO);
+    expect(readFileSync(join(root, "assets", "images", "harbour.jpg"))).toEqual(PHOTO);
     expect([...site.keys()].some(path => path.startsWith("assets/") && path.endsWith(".woff2"))).toBe(true);
     expect([...site.values()].some(text => text.includes(SECRET))).toBe(false);
     expect(JSON.parse(readFileSync(join(root, ".focus-notes", "published.json"), "utf8"))).toEqual({ version: 1, notes: ["journeys/trip.md"] });
@@ -141,11 +141,11 @@ test("G3.4: Unpublish from the ⋯ menu removes the note and its photo from the 
     const site = fake.git.site("ada/quiet-site");
     expect(site.has("notes/journeys/trip.md")).toBe(false);
     expect(site.has("n/journeys/trip/index.html")).toBe(false);
-    expect(site.has("notes/assets/images/harbour.jpg")).toBe(false);
+    expect(site.has("assets/images/harbour.jpg")).toBe(false);
     expect(fake.git.pushes).toEqual(["ada/quiet-site", "ada/quiet-site"]);
     expect(JSON.parse(readFileSync(join(root, ".focus-notes", "published.json"), "utf8"))).toEqual({ version: 1, notes: [] });
     expect(readFileSync(join(root, "notes", "journeys", "trip.md"))).toEqual(before);
-    expect(readFileSync(join(root, "notes", "assets", "images", "harbour.jpg"))).toEqual(PHOTO);
+    expect(readFileSync(join(root, "assets", "images", "harbour.jpg"))).toEqual(PHOTO);
     expect(await l.page.evaluate(() => performance.getEntriesByName("fn:sharing.unpublishSite").length)).toBeGreaterThan(0);
   } finally {
     await closeApp(l);

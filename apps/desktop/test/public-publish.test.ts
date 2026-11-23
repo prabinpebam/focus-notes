@@ -120,13 +120,14 @@ it("WP-9.9 Publish: a note's local photo reaches the site beside it with no GPS 
   const seg = (marker: number, payload: Buffer) => { const h = Buffer.from([0xff, marker, 0, 0]); h.writeUInt16BE(payload.length + 2, 2); return Buffer.concat([h, payload]); };
   const photo = Buffer.concat([Buffer.from([0xff, 0xd8]), seg(0xe1, Buffer.from("Exif\0\0MM\0*\0\0\0\x08Canon GPS 38.7N 9.1W", "latin1")),
     seg(0xdb, Buffer.alloc(65, 1)), seg(0xda, Buffer.from([1, 1, 0, 0, 0x3f, 0])), Buffer.from([0x12, 0xff, 0x00, 0x34, 0xff, 0xd9])]);
-  const t = await project({ notes: { "journeys/trip.md": `${TRIP}\n![Harbour](../assets/images/harbour.jpg)\n` } });
-  await mkdir(join(t.notesDir, "assets", "images"), { recursive: true });
-  await writeFile(join(t.notesDir, "assets", "images", "harbour.jpg"), photo);
+  const t = await project({ notes: { "journeys/trip.md": `${TRIP}\n![Harbour](../../assets/images/harbour.jpg)\n` } });
+  // A project's managed images live at its root (D-365), outside notes/.
+  await mkdir(join(t.root, "assets", "images"), { recursive: true });
+  await writeFile(join(t.root, "assets", "images", "harbour.jpg"), photo);
   await t.runtime.publishNotes({ notes: ["journeys/trip.md"] });
-  const published = t.git.siteBytes("ada/quiet-site").get("notes/assets/images/harbour.jpg");
+  const published = t.git.siteBytes("ada/quiet-site").get("assets/images/harbour.jpg");
   expect(published).toBeDefined();
   for (const leak of ["Canon", "GPS", "38.7N", "Exif"]) expect(published!.toString("latin1")).not.toContain(leak);
   expect(published!.subarray(-6)).toEqual(Buffer.from([0x12, 0xff, 0x00, 0x34, 0xff, 0xd9]));
-  expect(await readFile(join(t.notesDir, "assets", "images", "harbour.jpg"))).toEqual(photo);
+  expect(await readFile(join(t.root, "assets", "images", "harbour.jpg"))).toEqual(photo);
 });

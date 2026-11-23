@@ -59,11 +59,11 @@ it("WP-9.9: local JPEG and PNG images are staged beside the note with their meta
   const text = "# Trip\n\n![Harbour](../assets/images/harbour.jpg \"Harbour\")\n\n<img src=\"maps/route%20one.png\" alt=\"Route\">\n";
   const { root, staging } = await notes({ "trips/trip.md": text, "assets/images/harbour.jpg": photo, "trips/maps/route one.png": png });
   await expect(stagePublicSelection({ notesRoot: root, selection: { notes: ["trips/trip.md"] }, staging }))
-    .resolves.toEqual({ notes: ["trips/trip.md"], media: ["assets/images/harbour.jpg", "trips/maps/route one.png"] });
-  const published = await readFile(join(staging, "assets", "images", "harbour.jpg"));
+    .resolves.toEqual({ notes: ["trips/trip.md"], media: ["notes/assets/images/harbour.jpg", "notes/trips/maps/route one.png"] });
+  const published = await readFile(join(staging, ".media", "notes", "assets", "images", "harbour.jpg"));
   for (const leak of ["Canon", "GPS", "51.5N", "home address", "Exif"]) expect(published.toString("latin1")).not.toContain(leak);
   expect(published.subarray(-4)).toEqual(Buffer.from([0x12, 0x34, 0xff, 0xd9]));
-  expect((await readFile(join(staging, "trips", "maps", "route one.png"))).toString("latin1")).not.toContain("Ada");
+  expect((await readFile(join(staging, ".media", "notes", "trips", "maps", "route one.png"))).toString("latin1")).not.toContain("Ada");
   expect(await readFile(join(root, "assets", "images", "harbour.jpg"))).toEqual(photo);
   expect(await readFile(join(staging, "trips", "trip.md"), "utf8")).toBe(text);
 });
@@ -73,5 +73,18 @@ it("WP-9.9: unsupported, embedded, outside or missing images stop with nothing s
     const { root, staging } = await notes({ "a.md": `# A\n\n![x](${ref})\n`, "anim.gif": "GIF89a" });
     await expect(stagePublicSelection({ notesRoot: root, selection: { notes: ["a.md"] }, staging })).rejects.toThrow("sharing:media");
     expect(await staged(staging)).toBe(0);
+  }
+});
+it("WP-9.9/D-365: a project's managed images publish at their project path so the note's links resolve; nothing else outside the notes", async () => {
+  const photo = jpegWithGps();
+  const { root, staging } = await notes({ "notes/trips/trip.md": "# Trip\n\n![Harbour](../../assets/images/harbour.jpg)\n", "assets/images/harbour.jpg": photo,
+    "private/secret.jpg": photo, "notes/leak.md": "# Leak\n\n![x](../private/secret.jpg)\n", ".git/x.jpg": photo, "notes/git.md": "# Git\n\n![x](../.git/x.jpg)\n" });
+  const notesRoot = join(root, "notes");
+  await expect(stagePublicSelection({ projectRoot: root, notesRoot, selection: { notes: ["trips/trip.md"] }, staging }))
+    .resolves.toEqual({ notes: ["trips/trip.md"], media: ["assets/images/harbour.jpg"] });
+  expect((await readFile(join(staging, ".media", "assets", "images", "harbour.jpg"))).toString("latin1")).not.toContain("Canon");
+  for (const note of ["leak.md", "git.md"]) {
+    const other = await mkdtemp(join(tmpdir(), "fn-stage-")); dirs.push(other);
+    await expect(stagePublicSelection({ projectRoot: root, notesRoot, selection: { notes: [note] }, staging: other })).rejects.toThrow("sharing:media");
   }
 });
