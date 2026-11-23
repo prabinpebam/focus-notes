@@ -1,7 +1,27 @@
 # Decisions
 
 > [!NOTE]
-> **TL;DR.** D-398 settles the 1.1.0 Autopilot scope and publishing defaults, authorizing production wiring of the prepared candidates. D-399 exempts query-input search and command surfaces from a decorative visual anchor. Owner corrections D-393–D-395 still govern GitHub references, in-app deletion and Find. Earlier decisions remain historical where explicitly superseded.
+> **TL;DR.** D-405 is a narrow 1.1.0 closure-sprint exception: four workers and one rolling batch gate. D-404 runs every coordinator, worker and subagent on Claude Opus 5.5, passed explicitly. D-398 settles the 1.1.0 Autopilot scope and publishing defaults, authorizing production wiring of the prepared candidates. D-399 exempts query-input search and command surfaces from a decorative visual anchor. Owner corrections D-393–D-395 still govern GitHub references, in-app deletion and Find. Earlier decisions remain historical where explicitly superseded.
+
+## D-405: 1.1.0 closure sprint, four workers and one rolling batch gate
+
+**Decided (owner, 23 November 2026, 14:43; ID assigned by coordinator).** A narrowly scoped exception for the 1.1.0 closure only, ending when 1.1.0 is packaged. It supersedes the two-builder cap and per-slice runtime gates for that work, nothing else:
+
+- Up to four workers at once, on disjoint files, each in its own worktree.
+- Runtime slices run their own fast checks and related journeys, then stack on one rolling `fix-merge-candidate`. That candidate gets one exact-head seven-job Windows gate roughly every two hours, or sooner once three or more slices are ready, watched by one shared observer. Workers continue independent local work while it runs.
+- A failed batch's culprit is diagnosed by its slice owner and dropped from the batch; the reduced head must get its own exact-head green run before landing. No untested remainder lands.
+- Docs- and site-only work still lands on its fast checks without CI (D-180, D-206), scheduled so it doesn't move `main` under a running gate.
+- The D-186 minimap pin lands in the first batch, or standalone, by 24 November 05:30 IST.
+
+Target: 1.1.0 closure by the end of 24 November IST at the latest, with packaging during 24 November daytime. This is a target, not a verified guarantee; releases, tags and Store submission still wait for the owner.
+
+**Affects:** [AGENTS.md working modes](../../AGENTS.md#working-modes-and-throughput-d-113) and [Roadmap → Gap closure](roadmap.md#gap-closure-whats-next). Global defaults outside the 1.1.0 closure are unchanged.
+
+## D-404: every agent runs on Claude Opus 5.5, passed explicitly
+
+**Decided (owner, 23 November 2026; ID assigned by coordinator).** All agent execution, coordinators, workers and subagents alike, runs on Claude Opus 5.5 unless the owner names another model. Every `create_session` and `task` call passes `model: "claude-opus-5.5"` explicitly, because VS Code otherwise defaults new sessions to GPT-6.1 Sol; every brief and handoff repeats the rule so the chats it starts pass it too. Slices already running finish uninterrupted; the next slice or successor starts fresh on Opus.
+
+**Affects:** [AGENTS.md working modes](../../AGENTS.md#working-modes-and-throughput-d-113). No product behaviour changes.
 
 ## D-399: query-input search and command surfaces exempt from VVS Criterion 1 visual anchor
 
