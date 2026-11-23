@@ -1545,16 +1545,35 @@
                   }
                  },
                  {
-                  "type": "Text",
+                  "type": "Inline",
                   "when": {
                    "get": "local.passcode"
                   },
                   "props": {
-                   "value": {
-                    "t": "share.info.code"
+                   "gap": "inlinePair",
+                   "wrap": true,
+                   "wrapGap": "stackPair"
+                  },
+                  "children": [
+                   {
+                    "type": "Text",
+                    "props": {
+                     "value": {
+                      "t": "share.info.codeLead"
+                     },
+                     "role": "secondary"
+                    }
                    },
-                   "role": "secondary"
-                  }
+                   {
+                    "type": "Text",
+                    "props": {
+                     "value": {
+                      "t": "share.info.codeValue"
+                     },
+                     "role": "secondary"
+                    }
+                   }
+                  ]
                  },
                  {
                   "type": "Text",

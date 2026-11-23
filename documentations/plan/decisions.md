@@ -9,6 +9,7 @@
 
 - The default Share information is a message to the person who receives it, in the sharer's voice, ready to paste with no editing: *I’ve shared “{title}” with you to read.* / *Open it here: {link}* / *To use the access code, open {site} and enter: {accessCode}* / *You can read it until {expires}.*
 - Lines for a method the share doesn't have are still left out; each line stands on its own, so the access code line reads right for link-and-code and code-only shares, replacing the old *Or open…* line that was wrong when the link line was dropped.
+- `{accessCode}` in the message is the full access code, the share code then the passcode joined by a space (for example *K7QM-4DRP harbor-maple-river-cloud*), because the reader needs both (`apps/desktop/src/main/share/access.ts`, `accessCode`). It reads as one code: where the app shows it, it never breaks across lines. It wraps to the next line as a whole, and the copied text keeps the runtime string exactly.
 - The sharer's warnings leave the copied text: *Whoever gets this can pass it on. Copies they download stay after the share expires or you withdraw it.* is one muted caption under the Share dialog's Share information block. Withdraw and Extend keep their own words; nothing is said twice. The template editor's hint says the message is written to the person you share with.
 - Applies to the default in `share.item.information.*`, the Share dialog, Settings → Sharing → Share information (default, Reset to default and preview) and Help. Saved custom templates are the owner's and are not rewritten.
 
