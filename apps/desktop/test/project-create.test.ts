@@ -4,7 +4,7 @@ import { PassThrough } from "node:stream";
 import { tmpdir } from "node:os";
 import { DatabaseSync } from "node:sqlite";
 import { join, relative, sep } from "node:path";
-import { afterEach, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ProjectCreateProgress } from "@focus-notes/core";
 import { projectGitHubClient, projectWindows as createProjects } from "../src/main/projects.ts";
 import { GitHubApi, GitHubError } from "@focus-notes/github";
@@ -766,4 +766,68 @@ it("hands another project window only the note's canonical absolute path, never 
   const canonical = await realpath(note);
   expect(spawned.map(s => s.args)).toEqual([["--project-note", canonical]]);
   expect(spawned[0]!.env.FOCUS_NOTES_PROJECT_NOTE).toBe(canonical);
+});
+describe("Start with an empty folder (FRE-12, G5.3)", () => {
+  async function missingProject() {
+    const { root } = await setup();
+    const gone = join(root, "gone", "Notes");
+    const seeded: Record<string, string> = {
+      [join(paths.profile, DATA_FILES.workspace)]: JSON.stringify({ version: 1, folder: gone, kind: "github", repository: "writer/notes" }),
+      [join(paths.profile, DATA_FILES.state)]: JSON.stringify({ version: 1, firstRun: "done" }),
+      [join(paths.profile, DATA_FILES.lastProject)]: `${JSON.stringify({ profile: paths.profile })}\n`,
+      [join(paths.profile, "recovery", "old", "draft.draft")]: "unsaved words",
+    };
+    for (const [path, bytes] of Object.entries(seeded)) { await mkdir(join(path, ".."), { recursive: true }); await writeFile(path, bytes); }
+    const unchanged = async () => { for (const [path, bytes] of Object.entries(seeded)) expect(await readFile(path, "utf8")).toBe(bytes); };
+    const config = join(root, "isolated.gitconfig");
+    await writeFile(config, "");
+    const git = createRunner({ env: { ...process.env, GIT_CONFIG_GLOBAL: config, GIT_CONFIG_NOSYSTEM: "1" } });
+    const place = join(root, "place");
+    await mkdir(place);
+    return { root, gone, place, git, unchanged };
+  }
+
+  it("makes a new local Git project in its own profile and window, leaving the missing project's record and drafts as they were", async () => {
+    const { gone, place, git, unchanged } = await missingProject();
+    const projects = projectWindows(() => gone, writeFile, undefined, git);
+    expect(await projects.startEmpty(place, "Focus Notes")).toEqual({ ok: true });
+    const folder = await realpath(join(place, "Focus Notes"));
+    expect((await git({ cwd: folder, args: ["rev-parse", "--show-toplevel"], read: true })).stdout.trim()).toBe(folder.replaceAll("\\", "/"));
+    expect((await git({ cwd: folder, args: ["symbolic-ref", "HEAD"], read: true })).stdout.trim()).toBe("refs/heads/main");
+    expect(await readdir(folder)).toEqual(expect.arrayContaining(["notes", ".git"]));
+    const created = (await projects.list()).find(project => project.folder === folder);
+    expect(created).toBeDefined();
+    // A new window over the new project, with no note named: writing opens one empty Untitled note there (PRJ-24, D-397).
+    expect(spawned).toHaveLength(1);
+    expect(spawned[0]!.env.FOCUS_NOTES_DOCS).toBe(folder);
+    expect(spawned[0]!.env.FOCUS_NOTES_PROJECT_NOTE).toBe("");
+    expect(spawned[0]!.env.FOCUS_NOTES_USER_DATA).not.toBe(paths.profile);
+    expect(spawned[0]!.args).not.toContain("--project-note");
+    await unchanged();
+  });
+
+  it("refuses a taken name without touching that folder, and starts nothing", async () => {
+    const { gone, place, git, unchanged } = await missingProject();
+    const taken = join(place, "Focus Notes");
+    await mkdir(taken);
+    await writeFile(join(taken, "mine.md"), "# Mine\n");
+    const projects = projectWindows(() => gone, writeFile, undefined, git);
+    expect(await projects.startEmpty(place, "Focus Notes")).toEqual({ ok: false, problem: "taken" });
+    expect(await readdir(taken)).toEqual(["mine.md"]);
+    expect(await readFile(join(taken, "mine.md"), "utf8")).toBe("# Mine\n");
+    expect(spawned).toEqual([]);
+    await unchanged();
+  });
+
+  it("fails without a window or a known project when Git can't start its history, and never without Git", async () => {
+    const { gone, place, unchanged } = await missingProject();
+    const failing = projectWindows(() => gone, writeFile, undefined, async () => ({ code: 1, stdout: "", stderr: "" }));
+    expect(await failing.startEmpty(place, "Focus Notes")).toEqual({ ok: false, problem: "failed" });
+    expect((await failing.list()).some(project => project.name === "Focus Notes")).toBe(false);
+    const gitless = projectWindows(() => gone, writeFile);
+    expect(await gitless.startEmpty(place, "Other")).toEqual({ ok: false, problem: "failed" });
+    expect(await readdir(place)).not.toContain("Other");
+    expect(spawned).toEqual([]);
+    await unchanged();
+  });
 });

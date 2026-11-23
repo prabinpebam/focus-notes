@@ -5,7 +5,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { access, mkdir, readFile, readdir, realpath, rm, stat, writeFile } from "node:fs/promises";
 import { constants } from "node:fs";
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
-import type { AppStateFile, ProjectEntry, ProjectCreateProgress, ProjectCreateResult, ProjectCreateStep, ProjectStats } from "@focus-notes/core";
+import type { AppStateFile, ProjectEntry, ProjectCreateProgress, ProjectCreateResult, ProjectCreateStep, ProjectStats, RecoverResult } from "@focus-notes/core";
 import { PROJECT_ACCENTS, PROJECT_LOGOS } from "@focus-notes/core";
 import { DATA_FILES, DATA_FOLDERS } from "@focus-notes/core/inventory";
 import { GitHubApi, GitHubError } from "@focus-notes/github";
@@ -840,6 +840,29 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     }
     return folder;
   }
+  /**
+   * Start with an empty folder (FRE-12, G5.3): a deliberate new local Git project through New project's own
+   * creation, in its own profile and window. The missing project's profile, record, drafts and history are
+   * never touched, so it stays recoverable. With no note named, writing opens one empty Untitled note (PRJ-24, D-397).
+   */
+  async function startEmpty(parent: string, name: string): Promise<RecoverResult> {
+    if (!git) return { ok: false, problem: "failed" };
+    let folder: string;
+    try {
+      const checked = await check(parent, name);
+      if (checked.problem === "name") return { ok: false, problem: "name" };
+      if (checked.problem === "exists") return { ok: false, problem: "taken" };
+      if (checked.problem) return { ok: false, problem: "failed" };
+      folder = await create({ parent, name, accent: "teal", logo: "book" });
+      const history = await git({ cwd: folder, args: ["rev-parse", "--is-inside-work-tree"], read: true });
+      if (history.code !== 0 || history.stdout.trim() !== "true") throw new Error("The new project has no history.");
+      await open(folder);
+    } catch (error) {
+      console.error("Could not start an empty project:", error instanceof Error ? error.name : "Error");
+      return { ok: false, problem: "failed" };
+    }
+    return { ok: true };
+  }
   /** Makes a folder a known project with its own profile (a clone from GitHub, a new project); an already known one is left as it is. */
   async function adopt(folder: string, look?: { name: string; accent: string; logo: string }, local = false): Promise<void> {
     await list();
@@ -875,5 +898,5 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     await open(folder, file);
     return { file, here: false };
   }
-  return { removedRoots: () => removedProjectFolders(rootProfile, metadata), removed: () => metadata.isRemoved(userData), onFiltered: (listener: (folders: string[]) => Promise<void>) => { onFiltered = listener; }, list, known: knownFolder, stats, repo, adopt, openFile, openFilePath, open, choose, upload, pin, localNote, importLocal, edited: (path: string) => score(path, 2), parent: async () => dirname(home()), chooseParent, check, create, continueCreate, pendingCreate, lastNote, position, remember, closed, purge, resume, dispose, canCache, saveState, pendingCleanup: () => metadata.pendingScopes(), cleanupIssues: () => metadata.cleanupIssues(), retryCleanup, onCleared: (listener: () => Promise<void>) => { onCleared = listener; }, firstNoteAdmission: metadata.firstNoteAdmission };
+  return { removedRoots: () => removedProjectFolders(rootProfile, metadata), removed: () => metadata.isRemoved(userData), onFiltered: (listener: (folders: string[]) => Promise<void>) => { onFiltered = listener; }, list, known: knownFolder, stats, repo, adopt, openFile, openFilePath, open, choose, upload, pin, localNote, importLocal, edited: (path: string) => score(path, 2), parent: async () => dirname(home()), chooseParent, check, create, startEmpty, continueCreate, pendingCreate, lastNote, position, remember, closed, purge, resume, dispose, canCache, saveState, pendingCleanup: () => metadata.pendingScopes(), cleanupIssues: () => metadata.cleanupIssues(), retryCleanup, onCleared: (listener: () => Promise<void>) => { onCleared = listener; }, firstNoteAdmission: metadata.firstNoteAdmission };
 }
