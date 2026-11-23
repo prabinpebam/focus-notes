@@ -1,7 +1,8 @@
 import { app, dialog, safeStorage } from "electron";
 import { spawn } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
+import { DatabaseSync } from "node:sqlite";
 import { access, mkdir, readFile, readdir, realpath, rm, stat, writeFile } from "node:fs/promises";
 import { constants } from "node:fs";
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
@@ -11,7 +12,7 @@ import { DATA_FILES, DATA_FOLDERS } from "@focus-notes/core/inventory";
 import { GitHubApi, GitHubError } from "@focus-notes/github";
 import { isRepoName } from "@focus-notes/core/setup";
 import { suggestIdentity } from "@focus-notes/core/first-run";
-import { parseRecord } from "./workspace/record.ts";
+import { parseRecord, samePath } from "./workspace/record.ts";
 import { localImportCopies } from "./local-import.ts";
 import { projectMetadataStore, type MetadataTicket } from "./project-metadata.ts";
 import { cleanupProfiles, PrivacyCleanupError, purgeProfileTraces, retryProfileCleanup, removedProjectFolders, withoutPrivacyTraces, withoutRemovedReferences } from "./privacy-cleanup.ts";
@@ -102,6 +103,34 @@ function windowsProtectedRecord(value: string, protect: boolean): Promise<string
   });
 }
 
+/**
+ * What a last project whose folder is missing resumes to (FRE-11, G5.2). Only positive absence falls back
+ * to the root project: no record or one naming another folder, no metadata store, or a removal row. A
+ * record or store that can't be read (EACCES, EIO, corrupt, still locked) is an error, never absence, so
+ * the project's own window opens and its startup and metadata fence report it.
+ */
+export function missingProjectResume(root: string, profile: string, folder: string): "resume" | "fallback" | "error" {
+  let record;
+  try { record = parseRecord(readFileSync(join(profile, DATA_FILES.workspace), "utf8")); }
+  catch (error) { return missing(error) ? "fallback" : "error"; }
+  if (!record) return "error";
+  if (!samePath(record.folder, folder)) return "fallback";
+  const store = join(root, DATA_FILES.projectMetadata);
+  try { statSync(store); }
+  catch (error) { return missing(error) ? "fallback" : "error"; }
+  let db: DatabaseSync | undefined;
+  try {
+    db = new DatabaseSync(store, { readOnly: true, timeout: STORE_WAIT_MS });
+    const key = createHash("sha256").update(process.platform === "win32" ? resolve(profile).toLowerCase() : resolve(profile)).digest("hex");
+    return db.prepare("SELECT profile FROM removed_profiles WHERE profile = ?").get(key) ? "fallback" : "resume";
+  } catch {
+    return "error";
+  } finally {
+    db?.close();
+  }
+}
+const STORE_WAIT_MS = 2000;
+
 export function resumeProjectProfile(root: string): { profile: string; folder: string; localNotes: boolean } | undefined {
   try {
     const record = JSON.parse(readFileSync(join(root, DATA_FILES.lastProject), "utf8")) as { profile?: unknown };
@@ -110,9 +139,19 @@ export function resumeProjectProfile(root: string): { profile: string; folder: s
     if (profile === resolve(root)) return;
     if (dirname(profile) !== resolve(root, DATA_FOLDERS.projectProfiles)) throw new Error("Invalid saved project profile.");
     const folder = readFileSync(join(profile, DATA_FILES.projectFolder), "utf8").trim();
-    if (!isAbsolute(folder) || !existsSync(folder)) throw new Error("Saved project folder is unavailable.");
-    const saved = JSON.parse(readFileSync(join(profile, DATA_FILES.state), "utf8")) as AppStateFile;
-    return { profile, folder, localNotes: saved.localNotes === true };
+    if (!isAbsolute(folder)) throw new Error("Saved project folder is unavailable.");
+    if (existsSync(folder)) {
+      const saved = JSON.parse(readFileSync(join(profile, DATA_FILES.state), "utf8")) as AppStateFile;
+      return { profile, folder, localNotes: saved.localNotes === true };
+    }
+    // A missing folder resumes its own project, so its window shows recovery or the read error (FRE-11).
+    const decision = missingProjectResume(root, profile, folder);
+    if (decision === "fallback") throw new Error("Saved project folder is unavailable.");
+    if (decision === "error") console.error("Could not read the last project's record; opening it to report the problem.");
+    let localNotes = false;
+    try { localNotes = (JSON.parse(readFileSync(join(profile, DATA_FILES.state), "utf8")) as AppStateFile).localNotes === true; }
+    catch (error) { if (!missing(error)) console.error("Could not read the last project's settings."); }
+    return { profile, folder, localNotes };
   } catch (error) {
     if (!missing(error)) console.error("Could not restore the last project.");
     return;
