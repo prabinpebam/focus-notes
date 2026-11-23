@@ -164,21 +164,42 @@ export function envSyncRoots(env: Record<string, string | undefined>, home: stri
   roots.push({ service: "iCloud Drive", path: resolve(home, "iCloudDrive") });
   return roots;
 }
-const within = (base: string, p: string) => {
+/** Whether `p` is `base` or inside it, whatever the case; a name that merely starts with ".." stays inside. */
+export const within = (base: string, p: string) => {
   const b = resolve(base).toLowerCase(), f = resolve(p).toLowerCase();
   return f === b || f.startsWith(b.endsWith(sep) ? b : b + sep);
 };
 /**
  * The last note after recovery reopened the notes from another folder (FRE-12, D-397): the same note
  * in the folder now when it's there, `null` when it isn't (writing opens a new Untitled note, never
- * Open), and the path itself when it was never in the missing folder.
+ * Open), and the path itself when it was never in the missing folder. `exists` may throw: a failure to
+ * read the note is an error, never a reason to open a new one.
  */
 export function recoveredNote(path: string, from: string, to: string, exists: (p: string) => boolean): string | null {
   if (!isAbsolute(path) || !within(from, path)) return path;
   const rel = relative(resolve(from), resolve(path));
-  if (!rel || rel.startsWith("..") || isAbsolute(rel)) return null;
+  if (!rel || rel === ".." || rel.startsWith(`..${sep}`) || isAbsolute(rel)) return null;
   const now = resolve(to, rel);
   return within(to, now) && exists(now) ? now : null;
+}
+/**
+ * Whether a note is really in the recovered folder, by both real paths. A note or folder that doesn't
+ * exist is `false` (or an error for the folder); any other failure to read them is thrown, never taken for absence.
+ */
+export function realInside(root: string, p: string, realpath: (p: string) => string): boolean {
+  const real = (x: string) => {
+    try { return realpath(x); }
+    catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code === "ENOENT" || code === "ENOTDIR") return undefined;
+      throw error;
+    }
+  };
+  const r = real(p);
+  if (!r) return false;
+  const base = real(root);
+  if (!base) throw new Error("The recovered folder is unavailable");
+  return within(base, r);
 }
 /** The service that keeps a folder in sync, or undefined. */
 export function syncService(folder: string, roots: readonly SyncRoot[]): string | undefined {

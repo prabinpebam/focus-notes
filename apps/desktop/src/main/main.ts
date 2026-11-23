@@ -74,7 +74,7 @@ import { forgetLocalData, removalCheck, removeWorkspace } from "./workspace/remo
 import { PrivacyCleanupError, withoutPrivacyTraces, withoutRemovedReferences } from "./privacy-cleanup.ts";
 import { atOrUnder } from "@focus-notes/core/journal";
 import { deletionCheck, deletionGate, isRepoSlug, recycleProject, recycleRefusal, repoStatus } from "./workspace/delete.ts";
-import { backupToRecord, checkFolder, configUrl, driveOf, envSyncRoots, folderNameOk, movedDocuments, nextFree, parseRecord, recordFor, recoveredNote, samePath, serializeRecord, shortPath, startDecision, syncService, type FolderCheck, type FolderFacts, type WorkspaceRecord } from "./workspace/record.ts";
+import { backupToRecord, checkFolder, configUrl, driveOf, envSyncRoots, folderNameOk, movedDocuments, nextFree, parseRecord, realInside, recordFor, recoveredNote, samePath, serializeRecord, shortPath, startDecision, syncService, type FolderCheck, type FolderFacts, type WorkspaceRecord } from "./workspace/record.ts";
 import type { RecoverAccount, RecoverPlace, RecoverProgress, RecoverResult, RecoverStatus } from "@focus-notes/core/recover";
 import { GitHubError } from "@focus-notes/github";
 import { AppWindowFrame, frameKindFor } from "./window/frame.ts";
@@ -202,9 +202,8 @@ const afterRecovery = (path: string | undefined): string | undefined => {
   if (!path || !recoveredFolder) return path;
   const { from, to } = recoveredFolder;
   // Only the same note, by its place under the old folder, and only when its real path stays inside the found one.
-  const real = (p: string) => { try { return realpathSync.native(p); } catch { return undefined; } };
-  const inFound = (p: string) => { const r = real(p), root = real(to); return Boolean(r && root && inside(root, r)); };
-  return recoveredNote(path, from, to, inFound) ?? undefined;
+  // A note that isn't there opens Untitled; any other failure to read it is an error, never emptiness.
+  return recoveredNote(path, from, to, (p) => realInside(to, p, realpathSync.native)) ?? undefined;
 };
 const notesHome = () => chosenHome ?? defaultHome();
 const stateFile = () => dataFile(DATA_FILES.state);
@@ -668,16 +667,18 @@ async function switchWorkspace(folder: string, keep?: Pick<WorkspaceRecord, "kin
     await saveFirstRun();
   }
   const missingFolder = folderState !== "ok" ? record?.folder ?? notesHome() : undefined;
+  // Read before anything changes: only a pointer that doesn't exist counts as absent; another failure stops the switch.
+  const named = missingFolder ? await readFile(dataFile(DATA_FILES.projectFolder), "utf8").catch((error: NodeJS.ErrnoException) => {
+    if (error.code === "ENOENT") return undefined;
+    throw error;
+  }) : undefined;
   await saveRecord(recordFor(folder, await folderFacts(folder), record, keep));
   recoveredFolder = missingFolder ? { from: missingFolder, to: resolve(folder) } : undefined;
   // The project's own folder follows the notes, so writing is admitted there (D-397); another project's is never touched.
-  if (missingFolder) {
-    const named = await readFile(dataFile(DATA_FILES.projectFolder), "utf8").catch(() => undefined);
-    if (named && samePath(named.trim(), missingFolder)) {
-      const to = dataFile(DATA_FILES.projectFolder), temp = `${to}.${process.pid}.tmp`;
-      await writeFile(temp, resolve(folder), "utf8");
-      await rename(temp, to);
-    }
+  if (missingFolder && named && samePath(named.trim(), missingFolder)) {
+    const to = dataFile(DATA_FILES.projectFolder), temp = `${to}.${process.pid}.tmp`;
+    await writeFile(temp, resolve(folder), "utf8");
+    await rename(temp, to);
   }
   await projectMetadata?.resume();
   chosenHome = folder;
@@ -2724,9 +2725,11 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
       const s = JSON.parse(await readFile(stateFile(), "utf8"));
       if (process.env.FOCUS_NOTES_PROJECT_NOTE) s.lastNotePath = notePath(process.env.FOCUS_NOTES_PROJECT_NOTE);
       else if (s && typeof s.lastNotePath === "string") {
-        const now = afterRecovery(s.lastNotePath);
+        // A note that can't be checked keeps its path, so opening it fails as an error; it's never dropped for a new note.
+        let now: string | undefined | false = false;
+        try { now = afterRecovery(s.lastNotePath); } catch { /* kept as it is */ }
         if (now) s.lastNotePath = now;
-        else delete s.lastNotePath;
+        else if (now === undefined) delete s.lastNotePath;
       }
       return s && s.version === 1 ? withoutRemovedReferences(await projects.canCache() ? s : withoutPrivacyTraces(s), await projects.removedRoots()) : { version: 1 };
     } catch {

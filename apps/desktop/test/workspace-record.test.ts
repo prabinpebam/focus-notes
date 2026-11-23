@@ -8,7 +8,7 @@ import { existsSync, mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import {
-  backupToRecord, checkFolder, configUrl, driveOf, envSyncRoots, folderNameOk, movedDocuments, nextFree, parseRecord, recordFor, recoveredNote, serializeRecord, shortPath, startDecision, syncService,
+  backupToRecord, checkFolder, configUrl, driveOf, envSyncRoots, folderNameOk, movedDocuments, nextFree, parseRecord, recordFor, recoveredNote, serializeRecord, shortPath, startDecision, syncService, within, realInside,
 } from "../src/main/workspace/record.ts";
 
 vi.mock("node:fs/promises", { spy: true });
@@ -141,9 +141,34 @@ describe("the last note after recovery (FRE-12, D-397)", () => {
     expect(recoveredNote(resolve(from, "b.md"), from, to, () => false)).toBeNull();
     expect(recoveredNote(from, from, to, () => true)).toBeNull();
   });
+  it("restores a contained name that only starts with two dots", () => {
+    expect(recoveredNote(resolve(from, "..draft.md"), from, to, () => true)).toBe(resolve(to, "..draft.md"));
+    expect(within(to, resolve(to, "..draft.md"))).toBe(true);
+    expect(within(to, resolve(to, "..", "outside.md"))).toBe(false);
+  });
+  it("lets a failure to read the note through, never opening Untitled in its place", () => {
+    const denied = Object.assign(new Error("EACCES: permission denied"), { code: "EACCES" });
+    expect(() => recoveredNote(resolve(from, "b.md"), from, to, () => { throw denied; })).toThrow("EACCES");
+  });
   it("leaves a note that was never in the missing folder alone", () => {
     const other = abs("Users\\me\\notes-other\\x.md");
     expect(recoveredNote(other, from, to, () => false)).toBe(other);
     expect(recoveredNote("relative.md", from, to, () => false)).toBe("relative.md");
+  });
+});
+
+describe("whether a recovered note is really in the found folder (FRE-12, D-397)", () => {
+  const root = abs("Users\\me\\moved");
+  const err = (code: string) => Object.assign(new Error(code), { code });
+  it("is false for a note that doesn't exist, so writing opens Untitled", () => {
+    expect(realInside(root, resolve(root, "gone.md"), (p) => { if (p === root) return p; throw err("ENOENT"); })).toBe(false);
+  });
+  it("throws a read failure instead of treating the note as absent", () => {
+    expect(() => realInside(root, resolve(root, "b.md"), () => { throw err("EACCES"); })).toThrow("EACCES");
+    expect(() => realInside(root, resolve(root, "b.md"), (p) => { if (p === root) throw err("EIO"); return p; })).toThrow("EIO");
+  });
+  it("refuses a note whose real path leaves the folder, and keeps a name starting with two dots", () => {
+    expect(realInside(root, resolve(root, "link.md"), (p) => (p === root ? p : abs("Users\\me\\elsewhere\\x.md")))).toBe(false);
+    expect(realInside(root, resolve(root, "..draft.md"), (p) => p)).toBe(true);
   });
 });
