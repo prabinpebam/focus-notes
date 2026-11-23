@@ -171,7 +171,11 @@ export function sharingRuntime(deps: {
         ctx.guard();
         if (deps.remove) await deps.remove(pairing, ctx.layout);
         else if (ctx.layout.publicDir) throw new Error("sharing:unavailable");
-        else await ctx.build(pairing, true);
+        else {
+          await ctx.build(pairing, true);
+          // Nothing published before Turn off may reappear when the site is turned back on (G3).
+          await ctx.writePublished([]);
+        }
         ctx.guard();
       },
       step: step => { ctx.guard(); deps.step?.(step); },

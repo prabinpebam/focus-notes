@@ -34,6 +34,7 @@ async function project(o: { reader?: boolean; notes?: Record<string, string>; le
   }
   const github = new FakeGitHub();
   github.add({ owner: "ada", name: "quiet-site", files: [".github/workflows/pages.yml"] });
+  github.add({ owner: "ada", name: "book", private: true, files: ["notes/diary.md"] });
   const git = gitData(github);
   const api = new GitHubApi(github.token, git.fetch);
   const layout: SharingLayout = { legacy: false, privateDir: root, privateNotes: notesDir, roots: [] };
@@ -99,4 +100,18 @@ it("G3.1/G3.2: no page renderer, or a published note quoting a private one, stop
   await expect(quoting.runtime.publishNotes({ notes: ["trip.md"] })).rejects.toThrow(/Leak check failed/);
   expect(quoting.git.pushes).toEqual([]);
   expect(quoting.github.calls.filter(c => c.method !== "GET")).toEqual([]);
+});
+
+it("G3/PRJ-10 Turn off: once the emptied site is served, the published list is cleared so nothing reappears on re-enable", async () => {
+  const t = await project({ notes: { "trip.md": TRIP } });
+  await t.runtime.publishNotes({ notes: ["trip.md"] });
+  t.git.setStale(true);
+  await expect(t.runtime.disable()).rejects.toThrow();
+  // The site may still serve the note, so the record still says so.
+  expect(await t.record()).toEqual({ version: 1, notes: ["trip.md"] });
+  t.git.setStale(false);
+  await t.runtime.disable();
+  expect(t.site().has("notes/trip.md")).toBe(false);
+  expect(await t.record()).toEqual({ version: 1, notes: [] });
+  expect(await readFile(join(t.notesDir, "trip.md"), "utf8")).toBe(TRIP);
 });
