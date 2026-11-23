@@ -638,7 +638,7 @@
                {
                 "type": "Text",
                 "props": {
-                 "value": { "t": "share.dialog.passcode" },
+                 "value": { "t": "share.dialog.accessCode" },
                  "tone": "muted",
                  "role": "secondary"
                 }
@@ -650,8 +650,8 @@
                  {
                   "type": "CodeBlock",
                   "props": {
-                   "value": { "get": "vm.mockShare.generated" },
-                   "copyLabel": { "t": "share.dialog.copyPasscode" }
+                   "value": { "get": "vm.mockShare.accessCode" },
+                   "copyLabel": { "t": "share.dialog.copyCode" }
                   }
                  },
                  {

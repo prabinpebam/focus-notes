@@ -2965,6 +2965,7 @@
   "share.dialog.link": "Link",
   "share.dialog.link.detail": "Opens straight from the link.",
   "share.dialog.passcode": "Passcode",
+  "share.dialog.accessCode": "Access code",
   "share.dialog.passcode.detail": "Opens on the site with an access code.",
   "share.dialog.keepOne": "Keep Link or Passcode on to share this item.",
   "share.dialog.passType": "Passcode type",
