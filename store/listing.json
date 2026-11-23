@@ -43,7 +43,7 @@
       "new-project-light": "Name a new project, choose where to keep it, and start writing in an empty note.",
       "find-all-light": "Find words across every note in a project.",
       "images-light": "Add pictures to your notes, with descriptions and captions.",
-      "share-dark": "Share a private note or folder with a link, and add a passcode if you like.",
+      "share-dark": "Share a private note or folder with a link, a passcode, or both.",
       "publish-light": "Publish a note, with its pictures, on your own public site.",
       "files-light": "Your notes are plain files in folders, with recent and pinned notes close at hand."
     },

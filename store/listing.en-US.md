@@ -90,7 +90,7 @@ Upload them in this order, each with its caption:
 5. `05-new-project-light.png`: Name a new project, choose where to keep it, and start writing in an empty note.
 6. `06-find-all-light.png`: Find words across every note in a project.
 7. `07-images-light.png`: Add pictures to your notes, with descriptions and captions.
-8. `08-share-dark.png`: Share a private note or folder with a link, and add a passcode if you like.
+8. `08-share-dark.png`: Share a private note or folder with a link, a passcode, or both.
 9. `09-publish-light.png`: Publish a note, with its pictures, on your own public site.
 10. `10-files-light.png`: Your notes are plain files in folders, with recent and pinned notes close at hand.
 
