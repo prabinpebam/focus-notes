@@ -17,6 +17,7 @@ import {
   authorizationRevision, inGrantScope, codeKeyringPath, SHARE_CODE, type AccessFile, type Grant,
 } from "./grants.ts";
 import { passcodeProblem } from "./access.ts";
+import { sealNoteMedia, type MediaCache, type MediaDestinations } from "./media.ts";
 
 export type { AccessFile, Grant } from "./grants.ts";
 
@@ -44,6 +45,8 @@ export interface PublishOptions {
    * Only their own text and path may then appear in the public notes and pages (leakCheck).
    */
   published?: readonly string[];
+  /** The images a sealed note references, sealed with it (WP-9.6); missing, sealed notes carry no images. */
+  media?: MediaDestinations;
   log?: (line: string) => void;
 }
 export interface PublishResult { build: string; publicNotes: number; publicPages: number; privateNotes: number; vault: boolean; shares: number }
@@ -199,12 +202,14 @@ export async function publish(o: PublishOptions): Promise<PublishResult> {
 
     // Each note is sealed once this build, with its own fresh key, and listed by every manifest that opens it.
     const sealedByPath = new Map<string, ManifestEntry>();
+    const media = { root: o.private, notes: root, build, put: (path: string, data: string) => put(join(o.site, ...path.split("/")), data), cache: new Map() as MediaCache };
     const sealNote = async (n: (typeof notes)[number]): Promise<ManifestEntry> => {
       const done = sealedByPath.get(n.path);
       if (done) return done;
       const kid = randomId(), key = randomBytes(KEY_BYTES);
       await put(join(o.site, ...sealedPath(build, kid).split("/")), await sealFile("note", key, build, kid, encodeText(n.text)));
-      const entry = { kid, key: toB64url(key), path: n.path, title: titleOf(n.path, n.text), updated: await updated(join(root, n.path)) };
+      const images = o.media ? await sealNoteMedia(media, n.path, o.media(n.text)) : [];
+      const entry = { kid, key: toB64url(key), path: n.path, title: titleOf(n.path, n.text), updated: await updated(join(root, n.path)), ...(images.length ? { media: images } : {}) };
       sealedByPath.set(n.path, entry);
       return entry;
     };

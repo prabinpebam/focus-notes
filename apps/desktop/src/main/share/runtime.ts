@@ -7,6 +7,7 @@ import { publicPublishing, type PublicTaskStep } from "./public-publishing.ts";
 import { stagePublicSelection, type ConfirmedSelection } from "./public-selection.ts";
 import { configurePublicSite, requirePublishedArtifact, type SealedArtifactPublisher } from "./site.ts";
 import { pagesArtifactPublisher, type DeployedSiteGet } from "./site-publish.ts";
+import { sharedImageDestinations } from "./media.ts";
 import { sharingSetup, sitePairingStore, type SharingSetupStep, type SitePairing } from "./setup.ts";
 
 /** Notes on the current public site, by notes-root-relative path (G3). Recorded only after their deploy. */
@@ -107,7 +108,7 @@ export function sharingRuntime(deps: {
         guard();
         // Removal deploys an empty site: no public notes, no vault and no share keyrings.
         const artifact = await publish(empty ? { site: directory, owner: pairing.owner, siteUrl: pairing.site } : {
-          private: privateDir,
+          private: privateDir, media: sharedImageDestinations,
           // `published`: the confirmed notes are public on purpose; every other private note stays leak-checked.
           ...(staging ? { notes: staging, published: [...notes], reader: reader! } : layout.publicDir ? { notes: join(layout.publicDir, "notes") } : {}),
           site: directory, owner: pairing.owner, siteUrl: pairing.site,
