@@ -118,6 +118,9 @@ export async function mapLimit<T, R>(items: readonly T[], cap: number, work: (it
   return out;
 }
 
+/** Git's words for a remote that doesn't exist: GitHub over HTTPS or SSH, or a path that isn't a repository. */
+const NOT_FOUND = /Repository not found|repository '[^']*' not found|does not appear to be a git repository/i;
+
 /**
  * Clones a workspace into a folder that's missing or empty. A repository that isn't a workspace is
  * removed again, since the folder was empty before. A template repository is never cloned (D-157).
@@ -144,6 +147,8 @@ export async function cloneWorkspace(git: GitRunner, url: string, folder: string
   });
   if (r.code !== 0) {
     await rm(folder, { recursive: true, force: true }).catch(() => {});
+    // A repository that isn't there is a failure, never "offline" (G5.3); Git's next line says it couldn't read the remote.
+    if (NOT_FOUND.test(r.stderr)) return { ok: false, problem: "failed" };
     const p = networkProblem(r.stderr);
     return { ok: false, problem: p === "auth" ? "auth" : p === "offline" ? "offline" : "failed" };
   }

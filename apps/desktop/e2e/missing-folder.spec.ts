@@ -1,10 +1,11 @@
 import { test, expect } from "./fixtures.ts";
 import { launch, quit, tempDirs, type Launched } from "./helpers.ts";
 import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { DATA_FILES, DATA_FOLDERS } from "@focus-notes/core/inventory";
 import { execFileSync } from "node:child_process";
-import { realpathSync } from "node:fs";
+import { mkdtempSync, realpathSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { attachProject, closeProject, projectEntryApp } from "./project-process.ts";
 import { existingInstance, noTokenInArgs, start, world, type World } from "./github-world.ts";
 
@@ -232,8 +233,8 @@ test("FRE-12, G5.3: a download that fails keeps recovery with an error, never op
     const { page } = l;
     rmSync(join(w.remotes, "ada", "notes.git"), { recursive: true, force: true });
     await page.getByRole("button", { name: /^Download your notes again/ }).click();
-    // A missing remote classifies as offline today; any named error with Try again keeps the person in recovery.
-    await expect(page.getByRole("main", { name: "Your notes folder" }).getByRole("status")).toHaveText(/try again\.$/i, { timeout: 30_000 });
+    // A remote that isn't there is a failure, never "You're offline".
+    await expect(page.getByRole("main", { name: "Your notes folder" }).getByRole("status")).toHaveText("That didn't work. Try again.", { timeout: 30_000 });
     expect(existsSync(join(w.dirs.docs, "notes", "hello.md"))).toBe(false);
     // Well past the folder watch's second: still recovery, with the record as it was.
     await page.waitForTimeout(3000);
@@ -284,6 +285,7 @@ test("FRE-11, G5.2: a last project whose folder is missing opens its own recover
     await quit(l);
   }
 });
+const places: string[] = [];
 test("FRE-12, G5.3, D-397: Start with an empty folder makes a new local Git project that lands in an empty Untitled note, keeping the missing project's record", async () => {
   test.setTimeout(120_000);
   const { dirs, content, record, moved } = movedProject();
@@ -293,10 +295,21 @@ test("FRE-12, G5.3, D-397: Start with an empty folder makes a new local Git proj
     const { page } = origin;
     await expect(page.getByRole("heading", { name: HEADING, exact: true })).toBeVisible();
     await page.getByRole("button", { name: /^Start with an empty folder/ }).click();
+    // A disposable place, never a shared folder such as the system temp folder.
+    const place = mkdtempSync(join(tmpdir(), "fn-empty-place-"));
+    places.push(place);
+    await pick(origin, place);
+    // The place button is labelled with the place itself: the missing folder's parent.
+    const parent = basename(join(dirs.docs, "..")).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    await page.getByRole("button", { name: new RegExp(`${parent}$`) }).click();
+    await expect(page.getByRole("button", { name: /fn-empty-place-\w+$/ })).toBeVisible();
     const name = page.getByRole("textbox", { name: "Folder name", exact: true });
     await expect(name).toHaveValue("Focus Notes");
+    // The recovery window asks to close once the new project's window has started. Playwright would end
+    // its whole process tree with it, the new window too, so the request is recorded instead.
+    await origin.app.evaluate(({ app }) => { app.quit = () => void ((globalThis as { quitAsked?: boolean }).quitAsked = true); });
     await page.getByRole("button", { name: "Create folder", exact: true }).click();
-    const folder = join(realpathSync.native(join(dirs.docs, "..")), "Focus Notes");
+    const folder = join(realpathSync.native(place), "Focus Notes");
     const profiles = join(dirs.userData, DATA_FOLDERS.projectProfiles);
     await expect.poll(() => existsSync(profiles) && readdirSync(profiles).length, { timeout: 30_000 }).toBe(1);
     child = await attachProject(join(profiles, readdirSync(profiles)[0]!));
@@ -311,9 +324,11 @@ test("FRE-12, G5.3, D-397: Start with an empty folder makes a new local Git proj
     expect(recordOf(dirs.userData)).toEqual(record);
     expect(existsSync(dirs.docs)).toBe(false);
     expect(readFileSync(join(moved, "Original.md"), "utf8")).toBe(content);
+    await expect.poll(() => origin.app.evaluate(() => (globalThis as { quitAsked?: boolean }).quitAsked === true)).toBe(true);
   } finally {
     if (child) await closeProject(child);
     await quit(origin).catch(() => {});
+    for (const place of places.splice(0)) rmSync(place, { recursive: true, force: true });
     const close = join(import.meta.dirname, "..", "..", "..", "tools", "dev", "close-test-apps.ps1");
     for (const flags of [["-WhatIf"], []]) execFileSync("pwsh", ["-NoProfile", "-File", close, "-OnlyPid", String(origin.pid), ...flags], { stdio: "inherit" });
   }

@@ -284,7 +284,8 @@ describe("FRE-06: opening a workspace from GitHub or this computer", () => {
     const fresh = join(r.root, "fresh");
     expect(await cloneWorkspace(runner(w), r.priv, fresh)).toEqual({ ok: false, problem: "notWorkspace" });
     expect(existsSync(fresh)).toBe(false);
-    expect(await cloneWorkspace(runner(w), join(r.root, "nowhere.git"), join(r.root, "x"))).toMatchObject({ ok: false });
+    // A remote that isn't there is a failure, never "offline" (G5.3).
+    expect(await cloneWorkspace(runner(w), join(r.root, "nowhere.git"), join(r.root, "x"))).toEqual({ ok: false, problem: "failed" });
     expect(await checkWorkspace(runner(w), join(r.root, "seed-n", ".focus-notes"))).toEqual({ ok: false, problem: "notGit" });
     expect(await checkWorkspace(runner(w), join(r.root, "seed-p"))).toEqual({ ok: false, problem: "notWorkspace" });
     expect(await checkWorkspace(runner(w), join(r.root, "seed-n"))).toMatchObject({ ok: true, privateNotes: true });
@@ -345,5 +346,15 @@ describe("FRE-06: opening a workspace from GitHub or this computer", () => {
     const asked: string[] = [];
     expect(await checkWorkspace(runner(w), seed, async (url) => (asked.push(url), isTemplate(url)))).toEqual({ ok: false, problem: "template" });
     expect(asked).toHaveLength(2);
+  });
+});
+
+describe("a clone whose repository isn't there (G5.3)", () => {
+  const failing = (stderr: string): GitRunner => async () => ({ code: 128, stdout: "", stderr });
+  it("is a failure, not offline, while a network failure stays offline", async () => {
+    const folder = join(mkdtempSync(join(tmpdir(), "fn-clone-")), "notes");
+    expect(await cloneWorkspace(failing("ERROR: Repository not found.\nfatal: Could not read from remote repository.\n"), "git@github.com:ada/gone.git", folder)).toEqual({ ok: false, problem: "failed" });
+    expect(await cloneWorkspace(failing("remote: Repository not found.\nfatal: repository 'https://github.com/ada/gone.git/' not found\n"), "https://github.com/ada/gone.git", folder)).toEqual({ ok: false, problem: "failed" });
+    expect(await cloneWorkspace(failing("fatal: unable to access 'https://github.com/ada/notes.git/': Could not resolve host: github.com\n"), "https://github.com/ada/notes.git", folder)).toEqual({ ok: false, problem: "offline" });
   });
 });
