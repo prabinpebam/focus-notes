@@ -18,11 +18,11 @@
 
 ## Short description
 
-> A calm writing app. Your notes stay plain files, on your computer or in your own GitHub.
+> A calm writing app. Plain files on your computer or in your own GitHub.
 
 ## Description
 
-> Write. Nothing else. A calm writing app. Your notes stay plain files, on your computer or in your own GitHub.
+> Write. Nothing else. A calm writing app. Plain files on your computer or in your own GitHub.
 >
 > Find anything. Instantly. Notes, commands and settings, one keystroke away.
 >
