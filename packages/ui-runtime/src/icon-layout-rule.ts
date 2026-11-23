@@ -23,7 +23,8 @@ const EXEMPT_IDS = new Set(["recover", "firstRun", "panelFailure", "findBar"]);
  * Each entry is a known-pending violation, not an exemption.
  */
 export const ICON_LAYOUT_PENDING: ReadonlySet<string> = new Set<string>([
-  "canvas", "settings", "rewrite", "newNote", "shareItem", "projects",
+  // canvas: only the writing window's find bar Replace buttons remain (sacred and exempt; needs a findBar exemption).
+  "canvas", "rewrite", "newNote", "shareItem", "projects",
   "gallery.mock.pnw.deleteDone", "gallery.mock.pnw.deleteOfflineDone", "gallery.mock.pnw.deleteErrPartialGithub",
   "gallery.mock.open.view", "gallery.mock.open.cardStates",
   "gallery.mock.share.invite", "gallery.mock.share.invitePersonal",

@@ -3990,9 +3990,9 @@
         "slots": {
           "footer": [{ "type": "Inline", "props": { "justify": "end", "gap": "inlineItem", "wrap": true }, "children": [
             { "type": "Button", "props": { "label": { "t": "remove.cancel" }, "variant": "secondary" }, "on": { "press": { "run": "workspace.setRemoveOpen", "args": { "open": false } } } },
-            { "type": "Button", "when": { "get": "vm.removeWorkspace.canSync" }, "props": { "label": { "t": "command.workspace.removeSync" }, "variant": "primary", "busy": { "get": "vm.removeWorkspace.busy" } }, "on": { "press": { "run": "workspace.removeSync" } } },
+            { "type": "Button", "when": { "get": "vm.removeWorkspace.cleanupFailed" }, "props": { "label": { "t": "command.account.retryCleanup" }, "variant": "secondary", "busy": { "get": "vm.removeWorkspace.busy" } }, "on": { "press": { "run": "account.retryCleanup" } } },
             { "type": "Button", "when": { "get": "vm.removeWorkspace.canRemove" }, "props": { "label": { "get": "vm.removeWorkspace.label" }, "variant": "danger", "busy": { "get": "vm.removeWorkspace.busy" } }, "on": { "press": { "run": "workspace.removeConfirm" } } },
-            { "type": "Button", "when": { "get": "vm.removeWorkspace.cleanupFailed" }, "props": { "label": { "t": "command.account.retryCleanup" }, "variant": "secondary", "busy": { "get": "vm.removeWorkspace.busy" } }, "on": { "press": { "run": "account.retryCleanup" } } }
+            { "type": "Button", "when": { "get": "vm.removeWorkspace.canSync" }, "props": { "label": { "t": "command.workspace.removeSync" }, "variant": "primary", "busy": { "get": "vm.removeWorkspace.busy" } }, "on": { "press": { "run": "workspace.removeSync" } } }
           ] }]
         },
         "children": [
@@ -4605,30 +4605,11 @@
               {
                 "type": "Inline",
                 "props": {
+                  "justify": "end",
                   "gap": "inlineItem",
                   "wrap": true
                 },
                 "children": [
-                  {
-                    "type": "Button",
-                    "props": {
-                      "label": {
-                        "get": "vm.shareInvite.copyInvite"
-                      },
-                      "variant": "primary",
-                      "icon": {
-                        "get": "vm.shareInvite.inviteIcon"
-                      }
-                    },
-                    "on": {
-                      "press": {
-                        "run": "share.manage.copy",
-                        "args": {
-                          "what": "invite"
-                        }
-                      }
-                    }
-                  },
                   {
                     "type": "Button",
                     "when": {
@@ -4669,6 +4650,26 @@
                         "run": "share.manage.copy",
                         "args": {
                           "what": "passcode"
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "Button",
+                    "props": {
+                      "label": {
+                        "get": "vm.shareInvite.copyInvite"
+                      },
+                      "variant": "primary",
+                      "icon": {
+                        "get": "vm.shareInvite.inviteIcon"
+                      }
+                    },
+                    "on": {
+                      "press": {
+                        "run": "share.manage.copy",
+                        "args": {
+                          "what": "invite"
                         }
                       }
                     }
@@ -5094,6 +5095,7 @@
                   {
                     "type": "Inline",
                     "props": {
+                      "justify": "end",
                       "gap": "inlineItem"
                     },
                     "children": [
@@ -5406,23 +5408,32 @@
                     }
                   },
                   {
-                    "type": "Button",
-                    "when": {
-                      "get": "vm.shareNote.canShare"
-                    },
+                    "type": "Inline",
                     "props": {
-                      "label": {
-                        "t": "share.manage.note.add"
-                      },
-                      "variant": "primary",
-                      "icon": "share",
-                      "autoFocus": true
+                      "justify": "end",
+                      "gap": "inlineItem"
                     },
-                    "on": {
-                      "press": {
-                        "run": "share.manage.add"
+                    "children": [
+                      {
+                        "type": "Button",
+                        "when": {
+                          "get": "vm.shareNote.canShare"
+                        },
+                        "props": {
+                          "label": {
+                            "t": "share.manage.note.add"
+                          },
+                          "variant": "primary",
+                          "icon": "share",
+                          "autoFocus": true
+                        },
+                        "on": {
+                          "press": {
+                            "run": "share.manage.add"
+                          }
+                        }
                       }
-                    }
+                    ]
                   }
                 ]
               }
@@ -5581,7 +5592,12 @@
         },
         "props": {
           "title": {
-            "t": "share.settings.title"
+            "t": "sharing.first.title",
+            "args": {
+              "project": {
+                "get": "vm.project.name"
+              }
+            }
           },
           "closeLabel": {
             "t": "dialog.close"
@@ -5597,6 +5613,44 @@
             "run": "sharing.firstClose"
           }
         },
+        "slots": {
+          "visual": [
+            {
+              "type": "StepMark",
+              "props": {
+                "icon": "share",
+                "tone": "accent",
+                "size": "compact"
+              }
+            }
+          ],
+          "footer": [
+            {
+              "type": "Inline",
+              "props": {
+                "justify": "end",
+                "gap": "inlineItem"
+              },
+              "children": [
+                {
+                  "type": "Button",
+                  "props": {
+                    "label": {
+                      "get": "vm.sharingSettings.firstAcceptLabel"
+                    },
+                    "busy": { "get": "vm.sharingSettings.busy" },
+                    "variant": "primary"
+                  },
+                  "on": {
+                    "press": {
+                      "run": "sharing.firstAccept"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
         "children": [
           {
             "type": "Stack",
@@ -5604,37 +5658,6 @@
               "gap": "stackGroup"
             },
             "children": [
-              {
-                "type": "Inline",
-                "props": {
-                  "gap": "inlineItem",
-                  "align": "center"
-                },
-                "children": [
-                  {
-                    "type": "StepMark",
-                    "props": {
-                      "icon": "share",
-                      "tone": "accent",
-                      "size": "compact"
-                    }
-                  },
-                  {
-                    "type": "Heading",
-                    "props": {
-                      "level": "2",
-                      "value": {
-                        "t": "sharing.first.title",
-                        "args": {
-                          "project": {
-                            "get": "vm.project.name"
-                          }
-                        }
-                      }
-                    }
-                  }
-                ]
-              },
               {
                 "type": "Text",
                 "props": {
@@ -5799,30 +5822,6 @@
                 "type": "Text",
                 "when": { "get": "vm.sharingSettings.setupProblem" },
                 "props": { "value": { "get": "vm.sharingSettings.problem" }, "tone": "danger" }
-              },
-              {
-                "type": "Inline",
-                "props": {
-                  "justify": "end",
-                  "gap": "inlineItem"
-                },
-                "children": [
-                  {
-                    "type": "Button",
-                    "props": {
-                      "label": {
-                        "get": "vm.sharingSettings.firstAcceptLabel"
-                      },
-                      "busy": { "get": "vm.sharingSettings.busy" },
-                      "variant": "primary"
-                    },
-                    "on": {
-                      "press": {
-                        "run": "sharing.firstAccept"
-                      }
-                    }
-                  }
-                ]
               }
             ]
           }
@@ -6050,6 +6049,7 @@
                   {
                     "type": "Inline",
                     "props": {
+                      "justify": "end",
                       "gap": "inlineItem"
                     },
                     "children": [
