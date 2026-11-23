@@ -131,3 +131,30 @@ it("WP-9.9 Publish: a note's local photo reaches the site beside it with no GPS 
   expect(published!.subarray(-6)).toEqual(Buffer.from([0x12, 0xff, 0x00, 0x34, 0xff, 0xd9]));
   expect(await readFile(join(t.root, "assets", "images", "harbour.jpg"))).toEqual(photo);
 });
+
+it("WP-9.9 Unpublish: images only the unpublished note used leave the site; images another published note uses stay", async () => {
+  const png = (n: number) => Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), chunk("IHDR", Buffer.alloc(13, n)), chunk("IDAT", Buffer.from([n])), chunk("IEND", Buffer.alloc(0))]);
+  const t = await project({ notes: {
+    "trip.md": `${TRIP}\n![Harbour](../assets/images/harbour.png)\n![Map](../assets/images/map.png)\n`,
+    "walk.md": "# Walk\n\nThe same map again.\n\n![The route we took](../assets/images/map.png)\n",
+  } });
+  await mkdir(join(t.root, "assets", "images"), { recursive: true });
+  await writeFile(join(t.root, "assets", "images", "harbour.png"), png(1));
+  await writeFile(join(t.root, "assets", "images", "map.png"), png(2));
+  await t.runtime.publishNotes({ notes: ["trip.md", "walk.md"] });
+  expect(t.site().has("assets/images/harbour.png")).toBe(true);
+  await t.runtime.unpublishNotes(["trip.md"]);
+  const site = t.site();
+  expect(site.has("assets/images/harbour.png")).toBe(false);
+  expect(site.has("assets/images/map.png")).toBe(true);
+  expect(site.has("notes/walk.md")).toBe(true);
+  // The private originals are never touched.
+  expect(await readFile(join(t.root, "assets", "images", "harbour.png"))).toEqual(png(1));
+  await t.runtime.unpublishNotes(["walk.md"]);
+  expect(t.site().has("assets/images/map.png")).toBe(false);
+});
+
+function chunk(type: string, data: Buffer) {
+  const length = Buffer.alloc(4); length.writeUInt32BE(data.length);
+  return Buffer.concat([length, Buffer.from(type, "latin1"), data, Buffer.alloc(4)]);
+}
