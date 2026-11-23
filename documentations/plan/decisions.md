@@ -1,7 +1,16 @@
 # Decisions
 
 > [!NOTE]
-> **TL;DR.** D-406 removes the worker cap: one worker per independent ready item until the owner asks for fewer. D-405 is a narrow 1.1.0 closure-sprint exception for one rolling batch gate; its four-worker cap is superseded by D-406. D-404 runs every coordinator, worker and subagent on Claude Opus 5.5, passed explicitly. D-398 settles the 1.1.0 Autopilot scope and publishing defaults, authorizing production wiring of the prepared candidates. D-399 exempts query-input search and command surfaces from a decorative visual anchor. Owner corrections D-393–D-395 still govern GitHub references, in-app deletion and Find. D-400/D-401 keep Delete authorization isolated and retained private history self-contained and reversible. Earlier decisions remain historical where explicitly superseded.
+> **TL;DR.** D-407 archives every worker chat once its result is logged and nothing is queued, to save memory; a follow-up is a fresh chat with the handoff. D-406 removes the worker cap: one worker per independent ready item until the owner asks for fewer. D-405 is a narrow 1.1.0 closure-sprint exception for one rolling batch gate; its four-worker cap is superseded by D-406. D-404 runs every coordinator, worker and subagent on Claude Opus 5.5, passed explicitly. D-398 settles the 1.1.0 Autopilot scope and publishing defaults, authorizing production wiring of the prepared candidates. D-399 exempts query-input search and command surfaces from a decorative visual anchor. Owner corrections D-393–D-395 still govern GitHub references, in-app deletion and Find. D-400/D-401 keep Delete authorization isolated and retained private history self-contained and reversible. Earlier decisions remain historical where explicitly superseded.
+
+## D-407: archive finished worker chats
+
+**Decided (owner, 23 November 2026, 17:01; ID assigned by coordinator).** The owner: "Keep archiving unnecessary and old chats and workers. Keep optimizing system memory usage and offload unnecessary old stuff."
+
+- Every worker chat is archived as soon as its result is in the progress log and nothing is queued for it.
+- Reusing a worker means a fresh chat started from that worker's handoff, never keeping an old chat alive for possible follow-ups.
+
+**Affects:** [AGENTS.md working modes](../../AGENTS.md#modes-gates-and-merges) and its Orchestration facts. No product behaviour changes.
 
 ## D-406: no worker cap until the owner reduces it
 
