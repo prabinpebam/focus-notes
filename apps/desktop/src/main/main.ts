@@ -586,12 +586,17 @@ async function deleteLocalProject(keepPrivate: boolean, current: () => Promise<b
   const old = gitSync;
   armGit();
   await old?.dispose();
-  const r = await current() ? await recycleProject(folder, { keepPrivate, trash: (p) => shell.trashItem(p), current }) : { state: "refused" as const };
-  if (r.state !== "deleted") {
-    watcher = watchWorkspace(() => windows);
-    startGit();
-    return r;
+  // The watcher and Git restart whatever the last check or the move does, even if one of them throws.
+  let r: DeletionResult = { state: "refused" };
+  try {
+    r = await current().catch(() => false) ? await recycleProject(folder, { keepPrivate, trash: (p) => shell.trashItem(p), current }) : { state: "refused" };
+  } finally {
+    if (r.state !== "deleted") {
+      watcher = watchWorkspace(() => windows);
+      startGit();
+    }
   }
+  if (r.state !== "deleted") return r;
   projectDeleted = true;
   await forgetLocal("deleteProject");
   process.stdout.write("[focus-notes] project-deleted\n");
@@ -2550,6 +2555,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     const api = await projectGitHub();
     const status = await repoStatus(api, repo);
     if (api && status.state === "exists") await remoteDeletion.prepare(api, repo);
+    if (api && status.state === "gone") await remoteDeletion.prepareGone(api, repo);
     return status;
   });
   handle("workspace:deleteRepo", async (repo: unknown, opts: unknown) => {

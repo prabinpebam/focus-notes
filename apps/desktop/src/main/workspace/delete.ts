@@ -121,6 +121,17 @@ export class RemoteProjectDeletion {
     if (previous) return;
     this.#targets.set(repo, { id: target.id, account: user.id!, login: user.login, sent: false, accepted: false, confirmed: false });
   }
+  /**
+   * A repository GitHub already doesn't show (404, or a delete resumed after a restart): only the signed-in
+   * account is recorded, so the person's explicit confirmation is checked against it. Never a DELETE.
+   */
+  async prepareGone(api: ReadsGitHub, repo: string): Promise<void> {
+    if (!isRepoSlug(repo)) throw new Error("Not a repository");
+    const user = await api.user() as { id?: number; login?: string };
+    if (!Number.isSafeInteger(user.id) || typeof user.login !== "string" || !user.login) throw new Error("Invalid deletion identity");
+    if (this.#targets.has(repo)) return;
+    this.#targets.set(repo, { id: 0, account: user.id!, login: user.login, sent: false, accepted: false, confirmed: false });
+  }
   account(repo: string) {
     const receipt = this.#targets.get(repo);
     if (!receipt?.login) throw new Error("Deletion account was not preflighted");
@@ -395,10 +406,15 @@ export async function recycleProject(folder: string, opts: { keepPrivate: boolea
   let installed = false;
   let recycling = false;
   let notMoved = false;
+  /** Before recycling, what was going on when it stopped: copying private history, or moving the private folder. */
+  let phase: "check" | "stage" | "move" = "check";
   try {
     if (opts.keepPrivate && existsSync(priv)) {
+      phase = "stage";
       stage = await stagePrivateHistory(folder, priv, opts.current);
+      phase = "check";
       if (opts.current && !await opts.current()) throw new Error("Private retention intent changed");
+      phase = "move";
       kept = keptPrivateFolder(folder);
       await rename(priv, kept);
       if (stage) {
@@ -408,6 +424,7 @@ export async function recycleProject(folder: string, opts: { keepPrivate: boolea
         installed = true;
       }
     }
+    phase = "check";
     if (opts.current && !await opts.current()) throw new Error("Deletion intent changed before recycling");
     recycling = true;
     await opts.trash(folder);
@@ -425,6 +442,10 @@ export async function recycleProject(folder: string, opts: { keepPrivate: boolea
       return { state: "failed", reason: "privateHistory", ...(kept && existsSync(kept) ? { privateKept: kept } : {}) };
     }
     if (!recycling) {
+      // Only a failed copy of the private history is a private-history problem; a changed project or account, or a held folder, says so.
+      if (phase === "move") return { state: "locked", ...(opts.holder ? { file: await opts.holder(priv).catch(() => undefined) } : {}) };
+      if (opts.current && !await opts.current().catch(() => false)) return { state: "refused" };
+      if (phase === "check") return { state: "refused" };
       console.error("Private project history could not be preserved safely");
       return { state: "failed", reason: "privateHistory" };
     }

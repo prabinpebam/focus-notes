@@ -3377,6 +3377,7 @@
   "project.delete.problem.windowAction": "Close that window",
   "project.delete.problem.partialLocal": "Deleted on GitHub, but the folder couldn't go to the Recycle Bin: {file} is open in another app. Close it, then try again.",
   "project.delete.problem.privateHistory": "Deleted on GitHub, but private Git history could not be kept safely. Keep this project and fix its private Git setup before retrying.",
+  "project.delete.problem.localRefused": "The folder didn't go to the Recycle Bin: the project, the copy of your notes or your GitHub account changed. Nothing on this computer was deleted. Close this, then start Delete project again.",
   "project.delete.problem.continueReason": "Fix the problem above first.",
   "project.delete.stopped": "Stopped. Nothing on this computer changed.",
   "project.delete.stoppedDetail": "If you'd already deleted it on GitHub, the project shows “Not on GitHub” the next time you open it.",

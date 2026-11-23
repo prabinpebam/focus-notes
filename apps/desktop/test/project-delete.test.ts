@@ -458,6 +458,32 @@ describe("DD-PROJ-15: to the Recycle Bin", () => {
     expect(await deletion.confirmExternal(api, "ada/notes", () => false)).toEqual({ state: "refused", reason: "identity" });
     expect(await deletion.confirmExternal(api, "ada/notes", () => true)).toEqual({ state: "deleted" });
   });
+  it("a repository already gone records the signed-in account, so only that account can confirm it, and is never deleted", async () => {
+    let login = "ada";
+    const methods: string[] = [];
+    const api = {
+      user: async () => ({ id: 1, login }),
+      request: async <T,>(method: string): Promise<T> => { methods.push(method); throw new GitHubError(404, "Not found"); },
+    };
+    const deletion = new RemoteProjectDeletion();
+    expect(await deletion.confirmExternal(api, "ada/notes", () => true)).toEqual({ state: "refused", reason: "identity" });
+    await deletion.prepareGone(api, "ada/notes");
+    expect(deletion.account("ada/notes")).toEqual({ id: 1, login: "ada" });
+    expect(await deletion.delete(api, "ada/notes")).toEqual({ state: "partial" });
+    login = "other";
+    expect(await deletion.confirmExternal(api, "ada/notes", () => true)).toEqual({ state: "refused", reason: "identity" });
+    login = "ada";
+    expect(await deletion.confirmExternal(api, "ada/notes", () => true)).toEqual({ state: "deleted" });
+    expect(deletion.confirmed("ada/notes")).toBe(true);
+    expect(methods).not.toContain("DELETE");
+  });
+  it("a changed project before recycling is a refusal, not a private-history failure, when no private notes are kept", async () => {
+    const { folder } = project();
+    const trash = vi.fn();
+    expect(await recycleProject(folder, { keepPrivate: false, current: async () => false, trash })).toEqual({ state: "refused" });
+    expect(trash).not.toHaveBeenCalled();
+    expect(existsSync(folder)).toBe(true);
+  });
   it("moves the folder, keeping the private notes beside it when asked", async () => {
     const { root, folder } = project();
     mkdirSync(join(folder, "private", "notes"), { recursive: true });
@@ -512,7 +538,7 @@ describe("DD-PROJ-15: to the Recycle Bin", () => {
       await expect.poll(() => copying).toBe(true);
       allowed = false;
       release();
-      expect(await operation).toEqual({ state: "failed", reason: "privateHistory" });
+      expect(await operation).toEqual({ state: "refused" });
       expect(trash).not.toHaveBeenCalled();
       expect(readFileSync(join(priv, ".git"))).toEqual(pointer);
       expect(readFileSync(join(metadata, "config"))).toEqual(config);

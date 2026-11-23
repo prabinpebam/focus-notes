@@ -45,7 +45,7 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
   const t = timers ?? { set: (run: () => void, ms: number) => setTimeout(run, ms), clear: (h: unknown) => clearTimeout(h as ReturnType<typeof setTimeout>), now: () => Date.now() };
   const blank = () => ({
     open: false, step: "consequences" as DeleteStep, problem: "" as DeleteProblem, typed: "", private: false, exported: false, exportPath: "",
-    busy: false, checking: false, owner: "", org: "", retryAt: 0, lockedFile: "", privateHistoryFailed: false, site: "", links: 0,
+    busy: false, checking: false, owner: "", org: "", retryAt: 0, lockedFile: "", privateHistoryFailed: false, localRefused: false, site: "", links: 0,
     remoteState: "deleting" as "stepup" | "deleting" | "deleted" | "partial" | "refused" | "declined", remoteReason: "", remoteTarget: "", remoteCode: "", remoteToken: "", remoteAuthorizing: false, remoteMethod: "token" as "device" | "token",
   });
   let state = blank();
@@ -237,7 +237,9 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
   reg("project.deleteConfirm", "project.delete.confirm.button", async () => {
     if (!check || state.busy || state.typed !== name()) return;
     if (linked() && ws?.deleteRepo && state.step === "confirm") {
-      if (state.problem) return;
+      if (state.problem && state.problem !== "gone") return;
+      // Already unavailable on GitHub: never deleted again; the person confirms it once the others are done (DD-PROJ-13).
+      if (state.problem === "gone" && !repos.has(check.repo)) repos.set(check.repo, "ask");
       return deleteInApp();
     }
     if (linked() && state.step !== "progress") {
@@ -260,17 +262,23 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
     changed();
     toast(catalog.format(finished.privateKept ? "project.delete.donePrivate" : "project.delete.done", { name: finished.name, path: finished.privateKept }));
   });
+  /** Repositories GitHub already doesn't show wait for the person's "I deleted it", one by one (DD-PROJ-13). */
+  const askGone = () => {
+    for (const target of targets()) if (!repos.has(target)) repos.set(target, "open");
+    set({ step: "github", problem: state.org ? "policy" : "", busy: false });
+  };
   async function deleteInApp(authorize = false) {
     if (!check || !ws?.deleteRepo || state.busy) return;
     const mine = run;
     const selected = targets();
+    if (selected.every((repo) => repos.get(repo) === "deleted" || repos.get(repo) === "ask") && selected.some((repo) => repos.get(repo) === "ask")) return askGone();
     const options = { keepPrivate: !state.private };
     const authorizeRepo = authorize ? state.remoteTarget : undefined;
     const stopCode = ws.onDeleteCode?.(code => { if (mine === run && state.open && state.busy) set({ remoteCode: code, remoteAuthorizing: Boolean(code) }); });
     set({ step: "inApp", remoteState: "deleting", busy: true, remoteAuthorizing: authorize });
     try {
       for (const repo of selected) {
-        if (repos.get(repo) === "deleted") continue;
+        if (repos.get(repo) === "deleted" || repos.get(repo) === "ask") continue;
         set({ remoteTarget: repo });
         const go = () => repo === authorizeRepo && ws.authorizeDelete ? ws.authorizeDelete(repo, state.remoteToken || undefined, options) : ws.deleteRepo!(repo, options);
         const result = await (tracker ? tracker.run("project.deleteRemote", "task.deleting", go, undefined, "fn:project.deleteRemote") : go());
@@ -288,6 +296,7 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
         repos.set(repo, "deleted");
         await persist();
       }
+      if (selected.some((repo) => repos.get(repo) === "ask")) return askGone();
       set({ busy: false });
       await finish();
     } catch {
@@ -351,7 +360,7 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
     if (!(await flush())) { toast(catalog.format("project.delete.unsaved"), { tone: "error" }); return; }
     if (mine !== run || !state.open) return;
     stopPolling();
-    set({ step: "progress", busy: true, problem: "", lockedFile: "", privateHistoryFailed: false });
+    set({ step: "progress", busy: true, problem: "", lockedFile: "", privateHistoryFailed: false, localRefused: false });
     const keepPrivate = Boolean(check.privateRepo) && !state.private;
     await persist(true);
     const go = () => ws.deleteLocal!({ keepPrivate });
@@ -371,7 +380,7 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
       return;
     }
     // Deleted on GitHub, still on this computer: say exactly that, and keep Retry and Show folder (DD-PROJ-17).
-    set({ busy: false, problem: "partialLocal", privateHistoryFailed: r.reason === "privateHistory", lockedFile: r.file ?? catalog.format("project.delete.someFile") });
+    set({ busy: false, problem: "partialLocal", privateHistoryFailed: r.reason === "privateHistory", localRefused: r.state === "refused", lockedFile: r.file ?? catalog.format("project.delete.someFile") });
   }
   reg("project.deleteShowFolder", "project.open.showFolder", async () => {
     await ws?.reveal?.().catch(() => {});
@@ -412,6 +421,17 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
     }
     const gone = new Set(r.repos.filter((x) => x.deleted).map((x) => x.id));
     set({ typed: name(), private: !r.keepPrivate && Boolean(c.privateRepo) });
+    if (ws.deleteRepo && c.kind === "linked") {
+      // A restart lost this session's confirmations: ask again about each repository already deleted, delete
+      // the rest in the app, and copy the notes not on GitHub again first if there are any (DD-PROJ-14).
+      if (state.problem && state.problem !== "gone") return;
+      for (const id of targets()) repos.set(id, gone.has(id) || (state.problem === "gone" && id === c.repo) ? "ask" : "open");
+      resuming = false;
+      if (c.unsynced.length) set({ step: "unsynced" });
+      else if (targets().some((id) => repos.get(id) === "open")) set({ step: "confirm" });
+      else askGone();
+      return;
+    }
     for (const id of targets()) repos.set(id, gone.has(id) ? "deleted" : state.problem === "gone" && id === c.repo ? "ask" : "open");
     if (targets().every((id) => repos.get(id) === "deleted")) { resuming = false; await finish(); return; }
     // Offline, signed out or not an admin: the problem shows with Retry, which resumes again.
@@ -457,7 +477,7 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
         remoteDetail: catalog.format(state.remoteState === "refused" && state.remoteReason ? `project.delete.inApp.reason.${state.remoteReason}` : `project.delete.inApp.${state.remoteState}.detail`),
         remoteKept: catalog.format(localStop ? `project.delete.inApp.${state.remoteReason}.kept` : `project.delete.inApp.${state.remoteState}.kept`),
         exported: state.exported, exportPath: state.exportPath, busy: state.busy || state.checking,
-        localError: catalog.format(state.privateHistoryFailed ? "project.delete.problem.privateHistory" : "project.delete.problem.partialLocal", { file: state.lockedFile }),
+        localError: catalog.format(state.privateHistoryFailed ? "project.delete.problem.privateHistory" : state.localRefused ? "project.delete.problem.localRefused" : "project.delete.problem.partialLocal", { file: state.lockedFile }),
         name: c?.name ?? "", repo: c?.repo ?? "", privateRepo: c?.privateRepo ?? "",
         otherRepo: c?.repo ?? "", otherOwner: state.owner ? `@${state.owner}` : "", org: state.org, orgRepo: c?.repo ?? "",
         site: state.site, siteNotes: c?.siteNotes ?? 0, links: state.links,
