@@ -16,7 +16,7 @@ const LINKED: DeletionCheck = {
   privateCount: 3, siteNotes: 12, unsynced: [],
 };
 
-function shell(opts: { check?: DeletionCheck; status?: RepoStatus[]; result?: DeletionResult[]; account?: AccountStatus; record?: DeletionRecord | null; remote?: RemoteDeletionResult[]; grant?: RemoteDeletionResult } = {}) {
+function shell(opts: { check?: DeletionCheck; status?: RepoStatus[]; result?: DeletionResult[]; account?: AccountStatus; accountReady?: Promise<void>; record?: DeletionRecord | null; remote?: RemoteDeletionResult[]; grant?: RemoteDeletionResult } = {}) {
   const calls: string[] = [];
   /** The resumable record, when the shell has the port: what was last saved, or null once cleared. */
   const saved: { current: DeletionRecord | null | undefined; history: DeletionRecord[] } = { current: opts.record, history: [] };
@@ -24,7 +24,7 @@ function shell(opts: { check?: DeletionCheck; status?: RepoStatus[]; result?: De
   const results = [...(opts.result ?? [{ state: "deleted" }])];
   const remote = [...(opts.remote ?? [])];
   const fr = {
-    account: async () => opts.account ?? { account: { login: "ada", id: 1, name: "Ada" }, gcm: true, gh: false, via: "gcm" },
+    account: async () => (await opts.accountReady, opts.account ?? { account: { login: "ada", id: 1, name: "Ada" }, gcm: true, gh: false, via: "gcm" }),
     onSignIn: () => () => {},
   } as unknown as FirstRunBridge;
   const bridge: PlatformBridge = {
@@ -328,6 +328,20 @@ describe("PRJ-23: what stops a deletion, and its recovery (DD-PROJ-17)", () => {
     expect(t.vm()).toMatchObject({ problem: "rateLimit" });
     expect(t.vm().retryAt).not.toBe("");
     await t.run("project.deleteStop");
+  });
+  it("opened before the account check answers, a signed-in person is never told to sign in", async () => {
+    let ready!: () => void;
+    const t = shell({ accountReady: new Promise<void>((r) => { ready = r; }) });
+    await t.app.start();
+    await settle();
+    expect(t.app.store.state.account.login ?? "").toBe("");
+    const opening = t.run("project.delete");
+    await settle();
+    ready();
+    await opening;
+    await settle();
+    expect(t.vm()).toMatchObject({ open: true, step: "consequences", problem: "" });
+    expect(t.calls).toContain("status:ada/field-notes");
   });
   it("a locked file: deleted on GitHub, still on this computer, with Retry", async () => {
     const t = await started({ check: { ...LINKED, kind: "offline", repo: "", privateRepo: "" }, result: [{ state: "locked", file: "Trips/Iceland.md" }, { state: "deleted" }] });

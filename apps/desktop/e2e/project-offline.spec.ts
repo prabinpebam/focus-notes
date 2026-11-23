@@ -12,7 +12,7 @@ import { createServer } from "node:http";
 import { join } from "node:path";
 import type { Page } from "@playwright/test";
 import { test, expect } from "./fixtures.ts";
-import { launch, quit, tempDirs } from "./helpers.ts";
+import { launch, quit, tempDirs, type Launched } from "./helpers.ts";
 import { makeFakes } from "../test/fakes/fakes.ts";
 import { DATA_FILES } from "@focus-notes/core/inventory";
 import messages from "../../../packages/views/messages/en.json" with { type: "json" };
@@ -127,7 +127,7 @@ async function deletionVm(page: Page, observeOperation = false, command = "proje
         if (!vm || typeof vm !== "object") throw new Error("Deletion VM was not found");
         const fields = vm as Record<string, unknown>;
         const state = app.store.state as { note?: { path?: string } };
-        return { open: fields.open, busy: fields.busy, step: fields.step, remoteState: fields.remoteState, tokenCleared: fields.remoteToken === "", codeCleared: fields.remoteCode === "", operationSettled: observation.deleteOperationSettled, notePath: state.note?.path };
+        return { open: fields.open, busy: fields.busy, step: fields.step, problem: fields.problem, remoteState: fields.remoteState, tokenCleared: fields.remoteToken === "", codeCleared: fields.remoteCode === "", operationSettled: observation.deleteOperationSettled, notePath: state.note?.path };
       }
       if (current.child) queue.push(current.child);
       if (current.sibling) queue.push(current.sibling);
@@ -136,7 +136,49 @@ async function deletionVm(page: Page, observeOperation = false, command = "proje
   }, { observe: observeOperation, command });
 }
 
-async function attachDeleteFailure(page: Page) {
+/** Synthetic Recycle Bin and folder picker; records only counts and Node error codes, never a path. */
+async function installDeleteFakes(l: Launched, paths: { folder: string; recycle: string; locked: boolean; copyParent?: string }) {
+  await l.app.evaluate(({ dialog, shell }, paths) => {
+    const record = { trashCalls: 0, foreignTrash: 0, trashErrors: [] as string[], pickerCalls: 0 };
+    (globalThis as { deleteFixtureRecord?: typeof record }).deleteFixtureRecord = record;
+    if (paths.copyParent) dialog.showOpenDialog = async () => { record.pickerCalls++; return { canceled: false, filePaths: [paths.copyParent!] }; };
+    const fs = process.getBuiltinModule("fs").promises;
+    let attempts = 0;
+    shell.trashItem = async path => {
+      record.trashCalls++;
+      if (path !== paths.folder) { record.foreignTrash++; throw new Error("Refused foreign fixture folder"); }
+      if (paths.locked && attempts++ === 0) throw new Error("Fixture file in use");
+      try { await fs.rename(path, paths.recycle); }
+      catch (error) { record.trashErrors.push(String((error as { code?: unknown }).code ?? "unknown")); throw error; }
+    };
+  }, paths);
+}
+
+/** Main-process failures, reduced to IPC channel names, Node error codes and fixed messages. */
+const NODE_CODES = ["EPERM", "EBUSY", "ENOENT", "EACCES", "EEXIST", "EXDEV", "ENOTEMPTY", "EISDIR", "ENOTDIR", "EMFILE", "ETIMEDOUT", "ECONNREFUSED", "ECONNRESET"];
+const MAIN_MESSAGES = ["Choose a folder outside the project", "Invalid preservation path", "The note changed during preservation", "Not this project's repository", "Invalid local deletion", "Private project retention could not be restored", "Private project history could not be preserved safely"];
+function mainFailures(log: string[]) {
+  const channels = new Set<string>(), codes = new Set<string>(), known = new Set<string>();
+  for (const line of log) {
+    const channel = /Error occurred in handler for '([A-Za-z]+:[A-Za-z]+)'/.exec(line)?.[1];
+    if (channel) channels.add(channel);
+    for (const code of NODE_CODES) if (new RegExp(`\\b${code}\\b`).test(line)) codes.add(code);
+    for (const message of MAIN_MESSAGES) if (line.includes(message)) known.add(message);
+  }
+  return { channels: [...channels].sort(), codes: [...codes].sort(), messages: [...known].sort() };
+}
+
+/** The project's own files at failure, as a count and a boolean: did the app write into the project mid-flow? */
+function projectWrites(folder: string, note: string, before: Buffer) {
+  try {
+    if (!existsSync(folder)) return { folderPresent: false };
+    const status = git(folder, "status", "--porcelain=v1", "--untracked-files=all", "--ignore-submodules=all").toString().split("\n").filter(Boolean).length;
+    return { folderPresent: true, changedEntries: status, noteUnchanged: existsSync(note) && readFileSync(note).equals(before) };
+  } catch { return { unavailable: "project state could not be read" }; }
+}
+
+async function attachDeleteFailure(l: Launched, project?: ReturnType<typeof projectWrites>) {
+  const { page } = l;
   const testInfo = test.info();
   const templates = Object.entries(messages)
     .filter(([key]) => key.startsWith("project.delete.") || ["commit.retry", "project.back", "dialog.close"].includes(key))
@@ -166,6 +208,7 @@ async function attachDeleteFailure(page: Page) {
       diagnostic = {
         step: ["consequences", "unsynced", "confirm", "github", "inApp", "progress", "stopped"].includes(String(vm.step)) ? vm.step : "unavailable",
         busy: vm.busy === true,
+        problem: ["", "offline", "signin", "notAdmin", "policy", "rateLimit", "window", "gone", "partialLocal"].includes(String(vm.problem)) ? vm.problem : "unavailable",
         remoteState: ["stepup", "deleting", "deleted", "declined", "partial", "refused"].includes(String(vm.remoteState)) ? vm.remoteState : "unavailable",
         tokenCleared: vm.tokenCleared,
         codeCleared: vm.codeCleared,
@@ -176,7 +219,15 @@ async function attachDeleteFailure(page: Page) {
       diagnostic = { unavailable: "mounted state could not be read" };
     }
   }
-  await testInfo.attach("delete-failure-state", { body: JSON.stringify(diagnostic, null, 2), contentType: "application/json" });
+  let fixture: unknown = { unavailable: "app closed" };
+  try {
+    const r = await l.app.evaluate(() => (globalThis as { deleteFixtureRecord?: { trashCalls: number; foreignTrash: number; trashErrors: string[]; pickerCalls: number } }).deleteFixtureRecord);
+    fixture = r ? { trashCalls: r.trashCalls, foreignTrash: r.foreignTrash, trashErrors: r.trashErrors.map(code => NODE_CODES.includes(code) ? code : "other"), pickerCalls: r.pickerCalls } : { unavailable: "not installed" };
+  } catch { fixture = { unavailable: "app closed" }; }
+  // A file in the test's output folder, which CI keeps with test-results/ (a body attachment it drops).
+  const file = testInfo.outputPath("delete-failure-state.json");
+  writeFileSync(file, JSON.stringify({ ...(diagnostic as object), fixture, main: mainFailures(l.log), ...(project ? { project } : {}) }, null, 2));
+  await testInfo.attach("delete-failure-state", { path: file, contentType: "application/json" });
 }
 
 async function deletionGeometry(page: Page) {
@@ -370,15 +421,7 @@ async function actualDeletion(mode: "refused" | "partial" | "oauth" | "declined"
   let closed = false;
   try {
     const recycle = join(dirs.userData, "recycled-project");
-    await l.app.evaluate(async ({ shell }, paths) => {
-      const fs = process.getBuiltinModule("fs").promises;
-      let attempts = 0;
-      shell.trashItem = async path => {
-        if (path !== paths.folder) throw new Error("Refused foreign fixture folder");
-        if (paths.locked && attempts++ === 0) throw new Error("Fixture file in use");
-        await fs.rename(path, paths.recycle);
-      };
-    }, { folder: dirs.docs, recycle, locked: mode === "locked" });
+    await installDeleteFakes(l, { folder: dirs.docs, recycle, locked: mode === "locked" });
     if (mode === "transportFailure") await l.app.evaluate(({ ipcMain, BrowserWindow }) => {
       ipcMain.removeHandler("workspace:authorizeDelete");
       ipcMain.handle("workspace:authorizeDelete", async () => {
@@ -722,7 +765,7 @@ async function actualDeletion(mode: "refused" | "partial" | "oauth" | "declined"
     expect(readFileSync(note)).toEqual(before);
     await persistence();
   } catch (error) {
-    await attachDeleteFailure(l.page);
+    await attachDeleteFailure(l, projectWrites(dirs.docs, note, before));
     throw error;
   } finally {
     allowGrant?.();
@@ -843,16 +886,7 @@ for (const mode of ["allSelected", "privateStepup", "keepPrivate", "keepPrivateR
     let closed = false;
     let unlock: (() => Promise<void>) | undefined;
     try {
-      await l.app.evaluate(({ dialog, shell }, paths) => {
-        dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [paths.copyParent] });
-        const fs = process.getBuiltinModule("fs").promises;
-        let attempts = 0;
-        shell.trashItem = async path => {
-          if (path !== paths.folder) throw new Error("Refused foreign fixture folder");
-          if (paths.locked && attempts++ === 0) throw new Error("Fixture file in use");
-          await fs.rename(path, paths.recycle);
-        };
-      }, { copyParent, folder: dirs.docs, recycle, locked: mode === "keepPrivateRetry" });
+      await installDeleteFakes(l, { copyParent, folder: dirs.docs, recycle, locked: mode === "keepPrivateRetry" });
       await reachesFirstConfirmation(l.page, "linked");
       const dialog = l.page.getByRole("dialog", { name: /^Delete .+\?$/ });
       const name = (await dialog.getByRole("heading", { name: /^Delete .+\?$/ }).innerText()).replace(/^Delete /, "").replace(/\?$/, "");
@@ -996,7 +1030,7 @@ for (const mode of ["allSelected", "privateStepup", "keepPrivate", "keepPrivateR
       }
       if (at) writeFileSync(join(at, `${mode}-provenance.json`), JSON.stringify({ scenario: mode, source: "built-invisible-renderer", pid: l.pid, requestChain: requests, sourceHead: head, privateHead, gitEvidence, sourcePreservationEvidence, sixStateComplete: false, checks: { exactPublicPrivateUnpushedBytes: true, ...(!["exportFailure", "exportReadFailure", "exportChanged"].includes(mode) ? { exactPublicPrivateExportBytes: true } : {}), preservedHistory: true, privateSelectionRespected: true, noDeleteBeforePreservation: true, ...(unsafePrivate ? { zeroRemoteDeleteOnPreflightRefusal: true } : {}), ...(mode === "keepPrivateRetry" ? { noRepeatedDeleteOnLocalRetry: true } : {}), ...(mode === "privateStepup" ? { noGrantTokenInDiskOrLogs: true, onlyPrivateTargetAuthorized: true } : {}), fakeCredentialsUnchanged: true, fakeGitConfigUnchanged: true }, nativeReadLock: mode === "exportReadFailure", nativeRecycleBin: false, privateHistoryLocation: unsafePrivate ? "original unsupported metadata, refused without migration" : selected ? ".git/modules/private in synthetic recycled parent" : "self-contained .git in the kept private folder", compiled: deletionBuild() }, null, 2));
     } catch (error) {
-      await attachDeleteFailure(l.page);
+      await attachDeleteFailure(l, projectWrites(dirs.docs, join(dirs.docs, "Welcome.md"), publicBytes));
       throw error;
     } finally {
       if (unlock) await unlock();
