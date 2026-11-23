@@ -9,7 +9,7 @@
 The design system's components: what each one is for, its variants and key props, the accessibility pattern it implements, and which views and IA components use it. Every row says whether the component is **implemented** (a registered contract a view can name), **composed** (built from implemented parts in a view document, or drawn inside another implemented component), or **planned** (no contract yet, so no view can use it). Views are assembled only from implemented components.
 
 > [!NOTE]
-> **TL;DR.** **86 registered contracts**: **57 primitives** (Text, Icon, Button, TextField, SearchField, Slider, FileTree, WindowControls, and so on), **5 host components** that wrap imperative DOM (EditorSurface, TableControls, BlockHandle, WindowFrame, TextMenu), **19 layouts** (AppRoot, Stack, Section, Inline, Columns, Surface, Layer, Positioner, Sheet, and so on), **1 block component** (NoteContent, which renders a note's blocks on published pages and on paper), and **4 compound components** (Trigger, Toolbar, Dialog, SecureKeyField). The [implemented inventory](#inventory) is generated from those contracts and checked by `pnpm check`, so its names and counts can't drift (D-200). The guidance tables below also keep composed entries (Spotlight, the find bar, the formatting toolbar and other surfaces built in the canvas view document) and planned entries (Checkbox, Select, VirtualList, and others), each marked. The view schema is generated from the contracts (DSY-05).
+> **TL;DR.** **87 registered contracts**: **57 primitives** (Text, Icon, Button, TextField, SearchField, Slider, FileTree, WindowControls, and so on), **5 host components** that wrap imperative DOM (EditorSurface, TableControls, BlockHandle, WindowFrame, TextMenu), **20 layouts** (AppRoot, Stack, Section, IconLayout, Inline, Columns, Surface, Layer, Positioner, Sheet, and so on), **1 block component** (NoteContent, which renders a note's blocks on published pages and on paper), and **4 compound components** (Trigger, Toolbar, Dialog, SecureKeyField). The [implemented inventory](#inventory) is generated from those contracts and checked by `pnpm check`, so its names and counts can't drift (D-200). The guidance tables below also keep composed entries (Spotlight, the find bar, the formatting toolbar and other surfaces built in the canvas view document) and planned entries (Checkbox, Select, VirtualList, and others), each marked. The view schema is generated from the contracts (DSY-05).
 
 <h2 id="button-geometry" data-reader-personas="design engineering">Button geometry</h2>
 
@@ -58,7 +58,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 
 <!-- generated:component-inventory: node tools/component-inventory.mjs; do not edit by hand -->
 
-**86 registered contracts:** 57 primitives, 5 host components, 19 layouts, 1 block component, 4 compound components.
+**87 registered contracts:** 57 primitives, 5 host components, 20 layouts, 1 block component, 4 compound components.
 
 | Component | Tier | Declared states | Fixtures | States listed as gaps |
 | --- | --- | --- | ---: | --- |
@@ -127,6 +127,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | NotificationRegion | layout | `rest` | 1 | None |
 | Stack | layout | `rest` | 21 | None |
 | Section | layout | `rest` | 3 | None |
+| IconLayout | layout | `rest` | 3 | None |
 | Inline | layout | `rest` | 23 | None |
 | Columns | layout | `rest` | 2 | None |
 | Surface | layout | `rest` | 30 | None |
@@ -306,6 +307,7 @@ Layout props accept only token names: `gap`, `padding`, and `inset` take `space.
 | **Section** | Implemented | Groups by space alone (D-345, [SP-12](../spacing-audit.md#settings-grouping-sp-12)): heading and section-wide context in the heading slot, `stackPair` apart; header to body `stackItem`; body items `stackGroup`; Sections sit `stackSection` apart, or `stackRegion` when they hold labelled fields with hints (Settings → Project). No border, fill or extra inset. | Optional `heading` slot, default item slot, `id`; no spacing overrides |
 | **Inline** | Implemented | Children in a row | `gap`, `align`, `justify`, `wrap`, `padding` |
 | **ToolbarRow** | Implemented | A row with the toolbar role: one tab stop, arrow keys, Home and End between its items. A new `focusRequest` moves focus into it (<kbd>Alt+F10</kbd>) | `label` (required), `focusRequest` |
+| **IconLayout** | Implemented | The app-wide two-column layout for dialogs, alert cards and popover cards ([D-408](../../plan/decisions.md#d-408-dialogs-and-cards-two-columns-icon-first-actions-trailing)). Column 1 holds only the icon or visual; column 2 holds the title and its line (`stackPair`), the body, details, progress and fields (`stackItem`), and the actions `stackGroup` below, at the trailing edge, secondary first and primary last (D-374). Nothing wraps under the icon; with no icon it is one column with the same trailing actions. No border, fill or inset of its own: the enclosing Surface, PopoverPanel or Dialog owns the one inset. | `icon`, `heading`, default and `actions` slots; no props |
 | **Columns** | Implemented | Children side by side in equal columns while each has room (`layout.sheetMin`), one under the other when it doesn't (D-142): two short fields on one row, so a setup step fits the window | `gap` |
 | **Grid** | Planned | Children in columns. Columns covers equal columns today, and SiteGrid the product site's tiles | `columns` (1 to 6) or `minItem` (a size token), `gap` |
 | **Center** | Implemented | Centers content up to a maximum width | `maxWidth` (for example `layout.measure`), `gutter` |

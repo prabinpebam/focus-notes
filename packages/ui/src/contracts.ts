@@ -64,6 +64,7 @@ import { contract as StepMark } from "./primitives/StepMark/contract.ts";
 import { contract as ItemCard } from "./primitives/ItemCard/contract.ts";
 import { contract as SaveState } from "./primitives/SaveState/contract.ts";
 import { contract as Columns } from "./layouts/Columns/contract.ts";
+import { contract as IconLayout } from "./layouts/IconLayout/contract.ts";
 import { contract as StepDots } from "./primitives/StepDots/contract.ts";
 import { contract as StatusRow } from "./primitives/StatusRow/contract.ts";
 import { contract as CodeBlock } from "./primitives/CodeBlock/contract.ts";
@@ -95,7 +96,7 @@ export const contractsByType = {
   OpenItem, ImageCrop,
   ToolbarComposer,
   Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel, Spinner, CommitMark, Skeleton, LiveRegion, Toast, ResultList, Tabs, MorphPanel, TextField, PillButton, FileTree, VersionPane, WindowControls, ThemeGallery, Slider, ColorField, AppMark, StepMark, ItemCard, SaveState, StepDots, StatusRow, CodeBlock, VersionCompare, StrengthMeter, Switch, ProgressBar, DatePicker, ProjectMark, ImageFrame, FontChoice, ProjectPill, PickerButton, ScanRadar, SiteLink, SiteText, SiteFigure, SiteThemeShowcase,
-  Stack, Section, Inline, Columns, Surface, Layer, Center, AppRoot, ToolbarRow, Field, Positioner, Sheet, ProjectScope, ReaderPage, PrintPage, SitePage, SiteSection, SiteGrid,
+  Stack, Section, IconLayout, Inline, Columns, Surface, Layer, Center, AppRoot, ToolbarRow, Field, Positioner, Sheet, ProjectScope, ReaderPage, PrintPage, SitePage, SiteSection, SiteGrid,
   EditorSurface, TableControls, BlockHandle, WindowFrame, TextMenu,
   Trigger, Toolbar, Dialog,
   NoteContent,

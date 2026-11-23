@@ -380,6 +380,9 @@
           "$ref": "#/$defs/c_Section"
         },
         {
+          "$ref": "#/$defs/c_IconLayout"
+        },
+        {
           "$ref": "#/$defs/c_Inline"
         },
         {
@@ -10765,6 +10768,77 @@
           "additionalProperties": false,
           "properties": {
             "heading": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/node"
+              }
+            }
+          }
+        }
+      }
+    },
+    "c_IconLayout": {
+      "type": "object",
+      "description": "The app-wide two-column layout for dialogs, alert cards and popover cards (D-408). The icon slot is the first column and holds only the icon or visual; everything else sits in the second column: the heading slot (title and its line, stackPair apart), then the default slot (body, details, progress, fields; stackItem apart), then the actions slot stackGroup below, aligned to the trailing edge, secondary first and primary last (D-374). Nothing in the second column wraps under the icon. Without an icon it is one column with the same trailing actions. It paints no border, fill or inset: the enclosing Surface, PopoverPanel or Dialog owns the one inset.",
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "IconLayout"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {},
+          "required": []
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/node"
+          }
+        },
+        "slots": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "icon": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/node"
+              }
+            },
+            "heading": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/node"
+              }
+            },
+            "actions": {
               "type": "array",
               "items": {
                 "$ref": "#/$defs/node"
