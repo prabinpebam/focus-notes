@@ -23,6 +23,32 @@ function sampleScroll(page: Page, ms: number) {
   }, ms);
 }
 
+/**
+ * Samples the note's scrollTop every frame until `stopSampling`, so the window always covers the key's
+ * frame however late it's delivered or however long the renderer stalls (a fixed window armed before the
+ * key could end first on a slow runner and see no scroll at all, as in run 45046894568).
+ */
+function sampleScrollUntilStopped(page: Page) {
+  return page.evaluate(() => {
+    const el = document.querySelector<HTMLElement>("[data-editor-scroller]")!;
+    const w = window as unknown as { __scroll: number[]; __stop: () => Promise<number[]> };
+    const out: number[] = [];
+    let stop: ((ys: number[]) => void) | undefined;
+    w.__scroll = out;
+    w.__stop = () => new Promise((r) => (stop = r));
+    const loop = () => {
+      out.push(el.scrollTop);
+      if (stop) stop(out);
+      else requestAnimationFrame(loop);
+    };
+    requestAnimationFrame(loop);
+  });
+}
+
+/** Ends `sampleScrollUntilStopped` after one more frame and returns every sampled scrollTop. */
+const stopSampling = (page: Page) =>
+  page.evaluate(() => (window as unknown as { __stop: () => Promise<number[]> }).__stop());
+
 /** Where the caret's row is against the reading band (0 inside it; px past an edge otherwise). */
 const pastBand = (page: Page) =>
   page.evaluate(() => {
@@ -296,10 +322,15 @@ test("D-156: with reduced motion the auto-scroll is instant", async () => {
   await editor.locator("p").first().click();
   await page.waitForTimeout(500);
   const before = await page.evaluate(() => document.querySelector<HTMLElement>("[data-editor-scroller]")!.scrollTop);
-  await sampleScroll(page, 400);
+  await sampleScrollUntilStopped(page);
   await page.keyboard.press(caret.docEnd);
-  await page.waitForTimeout(500);
-  const ys = [before, ...(await page.evaluate(() => (window as unknown as { __scroll: { y: number }[] }).__scroll.map((s) => s.y)))];
+  // Every frame from before the key until well after the note has moved and the caret is in the band: a
+  // glide would show as more changes.
+  await expect
+    .poll(async () => (await page.evaluate(() => document.querySelector<HTMLElement>("[data-editor-scroller]")!.scrollTop)) !== before && Math.abs(await pastBand(page)) <= 2, { timeout: 5_000 })
+    .toBe(true);
+  await page.waitForTimeout(400);
+  const ys = [before, ...(await stopSampling(page))];
   const changes = ys.filter((y, i) => i > 0 && Math.abs(y - ys[i - 1]!) > 0.25);
   console.log(`D-156 reduced motion: scrollTop ${[...new Set(ys.map(Math.round))].join(" → ")}`);
   expect(changes.length).toBe(1);

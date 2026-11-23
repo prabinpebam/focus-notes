@@ -277,7 +277,7 @@ These are combined local checks, not a final seven-job CI gate, landing, native 
 
 #### D-156 reduced-motion gate investigation, 23 November
 
-**Scoped quarantine; cause unproven, not a green gate.** Exact-head
+**Root cause proven, journey repaired; quarantine closed (see below).** Exact-head
 [run 45046894568](https://github.com/prabinpebam/focus-notes/actions/runs/45046894568)
 on `c22154be91ef70e51e937bf8b67a567f1c6a1f21` finished with six successful
 jobs and one failed job, `journeys-windows (3)`. Its only failed journey,
@@ -293,20 +293,47 @@ changes were treated as related until the requested candidate/baseline control.
 | Cleanup | Both runs recorded their own app PIDs and ran `pwsh tools/dev/close-test-apps.ps1 -OnlyPid <recorded-pids> -WhatIf`, then the same scoped command without `-WhatIf`; all six app PIDs were absent afterwards. The temporary detached baseline was removed. Root, private content, Preview, retained candidate and Docs 8787 were untouched. |
 | Evidence validation | `pnpm check`, `node .\slate\scripts\runtime-host.mjs check --repo . --host documentations` and `git diff --check` passed. Headless Edge rendered this worktree's page in light/dark with one H1, the quarantine fields and the new evidence anchor; the owned browser and ephemeral loopback server closed afterwards. |
 
-No candidate-only regression was reproduced. These six local passes do not
-prove the original CI failure unrelated or identify its cause. The sampler
-starts a 400 ms frame window before the separately dispatched end-key command;
-a delayed command could miss that window, but no timing trace establishes that
-as the actual failed-run cause. No production code, test, assertion, timeout,
-retry or benchmark was changed.
+No candidate-only regression was reproduced by these unchanged runs. The
+sampler started a 400 ms frame window before the separately dispatched end-key
+command; the timing trace below proved that race, and the journey was repaired.
 
-| Quarantine field | Value |
+**Root cause proven and fixed in the journey's measurement, 23 November
+(W-B1).** The failed CI test took 8.8 s against 2.4 to 3.3 s for its
+neighbours in the same shard, a stall of about 5 s. A temporary timing probe
+in the built app (reduced motion, the same note, the journey's own sampler
+verbatim) recorded the keydown, every scroll event and the sampler's end
+against the sampler's start:
+
+| Probe | Trace | Sampled scrollTop |
+| --- | --- | --- |
+| No delay | keydown @3 ms, scroll to 2952 @11 ms, sampler end @401 ms | 0 → 2952 (pass) |
+| Key delivered 450 ms after arming | sampler end @403 ms, keydown @469 ms, scroll to 2952 @475 ms | 57 only: the CI failure |
+| Renderer stalled 600 ms after arming | keydown @602 ms, sampler end @603 ms (one frame), scroll to 2952 @609 ms | 57 only: the CI failure |
+
+The product scrolled instantly, in one step, in every case; only the
+measurement's wall-clock window ended before the key's frame. The journey now
+samples every frame from before the key until it's stopped, after the note has
+moved, the caret is in the band and 400 ms more have passed
+(`sampleScrollUntilStopped`, `stopSampling`). The assertions are unchanged:
+exactly one scroll change and the caret in the band. The other journeys'
+fixed 700 ms glide sampler is unchanged. No product code, timeout raise,
+retry or skip.
+
+| Check (worktree `fix-merge-candidate-23nov`) | Result |
 | --- | --- |
-| Scope | Only `D-156: with reduced motion the auto-scroll is instant` in `apps/desktop/e2e/m1-focus-motion.spec.ts`; only the zero-transition observation in run 45046894568. No other D-156, Find or CI failure is waived. |
-| Owner | Coordinator6 (the coordinator), with W-1A4's matched-control evidence. |
-| Expiry | 2026-11-30; requires a timing trace and repair or explicit re-evaluation by the coordinator, not automatic renewal. |
-| Enforcement | Record-only quarantine: the journey remains enabled and unchanged. The new evidence commit still requires its own seven successful terminal jobs and fresh coordinator ACK before held-lock landing. The failed run is never counted as green. |
-| Receipts | `focus-notes-work\logs\find-a4-c221-ab.log`, `find-a4-454-ab.log`, `find-a4-454-build.log` and the two `find-a4-*-pids.log` files. |
+| The repaired journey with the 450 ms key delay, then the 600 ms stall, injected temporarily | Passed both, 57 → 2952 (the old sampler failed both). The injection was removed before commit. |
+| The repaired journey with normal motion injected (no reduced motion) | Failed as it must: 48 changes, 57 → 60 → … → 2952, so a glide is still caught. |
+| With `FOCUS_NOTES_E2E=1` and `FOCUS_NOTES_E2E_CPU_THROTTLE=4`, `--repeat-each=3 -g 'D-156: with reduced motion the auto-scroll is instant'` | 3 of 3 passed, 57 → 2952. |
+| `pnpm --filter @focus-notes/desktop exec playwright test e2e/m1-focus-motion.spec.ts --workers=1` | All 9 passed (1.2 min); normal-motion glides 187 to 202 ms. |
+| Cleanup | Recorded app PIDs (`focus-notes-work\logs\wb1-d156-pids.log`) closed by `close-test-apps.ps1 -OnlyPid` after `-WhatIf`; none left running. |
+
+The record-only quarantine (scope: only this journey's zero-transition
+observation in run 45046894568; owner Coordinator6; expiry 2026-11-30) is
+closed: its condition, a timing trace and a repair, is met. The failed run is
+never counted as green, and the repaired journey still needs its own green CI
+run on the batch head. Receipts: `focus-notes-work\logs\find-a4-c221-ab.log`,
+`find-a4-454-ab.log`, `find-a4-454-build.log` and the two `find-a4-*-pids.log`
+files.
 
 ### Standalone text files, 8 November
 
