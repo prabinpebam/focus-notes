@@ -39,6 +39,8 @@ export function sharingRuntime(deps: {
   removalLane?<T>(work: () => Promise<T>): Promise<T>;
   preserve?(layout: SharingLayout): Promise<void>;
   remove?(pairing: SitePairing, layout: SharingLayout): Promise<void>;
+  /** Withdraws every earlier share so re-enabling can never republish it; runs before removal. */
+  withdrawShares?(): Promise<unknown>;
   step?(step: SharingSetupStep): void;
   /** The page renderer's folder (`render.mjs`, `assets/`): plaintext Publish needs its pages for Copy link. */
   reader?(): string | undefined;
@@ -172,6 +174,8 @@ export function sharingRuntime(deps: {
           const rel = real === undefined ? "" : relative(root, real);
           if (real === undefined || !rel || rel === ".." || rel.startsWith(`..${sep}`)) throw new Error("sharing:preservation");
         }
+        ctx.guard();
+        await deps.withdrawShares?.();
         ctx.guard();
       },
       remove: async pairing => {

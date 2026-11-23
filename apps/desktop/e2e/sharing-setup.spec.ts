@@ -129,3 +129,9 @@ test("G2.1-G2.3: confirmed setup creates one paired public site, Cancel and fail
     await fake.close();
   }
 });
+
+// Needs main.ts `withdrawShares: () => access.withdrawAll()` (central lease, G6R d4145f34) to pass; un-fixme at integration.
+// Body intentionally unwritten: a Share flow that can't run against this branch can't be validated here. At integration:
+// configure sharing as above, Share a note (item-sharing.spec.ts SHR-16 flow) and keep its link and access code, Turn off,
+// Turn on, Share a different note, then assert the first link and access code no longer open anything on the deployed fake site.
+test.fixme("G2.3: no earlier share opens after Turn off -> Turn on -> Share (UC-SHARE-12)", async () => {});

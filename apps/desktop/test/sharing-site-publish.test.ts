@@ -145,6 +145,33 @@ it("WP-9.9: publishes binary files byte for byte", async () => {
   } finally { await rm(t.directory, { recursive: true, force: true }); }
 });
 
+it("Turn off withdraws earlier shares after the phase checks and before the empty site deploys", async () => {
+  const t = await fixture();
+  try {
+    const order: string[] = [];
+    const runtime = sharingRuntime({ ...t.deps, withdrawShares: async () => { order.push(`withdraw:${t.git.pushes.length}`); } });
+    await expect(runtime.disable()).rejects.toThrow("sharing:unconfigured");
+    expect(order).toEqual([]);
+    await runtime.enable("notes-site");
+    const pushes = t.git.pushes.length;
+    await expect(runtime.disable()).resolves.toMatchObject({ phase: "off" });
+    expect(order).toEqual([`withdraw:${pushes}`]);
+    expect(t.git.pushes).toHaveLength(pushes + 1);
+  } finally { await rm(t.directory, { recursive: true, force: true }); }
+});
+
+it("a failed share withdrawal stops Turn off and keeps sharing on", async () => {
+  const t = await fixture();
+  try {
+    const runtime = sharingRuntime({ ...t.deps, withdrawShares: async () => { throw new Error("access:failed"); } });
+    await runtime.enable("notes-site");
+    const pushes = t.git.pushes.length;
+    await expect(runtime.disable()).rejects.toThrow("sharing:failed");
+    expect(t.git.pushes).toHaveLength(pushes);
+    expect((await runtime.pairing())?.phase).toBe("ready");
+  } finally { await rm(t.directory, { recursive: true, force: true }); }
+});
+
 it("refuses a file too large for GitHub, or a target that is the private project, before any write", async () => {
   const t = await fixture();
   try {
