@@ -32,6 +32,8 @@ Keep published note URLs and `/s/` share links working. New access-code grants a
 2. If export fails/cancels, keep the drafts and offer **“Couldn't export your drafts. Try again.”** Do not remove the owner’s draft access on that failure. No drafts means no export step.
 3. Then remove the retired editing surfaces/caches; do not clear note stores or share-reader remembered keys as a side effect. Keep only the small one-time export route if needed for the owner's remaining drafts, not an indefinite support/migration system.
 
+**Status, 23 November:** the export step is a design mock awaiting the owner's review (gallery → *Mocks: Browser writing retirement*: drafts found, exporting, exported, export failed); nothing is wired. The live `/demo/` and `/app/` are still working editors whose drafts persist in this browser's IndexedDB (`focus-notes-demo` and the app's own store), so neither route is removed or redirected until this step ships.
+
 The scope is the owner's own data, not a hypothetical user population. An export download/open check and failed-export preservation are sufficient planned evidence; no byte-equivalence corpus or fixed recovery-retention period.
 
 ## Three kinds of note

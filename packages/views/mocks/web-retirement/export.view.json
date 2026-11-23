@@ -1,0 +1,45 @@
+{
+  "focus": "web-retirement-export",
+  "local": { "state": "ready" },
+  "root": {
+    "type": "Surface", "props": { "variant": "canvas", "scroll": true },
+    "children": [{
+      "type": "Center", "props": { "maxWidth": "measure" },
+      "children": [{
+        "type": "Stack", "id": "web-retirement-export", "props": { "padding": "insetLg", "gap": "stackGroup" },
+        "children": [
+          {
+            "type": "Stack", "props": { "gap": "stackPair" },
+            "children": [
+              { "type": "Heading", "props": { "level": "1", "value": { "get": "vm.mockWebRetirement.title" } } },
+              { "type": "Text", "props": { "value": { "get": "vm.mockWebRetirement.count" } } }
+            ]
+          },
+          {
+            "switch": { "get": "local.state" },
+            "cases": {
+              "ready": { "type": "Inline", "props": { "gap": "inlineItem" }, "children": [
+                { "type": "Button", "props": { "label": { "get": "vm.mockWebRetirement.export" }, "variant": "primary", "icon": "download", "autoFocus": true }, "on": { "press": { "set": "local.state", "to": "exporting" } } }
+              ] },
+              "exporting": { "type": "Inline", "props": { "gap": "inlineItem" }, "children": [
+                { "type": "Button", "props": { "label": { "get": "vm.mockWebRetirement.export" }, "variant": "primary", "icon": "download", "busy": true, "busyLabel": { "get": "vm.mockWebRetirement.exporting" } }, "on": { "press": { "set": "local.state", "to": "done" } } }
+              ] },
+              "done": { "type": "Stack", "props": { "gap": "stackPair" }, "children": [
+                { "type": "Text", "props": { "value": { "get": "vm.mockWebRetirement.exported" } } },
+                { "type": "Inline", "props": { "gap": "inlineItem" }, "children": [
+                  { "type": "Button", "props": { "label": { "get": "vm.mockWebRetirement.download" }, "variant": "primary" } }
+                ] }
+              ] },
+              "failed": { "type": "Stack", "props": { "gap": "stackPair" }, "children": [
+                { "type": "Text", "props": { "value": { "get": "vm.mockWebRetirement.failed" } } },
+                { "type": "Inline", "props": { "gap": "inlineItem" }, "children": [
+                  { "type": "Button", "props": { "label": { "get": "vm.mockWebRetirement.retry" }, "variant": "primary", "autoFocus": true }, "on": { "press": { "set": "local.state", "to": "exporting" } } }
+                ] }
+              ] }
+            }
+          }
+        ]
+      }]
+    }]
+  }
+}
