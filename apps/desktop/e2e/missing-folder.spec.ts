@@ -1,8 +1,9 @@
 import { test, expect } from "./fixtures.ts";
 import { launch, quit, tempDirs, type Launched } from "./helpers.ts";
-import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { DATA_FILES } from "@focus-notes/core/inventory";
+import { existingInstance, noTokenInArgs, start, world, type World } from "./github-world.ts";
 
 const HEADING = "Your notes folder is missing";
 
@@ -156,5 +157,88 @@ test("FRE-12, D-397: Find the folder on a valid project with no notes opens an e
     expect(existsSync(dirs.docs)).toBe(false);
   } finally {
     await quit(l);
+  }
+});
+/** A project backed up on the loopback fake GitHub whose folder is gone before launch (G5.3): never a real account or download. */
+async function missingGitHubProject(opts: { signedIn?: boolean; repo?: boolean; offline?: boolean } = {}) {
+  const w = await world({ gcm: true });
+  if (opts.repo !== false) existingInstance(w);
+  if (opts.signedIn !== false) w.fakes.store(w.gh.token);
+  if (opts.offline) await new Promise((r) => w.server.close(r));
+  const record = { version: 1, folder: w.dirs.docs, kind: "github", repository: "ada/notes", account: "ada" };
+  writeFileSync(join(w.dirs.userData, DATA_FILES.workspace), JSON.stringify(record));
+  writeFileSync(join(w.dirs.userData, DATA_FILES.state), JSON.stringify({ version: 1, firstRun: "done", lastNotePath: join(w.dirs.docs, "notes", "hello.md") }));
+  const l = await start(w, false);
+  await expect(l.page.getByRole("heading", { name: HEADING, exact: true })).toBeVisible();
+  return { w, l, record };
+}
+/** Nothing was made, downloaded or rewritten: the folder is still missing and the record is as it was. */
+function untouched(w: World, record: object) {
+  expect(existsSync(w.dirs.docs)).toBe(false);
+  const parent = join(w.dirs.docs, "..");
+  expect(existsSync(parent) ? readdirSync(parent).filter((name) => name.startsWith("Focus Notes")) : []).toEqual([]);
+  expect(recordOf(w.dirs.userData)).toEqual(record);
+}
+
+test("FRE-12, G5.3: Download your notes again acts only when pressed and reopens the backed-up notes from the fake GitHub", async () => {
+  test.setTimeout(90_000);
+  const { w, l } = await missingGitHubProject();
+  try {
+    const { page } = l;
+    const download = page.getByRole("button", { name: /^Download your notes again/ });
+    await expect(download).toBeVisible({ timeout: 20_000 });
+    expect(existsSync(w.dirs.docs)).toBe(false);
+    await download.click();
+    await expect(page.getByRole("textbox", { name: "Note", exact: true })).toContainText("A public note.", { timeout: 30_000 });
+    expect(readFileSync(join(w.dirs.docs, "notes", "hello.md"), "utf8")).toBe("# Hello\n\nA public note.\n");
+    expect(recordOf(w.dirs.userData).folder).toBe(w.dirs.docs);
+    noTokenInArgs(w, l);
+  } finally {
+    await quit(l);
+    if (w.server.listening) w.server.close();
+  }
+});
+
+for (const [name, opts, line] of [
+  ["offline", { offline: true }, "You're offline. Connect to the internet to download your notes."],
+  ["signed out", { signedIn: false }, "You're signed out of GitHub. Sign in again to download your notes."],
+  ["refused", { repo: false }, "@ada can't reach these notes. Sign in with the account that has them."],
+] as const) {
+  test(`FRE-12, G5.3: ${name}, recovery names the problem and offers Sign in, downloading and writing nothing`, async () => {
+    test.setTimeout(90_000);
+    const { w, l, record } = await missingGitHubProject(opts);
+    try {
+      const { page } = l;
+      await expect(page.getByText(line, { exact: true })).toBeVisible({ timeout: 20_000 });
+      if (name !== "offline") await expect(page.getByRole("button", { name: /^Sign in to GitHub again/ })).toBeVisible();
+      await expect(page.getByRole("button", { name: /^Find the folder/ })).toBeVisible();
+      await expect(page.getByRole("button", { name: /^Start with an empty folder/ })).toBeVisible();
+      untouched(w, record);
+      await expect(page.getByRole("heading", { name: HEADING, exact: true })).toBeVisible();
+    } finally {
+      await quit(l);
+      if (w.server.listening) w.server.close();
+    }
+  });
+}
+
+test("FRE-12, G5.3: a download that fails keeps recovery with an error, never opening a partial folder as the notes", async () => {
+  test.setTimeout(90_000);
+  const { w, l, record } = await missingGitHubProject();
+  try {
+    const { page } = l;
+    rmSync(join(w.remotes, "ada", "notes.git"), { recursive: true, force: true });
+    await page.getByRole("button", { name: /^Download your notes again/ }).click();
+    // A missing remote classifies as offline today; any named error with Try again keeps the person in recovery.
+    await expect(page.getByRole("main", { name: "Your notes folder" }).getByRole("status")).toHaveText(/try again\.$/i, { timeout: 30_000 });
+    expect(existsSync(join(w.dirs.docs, "notes", "hello.md"))).toBe(false);
+    // Well past the folder watch's second: still recovery, with the record as it was.
+    await page.waitForTimeout(3000);
+    await expect(page.getByRole("heading", { name: HEADING, exact: true })).toBeVisible();
+    await expect(page.getByRole("textbox", { name: "Note", exact: true })).toHaveCount(0);
+    expect(recordOf(w.dirs.userData)).toEqual(record);
+  } finally {
+    await quit(l);
+    if (w.server.listening) w.server.close();
   }
 });
