@@ -1,202 +1,16 @@
-name: ci
+name: Delete diagnostic (not a merge gate)
+# Branch-only diagnostic (diag-delete-23nov): three D-400 Delete journeys on one Windows runner, to keep
+# their sanitized failure evidence. Never merged; its head is not a CI gate result.
 on:
-  pull_request:
-  push:
-    # Work branches run the full suite on CI before they merge, so local machines stay free (D-113).
-    # Not vq-*: designs the owner hasn't approved run no tests, only review-captures.
-    branches: [main, "wp-*", "fix-*"]
-    # Batch CI: docs, agent files and kit pointers alone start no run; they're checked locally with
-    # pnpm check. Help pages, the docs' manifest and index stay in: the site build and its journeys read them.
-    paths:
-      - "**"
-      - "!documentations/**"
-      - "documentations/help/**"
-      - "documentations/docs-manifest.json"
-      - "documentations/index.html"
-      - "!*.md"
-      - "!.github/skills/**"
-      - "!.github/agents/**"
-      - "!slate"
-      - "!agentic-craft"
-      - "!agent-orchestration"
-  # A head the path filter skipped (a docs-only follow-up on a candidate) gets its exact-head run by hand:
-  # gh workflow run ci.yml --ref <branch>
   workflow_dispatch:
 permissions:
   contents: read
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
 jobs:
-  # Gates match what changed (D-180, D-206): docs, the site, agent files and kits, and repository
-  # checks never wait on the desktop build, budgets or journeys. Anything the desktop app is built
-  # from, or that changes how CI installs and runs it, turns them on.
-  changes:
-    runs-on: ubuntu-latest
-    outputs:
-      desktop: ${{ steps.diff.outputs.desktop }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-      - id: diff
-        shell: bash
-        env:
-          BEFORE: ${{ github.event.before }}
-          BASE_REF: ${{ github.base_ref }}
-        run: |
-          if [ -n "$BASE_REF" ]; then base="origin/$BASE_REF"
-          # Evidence-only follow-ups on an unmerged candidate still gate its entire runtime diff.
-          elif [ "$GITHUB_REF_NAME" != "main" ]; then base="origin/main"
-          elif [ -n "$BEFORE" ] && ! [[ "$BEFORE" =~ ^0+$ ]] && git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then base="$BEFORE"
-          else base="$(git merge-base origin/main HEAD)"; fi
-          files="$(git diff --name-only "$base" HEAD)"
-          echo "$files"
-          # Capture-only files (screenshot catalogues, their helpers, Store images) never ship in the
-          # app and run on review-captures instead, so they don't turn the journeys on (D-224).
-          app="$(echo "$files" | grep -Ev '^(apps/desktop/e2e/([a-z0-9-]+-catalog\.spec\.ts|scene-capture\.ts|fre-fakes\.ts)|tools/release/store-(screenshots\.py|logos\.py|listing\.mjs))$' || true)"
-          if [ -z "$files" ] || echo "$app" | grep -Eq '^(apps/desktop/|packages/|templates/|schemas/|tools/(release|bench|dev|ci)/|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|\.nvmrc$|\.npmrc$|\.github/workflows/ci\.yml$)'; then
-            echo "desktop=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "desktop=false" >> "$GITHUB_OUTPUT"
-          fi
-
-  test:
-    needs: changes
-    strategy:
-      fail-fast: false
-      matrix:
-        # Windows only until v1 is in the Microsoft Store (D-211, pausing D-196): macOS and Linux each
-        # ran every journey in one 25–30 minute job, which set the pace of every merge. To bring them
-        # back, add ubuntu-latest and macos-latest here; their steps below are kept.
-        os: [windows-latest]
-    runs-on: ${{ matrix.os }}
-    # A hung step fails the run in minutes instead of holding a runner for GitHub's six hours (D-113).
-    timeout-minutes: 90
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      # check:spacing and the spacing journey run the pinned agentic-craft kit's linter and probe; only that public submodule, never private/.
-      - run: git submodule update --init --depth 1 agentic-craft
-      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      # Electron 42 has no install script: it downloads its binary the first time it's required.
-      # Fetch it here, once and visibly, so the download never happens inside a test's launch
-      # (where a slow download timed out every journey).
-      - name: Fetch Electron
-        id: electron
-        if: needs.changes.outputs.desktop == 'true'
-        timeout-minutes: 10
-        working-directory: apps/desktop
-        run: node -e "console.log(require('electron'))"
-      - run: node packages/tokens/build.mjs
-      - name: Repository checks (boundaries, chain, plan, licenses, generated files, ui:check)
-        run: pnpm check
-      # No high or critical advisories in production dependencies, asked of the registry the
-      # repository's .npmrc names (tools/audit-deps.mjs).
-      - name: Dependency audit
-        if: runner.os == 'Windows'
-        run: pnpm audit:deps
-      - name: Typecheck
-        run: pnpm typecheck
-      # The Git the Store package carries (PKG-13, D-228), pinned by apps/desktop/build/git-bundle.json
-      # and checked against its SHA-256, so the unit tests run it end to end and the Store package
-      # check below packs it.
-      - name: Fetch the bundled Git (Windows)
-        if: runner.os == 'Windows'
-        timeout-minutes: 10
-        run: node tools/release/git-bundle.mjs
-      - name: Unit tests
-        run: pnpm test
-      # The build, budgets and journeys run even after a failed check or unit test, so one failure
-      # never hides another (D-113), but only once Electron is fetched.
-      - name: Build the desktop app
-        if: ${{ !cancelled() && steps.electron.outcome == 'success' }}
-        run: pnpm --filter @focus-notes/desktop run build
-      # The Microsoft Store's package (PKG-12, D-202) still packs, from the build above, and declares
-      # the focus-notes: protocol, the command's alias and full trust. Placeholder identity, unsigned,
-      # never published: a packaging regression shows here before a release.
-      - name: Store package check (Windows)
-        if: ${{ !cancelled() && steps.electron.outcome == 'success' && runner.os == 'Windows' }}
-        shell: bash
-        env:
-          CSC_IDENTITY_AUTO_DISCOVERY: "false"
-        run: |
-          node apps/desktop/scripts/dist-store.mjs "-c.directories.output=$RUNNER_TEMP/store"
-          node tools/release/store-manifest.mjs "$RUNNER_TEMP/store"
-      # Budgets are enforced on one fixed runner type (Performance and quality); macOS runners'
-      # start times swing too far between runs to gate on, so they only report.
-      - name: Budgets (QLT-05)
-        if: ${{ !cancelled() && steps.electron.outcome == 'success' && runner.os == 'Windows' }}
-        run: pnpm bench --check
-      - name: Budgets, report only
-        if: ${{ !cancelled() && steps.electron.outcome == 'success' && runner.os == 'macOS' }}
-        run: pnpm bench
-      # Journeys always run, even when an earlier step such as the budgets fails, so one
-      # failure never hides another (D-113).
-      - name: Journey tests (Linux)
-        if: ${{ !cancelled() && steps.electron.outcome == 'success' && runner.os == 'Linux' }}
-        timeout-minutes: 45
-        run: xvfb-run -a pnpm test:e2e
-      - name: Journey tests
-        if: ${{ !cancelled() && steps.electron.outcome == 'success' && runner.os == 'macOS' }}
-        timeout-minutes: 45
-        run: pnpm test:e2e
-      # Windows web journeys run independently below; retain the dormant Linux variant.
-      - name: Web app journeys (Chromium, Linux)
-        if: ${{ !cancelled() && runner.os == 'Linux' }}
-        run: |
-          pnpm --filter @focus-notes/web exec playwright install --with-deps chromium
-          pnpm test:web
-      - name: Keep test results
-        if: failure()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: test-results-${{ matrix.os }}
-          path: test-results/
-
-  web-windows:
+  delete-diagnostic:
     runs-on: windows-latest
-    timeout-minutes: 90
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: node packages/tokens/build.mjs
-      - name: Web app journeys (Chromium)
-        if: ${{ !cancelled() && runner.os == 'Windows' }}
-        run: |
-          pnpm --filter @focus-notes/web exec playwright install chromium
-          pnpm test:web
-      - name: Keep web test results
-        if: failure()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: web-test-results-windows
-          path: test-results/web
-
-  # The Windows desktop journeys gate every merge (D-112). One runner took about 18 minutes for
-  # them, which made CI the constraint on every merge; four shards in parallel take a few
-  # minutes each (D-113).
-  journeys-windows:
-    needs: changes
-    if: needs.changes.outputs.desktop == 'true'
-    runs-on: windows-latest
-    timeout-minutes: 45
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: [1, 2, 3, 4]
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      # check:spacing and the spacing journey run the pinned agentic-craft kit's linter and probe; only that public submodule, never private/.
       - run: git submodule update --init --depth 1 agentic-craft
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -211,13 +25,28 @@ jobs:
       - run: node packages/tokens/build.mjs
       - name: Build the desktop app
         run: pnpm --filter @focus-notes/desktop run build
-      - name: Journey tests (shard ${{ matrix.shard }} of 4)
-        timeout-minutes: 30
+      - name: List the three selected journeys
         working-directory: apps/desktop
-        run: node ../../tools/ci/run-journey-shard.mjs --shard=${{ matrix.shard }}/4
+        shell: pwsh
+        env:
+          FOCUS_NOTES_E2E: "1"
+        run: |
+          $cli = node -e "console.log(require('module').createRequire(require('path').resolve('package.json')).resolve('@playwright/test/cli'))"
+          $list = node $cli test --list --workers=1 --retries=0 "e2e[\\/]project-offline\.spec\.ts$" -g "D-400: actual (current|oauth|allSelected) "
+          $list
+          if (-not ($list -match '^Total: 3 tests in 1 file$')) { throw "Expected exactly three selected journeys" }
+      - name: Three Delete journeys
+        timeout-minutes: 10
+        working-directory: apps/desktop
+        shell: pwsh
+        env:
+          FOCUS_NOTES_E2E: "1"
+        run: |
+          $cli = node -e "console.log(require('module').createRequire(require('path').resolve('package.json')).resolve('@playwright/test/cli'))"
+          node $cli test --workers=1 --retries=0 "e2e[\\/]project-offline\.spec\.ts$" -g "D-400: actual (current|oauth|allSelected) "
       - name: Keep test results
-        if: failure()
+        if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: test-results-windows-shard-${{ matrix.shard }}
+          name: delete-diagnostic-results
           path: test-results/
