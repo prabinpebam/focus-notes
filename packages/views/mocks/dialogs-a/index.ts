@@ -50,10 +50,10 @@ const page = (child: Node) => ({
   ] },
 });
 
-const repo = (name: string, backingUp: boolean) => ({
+const repo = (name: string, repository: string, backingUp: boolean) => ({
   visible: true, state: backingUp ? "syncing" : "pending", label: `${name} backup`, icon: backingUp ? "cloudUp" : "cloud",
   tone: backingUp ? "accent" : "warning", backingUp, name, stateText: backingUp ? "Backing up…" : "Not backed up yet",
-  repositoryLink: true, hasRepository: true, repository: "prabin/focus-notes-private", backupTime: "Last backed up today at 9:12",
+  repositoryLink: true, hasRepository: true, repository, backupTime: "Last backed up today at 9:12",
   waitingText: "3 notes waiting for backup", canBackUp: !backingUp, backupReason: "Already backing up",
 });
 
@@ -66,7 +66,7 @@ export const dialogsAMocks = {
       backingUp: false, backupTime: "Last backed up yesterday at 18:40", waitingText: "2 notes waiting for backup",
       canBackUp: true, backupReason: "Already backing up",
     },
-    repoBackup: { private: repo("Private notes", false), public: repo("Public notes", true) },
+    repoBackup: { private: repo("Private notes", "prabin/notes-private", false), public: repo("Public notes", "prabin/notes", true) },
     imageCaption: {
       open: true, writing: false, generateDisabled: false, hasResult: true, applying: false, useDisabled: false, loading: false,
       preview: shared.harbourSrc, connectionName: "Ollama", connectionModel: "llava:13b", connectionWhere: "On this computer",
