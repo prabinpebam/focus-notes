@@ -10,7 +10,7 @@ export const ITERATIONS = 600_000;
 export const SALT_BYTES = 16;
 export const IV_BYTES = 12;
 export const KEY_BYTES = 32;
-export const LIMITS = { keyring: 64 * 1024, manifest: 4 * 1024 * 1024, note: 8 * 1024 * 1024, site: 64 * 1024, index: 8 * 1024 * 1024 } as const;
+export const LIMITS = { keyring: 64 * 1024, manifest: 4 * 1024 * 1024, note: 8 * 1024 * 1024, media: 25 * 1024 * 1024, site: 64 * 1024, index: 8 * 1024 * 1024 } as const;
 
 export class SealError extends Error {
   /** format: the file isn't one we accept. key: the passphrase or key doesn't open it. */
@@ -164,7 +164,7 @@ export async function openKeyring(e: KeyringEnvelope, key: CryptoKey, build: str
 
 // ---- sealed files: manifests and notes ----
 
-export type SealedKind = "manifest" | "note";
+export type SealedKind = "manifest" | "note" | "media";
 interface SealedEnvelope { v: 1; iv: string; data: string }
 const sealedAad = (kind: SealedKind, build: string, kid: string) => `focus-notes/${kind}/v1|${build}|${kid}`;
 
@@ -183,8 +183,18 @@ export async function openFile(kind: SealedKind, rawKey: Bytes, build: string, k
   return decrypt(key, e.iv!, e.data!, sealedAad(kind, build, kid));
 }
 
-export interface ManifestEntry { kid: string; key: string; path: string; title: string; updated: string }
+/**
+ * An image a sealed note references (WP-9.6): `ref` is the destination as the note writes it, so the
+ * reader can find it; it's only ever inside the sealed manifest, and the image's file name is its `kid`.
+ */
+export interface MediaEntry { ref: string; kid: string; key: string; type: string }
+export interface ManifestEntry { kid: string; key: string; path: string; title: string; updated: string; media?: MediaEntry[] }
 export interface Manifest { owner: string; notes: ManifestEntry[] }
+/** Raster types a shared image may be, by extension; never SVG, which can carry script. */
+export const MEDIA_TYPES: Readonly<Record<string, string>> = {
+  png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", gif: "image/gif", webp: "image/webp", avif: "image/avif",
+};
+const MEDIA_TYPE_VALUES = new Set(Object.values(MEDIA_TYPES));
 
 export const KID = /^[a-z2-7]{16}$/;
 export function parseManifest(bytes: Uint8Array): Manifest {
@@ -193,6 +203,8 @@ export function parseManifest(bytes: Uint8Array): Manifest {
   if (typeof m?.owner !== "string" || !Array.isArray(m.notes)) throw new SealError("format", "manifest");
   for (const n of m.notes) {
     if (![n.kid, n.key, n.path, n.title, n.updated].every((x) => typeof x === "string") || !KID.test(n.kid)) throw new SealError("format", "manifest entry");
+    if (n.media !== undefined && (!Array.isArray(n.media) || !n.media.every((x) => [x?.ref, x?.kid, x?.key, x?.type].every((v) => typeof v === "string") &&
+      KID.test(x.kid) && MEDIA_TYPE_VALUES.has(x.type)))) throw new SealError("format", "manifest media");
   }
   return m;
 }

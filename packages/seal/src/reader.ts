@@ -172,6 +172,13 @@ export class SiteReader {
         if (text === undefined) throw isVault ? new SealError("format", "missing note") : new SealError("key");
         return decodeText(await openFile("note", fromB64url(entry.key), m.build, entry.kid, text));
       },
+      media: async (path, ref) => {
+        const image = byPath.get(path)?.media?.find((x) => x.ref === ref);
+        if (!image) throw missing(path);
+        const text = await this.get(sealedPath(m.build, image.kid));
+        if (text === undefined) throw isVault ? new SealError("format", "missing image") : new SealError("key");
+        return { type: image.type, bytes: await openFile("media", fromB64url(image.key), m.build, image.kid, text) };
+      },
     };
   }
 }
@@ -190,6 +197,8 @@ export interface OpenVault {
   authorization?: string;
   notes: PublicNote[];
   read(path: string): Promise<string>;
+  /** An image the note at `path` references, by its destination as written (WP-9.6); anything else fails. */
+  media?(path: string, ref: string): Promise<{ type: string; bytes: Uint8Array<ArrayBuffer> }>;
 }
 
 /**
