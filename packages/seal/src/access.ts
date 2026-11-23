@@ -266,6 +266,20 @@ const parseExpiry = (v: unknown): string | null => {
   throw new Error("Not a share change");
 };
 
+/**
+ * Turning sharing off (UC-SHARE-12): every share still active is withdrawn, keeping its record and
+ * history, so turning sharing on again republishes none of them. The owner's vault grant is kept.
+ */
+export function withdrawActive(access: AccessFile, now = new Date()): { access: AccessFile; withdrawn: string[] } {
+  const withdrawn: string[] = [];
+  const grants = access.grants.map((g) => {
+    if (g.owner || g.revokedAt || !isActive(g, now.getTime())) return g;
+    withdrawn.push(g.id);
+    return { ...g, revokedAt: now.toISOString() };
+  });
+  return { access: withdrawn.length ? { ...access, grants } : access, withdrawn };
+}
+
 /** A change as the window sent it, checked field by field: anything unexpected is refused. */
 export function parseAccessChange(v: unknown): AccessChange {
   if (!isObj(v)) throw new Error("Not a share change");

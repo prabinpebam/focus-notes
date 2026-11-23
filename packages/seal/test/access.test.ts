@@ -7,7 +7,7 @@
 import { describe, expect, it } from "vitest";
 import {
   AccessEditError, applyAccessChange, audienceState, DEFAULT_EXPIRY, expiryFrom, expiryUntil, inviteText, nameProblem, parseAccessChange, parseAccessMessage, passcodeProblem, shareGrants,
-  hasHiddenText, TEMPLATE_LINES, TEMPLATE_MAX, templateProblem, type AccessChange,
+  hasHiddenText, TEMPLATE_LINES, TEMPLATE_MAX, templateProblem, withdrawActive, type AccessChange,
 } from "../src/access.ts";
 import { generatePasscode, EFF_WORD_COUNT, effWord, effWords } from "../src/words.ts";
 import { createHash } from "node:crypto";
@@ -248,6 +248,17 @@ describe("withdrawing and deleting (SHR-08)", () => {
     const { access, id } = apply(base(), create("Asha"), NOW);
     const d = apply(access, { op: "delete", id }, NOW).access;
     expect(d.grants.map((g) => g.id)).toEqual(["gownergrant1"]);
+  });
+  it("Turn off withdraws only active shares and keeps the owner's vault grant (UC-SHARE-12)", () => {
+    let a = apply(base(), create("Asha"), NOW).access;
+    const ended = apply(a, create("Ben", { expiresAt: expiryFrom("1d", new Date(NOW.getTime() - 2 * DAY)) }), new Date(NOW.getTime() - 2 * DAY));
+    a = ended.access;
+    const later = new Date(NOW.getTime() + 1000);
+    const { access, withdrawn } = withdrawActive(a, later);
+    expect(withdrawn).toEqual([a.grants[1]!.id]);
+    expect(access.grants.map((g) => g.revokedAt)).toEqual([undefined, later.toISOString(), undefined]);
+    expect(() => validateAccess(access)).not.toThrow();
+    expect(withdrawActive(access, later)).toEqual({ access, withdrawn: [] });
   });
 });
 

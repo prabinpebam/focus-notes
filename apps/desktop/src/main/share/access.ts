@@ -9,7 +9,7 @@
 import { readdir, readFile, rm } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { applyAccessChange, audienceOf, hasHiddenText, inviteText, itemInviteText, itemTemplateProblem, parseAccessChange, parseAccessMessage, shareGrants, templateProblem, type InviteValues } from "@focus-notes/seal/access";
+import { applyAccessChange, audienceOf, hasHiddenText, inviteText, itemInviteText, itemTemplateProblem, parseAccessChange, parseAccessMessage, shareGrants, templateProblem, withdrawActive, type InviteValues } from "@focus-notes/seal/access";
 import { displayShareCode, isActive, noteId, randomId, shareLink, type SiteFetch } from "@focus-notes/seal";
 import { validateAccess, type AccessFile, type Grant } from "@focus-notes/seal/publish";
 import { hasVault } from "@focus-notes/seal/vault";
@@ -281,6 +281,33 @@ export function accessStore(o: AccessStoreOptions) {
         publishing.get(id)?.controller.abort();
         o.written(file(dir));
         return { ...(await listing(access)), id };
+      };
+      const done = queue.then(run, run);
+      queue = done.catch(() => {});
+      return done;
+    },
+    /**
+     * Turn off (UC-SHARE-12): withdraws every active share before the site is emptied, so turning
+     * sharing on again republishes none. Not gated by `canMutate`: the site is going away. Notes,
+     * the vault grant and every record stay; nothing is written when nothing was active.
+     */
+    withdrawAll: (): Promise<{ withdrawn: string[] }> => {
+      const dir = o.dir();
+      mutations++;
+      cancellations++;
+      const stop = () => { for (const p of publishing.values()) p.controller.abort(); ready.clear(); };
+      stop();
+      const run = async () => {
+        stop();
+        if (!existsSync(dir) || o.dir() !== dir) throw new Error("access:failed");
+        if (!existsSync(file(dir))) return { withdrawn: [] };
+        const { access, withdrawn } = withdrawActive(await read(dir), (o.now ?? (() => new Date()))());
+        if (!withdrawn.length) return { withdrawn };
+        validateAccess(access);
+        if (o.dir() !== dir) throw new Error("access:failed");
+        await o.write(file(dir), `${JSON.stringify(access, null, 2)}\n`);
+        o.written(file(dir));
+        return { withdrawn };
       };
       const done = queue.then(run, run);
       queue = done.catch(() => {});

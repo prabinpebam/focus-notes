@@ -359,6 +359,60 @@ describe("the window's view of access.json", () => {
       expect(JSON.stringify(await t.s.load())).not.toContain(created.passcode.value);
     } finally { rmSync(t.dir, { recursive: true, force: true }); }
   });
+  it("Turn off withdraws every active share, keeping records and the vault, so re-enabling republishes none (UC-SHARE-12)", async () => {
+    const published = () => join(t.dir, "published");
+    const t = store(undefined, async () => SITE, {
+      canMutate: () => false,
+      publish: async () => { await publishSite({ private: t.dir, site: published(), owner: "fixture" }); },
+      getSite: () => async path => {
+        const file = join(published(), ...path.split("/"));
+        return existsSync(file) ? readFileSync(file, "utf8") : undefined;
+      },
+    });
+    try {
+      mkdirSync(join(t.dir, "notes"));
+      writeFileSync(join(t.dir, "notes", "one.md"), "# One\n");
+      const past = new Date(Date.now() - 86_400_000).toISOString();
+      const open = store(undefined, async () => SITE);
+      cpSync(join(t.dir, "notes"), join(open.dir, "notes"), { recursive: true });
+      const a = await open.s.apply({ op: "createItem", item: { path: "one.md", label: "One", folder: false, includeLater: false }, notes: ["one.md"], link: true, passcode: { generate: true }, expiresAt: null });
+      const b = await open.s.apply({ op: "create", audience: { ...create().audience, name: "Name b" } });
+      const c = await open.s.apply({ op: "create", audience: { ...create().audience, name: "Name c" } });
+      const d = await open.s.apply({ op: "create", audience: { ...create().audience, name: "Name d" } });
+      await open.s.apply({ op: "withdraw", id: c.id });
+      const file = open.file();
+      file.grants.find((g: { id: string }) => g.id === d.id).expiresAt = past;
+      writeFileSync(join(t.dir, "access.json"), JSON.stringify(file));
+      rmSync(open.dir, { recursive: true, force: true });
+      const before = new Map(file.grants.map((g: { id: string }) => [g.id, g]));
+      const withdrawnBefore = file.grants.find((g: { id: string }) => g.id === c.id).revokedAt;
+      const notesBefore = readFileSync(join(t.dir, "notes", "one.md"), "utf8");
+
+      const result = await t.s.withdrawAll();
+      expect(result.withdrawn.sort()).toEqual([a.id, b.id].sort());
+      const after = t.file().grants;
+      expect(after).toHaveLength(before.size);
+      for (const g of after) expect({ ...g, revokedAt: undefined }).toEqual({ ...(before.get(g.id) as object), revokedAt: undefined });
+      for (const id of [a.id, b.id]) expect(after.find((g: { id: string }) => g.id === id).revokedAt).toEqual(expect.any(String));
+      expect(after.find((g: { id: string }) => g.id === c.id).revokedAt).toBe(withdrawnBefore);
+      expect(after.find((g: { id: string }) => g.id === d.id).revokedAt).toBeUndefined();
+      expect(readFileSync(join(t.dir, "notes", "one.md"), "utf8")).toBe(notesBefore);
+      expect(t.written).toContain(join(t.dir, "access.json"));
+      const writes = t.written.length;
+      expect((await t.s.withdrawAll()).withdrawn).toEqual([]);
+      expect(t.written).toHaveLength(writes);
+
+      await publishSite({ private: t.dir, site: published(), owner: "fixture" });
+      const grant = after.find((g: { id: string }) => g.id === a.id);
+      const reader = new SiteReader(async path => {
+        const f = join(published(), ...path.split("/"));
+        return existsSync(f) ? readFileSync(f, "utf8") : undefined;
+      });
+      await expect(reader.openLinkSession(a.id, grant.link.secret)).rejects.toThrow();
+      await expect(reader.openAccessCode(`${displayShareCode(grant.shareCode)} ${grant.passcode.value}`)).rejects.toThrow();
+      await expect(t.s.ready(a.id)).rejects.toThrow("access:ended");
+    } finally { rmSync(t.dir, { recursive: true, force: true }); }
+  });
   it("never quotes a damaged file in its error (L6)", async () => {
     const t = store('{ "version": 1, "grants": [ "hunter2-secret');
     const e = await t.s.load().catch((x: Error) => x);
