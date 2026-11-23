@@ -147,7 +147,39 @@ export function firstProjectNote(options: {
     // Scan and writable/Git preparation happen before the shared SQLite writer is acquired.
     // Only the final root check/exclusive create (or one-byte winner read) holds admission.
     return options.admit(canonical, async (certificate, certify) => {
-      if (certificate) {
+      if (certificate && options.allowNonempty) {
+        const certifiedSlot = certificate.slot ?? 1;
+        if (!Number.isSafeInteger(certifiedSlot) || certifiedSlot < 1 || certifiedSlot > 10_000) throw new Error("The first note's slot is invalid");
+        await current();
+        // A certificate for this path's earlier project, or for a note since deleted, renamed or replaced,
+        // is history, not this project's note: admit writing as without history, never reading or replacing it.
+        let live = false;
+        if (certificate.roots === rootIdentity) {
+          try { live = await identity(notePath(certifiedSlot)) === certificate.file; }
+          catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
+        }
+        if (live) {
+          slot = certifiedSlot;
+          path = notePath(slot);
+          await options.writable(path);
+          await current();
+          return readVerified(certificate.file);
+        }
+        existingBlank = undefined;
+        for (slot = 1; slot <= 10_000; slot++) {
+          path = notePath(slot);
+          try {
+            const info = await lstat(path);
+            if (info.isFile() && info.size === 0) { existingBlank = await identity(path); break; }
+          } catch (error) {
+            if ((error as NodeJS.ErrnoException).code === "ENOENT") break;
+            throw error;
+          }
+        }
+        if (slot > 10_000) throw new Error("The project has too many Untitled notes");
+        await options.writable(path);
+        await current();
+      } else if (certificate) {
         slot = certificate.slot ?? 1;
         if (!Number.isSafeInteger(slot) || slot < 1 || slot > 10_000) throw new Error("The first note's slot is invalid");
         path = notePath(slot);

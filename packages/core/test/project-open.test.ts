@@ -80,6 +80,27 @@ describe("Open", () => {
     expect(vm(app).open).toBe(true);
   });
 
+  // Owner, 23 November (P0-entry.5): a last note confirmed gone leaves the project without history, so it starts
+  // writing; only an unconfirmed or failed read stays an error.
+  it.each([
+    { absence: "confirmed", exists: async () => null, admitted: true },
+    { absence: "unreadable", exists: async () => { throw new Error("read failed"); }, admitted: false },
+  ])("a $absence missing last note admits writing only when its absence is confirmed", async ({ exists, admitted }) => {
+    const path = "C:\\Book\\Untitled.md";
+    const firstNote = vi.fn(async () => path);
+    const app = appWith({
+      firstNote, lastNote: async () => "C:\\Book\\deleted.md", list: async () => [],
+      position: async () => undefined, remember: async () => {},
+    }, async p => { if (p === path) return ""; throw new Error("note:missing"); }, {
+      readNoteIfExists: exists,
+      loadAppState: async () => ({ version: 1, firstRun: "done", lastNotePath: "C:\\Book\\deleted.md" }),
+    });
+    await app.start();
+    expect(firstNote).toHaveBeenCalledTimes(admitted ? 1 : 0);
+    expect(vm(app).open).toBe(!admitted);
+    if (admitted) expect(app.store.state.note).toMatchObject({ path, markdown: "", status: "ready" });
+  });
+
   it("a refused first-note creation shows recovery without inventing success", async () => {
     const app = appWith({
       firstNote: async () => { throw new Error("read-only"); },

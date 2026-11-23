@@ -186,20 +186,28 @@ describe("first project note (PRJ-24)", () => {
     expect(await readFile(path, "utf8")).toBe("# Changed externally\n");
   });
 
-  it.each(["removed", "replaced"])("reports a %s certified note without creating a duplicate or replacing content", async (change) => {
+  // Owner, 23 November (P0-entry.5): a certificate for a note since removed or replaced, or for an earlier
+  // project at the same folder, is history; the project still starts writing, never replacing content.
+  it.each(["removed", "replaced", "recreated"])("admits new writing past a %s certified note without replacing content", async (change) => {
     const dir = await root();
     const options = { roots: async () => [dir], writable: async () => {}, allowNonempty: true };
     const path = await firstProjectNote(options)();
     expect(path).toBe(join(dir, "Untitled.md"));
     if (change === "removed") await rm(path!);
-    else {
+    else if (change === "replaced") {
       const replacement = join(dir, "external");
       await writeFile(replacement, "# External change\n");
       await rename(replacement, path!);
+    } else {
+      await rm(dir, { recursive: true });
+      await mkdir(dir);
     }
-    await expect(firstProjectNote(options)()).rejects.toThrow();
-    expect(await readdir(dir)).toEqual(change === "removed" ? [] : ["Untitled.md"]);
+    const next = await firstProjectNote(options)();
+    expect(next).toBe(join(dir, change === "replaced" ? "Untitled 2.md" : "Untitled.md"));
+    expect((await readdir(dir)).sort()).toEqual(change === "replaced" ? ["Untitled 2.md", "Untitled.md"] : ["Untitled.md"]);
+    expect(await readFile(next!, "utf8")).toBe("");
     if (change === "replaced") expect(await readFile(path!, "utf8")).toBe("# External change\n");
+    expect(await firstProjectNote(options)()).toBe(next);
   });
 
   it("creates one ordinary empty note under concurrent admissions", async () => {

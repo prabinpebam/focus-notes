@@ -1891,15 +1891,24 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         }
         const last = bridge.windows?.initialOpen ? undefined : bridge.windows?.initialNote ?? remembered ?? (appState.lastNotePath || undefined);
         let reopened = last !== undefined && (await openNote(last));
+        const tried = last !== undefined ? [last] : [];
         // A crash can leave protected metadata behind a completed rename. The saved disk path is
         // still usable; explicit window targets never fall back to a different note.
         if (!reopened && !bridge.windows?.initialOpen && !bridge.windows?.initialNote && remembered && appState.lastNotePath && appState.lastNotePath !== remembered) {
           toast(catalog.format("project.launch.restoreFailed"), { tone: "error" });
           const saved = appState.lastNotePath;
+          tried.push(saved);
           reopened = await openNote(saved);
         }
+        // A last note that's gone (deleted, renamed or moved) leaves the project without history: it starts
+        // writing (D-397). Only a confirmed absence counts; a failed read stays an error.
+        let lastGone = false;
+        if (!reopened && tried.length && !bridge.windows?.initialNote && !bridge.windows?.initialOpen && bridge.readNoteIfExists) {
+          try { lastGone = (await Promise.all(tried.map(path => bridge.readNoteIfExists!(path)))).every(text => text === null); }
+          catch { lastGone = false; }
+        }
         let startupSuperseded = false;
-        if (!reopened && !last && !restoreFailed && !bridge.windows?.initialOpen && !bridge.windows?.secondary
+        if (!reopened && (!last || lastGone) && !restoreFailed && !bridge.windows?.initialOpen && !bridge.windows?.secondary
           && store.state.workspace.access === "write" && bridge.projects?.firstNote) {
           const initialKey = store.state.note.key;
           const initialPath = store.state.note.path;
