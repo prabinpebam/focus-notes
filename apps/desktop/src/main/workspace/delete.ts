@@ -241,6 +241,21 @@ export function deletionGate(o: { deleted: boolean; localNotes: boolean }): "not
 }
 
 /**
+ * A personal folder the platform may not be able to name: Electron's `app.getPath` throws "Failed to get
+ * '<name>' path" when Windows can't resolve Documents or Desktop. Then undefined, so only that folder's
+ * check is skipped; any other error still fails the step.
+ */
+export function optionalPlace(name: "documents" | "desktop", get: () => string): string | undefined {
+  try {
+    return get();
+  } catch (error) {
+    if (!(error instanceof Error) || error.message !== `Failed to get '${name}' path`) throw error;
+    console.error(`The ${name} folder could not be resolved; its check is skipped.`);
+    return undefined;
+  }
+}
+
+/**
  * Why a folder must never go to the Recycle Bin as a project, or undefined when it may: a drive's root,
  * the home folder, Documents, Desktop, or a folder holding the app's data.
  */

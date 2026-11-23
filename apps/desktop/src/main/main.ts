@@ -73,7 +73,7 @@ import { CHROMIUM_FOLDERS, DATA_FILES, type DataFile } from "@focus-notes/core/i
 import { forgetLocalData, removalCheck, removeWorkspace } from "./workspace/remove.ts";
 import { PrivacyCleanupError, withoutPrivacyTraces, withoutRemovedReferences } from "./privacy-cleanup.ts";
 import { atOrUnder } from "@focus-notes/core/journal";
-import { deletionCheck, deletionFolderIdentity, deletionGate, isRepoSlug, recycleProject, recycleRefusal, repoStatus, RemoteProjectDeletion, sameDeletionFolder } from "./workspace/delete.ts";
+import { deletionCheck, deletionFolderIdentity, deletionGate, isRepoSlug, optionalPlace, recycleProject, recycleRefusal, repoStatus, RemoteProjectDeletion, sameDeletionFolder } from "./workspace/delete.ts";
 import { deletionAuthorizationMethod, DeletionAuthorizationError, withDeletionAuthorization } from "./workspace/delete-authorization.ts";
 import { backupToRecord, checkFolder, configUrl, driveOf, envSyncRoots, folderNameOk, movedDocuments, nextFree, parseRecord, realInside, recordFor, recoveredNote, samePath, serializeRecord, shortPath, startDecision, syncService, type FolderCheck, type FolderFacts, type WorkspaceRecord } from "./workspace/record.ts";
 import type { RecoverAccount, RecoverPlace, RecoverProgress, RecoverResult, RecoverStatus } from "@focus-notes/core/recover";
@@ -576,7 +576,7 @@ let projectDeleted = false;
 const deletionRefused = () => deletionGate({ deleted: projectDeleted, localNotes: process.env.FOCUS_NOTES_LOCAL_NOTES === "1" });
 async function deleteLocalProject(keepPrivate: boolean, current: () => Promise<boolean>): Promise<DeletionResult> {
   const folder = notesHome();
-  const places = { home: app.getPath("home"), userData: app.getPath("userData"), documents: app.getPath("documents"), desktop: app.getPath("desktop") };
+  const places = { home: app.getPath("home"), userData: app.getPath("userData"), documents: optionalPlace("documents", () => app.getPath("documents")), desktop: optionalPlace("desktop", () => app.getPath("desktop")) };
   if (deletionRefused() || recycleRefusal(folder, places)) return { state: "refused" };
   // Only a folder that is its own repository's top is a project, checked again here.
   if ((await deletionCheck(setupRunner, folder, {})).problem) return { state: "refused" };
@@ -2627,7 +2627,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     const c = await deletion();
     if (c.problem || !c.unsynced.length) return undefined;
     const w = mainWindow;
-    const opts = { title: c.name, defaultPath: app.getPath("documents"), properties: ["openDirectory" as const, "createDirectory" as const, "promptToCreate" as const] };
+    const opts = { title: c.name, defaultPath: optionalPlace("documents", () => app.getPath("documents")), properties: ["openDirectory" as const, "createDirectory" as const, "promptToCreate" as const] };
     const picked = w ? await dialog.showOpenDialog(w, opts) : await dialog.showOpenDialog(opts);
     if (picked.canceled || !picked.filePaths[0]) return undefined;
     const parent = resolve(picked.filePaths[0]);

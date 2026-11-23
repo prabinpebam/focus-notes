@@ -12,7 +12,7 @@ import fsPromises from "node:fs/promises";
 import { syncBuiltinESMExports } from "node:module";
 import { GitHubError } from "@focus-notes/github";
 import { createRunner } from "../src/main/git/run.ts";
-import { deletionCheck, deletionFolderIdentity, deletionGate, isRepoSlug, keptPrivateFolder, recycleProject, recycleRefusal, repoStatus, RemoteProjectDeletion, sameDeletionFolder } from "../src/main/workspace/delete.ts";
+import { deletionCheck, deletionFolderIdentity, deletionGate, isRepoSlug, keptPrivateFolder, optionalPlace, recycleProject, recycleRefusal, repoStatus, RemoteProjectDeletion, sameDeletionFolder } from "../src/main/workspace/delete.ts";
 import { withDeletionAuthorization } from "../src/main/workspace/delete-authorization.ts";
 
 const git = (cwd: string, ...args: string[]) => execFileSync("git", ["-c", "user.name=T", "-c", "user.email=t@e.st", "-c", "commit.gpgsign=false", ...args], { cwd, stdio: "pipe" });
@@ -158,6 +158,22 @@ describe("DD-PROJ-15: to the Recycle Bin", () => {
     expect(recycleRefusal(join(root, "missing"), places)).toBe("missing");
     expect(recycleRefusal(process.platform === "win32" ? "C:\\" : "/", places)).toBe("root");
     expect(recycleRefusal(folder, { ...places, userData: join(tmpdir(), "elsewhere") })).toBeUndefined();
+  });
+  it("a Documents or Desktop the platform can't name skips its check, and still refuses the others", () => {
+    const { root, folder } = project();
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    const missing = optionalPlace("documents", () => { throw new Error("Failed to get 'documents' path"); });
+    expect(missing).toBeUndefined();
+    expect(logged).toHaveBeenCalledWith("The documents folder could not be resolved; its check is skipped.");
+    logged.mockRestore();
+    const places = { home: root, userData: join(tmpdir(), "elsewhere"), documents: missing, desktop: optionalPlace("desktop", () => join(root, "Desktop")) };
+    expect(places.desktop).toBe(join(root, "Desktop"));
+    expect(recycleRefusal(folder, places)).toBeUndefined();
+    expect(recycleRefusal(root, places)).toBe("personal");
+  });
+  it("any other failure naming a personal folder still fails", () => {
+    expect(() => optionalPlace("desktop", () => { throw new Error("Failed to get 'documents' path"); })).toThrow("documents");
+    expect(() => optionalPlace("documents", () => { throw new TypeError("unexpected"); })).toThrow("unexpected");
   });
 
   describe("D-394: actual deletion receipts", () => {
