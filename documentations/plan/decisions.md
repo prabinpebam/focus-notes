@@ -1,9 +1,25 @@
 # Decisions
 
 > [!NOTE]
-> **TL;DR.** D-405 is a narrow 1.1.0 closure-sprint exception: four workers and one rolling batch gate. D-404 runs every coordinator, worker and subagent on Claude Opus 5.5, passed explicitly. D-398 settles the 1.1.0 Autopilot scope and publishing defaults, authorizing production wiring of the prepared candidates. D-399 exempts query-input search and command surfaces from a decorative visual anchor. Owner corrections D-393–D-395 still govern GitHub references, in-app deletion and Find. D-400/D-401 keep Delete authorization isolated and retained private history self-contained and reversible. Earlier decisions remain historical where explicitly superseded.
+> **TL;DR.** D-406 removes the worker cap: one worker per independent ready item until the owner asks for fewer. D-405 is a narrow 1.1.0 closure-sprint exception for one rolling batch gate; its four-worker cap is superseded by D-406. D-404 runs every coordinator, worker and subagent on Claude Opus 5.5, passed explicitly. D-398 settles the 1.1.0 Autopilot scope and publishing defaults, authorizing production wiring of the prepared candidates. D-399 exempts query-input search and command surfaces from a decorative visual anchor. Owner corrections D-393–D-395 still govern GitHub references, in-app deletion and Find. D-400/D-401 keep Delete authorization isolated and retained private history self-contained and reversible. Earlier decisions remain historical where explicitly superseded.
+
+## D-406: no worker cap until the owner reduces it
+
+**Decided (owner, 23 November 2026, 15:24, delivered late through the coordinator; ID assigned by coordinator).** The owner: "Use as many workers as you need to get stuff done fast, I'll explicitly instruct you to use less when that's the case."
+
+- Every independent ready item gets its own worker, attended or unattended, on disjoint files in its own worktree and shell. There is no numeric cap until the owner asks for fewer.
+- Items whose files overlap run one after another, never in parallel.
+- Every worker, coordinator and subagent is started with `model: "claude-opus-5.5"` passed explicitly (D-404).
+- Workers report only terminal results and blockers, never acknowledgements or "no change" messages. Each worker's chat is archived once its slice lands.
+- Unchanged: D-405's single rolling `fix-merge-candidate` with one exact-head gate, the shared observer and culprit drop; non-force fast-forward landing; worktree, branch and app-instance cleanup; and every data-safety and privacy rule.
+
+This replaces the attended cap (one builder, a second only in narrow cases, never three), the unattended cap of two, and D-405's cap of four. It partially supersedes D-405: the worker cap only; D-405's batching and gate rules stand.
+
+**Affects:** [AGENTS.md working modes](../../AGENTS.md#working-modes-and-throughput-d-113). No product behaviour changes.
 
 ## D-405: 1.1.0 closure sprint, four workers and one rolling batch gate
+
+**Worker cap superseded by D-406 (owner, 23 November 15:24).** The four-worker limit below no longer applies; the batching, gate and landing rules stand.
 
 **Decided (owner, 23 November 2026, 14:43; ID assigned by coordinator).** A narrowly scoped exception for the 1.1.0 closure only, ending when 1.1.0 is packaged. It supersedes the two-builder cap and per-slice runtime gates for that work, nothing else:
 
