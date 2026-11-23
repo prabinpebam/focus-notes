@@ -107,7 +107,14 @@ const plain = (nodes: PMNode[] = []): string => nodes.map((n) => n.text ?? plain
  * links to anything else in the repository (a private note, a missing one) and unsafe schemes become
  * plain text, so a public page never points at, or reveals, a private note.
  */
-export function publicPage(markdown: string, notePath: string, updated: string, publicPaths: ReadonlySet<string>): PublicPage {
+export function publicPage(markdown: string, notePath: string, updated: string, publicPaths: ReadonlySet<string>, publicMedia: ReadonlySet<string> = new Set()): PublicPage {
+  // Images published beside the notes (G3.3) sit at notes/<path>, from this page's folder (n/<note>/).
+  const up = "../".repeat(publicPagePath(notePath).split("/").filter(Boolean).length);
+  const image = (src: string): string => {
+    if (!src || SAFE_ABSOLUTE.test(src) || src.startsWith("#")) return "";
+    const resolved = linkTarget(src.split(/[?#]/)[0]!, notePath.split("/").slice(0, -1), (path) => path, () => null);
+    return resolved && publicMedia.has(resolved) ? `${up}notes/${resolved.split("/").map(encodeURIComponent).join("/")}` : "";
+  };
   return readerPage(markdown, notePath, updated, (resolved, hash) => {
     if (!publicPaths.has(resolved)) return null;
     // From this page's folder (n/<note>/) to the other page's.
@@ -117,7 +124,7 @@ export function publicPage(markdown: string, notePath: string, updated: string, 
     while (i < from.length && i < to.length && from[i] === to[i]) i++;
     const rel = [...from.slice(i).map(() => ".."), ...to.slice(i)].join("/");
     return `${rel ? `${rel}/` : "./"}${hash ? `#${hash}` : ""}`;
-  });
+  }, undefined, image);
 }
 
 /** A shared note's place on the share reader's page (WP-5.4): in the fragment, so it never reaches the server. */
@@ -156,7 +163,7 @@ export function sharedListModel(heading: string, notes: readonly { path: string;
 
 type LinkResolver = (resolved: string, hash: string | undefined) => string | null;
 
-function readerPage(markdown: string, notePath: string, updated: string, resolve: LinkResolver, fragment: (href: string) => string | null = (h) => h): PublicPage {
+function readerPage(markdown: string, notePath: string, updated: string, resolve: LinkResolver, fragment: (href: string) => string | null = (h) => h, image?: (src: string) => string): PublicPage {
   const blocks = [...(parseMarkdown(markdown).doc.content ?? [])];
   let noindex = false;
   let excerpt: string | undefined;
@@ -173,6 +180,8 @@ function readerPage(markdown: string, notePath: string, updated: string, resolve
   const dir = notePath.split("/").slice(0, -1);
   const fix = (n: PMNode): PMNode => ({
     ...n,
+    // A published page shows an image only from its own site (G3.3); anything else is its description.
+    ...(image && n.type === "image" ? { attrs: { ...n.attrs, publicSrc: image(String(n.attrs?.src ?? "")) } } : {}),
     ...(n.content ? { content: n.content.map(fix) } : {}),
     ...(n.marks ? { marks: n.marks.map((m) => (m.type === "link" ? { ...m, attrs: { ...m.attrs, href: linkTarget(String(m.attrs?.href ?? ""), dir, resolve, fragment) } } : m)) } : {}),
   });

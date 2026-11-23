@@ -78,6 +78,7 @@ function Block({ node, path, muted = false }: { node: BlockNode; path: string; m
     case "tableCell": return <td {...align(node)}>{kids(node, path)}</td>;
     case "image":
       if (node.attrs?.print === true) return <PrintImage node={node} />;
+      if (typeof node.attrs?.publicSrc === "string") return <PublicImage node={node} />;
       return <pre tabIndex={0} data-raw-markdown="" {...focus}>{String(node.attrs?.source ?? "")}</pre>;
     // UnknownBlock: syntax the editor can't show yet, kept verbatim as text.
     default: return <pre tabIndex={0} data-raw-markdown="" {...focus}>{String(node.attrs?.source ?? (node.content ?? []).map((c) => c.text ?? "").join(""))}</pre>;
@@ -101,6 +102,19 @@ function PrintImage({ node }: { node: BlockNode }) {
 }
 
 const align = (node: BlockNode) => (typeof node.attrs?.align === "string" ? { "data-align": node.attrs.align } : {});
+
+/** An image on a published page (G3.3): the site's own copy the publisher resolved, else its description. Never another origin. */
+function PublicImage({ node }: { node: BlockNode }) {
+  const attrs = node.attrs ?? {};
+  const raw = String(attrs.publicSrc);
+  const src = /^(?:\.\.\/)*notes\/[^:\\]+$/.test(raw) ? raw : "";
+  const alt = typeof attrs.alt === "string" ? attrs.alt : "";
+  const caption = typeof attrs.title === "string" ? attrs.title : "";
+  return <figure className={s.printImage} data-image-mode={attrs.mode === "wide" || attrs.mode === "actual" ? attrs.mode : "column"}>
+    {src ? <img src={src} alt={alt} data-rounded={attrs.rounded === true ? "" : undefined} /> : <em>{alt}</em>}
+    {caption ? <figcaption>{caption}</figcaption> : null}
+  </figure>;
+}
 
 /** InlineMarks: bold, italic, strikethrough, inline code, and links. */
 function Inline({ nodes }: { nodes: BlockNode[] | undefined }): ReactNode {

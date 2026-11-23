@@ -40,6 +40,8 @@ export interface PublishOptions {
   siteUrl?: string;
   /** Fixed build ID, for tests. */
   build?: string;
+  /** Images the caller places beside the public notes (G3.3, already stripped), by path under `notes`; pages show only these. */
+  media?: readonly string[];
   /**
    * Private notes the person confirmed public (G3), by path under `private/notes`, each also among `notes`.
    * Only their own text and path may then appear in the public notes and pages (leakCheck).
@@ -53,7 +55,7 @@ export interface PublishResult { build: string; publicNotes: number; publicPages
 
 /** The page renderer's interface (apps/web/reader/render.ts), loaded from its built module. */
 interface PageRenderer {
-  renderNotePage(input: { markdown: string; path: string; updated: string; publicPaths: ReadonlySet<string>; siteUrl?: string; assets: { css: readonly string[]; fonts: readonly string[] } }): { file: string; html: string; title: string; excerpt?: string };
+  renderNotePage(input: { markdown: string; path: string; updated: string; publicPaths: ReadonlySet<string>; publicMedia?: ReadonlySet<string>; siteUrl?: string; assets: { css: readonly string[]; fonts: readonly string[] } }): { file: string; html: string; title: string; excerpt?: string };
   /** The index of public notes (D-139); renderers before it have none. */
   renderIndexPage?(input: { notes: readonly { path: string; title: string; updated: string; excerpt?: string }[]; siteUrl?: string; assets: { css: readonly string[]; fonts: readonly string[] } }): { file: string; html: string };
 }
@@ -148,9 +150,10 @@ export async function publish(o: PublishOptions): Promise<PublishResult> {
     await cp(join(o.reader, "assets"), join(o.site, "assets"), { recursive: true });
     const assets = { css: assetFiles.filter((f) => f.endsWith(".css")), fonts: assetFiles.filter((f) => /\.woff2?$/.test(f)) };
     const publicPaths = new Set(index.notes.map((n) => n.path));
+    const publicMedia = new Set(o.media ?? []);
     const entries: { path: string; title: string; updated: string; excerpt?: string }[] = [];
     for (const n of index.notes) {
-      const { file, html, title, excerpt } = renderer.renderNotePage({ markdown: texts.get(n.path)!, path: n.path, updated: n.updated, publicPaths, ...(o.siteUrl ? { siteUrl: o.siteUrl } : {}), assets });
+      const { file, html, title, excerpt } = renderer.renderNotePage({ markdown: texts.get(n.path)!, path: n.path, updated: n.updated, publicPaths, publicMedia, ...(o.siteUrl ? { siteUrl: o.siteUrl } : {}), assets });
       await put(join(o.site, ...file.split("/").map(decodeURIComponent)), html);
       entries.push({ path: n.path, title, updated: n.updated, ...(excerpt ? { excerpt } : {}) });
       publicPages++;

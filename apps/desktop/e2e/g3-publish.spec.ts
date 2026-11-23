@@ -83,6 +83,9 @@ test("G3.1/G3.5: Publish saves exactly the note to the paired site, keeps runnin
     const site = fake.git.site("ada/quiet-site");
     expect(site.get("notes/journeys/trip.md")).toBe(TRIP);
     expect(site.has("n/journeys/trip/index.html")).toBe(true);
+    // G3.3: the page shows the stripped photo, resolved from the page to the published file.
+    const img = /<img src="([^"]+)" alt="Harbour"/.exec(site.get("n/journeys/trip/index.html")!)?.[1];
+    expect(img && decodeURIComponent(new URL(img, "https://ada.example/n/journeys/trip/").pathname.slice(1))).toBe("notes/assets/images/harbour.jpg");
     expect([...site.keys()].some(path => path.includes("diary"))).toBe(false);
     const photo = fake.git.siteBytes("ada/quiet-site").get("assets/images/harbour.jpg")!;
     for (const leak of ["Canon", "GPS", "38.7N", "Exif"]) expect(photo.toString("latin1")).not.toContain(leak);

@@ -28,6 +28,19 @@ describe("public page document", () => {
     expect(html).not.toMatch(/https?:\/\/(?!octo\.github\.io\/notes\/n\/)/);
   });
 
+  it("G3.3: shows a published image from the site's own notes/, and only its description for anything else", () => {
+    const { html } = renderNotePage({
+      markdown: "# T\n\n![A red barn](images/barn%20one.jpg \"The barn\")\n\n![Remote](https://evil.example/x.png)\n\n![Not published](other.png)\n\n![Escape](../../../secret.png)\n",
+      path: "Guides/Garden.md", updated: "2026-10-01T12:00:00Z", publicPaths: new Set(["Guides/Garden.md"]), publicMedia: new Set(["Guides/images/barn one.jpg"]), assets,
+    });
+    expect([...html.matchAll(/<img [^>]*>/g)]).toHaveLength(1);
+    expect(html).toContain('<img src="../../../notes/Guides/images/barn%20one.jpg" alt="A red barn"');
+    expect(html).toContain("<figcaption>The barn</figcaption>");
+    for (const alt of ["Remote", "Not published", "Escape"]) expect(html).toContain(`<em>${alt}</em>`);
+    expect(html).not.toContain("evil.example");
+    expect(html).toMatch(/Content-Security-Policy" content="default-src 'none';[^"]*img-src 'self'/);
+  });
+
   it("PRF-12: preloads only the latin woff2 faces the first screen uses", () => {
     const { html } = page("# T\n\nPlain.\n");
     expect([...html.matchAll(/rel="preload" href="([^"]+)"/g)].map((m) => m[1])).toEqual(["../../../assets/roboto-mono-latin-400-normal-abc.woff2", "../../../assets/roboto-mono-latin-700-normal-def.woff2"]);

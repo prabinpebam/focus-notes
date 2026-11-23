@@ -20,6 +20,8 @@ export interface NotePageInput {
   /** When it last changed (ISO 8601). */
   updated: string;
   publicPaths: ReadonlySet<string>;
+  /** Images published beside the notes (G3.3), by path in notes/; only these show as images. */
+  publicMedia?: ReadonlySet<string>;
   /** The site's address, for canonical links (configure-pages' base_url). */
   siteUrl?: string;
   assets: ReaderAssets;
@@ -28,7 +30,7 @@ export interface NotePageInput {
 export { publicPagePath };
 
 export function renderNotePage(input: NotePageInput): { file: string; html: string; title: string; excerpt?: string } {
-  const page = publicPage(input.markdown, input.path, input.updated, input.publicPaths);
+  const page = publicPage(input.markdown, input.path, input.updated, input.publicPaths, input.publicMedia);
   const dir = publicPagePath(input.path);
   const up = "../".repeat(dir.split("/").filter(Boolean).length);
   const asset = (name: string) => `${up}assets/${name}`;
