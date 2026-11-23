@@ -1,5 +1,5 @@
-import { mkdtemp, readFile, realpath, rm } from "node:fs/promises";
-import { join, relative, sep } from "node:path";
+import { copyFile, mkdir, mkdtemp, readFile, realpath, rm } from "node:fs/promises";
+import { dirname, join, relative, sep } from "node:path";
 import { GitHubError, type GitHubApi } from "@focus-notes/github";
 import { publish } from "@focus-notes/seal/publish";
 import type { SharingLayout } from "./layout.ts";
@@ -103,7 +103,7 @@ export function sharingRuntime(deps: {
       const directory = await mkdtemp(join(deps.temporary, "sealed-site-"));
       const staging = notes.length ? await mkdtemp(join(deps.temporary, "public-notes-")) : undefined;
       try {
-        if (staging) await stagePublicSelection({ notesRoot: layout.privateNotes!, selection: { ...selection, notes }, staging });
+        const selected = staging ? await stagePublicSelection({ notesRoot: layout.privateNotes!, selection: { ...selection, notes }, staging }) : undefined;
         guard();
         // Removal deploys an empty site: no public notes, no vault and no share keyrings.
         const artifact = await publish(empty ? { site: directory, owner: pairing.owner, siteUrl: pairing.site } : {
@@ -112,6 +112,12 @@ export function sharingRuntime(deps: {
           ...(staging ? { notes: staging, published: [...notes], reader: reader! } : layout.publicDir ? { notes: join(layout.publicDir, "notes") } : {}),
           site: directory, owner: pairing.owner, siteUrl: pairing.site,
         });
+        // Stripped images sit beside the published notes, so the notes' relative links resolve (WP-9.9).
+        for (const image of selected?.media ?? []) {
+          const to = join(directory, "notes", ...image.split("/"));
+          await mkdir(dirname(to), { recursive: true });
+          await copyFile(join(staging!, ...image.split("/")), to);
+        }
         guard();
         deps.step?.("push");
         if (selection) deps.publishStep?.("publishing");

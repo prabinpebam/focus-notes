@@ -3210,7 +3210,7 @@
   "sharing.publish.problem.offline": "You’re offline. Nothing was published. Connect, then try again.",
   "sharing.publish.problem.signedout": "Sign in to GitHub again, then try again. Nothing was published.",
   "sharing.publish.problem.refused": "GitHub didn’t allow the change to your site. Check you can still push to it, then try again.",
-  "sharing.publish.problem.media": "This note has images, which can’t be published yet. Nothing was published.",
+  "sharing.publish.problem.media": "An image in this note can’t be published. Use JPEG or PNG images saved in this project. Nothing was published.",
   "sharing.publish.problem.scope": "What’s in this folder changed. Open Publish again to confirm what goes on your site.",
   "sharing.publish.problem.unavailable": "Publishing to your site isn’t available here. Nothing was published.",
   "sharing.publish.problem.busy": "Your site is already being updated. Try again when it’s done.",

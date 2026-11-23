@@ -1,15 +1,18 @@
 import { lstat, mkdir, readdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { dirname, join, posix } from "node:path";
+import { PUBLISHABLE_IMAGE, stripImageMetadata } from "./public-media.ts";
 
 /** What the person confirmed in Publish: note paths relative to the notes root, and the folders they chose. */
 export interface ConfirmedSelection { notes: readonly string[]; folders?: readonly string[] }
+/** Staged notes, and the images they embed, both relative to the notes root. */
+export interface StagedSelection { notes: string[]; media: string[] }
 
 const fail = (code: string) => new Error(`sharing:${code}`);
 const safe = (path: string) => path.length > 0 && !path.startsWith("/") && !/[\\:]/.test(path) &&
   path.split("/").every(part => part && part !== "." && part !== ".." && !part.startsWith("."));
 const NOTE = /\.(md|markdown)$/i;
-/** Local images and other embedded files; a public page must never drop them or expose the originals. */
-const LOCAL_MEDIA = /!\[[^\]]*\]\(\s*<?(?!https?:|data:|#)[^)\s>]+|<img\b[^>]*\bsrc\s*=\s*["']?(?!https?:|data:)[^"'\s>]/i;
+/** Markdown images (`![alt](src "title")`) and HTML images (`<img src>`). */
+const IMAGE_REFS = /!\[[^\]]*\]\(\s*<?([^)\s>]+)>?(?:\s+["'][^"']*["'])?\s*\)|<img\b[^>]*\bsrc\s*=\s*["']?([^"'\s>]+)/gi;
 
 async function notesIn(root: string, folder: string): Promise<string[]> {
   const out: string[] = [];
@@ -25,13 +28,27 @@ async function notesIn(root: string, folder: string): Promise<string[]> {
   return out;
 }
 
+/** A note's local image, as a notes-root-relative path; undefined for a web or in-page reference. Refuses anything unsafe. */
+function localImage(note: string, src: string): string | undefined {
+  if (/^(https?:|#)/i.test(src)) return undefined;
+  // An embedded image carries its metadata inside the note's own text.
+  if (/^[a-z][a-z0-9+.-]*:/i.test(src) || src.startsWith("/")) throw fail("media");
+  let decoded: string;
+  try { decoded = decodeURI(src.split(/[?#]/)[0]!); } catch { throw fail("media"); }
+  const path = posix.normalize(posix.join(posix.dirname(note), decoded));
+  if (!safe(path) || !PUBLISHABLE_IMAGE.test(path)) throw fail("media");
+  return path;
+}
+
 /**
  * Copies exactly the confirmed notes, as they are on disk now, into `staging` for sealing as public
  * notes (G3.1, G3.3). Never widens: a note added to a confirmed folder since confirmation stops with
- * `sharing:scope` (reconfirm), as does a missing or linked note. A note embedding local media stops with
- * `sharing:media` until the image export strips and copies it (WP-9.9). Nothing is staged on a stop.
+ * `sharing:scope` (reconfirm), as does a missing or linked note. Each local JPEG or PNG a note shows is
+ * staged at its own path with its location, camera and other metadata removed (WP-9.9); any other,
+ * missing, linked or outside image stops with `sharing:media` rather than being dropped or exposed.
+ * The originals are never changed, and nothing is staged on a stop.
  */
-export async function stagePublicSelection(o: { notesRoot: string; selection: ConfirmedSelection; staging: string }): Promise<string[]> {
+export async function stagePublicSelection(o: { notesRoot: string; selection: ConfirmedSelection; staging: string }): Promise<StagedSelection> {
   const notes = [...new Set(o.selection.notes)];
   if (!notes.length || notes.some(p => !safe(p) || !NOTE.test(p)) || (o.selection.folders ?? []).some(f => !safe(f))) throw fail("scope");
   const confirmed = new Set(notes);
@@ -40,20 +57,28 @@ export async function stagePublicSelection(o: { notesRoot: string; selection: Co
     try { current = await notesIn(o.notesRoot, folder); } catch { throw fail("scope"); }
     if (current.some(p => !confirmed.has(p))) throw fail("scope");
   }
-  const staged: [string, Buffer][] = [];
+  const staged = new Map<string, Buffer>(), media = new Map<string, Buffer>();
   for (const path of notes) {
     const file = join(o.notesRoot, ...path.split("/"));
     const info = await lstat(file).catch(() => undefined);
     if (!info?.isFile()) throw fail("scope");
     const bytes = await readFile(file);
-    if (LOCAL_MEDIA.test(bytes.toString("utf8"))) throw fail("media");
-    staged.push([path, bytes]);
+    staged.set(path, bytes);
+    for (const match of bytes.toString("utf8").matchAll(IMAGE_REFS)) {
+      const image = localImage(path, (match[1] ?? match[2])!);
+      if (!image || media.has(image)) continue;
+      const source = join(o.notesRoot, ...image.split("/"));
+      if (!(await lstat(source).catch(() => undefined))?.isFile()) throw fail("media");
+      const stripped = stripImageMetadata(await readFile(source), image);
+      if (!stripped) throw fail("media");
+      media.set(image, stripped);
+    }
   }
-  // The exact bytes checked above, so an edit in between can't slip media past the check.
-  for (const [path, bytes] of staged) {
+  // The exact bytes checked above, so an edit in between can't slip an image past the check.
+  for (const [path, bytes] of [...staged, ...media]) {
     const to = join(o.staging, ...path.split("/"));
     await mkdir(dirname(to), { recursive: true });
     await writeFile(to, bytes, { flag: "wx" });
   }
-  return notes.sort();
+  return { notes: notes.sort(), media: [...media.keys()].sort() };
 }
