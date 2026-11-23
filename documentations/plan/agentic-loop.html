@@ -201,7 +201,7 @@
 <ul>
   <li>A builder task is one deliverable, time-boxed at <strong>45 minutes</strong>. At the time-box it merges what works and reports, even if partial.</li>
   <li>Branches live at most about an hour and merge to <code>main</code> at once. Merge debt is waste.</li>
-  <li>At most two builders at a time, on areas that don't overlap; one while the owner is testing, so the machine stays quiet and measurements stay clean.</li>
+  <li>No builder cap until the owner asks for fewer (<a href="decisions.md#d-406-no-worker-cap-until-the-owner-reduces-it">D-406</a>): one builder per independent ready task, each on disjoint files in its own worktree. Tasks that touch the same files run one after another.</li>
   <li>Owner feedback goes into a queue, ordered by impact, and becomes the next small task. It never widens a task that's running.</li>
 </ul>
 <h3>Two working modes</h3>
@@ -213,7 +213,7 @@
     <tr><td>Work</td><td>The owner's feedback queue first, one item or a small group at a time; anything else only in the gaps</td><td>The next work packages on the critical path, refactors and fundamental fixes, guard journeys, accessibility and visual audits, stage-gate preparation, and the queue's larger items</td></tr>
     <tr><td>Batch size and time-box</td><td>One fix, about 15 minutes from report to visible fix</td><td>One work package or a coherent part of one, 45-minute time-boxes that each merge what works</td></tr>
     <tr><td>Checks before merging</td><td>The smallest check that covers the fix (5 minutes or less); it reaches the owner's review build once that passes, and runtime changes go to CI only after the owner accepts them (D-255)</td><td>The fast checks locally; low-risk UI changes land on them; desktop runtime changes wait for Windows CI on the pushed work branch (<code>wp-*</code>, <code>fix-*</code>, <code>vq-*</code>), batched on one merge candidate; the bench on a quiet machine before the stage gate</td></tr>
-    <tr><td>Builders</td><td>One, so the machine stays responsive and nothing steals focus; the orchestrator may make small fixes directly</td><td>Up to two in parallel, on areas that don't overlap</td></tr>
+    <tr><td>Builders</td><td>One per independent ready task, on disjoint files, with no cap (D-406); nothing steals focus</td><td>One per independent ready task, on disjoint files, with no cap (D-406)</td></tr>
     <tr><td>The app</td><td>The owner opens <strong>Focus Notes Preview</strong> whenever they like: the newest build of <code>main</code> that passed Windows CI, built automatically within minutes of the merge (see below)</td><td>The same Preview keeps updating, so the newest green build is waiting when the owner returns, with a short summary</td></tr>
     <tr><td>Reporting</td><td>A line in the progress log per step, and a short message per fix</td><td>The progress log, and a <strong>handoff summary</strong> for the owner's return: what's done with evidence, what's in progress, decisions waiting for the owner, and what to try first</td></tr>
   </tbody>

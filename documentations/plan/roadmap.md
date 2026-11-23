@@ -92,7 +92,7 @@ The owner chose systematic P0/P1 closure on 7 November at 21:10 (D-379). Each sl
 
 No agent creates/deletes/invites/publishes on a real account. D-379 authorizes safe implementation, not real output or a release. Nothing becomes public without the owner pressing the button. Windows is the desktop delivery target until v1 is in the Store; non-Windows parts of DST-03/QLT-02 follow afterward.
 
-**1.1.0 closure schedule (23 November, D-405).** Up to four workers stack runtime slices on one rolling `fix-merge-candidate`, gated exact-head roughly every two hours or at three or more ready slices; the D-186 minimap pin lands by 24 November 05:30 IST. Target: closure by the end of 24 November IST, packaging that daytime. A target, not a guarantee; release, tag and Store submission remain the owner's.
+**1.1.0 closure schedule (23 November, D-405; worker cap removed by [D-406](decisions.md#d-406-no-worker-cap-until-the-owner-reduces-it)).** Workers (one per independent ready slice, on disjoint files) stack their runtime slices on one rolling `fix-merge-candidate`, gated exact-head roughly every two hours or at three or more ready slices; the D-186 minimap pin lands by 24 November 05:30 IST. Target: closure by the end of 24 November IST, packaging that daytime. A target, not a guarantee; release, tag and Store submission remain the owner's.
 
 #### Specced but missing or partial
 
