@@ -19,6 +19,18 @@ describe("rendererSummary", () => {
     expect(samples.overheadPct).toHaveLength(3);
   });
 
+  it("flags negative samples and gates on the median of the non-negative ones", () => {
+    const { measures, samples } = rendererSummary([4, -9.5, 6, 5, 20]);
+    expect(measures["DSY-11.rendererOverheadPct"]).toBe(5.5);
+    expect(samples).toEqual({ runs: 5, overheadPct: [4, -9.5, 6, 5, 20], negativeOverheadPct: [-9.5], gatedOn: "non-negative" });
+  });
+
+  it("falls back to every sample when all of them are negative", () => {
+    const { measures, samples } = rendererSummary([-2, -9.5, -1]);
+    expect(measures["DSY-11.rendererOverheadPct"]).toBe(-2);
+    expect(samples.gatedOn).toBe("all");
+  });
+
   it("refuses a run without samples or with a missing result", () => {
     expect(() => rendererSummary([])).toThrow();
     expect(() => rendererSummary([4, Number.NaN])).toThrow();
