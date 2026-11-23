@@ -15,6 +15,7 @@ import { test, expect } from "./fixtures.ts";
 import { launch, quit, tempDirs } from "./helpers.ts";
 import { makeFakes } from "../test/fakes/fakes.ts";
 import { DATA_FILES } from "@focus-notes/core/inventory";
+import messages from "../../../packages/views/messages/en.json" with { type: "json" };
 
 const git = (cwd: string, ...args: string[]) => execFileSync("git", ["-c", "user.name=Test", "-c", "user.email=test@example.com", "-c", "commit.gpgsign=false", ...args], { cwd, stdio: "pipe" });
 const UNAVAILABLE = "Couldn't check this project, so nothing was deleted. Try again.";
@@ -133,6 +134,49 @@ async function deletionVm(page: Page, observeOperation = false, command = "proje
     }
     throw new Error("Mounted app props were not found");
   }, { observe: observeOperation, command });
+}
+
+async function attachDeleteFailure(page: Page) {
+  const testInfo = test.info();
+  const templates = Object.entries(messages)
+    .filter(([key]) => key.startsWith("project.delete.") || ["commit.retry", "project.back", "dialog.close"].includes(key))
+    .filter(([, text]) => !text.replace(/\{[A-Za-z]+\}/g, "").includes("{"))
+    .map(([, text]) => ({
+      pattern: "^" + text.split(/\{[A-Za-z]+\}/).map(part => part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("[\\s\\S]*?") + "$",
+      text: text.replace(/\{[A-Za-z]+\}/g, "[redacted]"),
+    }));
+  let diagnostic: unknown = { unavailable: "page closed" };
+  if (!page.isClosed()) {
+    try {
+      const vm = await deletionVm(page);
+      const visible = await page.evaluate(templates => {
+        const sanitize = (text: string) => templates.find(template => new RegExp(template.pattern).test(text.trim()))?.text ?? "[unrecognized text redacted]";
+        const shown = (element: Element) => element.getClientRects().length > 0 && getComputedStyle(element).visibility !== "hidden";
+        const dialog = document.getElementById("projectDelete");
+        return {
+          dialogVisible: Boolean(dialog && shown(dialog)),
+          statuses: [...(dialog?.querySelectorAll('[role="status"]') ?? [])].filter(shown).map(element => sanitize(element.textContent ?? "")),
+          alerts: [...document.querySelectorAll('[role="alert"]')].filter(shown).map(element => sanitize(element.textContent ?? "")),
+          buttons: [...(dialog?.querySelectorAll("button") ?? [])].filter(shown).map(button => ({
+            text: sanitize(button.textContent || button.getAttribute("aria-label") || ""),
+            enabled: !button.disabled && button.getAttribute("aria-disabled") !== "true",
+          })),
+        };
+      }, templates);
+      diagnostic = {
+        step: ["consequences", "unsynced", "confirm", "github", "inApp", "progress", "stopped"].includes(String(vm.step)) ? vm.step : "unavailable",
+        busy: vm.busy === true,
+        remoteState: ["stepup", "deleting", "deleted", "declined", "partial", "refused"].includes(String(vm.remoteState)) ? vm.remoteState : "unavailable",
+        tokenCleared: vm.tokenCleared,
+        codeCleared: vm.codeCleared,
+        ...visible,
+      };
+    } catch {
+      console.error("Delete failure diagnostics could not read the mounted state.");
+      diagnostic = { unavailable: "mounted state could not be read" };
+    }
+  }
+  await testInfo.attach("delete-failure-state", { body: JSON.stringify(diagnostic, null, 2), contentType: "application/json" });
 }
 
 async function deletionGeometry(page: Page) {
@@ -677,6 +721,9 @@ async function actualDeletion(mode: "refused" | "partial" | "oauth" | "declined"
     await expect(dialog).toBeHidden();
     expect(readFileSync(note)).toEqual(before);
     await persistence();
+  } catch (error) {
+    await attachDeleteFailure(l.page);
+    throw error;
   } finally {
     allowGrant?.();
     release?.();
@@ -948,6 +995,9 @@ for (const mode of ["allSelected", "privateStepup", "keepPrivate", "keepPrivateR
         for (const entry of readdirSync(dirs.userData, { recursive: true, withFileTypes: true }).filter(entry => entry.isFile())) expect(readFileSync(join(entry.parentPath, entry.name)).includes(Buffer.from("EPHEMERAL0123456789abcdef"))).toBe(false);
       }
       if (at) writeFileSync(join(at, `${mode}-provenance.json`), JSON.stringify({ scenario: mode, source: "built-invisible-renderer", pid: l.pid, requestChain: requests, sourceHead: head, privateHead, gitEvidence, sourcePreservationEvidence, sixStateComplete: false, checks: { exactPublicPrivateUnpushedBytes: true, ...(!["exportFailure", "exportReadFailure", "exportChanged"].includes(mode) ? { exactPublicPrivateExportBytes: true } : {}), preservedHistory: true, privateSelectionRespected: true, noDeleteBeforePreservation: true, ...(unsafePrivate ? { zeroRemoteDeleteOnPreflightRefusal: true } : {}), ...(mode === "keepPrivateRetry" ? { noRepeatedDeleteOnLocalRetry: true } : {}), ...(mode === "privateStepup" ? { noGrantTokenInDiskOrLogs: true, onlyPrivateTargetAuthorized: true } : {}), fakeCredentialsUnchanged: true, fakeGitConfigUnchanged: true }, nativeReadLock: mode === "exportReadFailure", nativeRecycleBin: false, privateHistoryLocation: unsafePrivate ? "original unsupported metadata, refused without migration" : selected ? ".git/modules/private in synthetic recycled parent" : "self-contained .git in the kept private folder", compiled: deletionBuild() }, null, 2));
+    } catch (error) {
+      await attachDeleteFailure(l.page);
+      throw error;
     } finally {
       if (unlock) await unlock();
       if (!closed) await quit(l);

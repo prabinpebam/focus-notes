@@ -177,6 +177,23 @@ The combined pre-native 134 units passed (80 Delete plus 54 startup cases), and 
 
 **Final local source checks:** `pnpm exec vitest run apps\desktop\test\project-delete.test.ts packages\core\test\project-delete-app.test.ts packages\core\test\project-open.test.ts apps\desktop\test\first-project-note.test.ts` passed **169/169** in 107.89 s. The core/desktop/ui-runtime filtered typecheck passed, and `pnpm check` passed with the unchanged 153-call notification inventory and 879/86/800 UI contract counts. Five changed pages passed headless single-H1/light-dark checks and both new D-402/causal anchors; pre-existing unregistered links are not all-links certification. Source checks include the final initial-marker regression; the actual run preceded that test-only extension and documentation updates, with production sources unchanged.
 
+## Delete gate slice B, 23 November
+
+Rebased the Delete candidate onto landed Find `7e224374a18269bc83df0b2f80b8e181222af065`. The only conflict was the decisions summary; both tracks were retained. D-402 containment and the D-403 authorization module/guard are unchanged. The previously published branch is preserved; the rebased candidate uses a fresh work branch rather than a force push.
+
+The two Delete journey helpers now attach `delete-failure-state` JSON on failure only, before cleanup: allow-listed step/state, visible status/alert templates and button enabled states. Dynamic arguments are redacted inside the renderer; unknown text is replaced, and no note path or authorization value is attached. Existing assertions, timeouts and click modes are unchanged.
+
+| Scoped check | Result |
+| --- | --- |
+| `pnpm check` | PASS, 880 UI documents / 86 components / 801 commands |
+| `pnpm --filter @focus-notes/core --filter @focus-notes/desktop --filter @focus-notes/ui-runtime run typecheck` | PASS |
+| Related five unit files: repository, project-delete, first-project-note, app and project-delete-app | PASS, 164 tests |
+| `pnpm --filter @focus-notes/desktop run build` | PASS; existing chunk-size warning |
+| `pnpm --filter @focus-notes/desktop exec playwright test project-offline.spec.ts --workers=1 -g 'actual (ghblocked\|current\|deviceAbort) authorization\|actual dark (narrow (current\|declined\|partial\|refused)\|short device)\|actual (allSelected\|exportChanged) preserves'` | PASS, 10/10; invisible E2E, renderer CPU throttled 4x; exact-PID cleanup found zero remaining |
+| Actual attachment helper exercised against headless synthetic DOM | PASS: enabled/disabled buttons, step, status templates, closed-page attachment; synthetic paths, token and note text absent from JSON |
+
+This is local integrated evidence, not CI acceptance or permission to land. The original 20 non-geometry CI failures remain unclassified until exact-head CI and, on failure, the new attachments supply evidence. No native Recycle Bin or real-account certification is claimed.
+
 ## Delete gate slice A, 23 November
 
 Exact-head [CI 45119468238](https://github.com/prabinpebam/focus-notes/actions/runs/45119468238) on `4bee002fb6e87028b93b924698f57f84d784a4fd` finished with five successful jobs and two failures: Unit tests in `test (windows-latest)`, and 25 new D-400 cases in journey shard 1. Changes, web and shards 2/3/4 passed. All 22 benchmark result lines passed; cold readiness was **607 ms**, versus **866 ms** in green main [45044534338](https://github.com/prabinpebam/focus-notes/actions/runs/45044534338), both below 3750 ms. This is not a budget-only failure and was not rerun, quarantined or landed.
