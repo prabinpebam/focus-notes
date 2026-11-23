@@ -39,6 +39,11 @@ export interface PublishOptions {
   siteUrl?: string;
   /** Fixed build ID, for tests. */
   build?: string;
+  /**
+   * Private notes the person confirmed public (G3), by path under `private/notes`, each also among `notes`.
+   * Only their own text and path may then appear in the public notes and pages (leakCheck).
+   */
+  published?: readonly string[];
   log?: (line: string) => void;
 }
 export interface PublishResult { build: string; publicNotes: number; publicPages: number; privateNotes: number; vault: boolean; shares: number }
@@ -251,7 +256,18 @@ export async function publish(o: PublishOptions): Promise<PublishResult> {
   const site: SiteManifest = { format: 1, build, notes: PUBLIC_INDEX, vault, ...(nameSalt ? { nameSalt } : {}) };
   await put(join(o.site, "focus-notes.json"), JSON.stringify(site));
 
-  const leaks = await leakCheck(o.site, privateTexts, secrets, names);
+  // A deliberate exclusion must name exactly a public note that is also a private one: never a blanket allowance.
+  const published = [...new Set(o.published ?? [])];
+  if (published.length && o.private && !(await exists(accessFile))) {
+    // No access file means nothing is sealed, but the private notes are still leak-checked against public ones.
+    const root = join(o.private, "notes");
+    privateTexts = await Promise.all((await markdownFiles(root)).map(async (path) => {
+      try { return { path, text: await readFile(join(root, path), "utf8") }; } catch { throw new Error("A private note couldn't be read."); }
+    }));
+  }
+  const publicPaths = new Set(index.notes.map((n) => n.path)), privatePaths = new Set(privateTexts.map((n) => n.path));
+  if (published.some((p) => !publicPaths.has(p) || !privatePaths.has(p))) throw new Error("A published note isn't among both the public and the private notes.");
+  const leaks = await leakCheck(o.site, privateTexts, secrets, names, published);
   if (leaks.length) throw new LeakError(leaks);
   const count = (n: number, what: string) => `${n} ${what}${n === 1 ? "" : "s"}`;
   log(`Published ${count(index.notes.length, "public note")}${o.reader ? ` (${count(publicPages, "page")})` : ""}${sealedNotes ? ` and sealed ${count(sealedNotes, "private note")}` : ""}${vault ? " in the vault" : ""}${shares ? ` for ${count(shares, "share audience")}` : ""}. Leak check passed.`);
@@ -358,13 +374,21 @@ function identifierValues(file: string, body: string): string[] {
  * Every text file in the site is searched for each private note's path, each long line of its text,
  * every grant secret in each of its forms, and (in NAME_SCOPE only, outside ciphertext) every audience
  * name of LEAK_MIN_NAME characters or more, as written, in NFC, and normalized as the lookup does it (SEC-06).
+ * `published` names notes the person confirmed public (G3): their own path and lines may appear in the
+ * public notes and pages, never in NAME_SCOPE, and they stay source identifiers everywhere. A line they
+ * share with any other private note is still a leak.
  */
 export async function leakCheck(
   site: string, notes: { path: string; text: string }[], secrets: readonly string[] = [], names: readonly string[] = [],
+  published: readonly string[] = [],
 ): Promise<{ file: string; kind: LeakKind }[]> {
   if (!notes.length && !secrets.length && !names.length) return [];
-  const paths = notes.map((n) => n.path).filter((p) => p.length >= LEAK_MIN_PATH);
-  const lines = [...new Set(notes.flatMap((n) => n.text.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length >= LEAK_MIN_LINE)))];
+  const open = new Set(published);
+  const pathsOf = (list: typeof notes) => list.map((n) => n.path).filter((p) => p.length >= LEAK_MIN_PATH);
+  const linesOf = (list: typeof notes) => [...new Set(list.flatMap((n) => n.text.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length >= LEAK_MIN_LINE)))];
+  const hidden = notes.filter((n) => !open.has(n.path)), shown = notes.filter((n) => open.has(n.path));
+  const paths = pathsOf(hidden), lines = linesOf(hidden);
+  const shownPaths = pathsOf(shown), shownLines = linesOf(shown);
   // Secrets of any length: a passcode is at least 12 characters, links and keys 43.
   const keys = [...new Set(secrets.flatMap(secretForms))];
   const audiences = [...new Set(names.map((n) => n.trim()).filter((n) => n.length >= LEAK_MIN_NAME)
@@ -387,6 +411,8 @@ export async function leakCheck(
       else if (NAME_SCOPE(file) && mentions(plainText(file, body), audiences)) found.push({ file, kind: "name" });
       else if (paths.some((x) => body.includes(x))) found.push({ file, kind: "path" });
       else if (lines.some((x) => body.includes(x))) found.push({ file, kind: "text" });
+      else if (NAME_SCOPE(file) && shownPaths.some((x) => body.includes(x))) found.push({ file, kind: "path" });
+      else if (NAME_SCOPE(file) && shownLines.some((x) => body.includes(x))) found.push({ file, kind: "text" });
     }
   };
   await walk(site);

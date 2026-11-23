@@ -223,20 +223,21 @@ it("G3.2: a leak found while sealing makes no public push or deployment", async 
 });
 
 const trip = "# Trip\n\nShort public text.\n";
+const longTrip = "# Trip to the coast\n\nWe walked along the harbour wall until the light went.\n";
 const publishedOf = async (privateDir: string) => JSON.parse(await readFile(join(privateDir, ".focus-notes", "published.json"), "utf8")) as { notes: string[] };
 
 it("G3.1 Publish: exactly the selected note becomes public with its page, recorded after the exact deploy; private bytes kept", async () => {
-  const { privateDir, secret, fake, runtime, steps } = await project(false, { reader: true, notes: { "t/trip.md": trip } });
-  const result = await runtime.publishNotes({ notes: ["t/trip.md"] });
-  expect(result).toMatchObject({ commit: fake.head, published: ["t/trip.md"], changed: ["t/trip.md"] });
+  const { privateDir, secret, fake, runtime, steps } = await project(false, { reader: true, notes: { "journeys/trip.md": longTrip } });
+  const result = await runtime.publishNotes({ notes: ["journeys/trip.md"] });
+  expect(result).toMatchObject({ commit: fake.head, published: ["journeys/trip.md"], changed: ["journeys/trip.md"] });
   const site = fake.files();
-  expect(site.get("site/notes/t/trip.md")).toBe(trip);
-  expect(site.has("site/n/t/trip/index.html")).toBe(true);
+  expect(site.get("site/notes/journeys/trip.md")).toBe(longTrip);
+  expect(site.has("site/n/journeys/trip/index.html")).toBe(true);
   expect([...site.keys()].some(p => p.includes("diary"))).toBe(false);
   expect([...site.values()].some(text => text.includes(secret))).toBe(false);
   expect(steps).toEqual(["saving"]);
-  expect(await publishedOf(privateDir)).toEqual({ version: 1, notes: ["t/trip.md"] });
-  expect(await readFile(join(privateDir, "notes", "t", "trip.md"), "utf8")).toBe(trip);
+  expect(await publishedOf(privateDir)).toEqual({ version: 1, notes: ["journeys/trip.md"] });
+  expect(await readFile(join(privateDir, "notes", "journeys", "trip.md"), "utf8")).toBe(longTrip);
   expect(runtime.publishing()).toBeUndefined();
 });
 
