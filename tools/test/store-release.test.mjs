@@ -419,7 +419,7 @@ describe("the Store listing comes from the product site", () => {
   it("names at most 10 screenshots, each with a caption inside the Store's limit (D-223)", () => {
     expect(screenshotProblems(store.screenshots)).toEqual([]);
     expect(store.screenshots.scenes).toContain("cascade");
-    expect(store.screenshots.scenes.filter((s) => s.startsWith("setup-")).length).toBeGreaterThan(0);
+    expect(store.screenshots.scenes).toContain("new-project-light");
     const bad = { scenes: [...Array(11).keys()].map((i) => `s${i}`), captions: { s0: "x".repeat(LIMITS.caption + 1), s1: "ok" } };
     expect(screenshotProblems(bad)).toHaveLength(1 + 1 + 9);
   });
