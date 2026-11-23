@@ -7,7 +7,7 @@ import * as s from "./SaveState.css.ts";
 export type SaveStateKind = (typeof SAVE_STATES)[number];
 
 const ICON: Record<SaveStateKind, IconName> = {
-  savedLocal: "check", pending: "cloud", syncing: "cloudUp", synced: "cloudCheck", offline: "cloudOff", error: "warning",
+  savedLocal: "hardDriveCheck", pending: "cloud", syncing: "cloudUp", synced: "cloudCheck", offline: "cloudOff", error: "warning",
 };
 
 export interface SaveStateProps {

@@ -18,26 +18,26 @@ const flagged = (c: Card) => ({
   hasActions: c.primary !== "" || c.secondary !== "" || c.notNow !== "",
 });
 
-// One card body, the same shape as the existing backup-details card (canvas backupDetails): mark and title,
-// then progress, the facts grouped tightly, and the actions.
+// One card on the shared IconLayout (D-408): the mark alone in the first column; title and line, progress and
+// the facts in the second; the actions at the trailing edge, primary last (D-374).
 const cardBody = (c: string) => ({
-  type: "Stack", props: { gap: "stackItem" },
+  type: "IconLayout",
+  slots: {
+    icon: [{ type: "StepMark", props: { icon: get(`${c}.icon`), size: "compact", tone: get(`${c}.tone`), busy: get(`${c}.busy`) } }],
+    heading: [
+      { type: "Heading", props: { value: get(`${c}.title`), level: "2" } },
+      { type: "Text", props: { value: get(`${c}.line`) } },
+    ],
+    actions: [
+      { type: "Button", when: get(`${c}.hasNotNow`), props: { label: get(`${c}.notNow`), variant: "subtle" } },
+      { type: "Button", when: get(`${c}.hasSecondary`), props: { label: get(`${c}.secondary`), variant: "secondary" } },
+      { type: "Button", when: get(`${c}.hasPrimary`), props: { label: get(`${c}.primary`), variant: "primary" } },
+    ],
+  },
   children: [
-    { type: "Inline", props: { gap: "inlineGroup", align: "start" }, children: [
-      { type: "StepMark", props: { icon: get(`${c}.icon`), size: "compact", tone: get(`${c}.tone`), busy: get(`${c}.busy`) } },
-      { type: "Stack", props: { gap: "stackPair", grow: true }, children: [
-        { type: "Heading", props: { value: get(`${c}.title`), level: "2" } },
-        { type: "Text", props: { value: get(`${c}.line`) } },
-      ] },
-    ] },
     { type: "ProgressBar", when: get(`${c}.hasProgress`), props: { value: get(`${c}.progress`), label: get(`${c}.progressLabel`) } },
     { type: "Stack", props: { gap: "stackPair" }, children: [
       { each: get(`${c}.facts`), as: "fact", key: "fact.id", empty, render: { type: "Text", props: { value: get("fact.text"), role: "caption", tone: "muted" } } },
-    ] },
-    { type: "Inline", when: get(`${c}.hasActions`), props: { gap: "inlineItem", wrap: true }, children: [
-      { type: "Button", when: get(`${c}.hasPrimary`), props: { label: get(`${c}.primary`), variant: "primary" } },
-      { type: "Button", when: get(`${c}.hasSecondary`), props: { label: get(`${c}.secondary`), variant: "secondary" } },
-      { type: "Button", when: get(`${c}.hasNotNow`), props: { label: get(`${c}.notNow`), variant: "subtle" } },
     ] },
   ],
 });

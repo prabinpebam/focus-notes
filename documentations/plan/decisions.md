@@ -1,8 +1,19 @@
 # Decisions
 
 > [!NOTE]
-> **TL;DR.** D-405 is a narrow 1.1.0 closure-sprint exception: four workers and one rolling batch gate. D-404 runs every coordinator, worker and subagent on Claude Opus 5.5, passed explicitly. D-398 settles the 1.1.0 Autopilot scope and publishing defaults, authorizing production wiring of the prepared candidates. D-399 exempts query-input search and command surfaces from a decorative visual anchor. Owner corrections D-393–D-395 still govern GitHub references, in-app deletion and Find. Earlier decisions remain historical where explicitly superseded.
+> **TL;DR.** D-408 puts every dialog, alert card and popover card on one two-column layout, IconLayout: icon first, content second, actions at the trailing edge with the primary last. D-405 is a narrow 1.1.0 closure-sprint exception: four workers and one rolling batch gate. D-404 runs every coordinator, worker and subagent on Claude Opus 5.5, passed explicitly. D-398 settles the 1.1.0 Autopilot scope and publishing defaults, authorizing production wiring of the prepared candidates. D-399 exempts query-input search and command surfaces from a decorative visual anchor. Owner corrections D-393–D-395 still govern GitHub references, in-app deletion and Find. Earlier decisions remain historical where explicitly superseded.
 
+## D-408: dialogs and cards, two columns, icon first, actions trailing
+
+**Decided (owner, 23 November 2026, 17:04 and 17:08; ID assigned by coordinator).** On the recovery alert cards: "This alignment and layout feels off. Reserve the first column for the icon and visual. Put all the rest of the content on the 2nd column and the CTA buttons should align right of the dialog." Then, on the alert's popover: "All dialogs should be updated to the 2 column layout I mentioned earlier including this one."
+
+- Every dialog, alert card and popover card with a leading icon or visual uses the shared layout [IconLayout](../design/system/components.md#layouts): column 1 holds only the icon or visual; column 2 holds the title and its line, then body, details, progress and fields. Nothing in column 2 wraps under the icon.
+- Actions sit at the trailing edge, below the content, secondary first and primary last (D-374). A dialog with no icon keeps one column and the same trailing actions.
+- Spacing by proximity, tokens only: title and line `stackPair`, content items `stackItem`, actions `stackGroup` below. The layout paints no border, fill or inset; the enclosing Surface, PopoverPanel or Dialog owns the one inset.
+- `pnpm check` fails a view whose dialog, alert card or popover card has a leading icon outside IconLayout, or whose actions sit anywhere but its trailing footer (`tools/check-icon-layout.mjs`). Views not yet migrated are listed there as known-pending, and migrations empty that list. The bottom notification pill (D-357) and the writing window's contents are exempt.
+- The same revision gives offline mode's corner (Saved on this computer) a hard drive with the Backed up glyph's check badge (owner, 17:06: "Offline mode should be a hard drive with a tick"), composed from Fluent's own HardDrive and CloudCheckmark paths.
+
+**Affects:** [Components](../design/system/components.md), [AGENTS.md rule 6](../../AGENTS.md#rules), every dialog and popover view in `packages/views`.
 ## D-405: 1.1.0 closure sprint, four workers and one rolling batch gate
 
 **Decided (owner, 23 November 2026, 14:43; ID assigned by coordinator).** A narrowly scoped exception for the 1.1.0 closure only, ending when 1.1.0 is packaged. It supersedes the two-builder cap and per-slice runtime gates for that work, nothing else:
