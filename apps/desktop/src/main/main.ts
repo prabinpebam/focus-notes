@@ -2089,6 +2089,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
       return existsSync(join(dir, "render.mjs")) ? dir : undefined;
     },
     publishStep: step => sendSharing("sharing:publishStep", step),
+    withdrawShares: () => access.withdrawAll(),
   });
   const pagesSite = async () => {
     if (!settingsAvailable()) return projectLayout().legacy

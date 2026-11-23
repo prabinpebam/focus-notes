@@ -6,6 +6,9 @@ import { launch, quit, tempDirs, type Launched } from "./helpers.ts";
 import { configure, git, write } from "./instance.ts";
 import { FakeGitHub } from "../../../packages/github/test/fake-github.ts";
 import { serveFakeGitHub } from "../test/fake-pages.ts";
+import { accessStore } from "../src/main/share/access.ts";
+import { SiteReader } from "../../../packages/seal/src/reader.ts";
+import { displayShareCode, type AccessFile } from "../../../packages/seal/src/grants.ts";
 
 async function close(instance: Launched | undefined, dirs: ReturnType<typeof tempDirs>) {
   try { if (instance) await quit(instance); }
@@ -130,8 +133,97 @@ test("G2.1-G2.3: confirmed setup creates one paired public site, Cancel and fail
   }
 });
 
-// Needs main.ts `withdrawShares: () => access.withdrawAll()` (central lease, G6R d4145f34) to pass; un-fixme at integration.
-// Body intentionally unwritten: a Share flow that can't run against this branch can't be validated here. At integration:
-// configure sharing as above, Share a note (item-sharing.spec.ts SHR-16 flow) and keep its link and access code, Turn off,
-// Turn on, Share a different note, then assert the first link and access code no longer open anything on the deployed fake site.
-test.fixme("G2.3: no earlier share opens after Turn off -> Turn on -> Share (UC-SHARE-12)", async () => {});
+test("G2.3: no earlier share opens after Turn off -> Turn on -> Share (UC-SHARE-12)", async () => {
+  test.setTimeout(150_000);
+  const dirs = tempDirs();
+  const root = dirs.docs, bare = join(dirs.userData, "book.git").replace(/\\/g, "/");
+  const trip = join(root, "notes", "trip.md");
+  write(join(root, ".focus-notes", "workspace.json"), '{"formatVersion":1}\n');
+  write(trip, "# Trip to the coast\n\nWe walked along the harbour wall until the light went.\n");
+  write(join(root, "notes", "letters", "old.md"), "# Old letter\n\nShared before sharing was turned off.\n");
+  write(join(root, ".focus-notes", "site-pairing.json"), JSON.stringify({ version: 1, project: "ada/book", owner: "ada", name: "quiet-site",
+    intent: "11111111-1111-1111-1111-111111111111", phase: "ready", site: "https://ada.github.io/quiet-site/" }));
+  // The earlier share: an active link-and-passcode share of the letters folder, made the way the app makes it.
+  const earlier = accessStore({
+    dir: () => root, site: async () => "https://ada.github.io/quiet-site/",
+    write: async (file, text) => writeFileSync(file, text), written: () => {},
+    writeNoteId: async (file, text) => writeFileSync(file, text),
+  });
+  await earlier.apply({ op: "createItem", item: { path: "letters", label: "letters", folder: true, includeLater: false }, notes: ["letters/old.md"], link: true, passcode: { generate: true }, expiresAt: null });
+  const grants = () => (JSON.parse(readFileSync(join(root, "access.json"), "utf8")) as AccessFile).grants;
+  const first = grants().find(g => !g.owner)!;
+  expect(first.revokedAt).toBeUndefined();
+  git(root, "init", "-q", "-b", "main");
+  configure(root);
+  git(dirs.userData, "init", "-q", "--bare", "-b", "main", bare);
+  git(root, "remote", "add", "origin", "https://github.com/ada/book.git");
+  git(root, "config", `url.${bare}.insteadOf`, "https://github.com/ada/book.git");
+  git(root, "add", "-A");
+  git(root, "commit", "-qm", "Start");
+  git(root, "push", "-q", "-u", "origin", "main");
+  writeFileSync(join(dirs.userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done", projectIntroSeen: true, lastNotePath: trip }));
+  const github = new FakeGitHub("focus-notes-local-candidate");
+  github.add({ owner: "ada", name: "book", private: true, files: ["notes/trip.md"] });
+  github.add({ owner: "ada", name: "quiet-site", files: [".github/workflows/pages.yml"] });
+  const fake = await serveFakeGitHub(github);
+  const reader = () => { const site = fake.git.site("ada/quiet-site"); return new SiteReader(async path => site.get(path)); };
+  const opens = async () => {
+    const r = reader();
+    const results = await Promise.allSettled([
+      r.openLinkSession(first.id, first.link!.secret),
+      r.openAccessCode(`${displayShareCode(first.shareCode!)} ${first.passcode!.value}`),
+    ]);
+    return results.map(result => result.status);
+  };
+  let instance: Launched | undefined;
+  try {
+    instance = await launch(dirs, { FOCUS_NOTES_CANDIDATE_GITHUB_API: fake.origin, FOCUS_NOTES_CANDIDATE_SITE: "" });
+    const { page } = instance;
+    const note = page.getByRole("textbox", { name: "Note", exact: true });
+    const publish = async () => {
+      await expect(note).toContainText("harbour wall");
+      await page.keyboard.press(process.platform === "darwin" ? "Meta+." : "Control+.");
+      await page.getByRole("toolbar", { name: "Toolbar", exact: true }).getByRole("button", { name: "More", exact: true }).click();
+      await page.getByRole("menuitem", { name: "Publish…", exact: true }).click();
+      const dialog = page.getByRole("dialog", { name: /Publish/ });
+      const before = fake.git.pushes.length;
+      await dialog.getByRole("button", { name: "Publish", exact: true }).click();
+      await expect.poll(() => fake.git.pushes.length, { timeout: 30_000 }).toBeGreaterThan(before);
+      const done = page.getByRole("status").filter({ hasText: "Published “Trip to the coast”" });
+      await expect(done).toHaveCount(1, { timeout: 30_000 });
+      await page.keyboard.press("Escape");
+      await expect(dialog).toHaveCount(0);
+    };
+
+    // Before Turn off, the earlier share is live on the deployed site: the check below can see it.
+    await publish();
+    expect(await opens()).toEqual(["fulfilled", "fulfilled"]);
+
+    await page.keyboard.press("Control+,");
+    const settings = page.getByRole("dialog", { name: "Settings", exact: true });
+    await settings.getByRole("tab", { name: "Sharing", exact: true }).click();
+    await settings.getByRole("button", { name: "Turn off sharing…", exact: true }).click();
+    const off = page.getByRole("dialog", { name: /^Turn off sharing for/ });
+    await off.getByRole("button", { name: "Turn off sharing", exact: true }).click();
+    await expect(page.getByText("Sharing is off. The site is empty, and its history stays on GitHub.")).toBeVisible({ timeout: 30_000 });
+    expect(grants().find(g => g.id === first.id)!.revokedAt).toEqual(expect.any(String));
+    expect(await opens()).toEqual(["rejected", "rejected"]);
+
+    await settings.getByRole("button", { name: "Turn on sharing…", exact: true }).click();
+    const confirmation = page.getByRole("dialog", { name: "Sharing", exact: true });
+    await confirmation.getByRole("button", { name: "Turn on sharing", exact: true }).click();
+    await expect(confirmation).toHaveCount(0);
+    await expect(settings.getByRole("button", { name: "Turn off sharing…", exact: true })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(settings).toHaveCount(0);
+
+    // The next publication after Turn on seals access again: the earlier link and access code stay dead.
+    await publish();
+    expect(fake.git.site("ada/quiet-site").has("notes/trip.md")).toBe(true);
+    expect(await opens()).toEqual(["rejected", "rejected"]);
+    expect(readFileSync(join(root, "notes", "letters", "old.md"), "utf8")).toContain("Shared before sharing was turned off.");
+  } finally {
+    await close(instance, dirs);
+    await fake.close();
+  }
+});
