@@ -126,6 +126,9 @@ test("D-223: the note, Projects, a new project, Find in all notes, a picture, an
     await l.app.evaluate(({ ipcMain }, account) => {
       ipcMain.removeHandler("firstRun:account");
       ipcMain.handle("firstRun:account", () => ({ account, gcm: false, gh: false }));
+      // The repository name is free on the fake account, so the name check settles and Next is ready.
+      ipcMain.removeHandler("projects:repoTaken");
+      ipcMain.handle("projects:repoTaken", () => false);
     }, ACCOUNT);
     await open.getByRole("button", { name: "New project…", exact: true }).click();
     const wizard = page.getByRole("dialog", { name: "New project", exact: true });
@@ -134,6 +137,7 @@ test("D-223: the note, Projects, a new project, Find in all notes, a picture, an
     await expect(wizard).toContainText("Where to keep it");
     await wizard.getByRole("radio", { name: "On GitHub", exact: true }).click();
     await expect(wizard.getByRole("textbox", { name: "Repository name", exact: true })).toHaveValue("field-notes");
+    await expect(wizard.getByRole("button", { name: "Next", exact: true })).toBeEnabled({ timeout: 15_000 });
     await rest(l);
     await capture(l, "new-project-light");
     await reset(page);
