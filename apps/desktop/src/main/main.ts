@@ -74,7 +74,7 @@ import { forgetLocalData, removalCheck, removeWorkspace } from "./workspace/remo
 import { PrivacyCleanupError, withoutPrivacyTraces, withoutRemovedReferences } from "./privacy-cleanup.ts";
 import { atOrUnder } from "@focus-notes/core/journal";
 import { deletionCheck, deletionFolderIdentity, deletionGate, isRepoSlug, recycleProject, recycleRefusal, repoStatus, RemoteProjectDeletion, sameDeletionFolder } from "./workspace/delete.ts";
-import { DeletionAuthorizationError, withDeletionAuthorization } from "./workspace/delete-authorization.ts";
+import { deletionAuthorizationMethod, DeletionAuthorizationError, withDeletionAuthorization } from "./workspace/delete-authorization.ts";
 import { backupToRecord, checkFolder, configUrl, driveOf, envSyncRoots, folderNameOk, movedDocuments, nextFree, parseRecord, realInside, recordFor, recoveredNote, samePath, serializeRecord, shortPath, startDecision, syncService, type FolderCheck, type FolderFacts, type WorkspaceRecord } from "./workspace/record.ts";
 import type { RecoverAccount, RecoverPlace, RecoverProgress, RecoverResult, RecoverStatus } from "@focus-notes/core/recover";
 import { GitHubError } from "@focus-notes/github";
@@ -2575,7 +2575,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     const expected = remoteDeletion.account(repo);
     return remoteDeletion.confirmExternal(await projectGitHub(), repo, async () => await preservedDeletion(await deletion()) && generation === deleteGeneration && deleteIntent(c.folder, expected.id, expected.login));
   });
-  handle("workspace:deletionAuthorizationMethod", () => process.env.FOCUS_NOTES_GITHUB_OAUTH_CLIENT_ID ? "device" : "token");
+  handle("workspace:deletionAuthorizationMethod", deletionAuthorizationMethod);
   handle("workspace:authorizeDelete", async (repo: unknown, input: unknown, opts: unknown) => {
     if (!isRepoSlug(repo) || input !== undefined && typeof input !== "string" || !opts || typeof opts !== "object" || !("keepPrivate" in opts) || typeof opts.keepPrivate !== "boolean") throw new Error("Invalid deletion authorization");
     const c = await deletion();
@@ -2590,7 +2590,6 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     try {
       return await withDeletionAuthorization({
         ...(typeof input === "string" ? { token: input } : {}),
-        clientId: process.env.FOCUS_NOTES_GITHUB_OAUTH_CLIENT_ID,
         apiFetch, signal: controller.signal, expected, current,
         oauthFetch: (url, options) => {
           if (!["https://github.com/login/device/code", "https://github.com/login/oauth/access_token"].includes(url)) throw new Error("Invalid authorization destination");
@@ -2599,7 +2598,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
         },
         code: (code) => {
           win()?.webContents.send("workspace:deleteCode", code);
-          if (code && process.env.FOCUS_NOTES_GITHUB_OAUTH_CLIENT_ID) {
+          if (code && deletionAuthorizationMethod() === "device") {
             void openDeletionAuthorization().catch(() => { console.error("Could not open deletion authorization."); controller.abort(); });
           }
         },

@@ -15,6 +15,23 @@ const workflows = () => readdirSync(join(root, ".github", "workflows")).filter((
 const ci = () => yaml.load(read(".github/workflows/ci.yml"));
 const ciRuns = () => Object.values(ci().jobs).flatMap((j) => j.steps ?? []).map((s) => s.run ?? "").join("\n");
 const node = (...args) => execFileSync(process.execPath, args, { cwd: root, encoding: "utf8" });
+const deviceAuthorization = join(root, "apps/desktop/src/main/workspace/delete-authorization.ts");
+const configuredClient = /\bconst clientId = process\.env\.FOCUS_NOTES_GITHUB_OAUTH_CLIENT_ID;/;
+function checkShippedClient(text, file) {
+  expect(text, file).not.toMatch(/\bIv1\.[0-9a-f]{16}\b/);
+  expect(text, file).not.toMatch(/\bOv23li[0-9A-Za-z]{14}\b/);
+}
+function checkUnhostedSource(file, text) {
+  expect(text, file).not.toMatch(/\b(telemetry|sentry|posthog|analytics|applicationinsights)\b/i);
+  checkShippedClient(text, file);
+  if (file !== deviceAuthorization) {
+    expect(text, file).not.toMatch(/\b(client_id|clientId)\b/i);
+  } else {
+    expect(text, file).toMatch(configuredClient);
+    expect(text.replace(configuredClient, ""), file).not.toMatch(/\bclientId\s*[:=]/);
+    expect(text, file).not.toMatch(/\bclient_id:\s*(?!clientId\b)\S/);
+  }
+}
 
 describe("the product repository", () => {
   it("PKG-01: holds the app's source, docs, and the instance template", () => {
@@ -25,7 +42,7 @@ describe("the product repository", () => {
     expect(read(".github/workflows/ci.yml")).not.toMatch(/secrets\./);
   });
 
-  it("PKG-06: nothing hosted or registered: no OAuth client ID, telemetry, or analytics in the source or dependencies", () => {
+  it("PKG-06: nothing hosted or registered: no shipped OAuth client ID, telemetry, or analytics in the source or dependencies", () => {
     const sources = (dir) => readdirSync(join(root, dir), { recursive: true, withFileTypes: true })
       .filter((e) => e.isFile() && /\.(m?[jt]sx?|json)$/.test(e.name) && !join(e.parentPath, e.name).includes("node_modules"))
       .map((e) => join(e.parentPath, e.name));
@@ -34,7 +51,20 @@ describe("the product repository", () => {
       .flatMap(sources);
     files.push(join(root, "package.json"), ...["apps/desktop", "apps/web"].map((a) => join(root, a, "package.json")));
     expect(files.length).toBeGreaterThan(50);
-    for (const f of files) expect(readFileSync(f, "utf8"), f).not.toMatch(/\b(client_id|clientId|telemetry|sentry|posthog|analytics|applicationinsights)\b/i);
+    for (const f of files) checkUnhostedSource(f, readFileSync(f, "utf8"));
+    const tracked = execFileSync("git", ["ls-files", "-z", "--", "*.ts", "*.tsx", "*.js", "*.mjs", "*.cjs", "*.json", "*.md", "*.html", "*.yaml", "*.yml", ":!:notes/**", ":!:private/**"], { cwd: root, encoding: "utf8" });
+    for (const file of tracked.split("\0").filter(Boolean)) checkShippedClient(read(file), file);
+  });
+
+  it("PKG-06, D-403: rejects shipped IDs, device defaults and OAuth fields outside the device module", () => {
+    const source = readFileSync(deviceAuthorization, "utf8");
+    const outside = join(root, "apps/desktop/src/main/main.ts");
+    for (const literal of ["Iv1." + "0123456789abcdef", "Ov23li" + "0123456789abcd"]) {
+      expect(() => checkUnhostedSource(deviceAuthorization, source.replace(configuredClient, `const clientId = "${literal}";`))).toThrow();
+      expect(() => checkUnhostedSource(outside, `const application = "${literal}";`)).toThrow();
+    }
+    expect(() => checkUnhostedSource(outside, "const body = { client_id: configured };")).toThrow();
+    expect(() => checkUnhostedSource(deviceAuthorization, source.replace(configuredClient, 'const clientId = process.env.FOCUS_NOTES_GITHUB_OAUTH_CLIENT_ID || "default";'))).toThrow();
   });
 
   it("LIC-01: is MIT licensed", () => {

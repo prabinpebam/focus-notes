@@ -257,7 +257,7 @@ Seed: *"managed as a github repo… hosted in github pages… web or an electron
 | PKG-03 | An Electron desktop app wraps the same web build, with native file-system and Git access. It's the only client that writes to GitHub (D-80, D-90). | P0 |
 | PKG-04 | The product repository builds and tests without any user workspace, credentials, or secrets. | P0 |
 | PKG-05 | Historical web-app delivery, retired by D-292. SHR-20 / WEB-01 replace it with a read-only website and safe removal of the old runtime. | P0 |
-| PKG-06 | Nothing hosted or registered by the project: no OAuth app, client ID, server, or telemetry. Each user's instance needs only their own GitHub account plus the public release files on GitHub (D-21, D-87). | P0 |
+| PKG-06 | Nothing hosted or registered by the project: no OAuth app, shipped client ID, server, or telemetry. Each user's instance needs only their own GitHub account plus the public release files on GitHub (D-21, D-87). The OAuth wire field is allowed only in the device-authorization module, using solely the person's configured client ID ([D-403](../plan/decisions.md#d-403-pkg-06-permits-only-person-configured-device-authorization), D-400). | P0 |
 | PKG-07 | Historical browser-local writing/IndexedDB product, retired completely by D-292; no new stores or persistence requests. WEB-01 preserves old drafts before runtime removal. | P0 |
 | PKG-08 | Historical public/vault read-only plus Copy to my notes model, retired by D-292. Public pages and authorized read-only shares remain under SHR-20; no editable copy. | P0 |
 | PKG-09 | Historical browser visitor/editor view, retired by D-292. Visitors see a website, not an instance setup or browser writing surface. | P0 |

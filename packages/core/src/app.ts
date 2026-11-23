@@ -1889,7 +1889,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         let restoreFailed = false;
         const currentProjectNote = (path: string | undefined) => {
           const folder = store.state.workspace.folder;
-          if (!path || !folder) return path;
+          if (!path || !folder || !bridge.projects || bridge.projects.local) return path;
           const normalize = (value: string) => {
             const normalized = value.replace(/\\/g, "/").replace(/\/+$/, "");
             return bridge.platform === "windows" ? normalized.toLowerCase() : normalized;
