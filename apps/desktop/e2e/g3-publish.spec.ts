@@ -1,6 +1,6 @@
 import { test, expect } from "./fixtures.ts";
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { DATA_FILES } from "../../../packages/core/src/inventory.ts";
 import { FakeGitHub } from "../../../packages/github/test/fake-github.ts";
@@ -8,7 +8,11 @@ import { serveFakeGitHub } from "../test/fake-pages.ts";
 import { launch, quit, tempDirs, type Launched } from "./helpers.ts";
 import { configure, git, write } from "./instance.ts";
 
-const TRIP = "# Trip to the coast\n\nWe walked along the harbour wall until the light went.\n";
+const TRIP = "# Trip to the coast\n\nWe walked along the harbour wall until the light went.\n\n![Harbour](../assets/images/harbour.jpg)\n";
+const seg = (marker: number, payload: Buffer) => { const h = Buffer.from([0xff, marker, 0, 0]); h.writeUInt16BE(payload.length + 2, 2); return Buffer.concat([h, payload]); };
+/** A photo carrying camera and GPS EXIF, which must never reach the public site. */
+const PHOTO = Buffer.concat([Buffer.from([0xff, 0xd8]), seg(0xe1, Buffer.from("Exif\0\0MM\0*\0\0\0\x08Canon GPS 38.7N 9.1W", "latin1")),
+  seg(0xdb, Buffer.alloc(65, 1)), seg(0xda, Buffer.from([1, 1, 0, 0, 0x3f, 0])), Buffer.from([0x12, 0xff, 0x00, 0x34, 0xff, 0xd9])]);
 const SECRET = "This private line must never reach the public site.";
 
 /** A modern private project paired with a ready public site, its GitHub and Pages on loopback only. */
@@ -18,6 +22,8 @@ async function pairedProject() {
   write(join(root, ".focus-notes", "workspace.json"), '{"formatVersion":1}\n');
   write(join(root, "notes", "journeys", "trip.md"), TRIP);
   write(join(root, "notes", "diary.md"), `# Diary\n\n${SECRET}\n`);
+  mkdirSync(join(root, "notes", "assets", "images"), { recursive: true });
+  writeFileSync(join(root, "notes", "assets", "images", "harbour.jpg"), PHOTO);
   write(join(root, "access.json"), `${JSON.stringify({ version: 1, grants: [] }, null, 2)}\n`);
   write(join(root, ".focus-notes", "site-pairing.json"), JSON.stringify({ version: 1, project: "ada/book", owner: "ada", name: "quiet-site",
     intent: "11111111-1111-1111-1111-111111111111", phase: "ready", site: "https://ada.github.io/quiet-site/" }));
@@ -33,11 +39,7 @@ async function pairedProject() {
   const github = new FakeGitHub("focus-notes-local-candidate");
   github.add({ owner: "ada", name: "quiet-site", files: [".github/workflows/pages.yml"] });
   const fake = await serveFakeGitHub(github);
-  // A text-only page renderer: the real one ships binary fonts, which the GitHub client cannot upload yet.
-  const reader = join(dirs.userData, "reader");
-  write(join(reader, "assets", "pages.css"), "body{margin:0}\n");
-  write(join(reader, "render.mjs"), "export function renderNotePage({ path }) { const stem = path.replace(/\\.md$/, \"\"); return { file: `n/${stem}/index.html`, html: `<p>${stem}</p>`, title: stem }; }\n");
-  return { dirs, root, github, fake, env: { FOCUS_NOTES_CANDIDATE_GITHUB_API: fake.origin, FOCUS_NOTES_CANDIDATE_SITE: "", FOCUS_NOTES_READER: reader } };
+  return { dirs, root, github, fake, env: { FOCUS_NOTES_CANDIDATE_GITHUB_API: fake.origin, FOCUS_NOTES_CANDIDATE_SITE: "" } };
 }
 
 async function closeApp(l: Launched | undefined) {
@@ -82,6 +84,11 @@ test("G3.1/G3.5: Publish saves exactly the note to the paired site, keeps runnin
     expect(site.get("notes/journeys/trip.md")).toBe(TRIP);
     expect(site.has("n/journeys/trip/index.html")).toBe(true);
     expect([...site.keys()].some(path => path.includes("diary"))).toBe(false);
+    const photo = fake.git.siteBytes("ada/quiet-site").get("notes/assets/images/harbour.jpg")!;
+    for (const leak of ["Canon", "GPS", "38.7N", "Exif"]) expect(photo.toString("latin1")).not.toContain(leak);
+    expect(photo.subarray(-6)).toEqual(PHOTO.subarray(-6));
+    expect(readFileSync(join(root, "notes", "assets", "images", "harbour.jpg"))).toEqual(PHOTO);
+    expect([...site.keys()].some(path => path.startsWith("assets/") && path.endsWith(".woff2"))).toBe(true);
     expect([...site.values()].some(text => text.includes(SECRET))).toBe(false);
     expect(JSON.parse(readFileSync(join(root, ".focus-notes", "published.json"), "utf8"))).toEqual({ version: 1, notes: ["journeys/trip.md"] });
     expect(readFileSync(join(root, "notes", "journeys", "trip.md"))).toEqual(before);
