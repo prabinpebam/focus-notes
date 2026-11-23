@@ -1551,20 +1551,7 @@
                   },
                   "props": {
                    "value": {
-                    "t": "share.info.code",
-                    "args": {
-                     "both": {
-                      "expr": {
-                       "if": [
-                        {
-                         "get": "local.link"
-                        },
-                        "yes",
-                        "no"
-                       ]
-                      }
-                     }
-                    }
+                    "t": "share.info.code"
                    },
                    "role": "secondary"
                   }
@@ -1577,28 +1564,20 @@
                    },
                    "role": "secondary"
                   }
-                 },
-                 {
-                  "type": "Text",
-                  "props": {
-                   "value": {
-                    "t": "share.info.forward"
-                   },
-                   "role": "secondary"
-                  }
-                 },
-                 {
-                  "type": "Text",
-                  "props": {
-                   "value": {
-                    "t": "share.info.copies"
-                   },
-                   "role": "secondary"
-                  }
                  }
                 ]
                }
               ]
+             },
+             {
+              "type": "Text",
+              "props": {
+               "value": {
+                "t": "share.info.note"
+               },
+               "role": "caption",
+               "tone": "muted"
+              }
              }
             ]
            }

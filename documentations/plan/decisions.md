@@ -1,7 +1,18 @@
 # Decisions
 
 > [!NOTE]
-> **TL;DR.** D-408 puts every dialog, alert card and popover card on one two-column layout, IconLayout: icon first, content second, actions at the trailing edge with the primary last. D-405 is a narrow 1.1.0 closure-sprint exception: four workers and one rolling batch gate. D-404 runs every coordinator, worker and subagent on Claude Opus 5.5, passed explicitly. D-398 settles the 1.1.0 Autopilot scope and publishing defaults, authorizing production wiring of the prepared candidates. D-399 exempts query-input search and command surfaces from a decorative visual anchor. Owner corrections D-393–D-395 still govern GitHub references, in-app deletion and Find. Earlier decisions remain historical where explicitly superseded.
+> **TL;DR.** D-409 makes Share information a message to the recipient in the sharer's voice; the sharer's warnings move beside it. D-408 puts every dialog, alert card and popover card on one two-column layout, IconLayout: icon first, content second, actions at the trailing edge with the primary last. D-405 is a narrow 1.1.0 closure-sprint exception: four workers and one rolling batch gate. D-404 runs every coordinator, worker and subagent on Claude Opus 5.5, passed explicitly. D-398 settles the 1.1.0 Autopilot scope and publishing defaults, authorizing production wiring of the prepared candidates. D-399 exempts query-input search and command surfaces from a decorative visual anchor. Owner corrections D-393–D-395 still govern GitHub references, in-app deletion and Find. Earlier decisions remain historical where explicitly superseded.
+
+## D-409: Share information is written to the recipient
+
+**Decided (owner, 23 November 2026, 18:14; ID assigned by coordinator).** "Share info is for me as a user to copy and paste and share it with someone. Right now you have written it as an instruction and information for me, the user who is sharing. So wrong framing here. If it's like this I'll have to remove the extra part."
+
+- The default Share information is a message to the person who receives it, in the sharer's voice, ready to paste with no editing: *I’ve shared “{title}” with you to read.* / *Open it here: {link}* / *To use the access code, open {site} and enter: {accessCode}* / *You can read it until {expires}.*
+- Lines for a method the share doesn't have are still left out; each line stands on its own, so the access code line reads right for link-and-code and code-only shares, replacing the old *Or open…* line that was wrong when the link line was dropped.
+- The sharer's warnings leave the copied text: *Whoever gets this can pass it on. Copies they download stay after the share expires or you withdraw it.* is one muted caption under the Share dialog's Share information block. Withdraw and Extend keep their own words; nothing is said twice. The template editor's hint says the message is written to the person you share with.
+- Applies to the default in `share.item.information.*`, the Share dialog, Settings → Sharing → Share information (default, Reset to default and preview) and Help. Saved custom templates are the owner's and are not rewritten.
+
+**Affects:** [Sharing](../design/views/sharing.md#share-information-template), [Foundations → Copy rules](../design/foundations.md#copy-rules), [Private notes and sharing](../help/private-and-sharing.md).
 
 ## D-408: dialogs and cards, two columns, icon first, actions trailing
 

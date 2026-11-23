@@ -180,14 +180,16 @@ Rows are ItemCards with a state badge and its text, never colour or a one-sided 
 
 ### Share information template
 
+The message is for the person who receives it, in the sharer's voice, ready to paste with no editing (D-409):
+
 ```text
-“{title}” is shared read-only.
-Open: {link}
-Or open {site} and enter this access code: {accessCode}
-Works until {expires}.
-Anyone with the link or access code can read it and forward it.
-Expiry or withdrawal cannot remove copies already downloaded.
+I’ve shared “{title}” with you to read.
+Open it here: {link}
+To use the access code, open {site} and enter: {accessCode}
+You can read it until {expires}.
 ```
+
+Each line stands on its own, so omitting one never leaves the next reading wrong: the access code line serves a link-and-code share and a code-only share alike, and a share that never expires has no "until" line. The message never instructs or warns the sharer. What the sharer needs to know (whoever gets it can pass it on; copies already downloaded stay after expiry or withdrawal) is one muted caption under the Share dialog's read-only **Share information** block, *Whoever gets this can pass it on. Copies they download stay after the share expires or you withdraw it.*, and nowhere in the copied text. Withdraw and Extend already say the rest at the moment they apply.
 
 The title line is deliberate: the link itself names nothing, but the message is the sender's own and helps the recipient; it can be removed from the template. A read-only preview of the message sits under Copy share information.
 

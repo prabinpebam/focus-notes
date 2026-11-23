@@ -17,7 +17,7 @@ Keep notes private, make them public, and share one with a passcode.
 
 Turn on **Link**, **Passcode**, or both. Passcode offers generated words or your own strong passcode. An access code combines a random identifier and the passcode; readers enter that single code without providing a person's name.
 
-On Windows, choose **Copy share information**, **Copy link**, or **Copy access code**. The first action saves the share and waits for the website. Nothing is copied before the encrypted share is ready. The read-only **Share information** block then shows the actual message. On macOS, the primary **Share…** action opens the system share sheet instead.
+On Windows, choose **Copy share information**, **Copy link**, or **Copy access code**. The first action saves the share and waits for the website. Nothing is copied before the encrypted share is ready. The read-only **Share information** block then shows the actual message, written to the person you send it to and ready to paste. The note under it is for you: whoever gets the message can pass it on, and copies they download stay after the share expires or you withdraw it. On macOS, the primary **Share…** action opens the system share sheet instead.
 
 Retrying a failed publication in the same dialog reuses the saved share. Opening **Share…** again starts an independent share; it does not replace the earlier link. With **Include notes added later** off, a folder share includes only the reviewed note identities, not another note later created at the same path.
 
