@@ -348,6 +348,7 @@ async function actualDeletion(mode: "refused" | "partial" | "oauth" | "declined"
     if (narrowDark) {
       await l.app.evaluate(({ BrowserWindow }, height) => {
         const window = BrowserWindow.getAllWindows().find(w => w.webContents.getURL().includes("index.html"));
+        if (window && process.env.FOCUS_NOTES_E2E === "1") window.setOpacity(0);
         if (!window || window.getOpacity() !== 0) throw new Error("Narrow Delete geometry requires the owned invisible app");
         window.setMinimumSize(352, 480);
         window.setContentSize(352, height);

@@ -6,7 +6,6 @@ export class DeletionAuthorizationError extends Error {
 }
 
 interface Options {
-  clientId?: string;
   token?: string;
   apiFetch: Fetch;
   oauthFetch: Fetch;
@@ -15,6 +14,8 @@ interface Options {
   expected: { id: number; login: string };
   current: () => boolean;
 }
+
+export const deletionAuthorizationMethod = () => process.env.FOCUS_NOTES_GITHUB_OAUTH_CLIENT_ID ? "device" : "token";
 
 async function pause(ms: number, signal: AbortSignal): Promise<void> {
   signal.throwIfAborted();
@@ -28,6 +29,7 @@ async function pause(ms: number, signal: AbortSignal): Promise<void> {
 /** The granting API and token remain local to one operation. */
 export async function withDeletionAuthorization<T>(options: Options, use: (api: GitHubApi) => Promise<T>): Promise<T> {
   const o = options;
+  const clientId = process.env.FOCUS_NOTES_GITHUB_OAUTH_CLIENT_ID;
   let token = o.token ?? "";
   const check = () => {
     if (o.signal.aborted || !o.current()) throw new DeletionAuthorizationError("declined");
@@ -36,8 +38,8 @@ export async function withDeletionAuthorization<T>(options: Options, use: (api: 
     check();
     if (token) {
       if (!/^github_pat_[A-Za-z0-9_]{10,244}$/.test(token)) throw new DeletionAuthorizationError("failed");
-    } else if (o.clientId) {
-      if (!/^[A-Za-z0-9._-]+$/.test(o.clientId)) throw new DeletionAuthorizationError("failed");
+    } else if (clientId) {
+      if (!/^[A-Za-z0-9._-]+$/.test(clientId)) throw new DeletionAuthorizationError("failed");
       const post = async <R,>(path: string, body: Record<string, string>): Promise<R> => {
         const response = await o.oauthFetch(`https://github.com${path}`, {
           method: "POST", redirect: "error", signal: o.signal,
@@ -47,7 +49,7 @@ export async function withDeletionAuthorization<T>(options: Options, use: (api: 
         if (!response.ok) throw new DeletionAuthorizationError("failed");
         return response.json() as Promise<R>;
       };
-      const device = await post<{ device_code: string; user_code: string; verification_uri: string; expires_in: number; interval: number }>("/login/device/code", { client_id: o.clientId, scope: "delete_repo" });
+      const device = await post<{ device_code: string; user_code: string; verification_uri: string; expires_in: number; interval: number }>("/login/device/code", { client_id: clientId, scope: "delete_repo" });
       if (typeof device.device_code !== "string" || !device.device_code || device.verification_uri !== "https://github.com/login/device" || typeof device.user_code !== "string" || !/^[A-Z0-9-]{4,20}$/.test(device.user_code) || !Number.isFinite(device.expires_in) || device.expires_in <= 0 || !Number.isFinite(device.interval) || device.interval <= 0) throw new DeletionAuthorizationError("failed");
       o.code(device.user_code);
       const expires = Date.now() + Math.min(device.expires_in, 900) * 1000;
@@ -56,7 +58,7 @@ export async function withDeletionAuthorization<T>(options: Options, use: (api: 
         check();
         if (Date.now() + interval >= expires) throw new DeletionAuthorizationError("expired");
         await pause(interval, o.signal);
-        const grant = await post<{ access_token?: string; error?: string; scope?: string }>("/login/oauth/access_token", { client_id: o.clientId, device_code: device.device_code, grant_type: "urn:ietf:params:oauth:grant-type:device_code" });
+        const grant = await post<{ access_token?: string; error?: string; scope?: string }>("/login/oauth/access_token", { client_id: clientId, device_code: device.device_code, grant_type: "urn:ietf:params:oauth:grant-type:device_code" });
         if (grant.error === "authorization_pending") continue;
         if (grant.error === "slow_down") { interval += 5000; continue; }
         if (grant.error === "access_denied") throw new DeletionAuthorizationError("declined");
