@@ -25,8 +25,9 @@ export const CATALOGS = {
   // Every surface under the visual quality checklist (D-111), light and dark, default and smallest windows.
   // `onlyEnv` narrows it to some surfaces by name ("system menu,more menu").
   "vq-surfaces": { spec: "e2e/vq-surfaces.spec.ts", env: {}, onlyEnv: "VQ_ONLY", from: join("test-results", "screens"), match: /^vq-.*\.png$/ },
-  // The Microsoft Store's screenshots (D-223): a 1120 × 720 window drawn at twice the scale, the setup
-  // with GitHub, and the cascade's four themes and fonts; exact sizes on CI only.
+  // The Microsoft Store's screenshots (D-223): a 1120 × 720 window drawn at twice the scale: writing,
+  // focus mode, Projects, a new project, Find in all notes, a picture, sharing, publishing, Files, and
+  // the cascade's four themes and fonts; exact sizes on CI only.
   // tools/release/store-screenshots.py makes store/screenshots/ from them.
   store: {
     spec: "e2e/store-catalog.spec.ts",

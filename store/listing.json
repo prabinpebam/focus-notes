@@ -34,18 +34,18 @@
   "releaseNotesTemplate": "What's new in Focus Notes {version}:\n{highlights}\n\nEvery change: https://github.com/prabinpebam/focus-notes/releases/tag/v{version}",
   "screenshots": {
     "required": "PNG, 1366 × 768 to 3840 × 2160 pixels, landscape, up to 10, each under 50 MB. At least one.",
-    "scenes": ["note-light", "cascade", "spotlight-light", "files-light", "themes-light", "setup-welcome", "setup-connect", "setup-create", "setup-creating", "setup-backup"],
+    "scenes": ["note-light", "cascade", "focus-dark", "open-projects-light", "new-project-light", "find-all-light", "images-light", "share-dark", "publish-light", "files-light"],
     "captions": {
       "note-light": "A quiet page for one note at a time, in plain Markdown.",
       "cascade": "Make it yours: ten themes, light and dark, and six fonts, including ones made for easier reading.",
-      "spotlight-light": "Find any note in a few keystrokes.",
-      "files-light": "Your notes are files in folders you choose.",
-      "themes-light": "Pick a theme and see the whole page change at once.",
-      "setup-welcome": "Start with your own GitHub account, or keep your notes on this computer only.",
-      "setup-connect": "Sign in once with the GitHub account you already use.",
-      "setup-create": "Focus Notes makes two repositories of your own: one for public notes, one for private ones.",
-      "setup-creating": "Every step of the setup shows as it happens.",
-      "setup-backup": "Notes back up to your own GitHub repository in the background, and you can see when."
+      "focus-dark": "Focus mode keeps the lines you're writing clear and fades the rest of the page.",
+      "open-projects-light": "Keep each project on this computer, or back it up to your own GitHub repository.",
+      "new-project-light": "Name a new project, choose where to keep it, and start writing in an empty note.",
+      "find-all-light": "Find words across every note in a project.",
+      "images-light": "Add pictures to your notes, with descriptions and captions.",
+      "share-dark": "Share a private note or folder with a link, and add a passcode if you like.",
+      "publish-light": "Publish a note, with its pictures, on your own public site.",
+      "files-light": "Your notes are plain files in folders, with recent and pinned notes close at hand."
     },
     "source": "The files in store/screenshots/: 2560 × 1440 PNGs of the app's window at 1120 × 720, drawn at twice the scale, on a plain backdrop; the cascade lays four windows over each other. They're generated, never taken by hand: `gh workflow run review-captures.yml -f catalog=store` captures the scenes on CI, then `python tools/release/store-screenshots.py --captures <the fetched folder>` makes the PNGs (D-223)."
   },

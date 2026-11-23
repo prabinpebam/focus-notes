@@ -4,7 +4,7 @@
  * window (webContents.capturePage, never the screen, D-141) as lossless PNG with its shadow's alpha.
  */
 import { expect, type Page } from "@playwright/test";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { launch, tempDirs, windowBox, type Launched } from "./helpers.ts";
 import { scheme, mod } from "./surfaces.ts";
@@ -70,10 +70,11 @@ export async function exactSize(l: Launched, want: Size) {
  * drawn window is its shadow margin smaller), with `state` added to state.json (theme, font).
  * `args` go to Electron (a forced device scale factor, say).
  */
-export async function startDemo(opts: { size: Size; theme: "light" | "dark"; state?: Record<string, unknown>; args?: string[]; exact?: (l: Launched) => Promise<void> }): Promise<Launched> {
+export async function startDemo(opts: { size: Size; theme: "light" | "dark"; state?: Record<string, unknown>; args?: string[]; exact?: (l: Launched) => Promise<void>; setup?: (dirs: { docs: string; userData: string }) => void; root?: string }): Promise<Launched> {
   const temp = tempDirs();
   // The folder's name shows in the Files header: the app's own default, not the temporary folder's.
-  const dirs = { ...temp, docs: join(temp.docs, "Focus Notes") };
+  const dirs = { ...temp, docs: join(opts.root ?? temp.docs, "Focus Notes") };
+  if (opts.root) rmSync(dirs.docs, { recursive: true, force: true });
   mkdirSync(dirs.docs);
   for (const [path, text] of Object.entries(DEMO_NOTES)) {
     const file = join(dirs.docs, ...path.split("/"));
@@ -83,6 +84,7 @@ export async function startDemo(opts: { size: Size; theme: "light" | "dark"; sta
   writeFileSync(join(dirs.userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done", lastNotePath: join(dirs.docs, "On writing slowly.md"), ...opts.state }));
   // Opened inactive like every journey window.
   writeFileSync(join(dirs.userData, "window.json"), JSON.stringify({ version: 1, bounds: { x: 40, y: 40, width: opts.size.width, height: opts.size.height } }));
+  opts.setup?.(dirs);
   const l = await launch(dirs, {}, { args: opts.args });
   await expect(l.page.getByRole("textbox", { name: "Note" })).toBeFocused();
   await opts.exact?.(l);

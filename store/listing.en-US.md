@@ -85,14 +85,14 @@ Upload them in this order, each with its caption:
 
 1. `01-note-light.png`: A quiet page for one note at a time, in plain Markdown.
 2. `02-cascade.png`: Make it yours: ten themes, light and dark, and six fonts, including ones made for easier reading.
-3. `03-spotlight-light.png`: Find any note in a few keystrokes.
-4. `04-files-light.png`: Your notes are files in folders you choose.
-5. `05-themes-light.png`: Pick a theme and see the whole page change at once.
-6. `06-setup-welcome.png`: Start with your own GitHub account, or keep your notes on this computer only.
-7. `07-setup-connect.png`: Sign in once with the GitHub account you already use.
-8. `08-setup-create.png`: Focus Notes makes two repositories of your own: one for public notes, one for private ones.
-9. `09-setup-creating.png`: Every step of the setup shows as it happens.
-10. `10-setup-backup.png`: Notes back up to your own GitHub repository in the background, and you can see when.
+3. `03-focus-dark.png`: Focus mode keeps the lines you're writing clear and fades the rest of the page.
+4. `04-open-projects-light.png`: Keep each project on this computer, or back it up to your own GitHub repository.
+5. `05-new-project-light.png`: Name a new project, choose where to keep it, and start writing in an empty note.
+6. `06-find-all-light.png`: Find words across every note in a project.
+7. `07-images-light.png`: Add pictures to your notes, with descriptions and captions.
+8. `08-share-dark.png`: Share a private note or folder with a link, and add a passcode if you like.
+9. `09-publish-light.png`: Publish a note, with its pictures, on your own public site.
+10. `10-files-light.png`: Your notes are plain files in folders, with recent and pinned notes close at hand.
 
 ## Age rating (draft answers)
 
