@@ -2547,7 +2547,7 @@
                                       }
                                     },
                                     "when": {
-                                      "get": "vm.sharingSettings.localReview"
+                                      "get": "vm.sharingSettings.canSetup"
                                     }
                                   }
                                 ]
