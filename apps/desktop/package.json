@@ -8,7 +8,7 @@
   "type": "module",
   "main": "out/main/main.mjs",
   "scripts": {
-    "build": "node scripts/entry.mjs && vite build --config vite.config.ts && node scripts/build-main.mjs",
+    "build": "node scripts/entry.mjs && vite build --config vite.config.ts && node scripts/build-main.mjs && pnpm --filter @focus-notes/web run build:reader",
     "dev": "pnpm run build && electron .",
     "start": "electron .",
     "gallery": "node scripts/entry.mjs && vite --config vite.gallery.config.ts",
@@ -55,6 +55,7 @@
       "package.json"
     ],
     "asar": true,
+    "afterPack": "./scripts/reader.mjs",
     "electronFuses": {
       "runAsNode": false,
       "enableNodeOptionsEnvironmentVariable": false,
@@ -66,7 +67,8 @@
     "extraResources": [
       { "from": "../../THIRD_PARTY_NOTICES.md", "to": "THIRD_PARTY_NOTICES.md" },
       { "from": "build/license-terms.txt", "to": "LICENSE.txt" },
-      { "from": "build/bin", "to": "bin" }
+      { "from": "build/bin", "to": "bin" },
+      { "from": "../web/dist-reader", "to": "reader", "filter": ["render.mjs", "assets/**"] }
     ],
     "protocols": [
       { "name": "Focus Notes", "schemes": ["focus-notes"] }
