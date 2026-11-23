@@ -358,7 +358,6 @@ test("D-355: minimap Pin and Unpin are named actions with border feedback and su
 });
 
 test("D-186: the pin keeps the card open in a column of its own, the text moved clear of it, live, through leaving, Esc, a jump and the next launch; without room the rail returns; unpinning gives the room back", async () => {
-  test.fixme(new Date() < new Date("2026-11-24T00:00:00Z"), "Scoped D-186 quarantine: gate-evidence.md; 1.1.0 Phase 3/4/5 Coordinator; Track 4A owns root fix; expires 2026-11-24T00:00:00Z; mandatory root fix and zero active quarantines before release; CI 44038933839 / 45014686049");
   const dirs = tempDirs();
   // The default reading width and a long heading, so the card is at its widest (320 px).
   let l = await start(NOTE, {}, dirs);

@@ -245,8 +245,18 @@ export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function
       clearTimeout(settle);
       settle = setTimeout(schedule, OUTLINE_DELAY_MS);
     };
+    const onEditorBlur = () => {
+      // Keyboard entry can precede the first layout measurement or restored scroll. Keep the
+      // actual caret's section before the card chooses its initial focus, without measuring layout.
+      if (!reading.current) {
+        const cur = caretSection(outlineOf(editor.state.doc), editor.state.selection.$head.index(0));
+        held.current = cur;
+        setCurrent(cur);
+      }
+      later();
+    };
     editor.on("focus", later);
-    editor.on("blur", later);
+    editor.on("blur", onEditorBlur);
     sc.addEventListener("scroll", schedule, { passive: true });
     // The scroller's size, or the text column's width (the scale, a pinned panel): lengths re-read.
     // The text growing taller as you type is left to the pause after it (onUpdate).
@@ -278,7 +288,7 @@ export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function
       editor.off("update", onUpdate);
       editor.off("selectionUpdate", onSelection);
       editor.off("focus", later);
-      editor.off("blur", later);
+      editor.off("blur", onEditorBlur);
       sc.removeEventListener("scroll", schedule);
       ro.disconnect();
       offPinned();
@@ -490,6 +500,28 @@ export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function
   }, [open, close, editor]);
 
   const delay = (which: "open" | "close") => (navRef.current ? ms(navRef.current, which === "open" ? t.openDelay : t.closeDelay) : 0);
+  const closeLater = () => {
+    clearTimeout(timers.current.close);
+    timers.current.close = setTimeout(() => {
+      // Focus inside keeps it open: persistent while focused, as well as while pointed at.
+      if (navRef.current?.contains(document.activeElement)) return;
+      setOpen(null);
+    }, delay("close"));
+  };
+  useEffect(() => {
+    if (open !== "hover" && open !== "click") return;
+    // Undocking moves the card away from the pin's pointer without a pointerleave. The next
+    // movement still dismisses that hover card, even when it never crosses the card's new bounds.
+    const move = (e: PointerEvent) => {
+      if (e.pointerType === "touch") return;
+      const target = e.target;
+      if (target instanceof Node && (cardRef.current?.contains(target) || railRef.current?.contains(target))) return;
+      closeLater();
+      document.removeEventListener("pointermove", move);
+    };
+    document.addEventListener("pointermove", move);
+    return () => document.removeEventListener("pointermove", move);
+  }, [open]);
   const pointerIn = (e: ReactPointerEvent) => {
     if (e.pointerType === "touch") return;
     clearTimeout(timers.current.close);
@@ -503,12 +535,7 @@ export const DocMinimap = forwardRef<DocMinimapHandle, DocMinimapProps>(function
     if (e.pointerType === "touch") return;
     clearTimeout(timers.current.open);
     if (openRef.current !== "hover" && openRef.current !== "click") return;
-    clearTimeout(timers.current.close);
-    timers.current.close = setTimeout(() => {
-      // Focus inside keeps it open: persistent while focused, as well as while pointed at.
-      if (navRef.current?.contains(document.activeElement)) return;
-      setOpen(null);
-    }, delay("close"));
+    closeLater();
   };
   // A press never takes focus from the note: typing carries on where it was.
   const keepFocus = (e: ReactPointerEvent) => {

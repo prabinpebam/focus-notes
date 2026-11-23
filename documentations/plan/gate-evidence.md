@@ -18,6 +18,29 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 
 ## Summary
 
+### D-186 minimap quarantine removal, 23 November
+
+**Locally verified; rolling merge-candidate CI pending.** The D-186
+`test.fixme` and its active-quarantine row are removed together with the
+runtime repair. Every journey assertion is unchanged; no timeout increase,
+forced click, screenshot-baseline change or quarantine extension was used.
+
+| Root cause | Repair and regression evidence |
+| --- | --- |
+| After restart, Unpin changes the full-height dock into a centred hover card. The pointer remains over the old pin position, outside the new card; no `pointerleave` arrives, so leaving never starts the close timer. The original D-186 journey failed at its final `toBeHidden()` assertion. | A transient hover/click card also observes the next pointer movement outside both card and rail, using the existing close delay and focus guard. The listener is removed after that movement, on keyboard ownership or on unmount. The unchanged D-186 journey passes, including restart, Unpin, dismissal and restored text width. |
+| Keyboard rail entry can beat the deferred initial measurement/restored scroll: the caret is at the note's end while `current` still names the first heading. The wrong row gets focus and later measurement updates only `aria-current`. The existing rail-keyboard journey reproduced this three times. | Snapshot the caret's section synchronously on editor blur, using document positions only, unless wheel/scrollbar reading owns the section. Initial keyboard focus no longer depends on a stale layout frame; keyboard navigation, Escape and hover-to-keyboard ownership remain covered by the original journeys. |
+
+| Local check | Result |
+| --- | --- |
+| `pnpm --filter @focus-notes/desktop run build` | Passed on the repaired source. |
+| `FOCUS_NOTES_E2E=1; pnpm --filter @focus-notes/desktop exec playwright test e2e/doc-minimap.spec.ts --workers=1 -g "D-186"` | Passed with the quarantine lifted and original assertions. |
+| `FOCUS_NOTES_E2E=1; pnpm --filter @focus-notes/desktop exec playwright test e2e/doc-minimap.spec.ts --workers=1` | Passed three consecutive complete-file runs: 7/7 each (55.1 s, 54.2 s, 56.9 s), including the original current-row focus and D-186 assertions. |
+| `pnpm exec vitest run packages/ui/test/doc-outline.test.ts packages/core/test/outline.test.ts` | Passed: 18 tests in two files. |
+| `pnpm typecheck`; `pnpm check` | Passed again after the final focus repair. |
+| `node .\slate\scripts\runtime-host.mjs check --repo . --host documentations`; `git diff --check` | Passed. |
+| Process cleanup | Every local app run followed by `pwsh tools/dev/close-test-apps.ps1 -OnlyPid <worker-shell-pid> -KeepCandidate 7e224374 -KeepPid 42596`, first with `-WhatIf`, then actual cleanup. Owner candidate PID 42596 was preserved. |
+| Exact-head CI / landing | Not claimed. Per the owner's 23 November batching direction, Coordinator7 stacks this locally verified slice on the rolling merge candidate; no per-slice CI or main push. |
+
 ### Cross-profile privacy cleanup, 22 November
 
 **Implemented; final release gate pending.** Sign-out invalidates every profile sharing the root account; removal tombstones only profiles pointing at the removed source project. Shared generation fencing drains admitted writes, waits for live renderer/index/cache acknowledgements, and prevents stale callbacks from restoring pins or encrypted Recent/Launch records. Source notes, Git history and remotes remain unchanged. Pending cleanup survives restart with hashed profile identifiers and fixed cache scopes; Settings offers Retry without repeating credential removal.
@@ -200,8 +223,9 @@ bytes. This corrects the lab fixture, not a production speed improvement.
 passed on the combined candidate: 13 tests, no skipped PRF-12 assertions.
 Public-page LCP was 844 ms and landing-page LCP 828 ms; reported INP and CLS
 were 0. The original 150 ms latency, 1.6 Mbps download, CPU x4 and 2,500 ms
-LCP budget are unchanged. D-186 remains the only renewed scope below, with
-its real root fix and zero active quarantines mandatory before release.
+LCP budget are unchanged. At that checkpoint D-186 was the only renewed
+scope; its guard is now removed with the [23 November root repair](#d-186-minimap-quarantine-removal-23-november).
+Zero active quarantines remain mandatory before release.
 
 Combined-head integration also passed `pnpm check`, `pnpm typecheck`,
 `pnpm exec vitest run apps/desktop/test/project-metadata.test.ts apps/desktop/test/account-settings.test.ts packages/core/test/settings-app.test.ts packages/core/test/search-feed.test.ts packages/core/test/diagnostics.test.ts`
@@ -1181,10 +1205,10 @@ Originally authorized by the implementation coordinator, not considered fixed.
 Four exact test titles used Playwright's `test.fixme` during that quarantine.
 The date guard automatically restores the unchanged assertions after
 10 November (UTC); no budget, selector or other test is relaxed. On 22 November,
-Coordinator 2 authorized renewing only the D-186 row below to
-`2026-11-24T00:00:00Z` for integration, with its original assertions
-unchanged. Track 4A owns its mandatory root fix before release; release
-requires zero active quarantines. This renewal is not release acceptance.
+Coordinator 2 authorized renewing D-186 to `2026-11-24T00:00:00Z` for
+integration only. On 23 November Track 4A removed that guard and its
+active row with the [root repair and local evidence](#d-186-minimap-quarantine-removal-23-november).
+Release still requires zero active quarantines and a green exact-head gate.
 The two PRF-12 guards were removed after integrating the Pages-compression
 fixture repair from `4a5be135`; its slow-4G settings and budgets stay unchanged.
 The PRF-14 row is historical and its expired guard is unchanged.
@@ -1192,7 +1216,6 @@ The PRF-14 row is historical and its expired guard is unchanged.
 | Exact scope | Failure and run | Owner | Expiry | Status |
 | --- | --- | --- | --- | --- |
 | `apps/desktop/e2e/m5-snappy.spec.ts`: "PRF-14: every control answers in the next frame: input to next paint for the toolbar, Files, Spotlight and Settings, p95 at most 50 ms" | p95 56 ms, budget 50 ms; [41654808341](https://github.com/prabinpebam/focus-notes/actions/runs/41654808341), also [41656910779](https://github.com/prabinpebam/focus-notes/actions/runs/41656910779) | Implementation coordinator | 10 November 2026 | Quarantined; actual performance fix queued |
-| `apps/desktop/e2e/doc-minimap.spec.ts`: "D-186: the pin keeps the card open in a column of its own, the text moved clear of it, live, through leaving, Esc, a jump and the next launch; without room the rail returns; unpinning gives the room back" | Minimap row inactive when focused expected; inherited failures in 44038933839 / 45014686049 | 1.1.0 Phase 3/4/5 Coordinator; Track 4A root-fix owner | `2026-11-24T00:00:00Z` | Integration-only renewal; unchanged assertions; root fix mandatory before release; zero active quarantines required |
 ### WP-P.9 item-dialog candidate
 
 **Production-ready work in progress, not a merge candidate (3 November).** Owner-approved design D-335/D-336; first increment covers SHR-13 and parts of SHR-14/15/24 with real JSON and view models, not mocks. No access-file write, clipboard write, network publication or note write occurs in this increment.
