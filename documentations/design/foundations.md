@@ -192,10 +192,21 @@ Standard easing is `cubic-bezier(0.2, 0, 0, 1)`, decelerate is `cubic-bezier(0, 
 | Open from GitHub | Repository title opens owner/repository; owner detail opens the profile. Neither activates cloning. |
 | New project → Confirm | Complete owner/repository identity, without creating the project. |
 | Files → Private/Public backup | Each repository's own identity. A known GitHub origin remains linkable without an upstream; a local repository name remains plain text. |
-| Sharing | Existing first-sharing repository card and invitation-preview account card. |
+| Sharing | First-sharing confirmation's site repository card (G2.1) and People's invitation-preview account card. |
 | Delete project | Consequence cards, inaccessible repository, no-admin account/repository, policy-refused repository, typed-confirmation references, GitHub-stage repository and completed repository references. None activates deletion. |
 
-Pending first-share and in-app Delete design mocks are excluded until owner approval; this audit covers only already-landed views. [Backlog evidence](../plan/gate-evidence.md#github-reference-and-terminology-backlog-8-november) records the checks and remaining gate.
+**Re-audit, 23 November (batch 2 `6aebf805` surfaces).** The landed first-sharing confirmation and in-app Delete views now replace the mocks this audit once excluded. Every repository or account reference in them already opens through `github.open`; no view needed a change.
+
+| Reference | Opens on github.com |
+| --- | --- |
+| First-sharing confirmation: site repository (`owner/name`) | Yes; `sharing-setup.spec.ts` checks the destination |
+| First-sharing confirmation and Settings → Sharing: site address (`owner.github.io/name`) | Not a repository or account reference: it's the website, which doesn't exist until setup finishes. Settings → Sharing's **Open site preview** shows it. |
+| Settings → Sharing → People: signed-in account, invited people | Yes; `github-references.spec.ts` |
+| Delete: repository, private repository, other owner/repository, GitHub-stage and completed repository rows | Yes; `github-references.spec.ts` |
+| Delete: site card (`owner.github.io/name`) | The website, not a GitHub reference |
+| Publish and Unpublish dialogs; Share dialog | Show no repository or account |
+
+The first-run sign-in card ("Continue as" with the @handle) is outside OB-f.1's surface list and isn't a link; adding one is a design change for the owner. [Backlog evidence](../plan/gate-evidence.md#github-reference-and-terminology-backlog-8-november) records the checks and remaining gate.
 
 ### Copy rules
 

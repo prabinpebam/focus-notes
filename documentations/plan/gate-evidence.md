@@ -298,7 +298,7 @@ All tests use fakes: in-process `FakeGitHub`, `fake-pages.ts`, and a loopback `F
 
 ### Cross-profile privacy cleanup, 22 November
 
-**Implemented; final release gate pending.** Sign-out invalidates every profile sharing the root account; removal tombstones only profiles pointing at the removed source project. Shared generation fencing drains admitted writes, waits for live renderer/index/cache acknowledgements, and prevents stale callbacks from restoring pins or encrypted Recent/Launch records. Source notes, Git history and remotes remain unchanged. Pending cleanup survives restart with hashed profile identifiers and fixed cache scopes; Settings offers Retry without repeating credential removal.
+**Landed 22 November at `454513f3`; exact-head Windows run [45041833676](https://github.com/prabinpebam/focus-notes/actions/runs/45041833676) seven of seven green.** Sign-out invalidates every profile sharing the root account; removal tombstones only profiles pointing at the removed source project. Shared generation fencing drains admitted writes, waits for live renderer/index/cache acknowledgements, and prevents stale callbacks from restoring pins or encrypted Recent/Launch records. Source notes, Git history and remotes remain unchanged. Pending cleanup survives restart with hashed profile identifiers and fixed cache scopes; Settings offers Retry without repeating credential removal.
 
 | Evidence | Result |
 | --- | --- |
