@@ -2082,7 +2082,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     written: file => withGit(g => g.written(file)), temporary: app.getPath("userData"),
     step: step => sendSharing("sharing:setupStep", step),
     reader: () => {
-      const dir = app.isPackaged ? join(process.resourcesPath, "reader") : join(app.getAppPath(), "..", "web", "dist-reader");
+      const dir = devEnv("FOCUS_NOTES_READER") ?? (app.isPackaged ? join(process.resourcesPath, "reader") : join(import.meta.dirname, "..", "..", "..", "web", "dist-reader"));
       return existsSync(join(dir, "render.mjs")) ? dir : undefined;
     },
     publishStep: step => sendSharing("sharing:publishStep", step),
