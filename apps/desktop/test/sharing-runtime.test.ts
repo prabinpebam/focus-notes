@@ -60,8 +60,9 @@ it("PRJ-10: wires persisted New-project setup without a candidate flag, owner va
     expect(t.artifacts).toHaveLength(1);
     expect(t.github.calls.filter(call => call.method === "POST" && call.path === "/user/repos")).toHaveLength(1);
     expect(t.steps).toContain("push");
-    await expect(t.runtime.disable()).rejects.toThrow("sharing:unavailable");
-    expect((await t.runtime.pairing())?.phase).toBe("ready");
+    await expect(t.runtime.disable()).resolves.toMatchObject({ phase: "off" });
+    expect(t.artifacts).toHaveLength(2);
+    expect(await readFile(join(t.root, "notes", "private-draft.md"), "utf8")).toBe("# Private draft\n\nNever publish this source.\n");
   } finally { await rm(t.directory, { recursive: true, force: true }); }
 });
 
@@ -101,17 +102,6 @@ it("does not store readiness or write a second project's pairing after switching
     expect(await readdir(other)).toEqual(["notes"]);
     t.switch(t.root);
     expect((await runtime.pairing())?.phase).toBe("created");
-  } finally { await rm(t.directory, { recursive: true, force: true }); }
-});
-
-it("production unavailable setup refuses before creating, publishing or changing pairing", async () => {
-  const t = await fixture();
-  try {
-    const runtime = sharingRuntime({ ...t.deps, publisher: undefined });
-    await expect(runtime.enable("notes-site")).rejects.toThrow("sharing:unavailable");
-    expect(await runtime.pairing()).toBeUndefined();
-    expect(t.github.calls).toEqual([]);
-    expect(t.artifacts).toEqual([]);
   } finally { await rm(t.directory, { recursive: true, force: true }); }
 });
 

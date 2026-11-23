@@ -53,7 +53,6 @@ import { accessStore, siteFromGitConfig } from "./share/access.ts";
 import { projectPeople } from "./share/people.ts";
 import { projectSharingLayout } from "./share/layout.ts";
 import { sharingRuntime } from "./share/runtime.ts";
-import { pagesPublisher } from "./share/pages-publisher.ts";
 import { githubRepo } from "./project-card.ts";
 import { memoryClipboard, secretClipboard, type TextClipboard } from "./share/clipboard.ts";
 import { ProblemLog, type RedactOptions } from "@focus-notes/core/diagnostics";
@@ -2082,12 +2081,6 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     write: async (file, text) => { await assertWritable(file); await atomicWrite(file, text); },
     written: file => withGit(g => g.written(file)), temporary: app.getPath("userData"),
     step: step => sendSharing("sharing:setupStep", step),
-    // G3: Publish and sharing pushes go live to the ready paired site only; setup stays unavailable here.
-    live: pagesPublisher({
-      api: projectGitHub,
-      target: async project => { const s = await sharing.pairing(); return s?.project === project && s.phase === "ready" ? s : undefined; },
-      state: state => { if (state === "queued" || state === "building") sendSharing("sharing:publishStep", "publishing"); },
-    }),
     reader: () => {
       const dir = app.isPackaged ? join(process.resourcesPath, "reader") : join(app.getAppPath(), "..", "web", "dist-reader");
       return existsSync(join(dir, "render.mjs")) ? dir : undefined;

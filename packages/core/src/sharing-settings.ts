@@ -126,9 +126,20 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
   reg<Record<string, never>>("sharing.confirm", async () => {
     const { dialog, id } = state();
     if (dialog === "turnOff") {
-      if (!store.state.ui.share.listing?.localReview) throw new Error(catalog.format("share.item.unavailable"));
-      set({ off: true, dialog: "", status: "" });
-      settingsOpen(true);
+      if (store.state.ui.share.listing?.localReview) {
+        set({ off: true, dialog: "", status: "" });
+        settingsOpen(true);
+        return;
+      }
+      const setup = access?.setup;
+      if (!access || !setup) throw new Error(catalog.format("share.item.unavailable"));
+      // Preservation and removal run in the desktop; the dialog stays until the site is actually off.
+      await work(async () => {
+        const result = await setup.disable();
+        if (result.phase !== "off") throw new Error("sharing:unacknowledged");
+        const listing = await access.load();
+        store.update(s => ({ ...s, ui: { ...s.ui, share: { ...s.ui.share, listing } } }));
+      }, "off");
       return;
     }
     if (!access || (dialog !== "withdraw" && dialog !== "delete")) throw new Error(catalog.format("share.item.unavailable"));
@@ -184,7 +195,7 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
         project: s.workspace.repo?.split("/").at(-1) ?? s.workspace.folder?.split(/[\\/]/).at(-1) ?? "",
         site: listing?.site ?? s.workspace.site ?? "", on: sharingAvailable(s), off: !sharingAvailable(s),
         offDetail: catalog.format(listing?.localReview || listing?.site && (listing.configured || listing.vault) ? "share.settings.offDetail" : "sharing.setup.unavailable"),
-        localReview: Boolean(listing?.localReview), busy: m.busy, status: m.status ? catalog.format("share.settings.status", { status: m.status }) : "",
+        localReview: Boolean(listing?.localReview), busy: m.busy, status: m.status === "off" ? catalog.format("share.settings.offDone") : m.status ? catalog.format("share.settings.status", { status: m.status }) : "",
         copyLabel: catalog.format("share.settings.copyAgain"), extendLabel: catalog.format("share.settings.extend"),
         problem: m.problem, filter: m.filter, query: m.query, dialog: m.dialog, confirmOpen: ["withdraw", "delete", "turnOff"].includes(m.dialog),
         empty: Boolean(listing) && !s.ui.share.loading && !s.ui.share.failed && !rows.length,
