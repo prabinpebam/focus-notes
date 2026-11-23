@@ -3957,34 +3957,24 @@
                   ],
                   "content": [
                     {
-                      "type": "Stack",
-                      "props": { "gap": "stackItem" },
-                      "children": [
-                        {
-                          "type": "Inline",
-                          "props": { "gap": "inlineGroup" },
-                          "children": [
-                            {
-                              "type": "StepMark",
-                              "props": {
-                                "icon": { "get": "vm.saveState.icon" },
-                                "size": "compact",
-                                "tone": { "get": "vm.saveState.tone" },
-                                "busy": { "get": "vm.saveState.backingUp" }
-                              }
-                            },
-                            {
-                              "type": "Stack",
-                              "props": { "gap": "stackPair" },
-                              "children": [
-                                { "type": "Heading", "props": { "value": { "t": "save.backup.title" }, "level": "2" } },
-                                { "type": "Text", "props": { "value": { "get": "vm.saveState.label" } } }
-                              ]
+                      "type": "IconLayout",
+                      "slots": {
+                        "icon": [
+                          {
+                            "type": "StepMark",
+                            "props": {
+                              "icon": { "get": "vm.saveState.icon" },
+                              "size": "compact",
+                              "tone": { "get": "vm.saveState.tone" },
+                              "busy": { "get": "vm.saveState.backingUp" }
                             }
-                          ]
-                        },
-                        { "type": "Text", "props": { "value": { "get": "vm.saveState.backupTime" }, "tone": "muted" } },
-                        { "type": "Text", "props": { "value": { "get": "vm.saveState.waitingText" } } },
+                          }
+                        ],
+                        "heading": [
+                          { "type": "Heading", "props": { "value": { "t": "save.backup.title" }, "level": "2" } },
+                          { "type": "Text", "props": { "value": { "get": "vm.saveState.label" } } }
+                        ],
+                        "actions": [
                         {
                           "type": "Button",
                           "props": {
@@ -4000,6 +3990,11 @@
                           },
                           "on": { "press": { "run": "note.save" } }
                         }
+                        ]
+                      },
+                      "children": [
+                        { "type": "Text", "props": { "value": { "get": "vm.saveState.backupTime" }, "tone": "muted" } },
+                        { "type": "Text", "props": { "value": { "get": "vm.saveState.waitingText" } } }
                       ]
                     }
                   ]
@@ -4753,59 +4748,79 @@
                     ],
                     "content": [
                       {
-                        "type": "Stack",
-                        "props": {
-                          "gap": "stackItem"
-                        },
-                        "children": [
-                          {
-                            "type": "Inline",
-                            "props": {
-                              "gap": "inlineGroup"
+                        "type": "IconLayout",
+                        "slots": {
+                          "icon": [
+                            {
+                              "type": "StepMark",
+                              "props": {
+                                "icon": {
+                                  "get": "vm.repoBackup.private.icon"
+                                },
+                                "size": "compact",
+                                "tone": {
+                                  "get": "vm.repoBackup.private.tone"
+                                },
+                                "busy": {
+                                  "get": "vm.repoBackup.private.backingUp"
+                                }
+                              }
+                            }
+                          ],
+                          "heading": [
+                            {
+                              "type": "Heading",
+                              "props": {
+                                "value": {
+                                  "get": "vm.repoBackup.private.name"
+                                },
+                                "level": "2"
+                              }
                             },
-                            "children": [
-                              {
-                                "type": "StepMark",
-                                "props": {
-                                  "icon": {
-                                    "get": "vm.repoBackup.private.icon"
-                                  },
-                                  "size": "compact",
-                                  "tone": {
-                                    "get": "vm.repoBackup.private.tone"
-                                  },
-                                  "busy": {
-                                    "get": "vm.repoBackup.private.backingUp"
+                            {
+                              "type": "Text",
+                              "props": {
+                                "value": {
+                                  "get": "vm.repoBackup.private.stateText"
+                                }
+                              }
+                            }
+                          ],
+                          "actions": [
+                            {
+                              "type": "Button",
+                              "props": {
+                                "label": {
+                                  "t": "repoBackup.action"
+                                },
+                                "icon": "cloudUp",
+                                "variant": "secondary",
+                                "busy": {
+                                  "get": "vm.repoBackup.private.backingUp"
+                                },
+                                "disabledReason": {
+                                  "get": "vm.repoBackup.private.backupReason"
+                                },
+                                "disabled": {
+                                  "expr": {
+                                    "!": {
+                                      "get": "vm.repoBackup.private.canBackUp"
+                                    }
                                   }
                                 }
                               },
-                              {
-                                "type": "Stack",
-                                "props": {
-                                  "gap": "stackPair"
-                                },
-                                "children": [
-                                  {
-                                    "type": "Heading",
-                                    "props": {
-                                      "value": {
-                                        "get": "vm.repoBackup.private.name"
-                                      },
-                                      "level": "2"
-                                    }
-                                  },
-                                  {
-                                    "type": "Text",
-                                    "props": {
-                                      "value": {
-                                        "get": "vm.repoBackup.private.stateText"
-                                      }
-                                    }
+                              "on": {
+                                "press": {
+                                  "run": "repoBackup.backUp",
+                                  "args": {
+                                    "repo": "private"
                                   }
-                                ]
+                                }
                               }
-                            ]
-                          },
+                            }
+                          ]
+                        },
+                        "children": [
                           {
                             "type": "Text",
                             "when": {
@@ -4838,8 +4853,28 @@
                           },
                           {
                             "type": "Text",
-                            "when": { "expr": { "and": [{ "get": "vm.repoBackup.private.hasRepository" }, { "!": [{ "get": "vm.repoBackup.private.repositoryLink" }] }] } },
-                            "props": { "value": { "get": "vm.repoBackup.private.repository" }, "tone": "muted" }
+                            "when": {
+                              "expr": {
+                                "and": [
+                                  {
+                                    "get": "vm.repoBackup.private.hasRepository"
+                                  },
+                                  {
+                                    "!": [
+                                      {
+                                        "get": "vm.repoBackup.private.repositoryLink"
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            },
+                            "props": {
+                              "value": {
+                                "get": "vm.repoBackup.private.repository"
+                              },
+                              "tone": "muted"
+                            }
                           },
                           {
                             "type": "Text",
@@ -4855,37 +4890,6 @@
                             "props": {
                               "value": {
                                 "get": "vm.repoBackup.private.waitingText"
-                              }
-                            }
-                          },
-                          {
-                            "type": "Button",
-                            "props": {
-                              "label": {
-                                "t": "repoBackup.action"
-                              },
-                              "icon": "cloudUp",
-                              "variant": "secondary",
-                              "busy": {
-                                "get": "vm.repoBackup.private.backingUp"
-                              },
-                              "disabledReason": {
-                                "get": "vm.repoBackup.private.backupReason"
-                              },
-                              "disabled": {
-                                "expr": {
-                                  "!": {
-                                    "get": "vm.repoBackup.private.canBackUp"
-                                  }
-                                }
-                              }
-                            },
-                            "on": {
-                              "press": {
-                                "run": "repoBackup.backUp",
-                                "args": {
-                                  "repo": "private"
-                                }
                               }
                             }
                           }
@@ -4925,59 +4929,79 @@
                     ],
                     "content": [
                       {
-                        "type": "Stack",
-                        "props": {
-                          "gap": "stackItem"
-                        },
-                        "children": [
-                          {
-                            "type": "Inline",
-                            "props": {
-                              "gap": "inlineGroup"
+                        "type": "IconLayout",
+                        "slots": {
+                          "icon": [
+                            {
+                              "type": "StepMark",
+                              "props": {
+                                "icon": {
+                                  "get": "vm.repoBackup.public.icon"
+                                },
+                                "size": "compact",
+                                "tone": {
+                                  "get": "vm.repoBackup.public.tone"
+                                },
+                                "busy": {
+                                  "get": "vm.repoBackup.public.backingUp"
+                                }
+                              }
+                            }
+                          ],
+                          "heading": [
+                            {
+                              "type": "Heading",
+                              "props": {
+                                "value": {
+                                  "get": "vm.repoBackup.public.name"
+                                },
+                                "level": "2"
+                              }
                             },
-                            "children": [
-                              {
-                                "type": "StepMark",
-                                "props": {
-                                  "icon": {
-                                    "get": "vm.repoBackup.public.icon"
-                                  },
-                                  "size": "compact",
-                                  "tone": {
-                                    "get": "vm.repoBackup.public.tone"
-                                  },
-                                  "busy": {
-                                    "get": "vm.repoBackup.public.backingUp"
+                            {
+                              "type": "Text",
+                              "props": {
+                                "value": {
+                                  "get": "vm.repoBackup.public.stateText"
+                                }
+                              }
+                            }
+                          ],
+                          "actions": [
+                            {
+                              "type": "Button",
+                              "props": {
+                                "label": {
+                                  "t": "repoBackup.action"
+                                },
+                                "icon": "cloudUp",
+                                "variant": "secondary",
+                                "busy": {
+                                  "get": "vm.repoBackup.public.backingUp"
+                                },
+                                "disabledReason": {
+                                  "get": "vm.repoBackup.public.backupReason"
+                                },
+                                "disabled": {
+                                  "expr": {
+                                    "!": {
+                                      "get": "vm.repoBackup.public.canBackUp"
+                                    }
                                   }
                                 }
                               },
-                              {
-                                "type": "Stack",
-                                "props": {
-                                  "gap": "stackPair"
-                                },
-                                "children": [
-                                  {
-                                    "type": "Heading",
-                                    "props": {
-                                      "value": {
-                                        "get": "vm.repoBackup.public.name"
-                                      },
-                                      "level": "2"
-                                    }
-                                  },
-                                  {
-                                    "type": "Text",
-                                    "props": {
-                                      "value": {
-                                        "get": "vm.repoBackup.public.stateText"
-                                      }
-                                    }
+                              "on": {
+                                "press": {
+                                  "run": "repoBackup.backUp",
+                                  "args": {
+                                    "repo": "public"
                                   }
-                                ]
+                                }
                               }
-                            ]
-                          },
+                            }
+                          ]
+                        },
+                        "children": [
                           {
                             "type": "Text",
                             "when": {
@@ -5010,8 +5034,28 @@
                           },
                           {
                             "type": "Text",
-                            "when": { "expr": { "and": [{ "get": "vm.repoBackup.public.hasRepository" }, { "!": [{ "get": "vm.repoBackup.public.repositoryLink" }] }] } },
-                            "props": { "value": { "get": "vm.repoBackup.public.repository" }, "tone": "muted" }
+                            "when": {
+                              "expr": {
+                                "and": [
+                                  {
+                                    "get": "vm.repoBackup.public.hasRepository"
+                                  },
+                                  {
+                                    "!": [
+                                      {
+                                        "get": "vm.repoBackup.public.repositoryLink"
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            },
+                            "props": {
+                              "value": {
+                                "get": "vm.repoBackup.public.repository"
+                              },
+                              "tone": "muted"
+                            }
                           },
                           {
                             "type": "Text",
@@ -5027,37 +5071,6 @@
                             "props": {
                               "value": {
                                 "get": "vm.repoBackup.public.waitingText"
-                              }
-                            }
-                          },
-                          {
-                            "type": "Button",
-                            "props": {
-                              "label": {
-                                "t": "repoBackup.action"
-                              },
-                              "icon": "cloudUp",
-                              "variant": "secondary",
-                              "busy": {
-                                "get": "vm.repoBackup.public.backingUp"
-                              },
-                              "disabledReason": {
-                                "get": "vm.repoBackup.public.backupReason"
-                              },
-                              "disabled": {
-                                "expr": {
-                                  "!": {
-                                    "get": "vm.repoBackup.public.canBackUp"
-                                  }
-                                }
-                              }
-                            },
-                            "on": {
-                              "press": {
-                                "run": "repoBackup.backUp",
-                                "args": {
-                                  "repo": "public"
-                                }
                               }
                             }
                           }
@@ -9571,43 +9584,345 @@
   "id": "imageCaption",
   "props": { "label": { "t": "image.ai.title2" }, "open": { "get": "vm.imageCaption.open" }, "size": "m", "height": "content" },
   "on": { "openChange": { "run": "image.ai.close" } },
-  "slots": {
-    "header": [{ "type": "Inline", "props": { "gap": "inlineItem", "align": "center" }, "children": [
-      { "type": "Icon", "props": { "name": "sparkle", "size": "m" } },
-      { "type": "Heading", "props": { "level": "2", "value": { "t": "image.ai.title2" } } }
-    ] }],
-    "footer": [{ "type": "Inline", "props": { "justify": "end", "gap": "inlineItem" }, "children": [
-      { "switch": { "get": "vm.imageCaption.writing" }, "cases": { "true": { "type": "Button", "props": { "label": { "t": "image.ai.stop" }, "variant": "secondary" }, "on": { "press": { "run": "image.ai.stop" } } },
-        "false": { "type": "Inline", "props": { "justify": "end", "gap": "inlineItem" }, "children": [
-          { "type": "Button", "props": { "label": { "t": "image.edit.cancel" }, "variant": "subtle" }, "on": { "press": { "run": "image.ai.close" } } },
-          { "type": "Button", "props": { "label": { "t": "image.ai.generate" }, "variant": "secondary", "icon": "sparkle", "disabled": { "get": "vm.imageCaption.generateDisabled" }, "disabledReason": { "t": "image.ai.generateReason" } }, "on": { "press": { "run": "image.ai.generate" } } },
-          { "when": { "get": "vm.imageCaption.hasResult" }, "type": "Button", "props": { "label": { "t": "image.ai.use" }, "variant": "primary", "busy": { "get": "vm.imageCaption.applying" }, "feedback": "border", "disabled": { "get": "vm.imageCaption.useDisabled" }, "disabledReason": { "t": "image.ai.useReason" } }, "on": { "press": { "run": "image.ai.use" } } }
-        ] }
-      } }
-    ] }]
-  },
-  "children": [{ "type": "Stack", "props": { "gap": "stackGroup" }, "children": [
-    { "switch": { "get": "vm.imageCaption.loading" }, "cases": { "true": { "type": "Text", "props": { "value": { "t": "image.ai.preparing" }, "announce": true } },
-      "false": { "type": "Stack", "props": { "gap": "stackGroup" }, "children": [
-        { "type": "Inline", "props": { "gap": "inlineGroup", "align": "start" }, "children": [
-          { "type": "ImageFrame", "props": { "src": { "get": "vm.imageCaption.preview" }, "mode": "thumb" } },
-          { "type": "ItemCard", "props": { "title": { "get": "vm.imageCaption.connectionName" }, "detail": { "get": "vm.imageCaption.connectionModel" }, "badge": { "get": "vm.imageCaption.connectionWhere" }, "icon": "sparkle" }, "children": [
-            { "type": "MenuButton", "props": { "label": { "t": "image.ai.integration" }, "variant": "select", "text": { "get": "vm.imageCaption.chosen" }, "sections": { "get": "vm.imageCaption.choices" }, "busy": { "get": "vm.imageCaption.writing" } }, "on": { "action": { "run": "image.ai.integration", "args": { "value": { "get": "event.id" } } } } }
-          ] }
-        ] },
-        { "when": { "get": "vm.imageCaption.hasResult" }, "type": "TextField", "props": { "label": { "t": "image.ai.result" }, "description": { "t": "image.ai.resultHint" }, "value": { "bind": "vm.imageCaption.result" }, "multiline": true, "compactMultiline": true, "readOnly": { "get": "vm.imageCaption.applying" } } },
-        { "when": { "get": "vm.imageCaption.noVision" }, "type": "Stack", "props": { "gap": "stackItem" }, "children": [
-          { "type": "Text", "props": { "value": { "t": "image.ai.noVisionActual" } } },
-          { "type": "Text", "props": { "value": { "t": "image.ai.writerKept" }, "role": "caption", "tone": "muted" } },
-          { "type": "Button", "props": { "label": { "t": "image.ai.write" }, "variant": "subtle" }, "on": { "press": { "run": "image.ai.manual" } } }
-        ] },
-        { "type": "TextField", "props": { "label": { "t": "image.ai.instruction" }, "value": { "bind": "vm.imageCaption.instruction" }, "multiline": true, "compactMultiline": true, "autoFocus": true, "readOnly": { "get": "vm.imageCaption.writing" } } },
-        { "type": "Text", "props": { "value": { "get": "vm.imageCaption.disclosure" }, "role": "caption", "tone": "muted" } }
-      ] }
-    } },
-    { "when": { "get": "vm.imageCaption.writing" }, "type": "Text", "props": { "value": { "t": "image.ai.writing" }, "announce": true } },
-    { "type": "Text", "props": { "value": { "get": "vm.imageCaption.error" }, "tone": "danger", "announce": true } }
-  ] }]
+  "children": [{
+    "type": "IconLayout",
+    "slots": {
+      "icon": [
+        {
+          "type": "Icon",
+          "props": {
+            "name": "sparkle",
+            "size": "m"
+          }
+        }
+      ],
+      "heading": [
+        {
+          "type": "Heading",
+          "props": {
+            "level": "2",
+            "value": {
+              "t": "image.ai.title2"
+            }
+          }
+        }
+      ],
+      "actions": [
+        {
+          "type": "Inline",
+          "props": {
+            "justify": "end",
+            "gap": "inlineItem"
+          },
+          "children": [
+            {
+              "switch": {
+                "get": "vm.imageCaption.writing"
+              },
+              "cases": {
+                "true": {
+                  "type": "Button",
+                  "props": {
+                    "label": {
+                      "t": "image.ai.stop"
+                    },
+                    "variant": "secondary"
+                  },
+                  "on": {
+                    "press": {
+                      "run": "image.ai.stop"
+                    }
+                  }
+                },
+                "false": {
+                  "type": "Inline",
+                  "props": {
+                    "justify": "end",
+                    "gap": "inlineItem"
+                  },
+                  "children": [
+                    {
+                      "type": "Button",
+                      "props": {
+                        "label": {
+                          "t": "image.edit.cancel"
+                        },
+                        "variant": "subtle"
+                      },
+                      "on": {
+                        "press": {
+                          "run": "image.ai.close"
+                        }
+                      }
+                    },
+                    {
+                      "type": "Button",
+                      "props": {
+                        "label": {
+                          "t": "image.ai.generate"
+                        },
+                        "variant": "secondary",
+                        "icon": "sparkle",
+                        "disabled": {
+                          "get": "vm.imageCaption.generateDisabled"
+                        },
+                        "disabledReason": {
+                          "t": "image.ai.generateReason"
+                        }
+                      },
+                      "on": {
+                        "press": {
+                          "run": "image.ai.generate"
+                        }
+                      }
+                    },
+                    {
+                      "when": {
+                        "get": "vm.imageCaption.hasResult"
+                      },
+                      "type": "Button",
+                      "props": {
+                        "label": {
+                          "t": "image.ai.use"
+                        },
+                        "variant": "primary",
+                        "busy": {
+                          "get": "vm.imageCaption.applying"
+                        },
+                        "feedback": "border",
+                        "disabled": {
+                          "get": "vm.imageCaption.useDisabled"
+                        },
+                        "disabledReason": {
+                          "t": "image.ai.useReason"
+                        }
+                      },
+                      "on": {
+                        "press": {
+                          "run": "image.ai.use"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "children": [
+      {
+        "type": "Stack",
+        "props": {
+          "gap": "stackGroup"
+        },
+        "children": [
+          {
+            "switch": {
+              "get": "vm.imageCaption.loading"
+            },
+            "cases": {
+              "true": {
+                "type": "Text",
+                "props": {
+                  "value": {
+                    "t": "image.ai.preparing"
+                  },
+                  "announce": true
+                }
+              },
+              "false": {
+                "type": "Stack",
+                "props": {
+                  "gap": "stackGroup"
+                },
+                "children": [
+                  {
+                    "type": "Inline",
+                    "props": {
+                      "gap": "inlineGroup",
+                      "align": "start"
+                    },
+                    "children": [
+                      {
+                        "type": "ImageFrame",
+                        "props": {
+                          "src": {
+                            "get": "vm.imageCaption.preview"
+                          },
+                          "mode": "thumb"
+                        }
+                      },
+                      {
+                        "type": "ItemCard",
+                        "props": {
+                          "title": {
+                            "get": "vm.imageCaption.connectionName"
+                          },
+                          "detail": {
+                            "get": "vm.imageCaption.connectionModel"
+                          },
+                          "badge": {
+                            "get": "vm.imageCaption.connectionWhere"
+                          },
+                          "icon": "sparkle"
+                        },
+                        "children": [
+                          {
+                            "type": "MenuButton",
+                            "props": {
+                              "label": {
+                                "t": "image.ai.integration"
+                              },
+                              "variant": "select",
+                              "text": {
+                                "get": "vm.imageCaption.chosen"
+                              },
+                              "sections": {
+                                "get": "vm.imageCaption.choices"
+                              },
+                              "busy": {
+                                "get": "vm.imageCaption.writing"
+                              }
+                            },
+                            "on": {
+                              "action": {
+                                "run": "image.ai.integration",
+                                "args": {
+                                  "value": {
+                                    "get": "event.id"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "when": {
+                      "get": "vm.imageCaption.hasResult"
+                    },
+                    "type": "TextField",
+                    "props": {
+                      "label": {
+                        "t": "image.ai.result"
+                      },
+                      "description": {
+                        "t": "image.ai.resultHint"
+                      },
+                      "value": {
+                        "bind": "vm.imageCaption.result"
+                      },
+                      "multiline": true,
+                      "compactMultiline": true,
+                      "readOnly": {
+                        "get": "vm.imageCaption.applying"
+                      }
+                    }
+                  },
+                  {
+                    "when": {
+                      "get": "vm.imageCaption.noVision"
+                    },
+                    "type": "Stack",
+                    "props": {
+                      "gap": "stackItem"
+                    },
+                    "children": [
+                      {
+                        "type": "Text",
+                        "props": {
+                          "value": {
+                            "t": "image.ai.noVisionActual"
+                          }
+                        }
+                      },
+                      {
+                        "type": "Text",
+                        "props": {
+                          "value": {
+                            "t": "image.ai.writerKept"
+                          },
+                          "role": "caption",
+                          "tone": "muted"
+                        }
+                      },
+                      {
+                        "type": "Button",
+                        "props": {
+                          "label": {
+                            "t": "image.ai.write"
+                          },
+                          "variant": "subtle"
+                        },
+                        "on": {
+                          "press": {
+                            "run": "image.ai.manual"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "TextField",
+                    "props": {
+                      "label": {
+                        "t": "image.ai.instruction"
+                      },
+                      "value": {
+                        "bind": "vm.imageCaption.instruction"
+                      },
+                      "multiline": true,
+                      "compactMultiline": true,
+                      "autoFocus": true,
+                      "readOnly": {
+                        "get": "vm.imageCaption.writing"
+                      }
+                    }
+                  },
+                  {
+                    "type": "Text",
+                    "props": {
+                      "value": {
+                        "get": "vm.imageCaption.disclosure"
+                      },
+                      "role": "caption",
+                      "tone": "muted"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "when": {
+              "get": "vm.imageCaption.writing"
+            },
+            "type": "Text",
+            "props": {
+              "value": {
+                "t": "image.ai.writing"
+              },
+              "announce": true
+            }
+          },
+          {
+            "type": "Text",
+            "props": {
+              "value": {
+                "get": "vm.imageCaption.error"
+              },
+              "tone": "danger",
+              "announce": true
+            }
+          }
+        ]
+      }
+    ]
+  }]
 }
 ]
 }
