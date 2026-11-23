@@ -18,11 +18,11 @@
 
 ## Short description
 
-> A calm writing app. Your notes stay plain files in your own GitHub.
+> A calm writing app. Your notes stay plain files, on your computer or in your own GitHub.
 
 ## Description
 
-> Write. Nothing else. A calm writing app. Your notes stay plain files in your own GitHub.
+> Write. Nothing else. A calm writing app. Your notes stay plain files, on your computer or in your own GitHub.
 >
 > Find anything. Instantly. Notes, commands and settings, one keystroke away.
 >
@@ -30,13 +30,13 @@
 >
 > Your notes, in folders. Plain Markdown files you can see, move and keep.
 >
-> Every note is a Markdown file in a folder you choose. Sign in with your own GitHub account and Focus Notes backs your notes up to your own repository, or keep them on this computer only.
+> Every note is a Markdown file in a project folder you choose, with its own history. Keep a project on this computer only, or sign in with your own GitHub account and Focus Notes backs it up to your own private repository.
 >
 > Rewrite selected words with a prompt or a preset. Connect an AI app you already run, an online service with your own API key, or GitHub Copilot, if you already use it in your terminal. Choose your default connection in Settings. Focus Notes does not install or run AI models; cloud services have their own terms and charges.
 >
 > Free and open source: Focus Notes' own code is under the MIT License. The Microsoft DirectX files it includes are under Microsoft's terms.
 >
-> The app saves notes on your computer and, if you choose backup, talks to GitHub with your own account. Optional AI rewriting sends your selected words and prompt to the AI connection you choose, not the rest of your note. There's no Focus Notes server and no Focus Notes account.
+> The app saves notes on your computer and, if you choose backup, talks to GitHub with your own account. Optional AI rewriting sends your selected words and prompt to the AI connection you choose, not the rest of your note. Optional AI image captions send a smaller, location-free copy of the one image you chose and your instruction, not the note or its name. There's no Focus Notes server and no Focus Notes account.
 >
 > Start writing.
 
@@ -45,12 +45,16 @@
 - Spotlight: Find anything. Instantly. Notes, commands and settings, one keystroke away.
 - Themes: Make it yours. Ten built-in themes, light and dark.
 - Files: Your notes, in folders. Plain Markdown files you can see, move and keep.
-- Works offline: notes are plain files on your computer, backed up to your own GitHub repository when you're online.
+- Projects: keep each one on this computer only, with its own history, or on GitHub in a new private repository of your own.
+- Works offline: notes are plain files on your computer; a project on GitHub backs up to your own repository when you're online.
+- Find in all notes: search the text of every note in a project, with the same options as find in one note.
+- Pictures in your notes: paste, drop or insert images, crop and rotate them, and add descriptions and captions.
+- Open a Markdown or plain text file on its own; a .txt file stays plain text when you save it.
 - Private notes stay in your own private repository; share a sealed copy with only the people you choose.
 - A command-line tool and an MCP server, so the agents you allow can read and write notes, each change kept and undoable.
 - Rewrite selected words with a prompt or preset; stop restores your original text, and a finished rewrite is undoable in one step.
 - Choose your default AI connection in Settings and check its service, model and locality before generating. GitHub Copilot uses the cloud.
-- Print the open note through the Windows print dialog, with optional page numbers.
+- Print the open note, or save it as a PDF, through the Windows print dialog, with its pictures, captions and optional page numbers.
 
 ## Search terms
 
@@ -111,10 +115,10 @@ Expected: Not verified for 1.1.0. The owner must complete the current IARC quest
 > Focus Notes has no telemetry, and this site has no tracking.
 >
 > - This site has no analytics, no cookies and no counters. Every page, font and picture comes from this site, and nothing is loaded from any other.
-> - The app saves notes on your computer and, if you choose backup, talks to GitHub with your own account. Optional AI rewriting sends your selected words and prompt to the AI connection you choose, not the rest of your note. There's no Focus Notes server and no Focus Notes account.
+> - The app saves notes on your computer and, if you choose backup, talks to GitHub with your own account. Optional AI rewriting sends your selected words and prompt to the AI connection you choose, not the rest of your note. Optional AI image captions send a smaller, location-free copy of the one image you chose and your instruction, not the note or its name. There's no Focus Notes server and no Focus Notes account.
 > - AI connections may run on this computer or use the cloud. Check the service, model and locality before generating; even an app on this computer can route to a cloud model. GitHub Copilot uses the cloud through the supported CLI you already use in your terminal, with its existing login. Focus Notes does not install or run AI models. Online services have their own privacy terms, retention rules and charges.
-> - Your choice to send is made when you select words and choose Generate. There is no separate first-send permission dialog or private-note block: selected private words can also go to the chosen connection. Check the selection and connection before generating. Connection tests send a short made-up message, never your notes.
-> - Your private notes stay in your own private GitHub repository. Only sealed copies are published, and only the people you choose can open them.
+> - Your choice to send is made when you select words and choose Generate, or choose Generate caption for an image. There is no separate first-send permission dialog or private-note block: selected private words can also go to the chosen connection. Check the selection and connection before generating. Connection tests send a short made-up message, never your notes.
+> - Your private notes stay on your computer and, in a project on GitHub, in your own private repository. Only sealed copies are published, and only the people you choose can open them.
 > - Feedback goes through GitHub issues you write yourself, in public. Nothing is sent without you.
 >
 > Questions about privacy? Open an issue on GitHub (https://github.com/prabinpebam/focus-notes/issues).

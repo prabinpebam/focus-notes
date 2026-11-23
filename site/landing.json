@@ -2,7 +2,7 @@
   "$comment": "The landing page (D-174, D-176): visual first, a few words each. The hero, up to five featured sections, and the closing line; the tiles and the buttons are in the view document (packages/views/views/siteLanding.view.json). Each image is the app's own window (apps/desktop/e2e/site-catalog.spec.ts, cut out by tools/site/scenes.py), light mode unless a section says otherwise. The Themes section shows the same note in every built-in theme, chosen by swatches with a Light / Dark switch. WP-10.5 writes the final words.",
   "draft": "WP-10.5",
   "headline": "Write. Nothing else.",
-  "line": "A calm writing app. Your notes stay plain files in your own GitHub.",
+  "line": "A calm writing app. Your notes stay plain files, on your computer or in your own GitHub.",
   "hero": {
     "scene": "note-light",
     "alt": "Focus Notes with an essay, “On writing slowly”, open in the quiet, full-window editor."

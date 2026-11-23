@@ -3,7 +3,7 @@
 Keep notes private, make them public, and share one with a passcode.
 
 > [!NOTE]
-> **TL;DR.** In the item-sharing candidate, **Share…** starts with the private note or folder you chose. Review its contents, choose how it opens, then copy its share information. Copying waits until the published encrypted share can actually be opened. Opening or cancelling the draft leaves existing shares unchanged.
+> **TL;DR.** **Share…** starts with the private note or folder you chose. Review its contents, choose how it opens, then copy its share information. Copying waits until the published encrypted share can actually be opened. Opening or cancelling the draft leaves existing shares unchanged.
 
 ## Review a note or folder
 
@@ -21,7 +21,7 @@ On Windows, choose **Copy share information**, **Copy link**, or **Copy access c
 
 Retrying a failed publication in the same dialog reuses the saved share. Opening **Share…** again starts an independent share; it does not replace the earlier link. With **Include notes added later** off, a folder share includes only the reviewed note identities, not another note later created at the same path.
 
-**Candidate limits:** this work is not yet merged or security-reviewed. Shared-before actions, adding newer notes, first-site setup and full large-folder review remain unfinished. Change… and template editing are not part of this increment. Today's Settings → Sharing flow remains available for existing named grants.
+**Not available yet:** shared-before actions, adding newer notes to an earlier share, first-site setup from this dialog and full review of very large folders. Change… and template editing aren't part of this dialog. Settings → Sharing remains available for existing named grants.
 
 ## Coming soon
 

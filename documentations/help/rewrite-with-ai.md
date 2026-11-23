@@ -5,13 +5,11 @@ Ask an AI service you chose to rewrite a few words or a paragraph, and watch the
 > [!NOTE]
 > **TL;DR.** Select text, press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>R</kbd> (<kbd>⇧⌘R</kbd> on a Mac), type what you want or pick a preset, and select **Generate**. To get your words back, press <kbd>Ctrl</kbd>+<kbd>Z</kbd> once. To stop, press <kbd>Esc</kbd>.
 
-**Applies to:** the desktop app on Windows, macOS and Linux. Rewrite isn't in the browser.
+**Applies to:** the desktop app on Windows. Rewrite isn't in the browser.
 
 **Before you start:** connect an AI service once. See [Connect an AI service](connect-an-ai-service.md).
 
 Already using GitHub Copilot in your terminal? **Find on this computer** can add its supported signed-in integration directly. It says **Cloud** and uses the same Rewrite and Stop flow.
-
-**Built update (1 November):** the inline prompt and deselection behavior below are implemented in WP-AI.14 (D-265/D-266), pending integration into the owner's candidate build. The local fast checks and Try it evidence are in the [definition of done](../plan/definition-of-done.md#inline-prompt-popover-definition-of-done); this is not a `main` or release claim.
 
 ## Rewrite
 

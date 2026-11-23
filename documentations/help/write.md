@@ -14,6 +14,14 @@ Format with Markdown shortcuts, use focus mode, make tables, find anything, and 
 
 Press <kbd>Ctrl</kbd>+<kbd>/</kbd> (<kbd>⌘/</kbd> on a Mac), type a name and press <kbd>Enter</kbd> to act and close Actions, including toggles and settings. To make repeated adjustments without losing the query or focus, use <kbd>Shift</kbd>+<kbd>Enter</kbd> on a toggle or setting.
 
+## Find in all notes
+
+Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd> and type. It searches the text of every note in the project and matches the same way as find in one note, with the same case, whole-word and regular-expression options. Narrow it with `in:folder/`, `is:public` or `is:private`.
+
+Results are grouped by note, with each note's folder, whether it's public or private, and its number of matches. Press <kbd>Enter</kbd> on a result to open that note at the match, with find open so <kbd>Enter</kbd> keeps stepping through the note. <kbd>F4</kbd> and <kbd>Shift</kbd>+<kbd>F4</kbd> open the next and previous result without the panel.
+
+If nothing matches, try different words or turn off an option. If the search can't run, your search is kept and you can try again.
+
 ## Describe an image
 
 Right-click an image and choose **Edit description…**. **Image description** is its alt text, read to someone who cannot see it. **Caption** is shown below the image. Choose **Save** to change both together; Undo restores both.
@@ -47,7 +55,7 @@ Review and edit the result, then choose **Use caption**. Undo restores the previ
 - Write and format with Markdown shortcuts
 - Use focus mode
 - Make tables
-- Find and replace
+- Find and replace in one note
 - Use Actions to find anything
 - Change text size, theme and font
 

@@ -7,7 +7,7 @@ Set up the AI service that rewrites your words: a server on this computer, GitHu
 > [!NOTE]
 > **TL;DR.** Open **Settings** → **AI**, then **Find on this PC**. A supported signed-in **GitHub Copilot** is added directly; local servers offer **Set up**. Copilot says **Cloud** because your words go to GitHub. Online APIs still use **Add connection** and your own key. **Test connection** sends only made-up text.
 
-**Applies to:** the desktop app on Windows, macOS and Linux.
+**Applies to:** the desktop app on Windows.
 
 **Before you start:** you need one of these:
 
@@ -57,8 +57,6 @@ Claude subscription logins are not reused. Gemini CLI login reuse is on hold, an
 **Result:** after a few seconds the row says "it answered". The test sends one short made-up message, never your notes. An online service may charge a tiny amount for it.
 
 ## Choose which one rewrites
-
-The single-list Settings update is built on own-ai-default-list-build (D-267), pending integration into the owner's app.
 
 - In **Settings** → **AI**, select a connection row. Its **Default** badge shows which one Rewrite uses. With the keyboard, move between choices with the arrow keys and select with Space.
 - You can also choose **AI integration** in the Rewrite prompt when you have more than one connection. Both places change the same remembered choice on this computer; reopening Settings shows it.
