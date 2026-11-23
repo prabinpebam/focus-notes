@@ -51,10 +51,12 @@ describe("HLP-08: the product site builds from site/ at its addresses (D-167)", 
     expect(landing.draft).toBe("WP-10.5");
     expect(html).toMatch(/<h1 class="[^"]*">Write\. Nothing else\.<\/h1>/);
     expect(html).toMatch(/href="#download"[^>]*>Download Focus Notes</);
-    // Downloads are the last section (D-184): each system's file, and the latest release on GitHub.
-    for (const os of ["Windows", "macOS", "Linux"]) expect(html).toMatch(new RegExp(`<h3[^>]*>${os}</h3>`));
+    // Downloads are the last section (D-184): Windows only until v1 is in the Store (D-211), and the latest release on GitHub.
+    expect(html).toMatch(/>Free for Windows\.</);
+    expect(html).not.toMatch(/macOS|Linux|\.dmg|AppImage/);
     expect(html).toMatch(/href="https:\/\/github\.com\/prabinpebam\/focus-notes\/releases\/latest"[^>]*>Download from GitHub</);
-    expect(html).toMatch(/href="demo\/"[^>]*>Try the demo</);
+    // The demo is retired (D-292, WP-10.6): nothing links to it.
+    expect(html).not.toMatch(/Try the demo/);
     // Light scenes for everyone (D-176): nothing switches by the visitor's setting; dark is a choice, by radio buttons.
     expect(html).not.toMatch(/prefers-color-scheme/);
     expect(html).toMatch(/<source type="image\/avif" srcSet="media\/note-light-720\.avif 720w, media\/note-light-1440\.avif 1440w" sizes="[^"]+"\/>/i);

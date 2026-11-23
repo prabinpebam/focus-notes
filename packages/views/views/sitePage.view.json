@@ -48,21 +48,6 @@
           "type": "SiteLink",
           "props": {
             "label": {
-              "t": "site.nav.demo"
-            },
-            "href": {
-              "get": "vm.site.demo"
-            },
-            "variant": "nav",
-            "current": {
-              "get": "vm.site.currentDemo"
-            }
-          }
-        },
-        {
-          "type": "SiteLink",
-          "props": {
-            "label": {
               "t": "site.nav.download"
             },
             "href": {

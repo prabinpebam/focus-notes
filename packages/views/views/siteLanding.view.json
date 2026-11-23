@@ -49,21 +49,6 @@
           "type": "SiteLink",
           "props": {
             "label": {
-              "t": "site.nav.demo"
-            },
-            "href": {
-              "get": "vm.site.demo"
-            },
-            "variant": "nav",
-            "current": {
-              "get": "vm.site.currentDemo"
-            }
-          }
-        },
-        {
-          "type": "SiteLink",
-          "props": {
-            "label": {
               "t": "site.nav.download"
             },
             "href": {
@@ -205,18 +190,6 @@
                     "get": "vm.site.download"
                   },
                   "variant": "primary"
-                }
-              },
-              {
-                "type": "SiteLink",
-                "props": {
-                  "label": {
-                    "t": "site.cta.demo"
-                  },
-                  "href": {
-                    "get": "vm.site.demo"
-                  },
-                  "variant": "secondary"
                 }
               }
             ]
@@ -540,18 +513,6 @@
                   },
                   "variant": "primary"
                 }
-              },
-              {
-                "type": "SiteLink",
-                "props": {
-                  "label": {
-                    "t": "site.cta.demo"
-                  },
-                  "href": {
-                    "get": "vm.site.demo"
-                  },
-                  "variant": "secondary"
-                }
               }
             ]
           },
@@ -596,116 +557,6 @@
               "look": "headline",
               "as": "h2"
             }
-          },
-          {
-            "type": "SiteGrid",
-            "children": [
-              {
-                "type": "SiteSection",
-                "props": {
-                  "tone": "tile"
-                },
-                "children": [
-                  {
-                    "type": "Icon",
-                    "props": {
-                      "name": "download",
-                      "size": "l"
-                    }
-                  },
-                  {
-                    "type": "SiteText",
-                    "props": {
-                      "value": {
-                        "t": "site.download.windows"
-                      },
-                      "look": "tile",
-                      "as": "h3"
-                    }
-                  },
-                  {
-                    "type": "SiteText",
-                    "props": {
-                      "value": {
-                        "t": "site.download.windowsFile"
-                      },
-                      "look": "caption",
-                      "as": "p"
-                    }
-                  }
-                ]
-              },
-              {
-                "type": "SiteSection",
-                "props": {
-                  "tone": "tile"
-                },
-                "children": [
-                  {
-                    "type": "Icon",
-                    "props": {
-                      "name": "download",
-                      "size": "l"
-                    }
-                  },
-                  {
-                    "type": "SiteText",
-                    "props": {
-                      "value": {
-                        "t": "site.download.mac"
-                      },
-                      "look": "tile",
-                      "as": "h3"
-                    }
-                  },
-                  {
-                    "type": "SiteText",
-                    "props": {
-                      "value": {
-                        "t": "site.download.macFile"
-                      },
-                      "look": "caption",
-                      "as": "p"
-                    }
-                  }
-                ]
-              },
-              {
-                "type": "SiteSection",
-                "props": {
-                  "tone": "tile"
-                },
-                "children": [
-                  {
-                    "type": "Icon",
-                    "props": {
-                      "name": "download",
-                      "size": "l"
-                    }
-                  },
-                  {
-                    "type": "SiteText",
-                    "props": {
-                      "value": {
-                        "t": "site.download.linux"
-                      },
-                      "look": "tile",
-                      "as": "h3"
-                    }
-                  },
-                  {
-                    "type": "SiteText",
-                    "props": {
-                      "value": {
-                        "t": "site.download.linuxFile"
-                      },
-                      "look": "caption",
-                      "as": "p"
-                    }
-                  }
-                ]
-              }
-            ]
           },
           {
             "type": "SiteLink",
