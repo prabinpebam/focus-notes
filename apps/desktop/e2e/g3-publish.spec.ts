@@ -122,3 +122,33 @@ test("G3.4: a failed Publish keeps a plain reason in the dialog, records and pus
     await fake.close();
   }
 });
+
+test("G3.4: Unpublish from the ⋯ menu removes the note and its photo from the current site after the deploy; the note stays and the limits are stated", async () => {
+  const { dirs, root, fake, env } = await pairedProject();
+  const before = readFileSync(join(root, "notes", "journeys", "trip.md"));
+  let l: Launched | undefined;
+  try {
+    l = await launch(dirs, env);
+    const dialog = await openPublish(l);
+    await dialog.getByRole("button", { name: "Publish", exact: true }).click();
+    await expect(l.page.getByRole("status").filter({ hasText: "Published “Trip to the coast”" })).toHaveCount(1, { timeout: 30_000 });
+    expect(fake.git.site("ada/quiet-site").has("notes/journeys/trip.md")).toBe(true);
+    await l.page.keyboard.press(process.platform === "darwin" ? "Meta+." : "Control+.");
+    await l.page.getByRole("toolbar", { name: "Toolbar", exact: true }).getByRole("button", { name: "More", exact: true }).click();
+    await l.page.getByRole("menuitem", { name: "Unpublish", exact: true }).click();
+    await expect(l.page.getByRole("status").filter({ hasText: "Removed “Trip to the coast” from your site. Your note stays here. Copies people already have and the site’s history on GitHub can’t be withdrawn." }))
+      .toHaveCount(1, { timeout: 30_000 });
+    const site = fake.git.site("ada/quiet-site");
+    expect(site.has("notes/journeys/trip.md")).toBe(false);
+    expect(site.has("n/journeys/trip/index.html")).toBe(false);
+    expect(site.has("notes/assets/images/harbour.jpg")).toBe(false);
+    expect(fake.git.pushes).toEqual(["ada/quiet-site", "ada/quiet-site"]);
+    expect(JSON.parse(readFileSync(join(root, ".focus-notes", "published.json"), "utf8"))).toEqual({ version: 1, notes: [] });
+    expect(readFileSync(join(root, "notes", "journeys", "trip.md"))).toEqual(before);
+    expect(readFileSync(join(root, "notes", "assets", "images", "harbour.jpg"))).toEqual(PHOTO);
+    expect(await l.page.evaluate(() => performance.getEntriesByName("fn:sharing.unpublishSite").length)).toBeGreaterThan(0);
+  } finally {
+    await closeApp(l);
+    await fake.close();
+  }
+});

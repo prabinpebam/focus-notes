@@ -273,7 +273,7 @@ export const MORE_MENU: { id: string; label: string; items: MenuEntry[] }[] = [
     ],
   },
   { id: "edit", label: "menu.edit", items: ["table.insert", "image.insert", "find.open", "find.replace", "find.allNotes"] },
-  { id: "note", label: "menu.note", items: ["note.share", "note.publish", "note.copyPublicLink", "history.open", "note.print", "print.pageNumbers"] },
+  { id: "note", label: "menu.note", items: ["note.share", "note.publish", "note.unpublish", "note.copyPublicLink", "history.open", "note.print", "print.pageNumbers"] },
   // Settings is available only where there's a GitHub account to manage (the desktop, FRE-07).
   { id: "app", label: "menu.app", items: ["settings.open", "feedback.open", "toolbar.customize", "shortcuts.open", "help.open"] },
 ];

@@ -3220,6 +3220,7 @@
   "sharing.unpublish.removing": "Removing from your site…",
   "sharing.unpublish.done": "Removed “{title}” from your site. Your note stays here. Copies people already have and the site’s history on GitHub can’t be withdrawn.",
   "command.note.unpublish": "Unpublish",
+  "sharing.unpublish.unavailable": "Unpublishing needs your public site to be set up.",
   "sharing.operation.saveGitHub": "Save to GitHub",
   "sharing.operation.removeGitHub": "Remove from your site on GitHub",
   "sharing.operation.deploy": "Publish on your site",

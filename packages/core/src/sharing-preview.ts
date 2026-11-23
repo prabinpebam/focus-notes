@@ -198,6 +198,7 @@ export function registerSharingPreview(ctx: {
   commands.register({
     id: "note.unpublish", title: "command.note.unpublish", icon: "globe",
     enabled: () => live() && !state.busy && Boolean(store.state.note.path && relativeOf(store.state.note.path)),
+    disabledReason: "sharing.unpublish.unavailable",
     run: async () => {
       const path = store.state.note.path, rel = path ? relativeOf(path) : undefined;
       if (!path || !rel) return;
