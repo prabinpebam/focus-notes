@@ -26,6 +26,22 @@ export const ICON_LAYOUT_PENDING: ReadonlySet<string> = new Set<string>([
   "gallery.mock.pnw.deleteDone", "gallery.mock.pnw.deleteOfflineDone", "gallery.mock.pnw.deleteErrPartialGithub",
   "gallery.mock.open.view", "gallery.mock.open.cardStates",
   "gallery.mock.share.invite", "gallery.mock.share.invitePersonal",
+  // Found once the walk entered switch cases (D-408): projects and new-project wizard (W-MigC).
+  "projectNew", "gallery.mock.projects", "gallery.mock.newNote", "gallery.mock.quick", "gallery.mock.identity",
+  "gallery.mock.pnw.fileMd", "gallery.mock.pnw.fileTxt", "gallery.mock.pnw.linked",
+  // Delete mocks (W-MigC).
+  "gallery.mock.pnw.deleteEntry", "gallery.mock.pnw.deleteConfirm", "gallery.mock.pnw.deleteConsequences",
+  "gallery.mock.pnw.deleteCancelled", "gallery.mock.pnw.deleteProgress", "gallery.mock.pnw.deleteGithub",
+  "gallery.mock.pnw.deleteOffline", "gallery.mock.pnw.deleteUnsynced", "gallery.mock.pnw.deleteUnsyncedSaved",
+  "gallery.mock.pnw.deleteErrExpired", "gallery.mock.pnw.deleteErrGone", "gallery.mock.pnw.deleteErrNotAdmin",
+  "gallery.mock.pnw.deleteErrOffline", "gallery.mock.pnw.deleteErrPartialLocal", "gallery.mock.pnw.deleteErrPolicy",
+  "gallery.mock.pnw.deleteErrRateLimit", "gallery.mock.pnw.deleteErrSignin", "gallery.mock.pnw.deleteErrWindow",
+  // Sharing mocks (W-MigC) and rewrite (W-MigC).
+  "gallery.mock.share.entry", "gallery.mock.share.first", "gallery.mock.share.folder", "gallery.mock.share.large",
+  "gallery.mock.share.mac", "gallery.mock.share.note", "gallery.mock.share.offline", "gallery.mock.share.publish",
+  "gallery.mock.share.review", "gallery.mock.share.signedOut", "gallery.mock.share.deleted", "gallery.mock.rewrite",
+  // Images (Area F): migrated on vq-dialogs-f-23nov, which removes this entry when it lands.
+  "gallery.mock.images",
 ]);
 
 const isNode = (v: unknown): v is Node => typeof v === "object" && v !== null && !Array.isArray(v);
@@ -53,6 +69,13 @@ function checkButtons(row: Node[], trailing: boolean, doc: string, at: string, o
 }
 
 function walk(v: unknown, doc: string, at: string, inside: boolean, trailing: boolean, out: IconLayoutProblem[]) {
+  // Every branch renders in the same place: a switch's cases and a repeat's empty case hold dialogs too.
+  if (isNode(v) && !v.type) {
+    if (isNode(v.cases)) for (const [k, c] of Object.entries(v.cases)) walk(c, doc, `${at}/cases/${k}`, inside, trailing, out);
+    if (v.empty !== undefined) walk(v.empty, doc, `${at}/empty`, inside, trailing, out);
+    if (v.render !== undefined) walk(v.render, doc, `${at}/render`, inside, trailing, out);
+    return;
+  }
   const n = unwrap(v);
   if (!n) return;
   if (exempt(n)) return;
@@ -67,7 +90,7 @@ function walk(v: unknown, doc: string, at: string, inside: boolean, trailing: bo
   if (n.type === "IconLayout" && isNode(n.slots) && Array.isArray(n.slots.actions)) {
     checkButtons(n.slots.actions.map(unwrap).filter((c): c is Node => Boolean(c)), true, doc, `${at}/slots/actions`, out);
   }
-  kids(n).forEach((c, i) => walk(c, doc, `${at}/children/${i}`, here, false, out));
+  if (Array.isArray(n.children)) n.children.forEach((c, i) => walk(c, doc, `${at}/children/${i}`, here, false, out));
   if (isNode(n.slots)) {
     for (const [name, list] of Object.entries(n.slots)) {
       if (!Array.isArray(list)) continue;

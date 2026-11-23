@@ -21,7 +21,7 @@ export function IconLayout({ icon, heading, actions, id, children }: IconLayoutP
         {head.length || body.length ? (
           <div className={s.main}>
             {head.length ? <div className={s.header} data-icon-layout-heading="">{head}</div> : null}
-            {body}
+            {body.length ? <div className={s.body} data-icon-layout-body="">{body}</div> : null}
           </div>
         ) : null}
         {acts.length ? <div className={s.actions} data-icon-layout-actions="">{acts}</div> : null}

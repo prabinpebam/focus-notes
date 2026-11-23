@@ -15,7 +15,7 @@ export const contract = defineContract({
   type: "IconLayout",
   tier: "layout",
   description:
-    "The app-wide two-column layout for dialogs, alert cards and popover cards (D-408). The icon slot is the first column and holds only the icon or visual; everything else sits in the second column: the heading slot (title and its line, stackPair apart), then the default slot (body, details, progress, fields; stackItem apart), then the actions slot stackGroup below, aligned to the trailing edge, secondary first and primary last (D-374). Nothing in the second column wraps under the icon. Without an icon it is one column with the same trailing actions. It paints no border, fill or inset: the enclosing Surface, PopoverPanel or Dialog owns the one inset.",
+    "The app-wide two-column layout for dialogs, alert cards and popover cards (D-408). The icon slot is the first column and holds only the icon or visual; everything else sits in the second column: the heading slot (title and its line, stackPair apart), then the default slot stackGroup below (body, details, progress, fields; stackItem apart), then the actions slot below with the largest gap (cmp.iconLayout.actionsGap, the gutter, never more than a card's inset), aligned to the trailing edge, secondary first and primary last (D-374). Nothing in the second column wraps under the icon. Without an icon it is one column with the same trailing actions. It paints no border, fill or inset: the enclosing Surface, PopoverPanel or Dialog owns the one inset.",
   props: {},
   events: {},
   slots: {
@@ -25,7 +25,7 @@ export const contract = defineContract({
     actions: { accepts: "any", max: 4 },
   },
   states: ["rest"],
-  tokens: "space.inlineGroup, space.inlineItem, space.stackPair, space.stackItem, space.stackGroup",
+  tokens: "space.inlineGroup, space.inlineItem, space.stackPair, space.stackItem, space.stackGroup, cmp.iconLayout.*",
   a11y: { pattern: "none" },
   fixtures: [
     { name: "icon, details and actions", slots: { icon: [mark], heading, actions }, children: [facts] },
