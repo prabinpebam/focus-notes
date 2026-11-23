@@ -614,27 +614,10 @@
                 "type": "Inline",
                 "props": {
                  "gap": "inlineItem",
-                 "wrap": true
+                 "wrap": true,
+                 "justify": "end"
                 },
                 "children": [
-                 {
-                  "type": "Button",
-                  "on": {
-                   "press": {
-                    "run": "gallery.open",
-                    "args": {
-                     "id": "mock.quick"
-                    }
-                   }
-                  },
-                  "props": {
-                   "label": {
-                    "t": "project.open.newLocal"
-                   },
-                   "variant": "secondary",
-                   "icon": "quickNote"
-                  }
-                 },
                  {
                   "type": "Button",
                   "props": {
@@ -669,6 +652,24 @@
                    },
                    "variant": "subtle",
                    "icon": "add"
+                  }
+                 },
+                 {
+                  "type": "Button",
+                  "on": {
+                   "press": {
+                    "run": "gallery.open",
+                    "args": {
+                     "id": "mock.quick"
+                    }
+                   }
+                  },
+                  "props": {
+                   "label": {
+                    "t": "project.open.newLocal"
+                   },
+                   "variant": "secondary",
+                   "icon": "quickNote"
                   }
                  }
                 ]
@@ -1368,27 +1369,10 @@
                   "type": "Inline",
                   "props": {
                    "gap": "inlineItem",
-                   "wrap": true
+                   "wrap": true,
+                   "justify": "end"
                   },
                   "children": [
-                   {
-                    "type": "Button",
-                    "on": {
-                     "press": {
-                      "run": "gallery.open",
-                      "args": {
-                       "id": "mock.quick"
-                      }
-                     }
-                    },
-                    "props": {
-                     "label": {
-                      "t": "project.open.newLocal"
-                     },
-                     "variant": "secondary",
-                     "icon": "quickNote"
-                    }
-                   },
                    {
                     "type": "Button",
                     "props": {
@@ -1423,6 +1407,24 @@
                      },
                      "variant": "subtle",
                      "icon": "add"
+                    }
+                   },
+                   {
+                    "type": "Button",
+                    "on": {
+                     "press": {
+                      "run": "gallery.open",
+                      "args": {
+                       "id": "mock.quick"
+                      }
+                     }
+                    },
+                    "props": {
+                     "label": {
+                      "t": "project.open.newLocal"
+                     },
+                     "variant": "secondary",
+                     "icon": "quickNote"
                     }
                    }
                   ]
@@ -2314,27 +2316,10 @@
                   "type": "Inline",
                   "props": {
                    "gap": "inlineItem",
-                   "wrap": true
+                   "wrap": true,
+                   "justify": "end"
                   },
                   "children": [
-                   {
-                    "type": "Button",
-                    "on": {
-                     "press": {
-                      "run": "gallery.open",
-                      "args": {
-                       "id": "mock.quick"
-                      }
-                     }
-                    },
-                    "props": {
-                     "label": {
-                      "t": "project.open.newLocal"
-                     },
-                     "variant": "secondary",
-                     "icon": "quickNote"
-                    }
-                   },
                    {
                     "type": "Button",
                     "props": {
@@ -2369,6 +2354,24 @@
                      },
                      "variant": "subtle",
                      "icon": "add"
+                    }
+                   },
+                   {
+                    "type": "Button",
+                    "on": {
+                     "press": {
+                      "run": "gallery.open",
+                      "args": {
+                       "id": "mock.quick"
+                      }
+                     }
+                    },
+                    "props": {
+                     "label": {
+                      "t": "project.open.newLocal"
+                     },
+                     "variant": "secondary",
+                     "icon": "quickNote"
                     }
                    }
                   ]

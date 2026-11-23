@@ -22,29 +22,7 @@ const EXEMPT_IDS = new Set(["recover", "firstRun", "panelFailure", "findBar"]);
  * Views not yet on the shared layout, by document id: the area migrations empty this list (D-408).
  * Each entry is a known-pending violation, not an exemption.
  */
-export const ICON_LAYOUT_PENDING: ReadonlySet<string> = new Set<string>([
-  // canvas: only the writing window's find bar Replace buttons remain (sacred and exempt; needs a findBar exemption).
-  "canvas", "rewrite", "newNote", "shareItem", "projects",
-  "gallery.mock.pnw.deleteDone", "gallery.mock.pnw.deleteOfflineDone", "gallery.mock.pnw.deleteErrPartialGithub",
-  "gallery.mock.open.view", "gallery.mock.open.cardStates",
-  "gallery.mock.share.invite", "gallery.mock.share.invitePersonal",
-  // Found once the walk entered switch cases (D-408): projects and new-project wizard (W-MigC).
-  "projectNew", "gallery.mock.projects", "gallery.mock.newNote", "gallery.mock.quick", "gallery.mock.identity",
-  "gallery.mock.pnw.fileMd", "gallery.mock.pnw.fileTxt", "gallery.mock.pnw.linked",
-  // Delete mocks (W-MigC).
-  "gallery.mock.pnw.deleteEntry", "gallery.mock.pnw.deleteConfirm", "gallery.mock.pnw.deleteConsequences",
-  "gallery.mock.pnw.deleteCancelled", "gallery.mock.pnw.deleteProgress", "gallery.mock.pnw.deleteGithub",
-  "gallery.mock.pnw.deleteOffline", "gallery.mock.pnw.deleteUnsynced", "gallery.mock.pnw.deleteUnsyncedSaved",
-  "gallery.mock.pnw.deleteErrExpired", "gallery.mock.pnw.deleteErrGone", "gallery.mock.pnw.deleteErrNotAdmin",
-  "gallery.mock.pnw.deleteErrOffline", "gallery.mock.pnw.deleteErrPartialLocal", "gallery.mock.pnw.deleteErrPolicy",
-  "gallery.mock.pnw.deleteErrRateLimit", "gallery.mock.pnw.deleteErrSignin", "gallery.mock.pnw.deleteErrWindow",
-  // Sharing mocks (W-MigC) and rewrite (W-MigC).
-  "gallery.mock.share.entry", "gallery.mock.share.first", "gallery.mock.share.folder", "gallery.mock.share.large",
-  "gallery.mock.share.mac", "gallery.mock.share.note", "gallery.mock.share.offline", "gallery.mock.share.publish",
-  "gallery.mock.share.review", "gallery.mock.share.signedOut", "gallery.mock.share.deleted", "gallery.mock.rewrite",
-  // Images (Area F): migrated on vq-dialogs-f-23nov, which removes this entry when it lands.
-  "gallery.mock.images",
-]);
+export const ICON_LAYOUT_PENDING: ReadonlySet<string> = new Set<string>([]);
 
 const isNode = (v: unknown): v is Node => typeof v === "object" && v !== null && !Array.isArray(v);
 const props = (n: Node) => (isNode(n.props) ? n.props : {}) as Record<string, unknown>;
@@ -94,7 +72,15 @@ function walk(v: unknown, doc: string, at: string, inside: boolean, trailing: bo
   if (n.type === "IconLayout" && isNode(n.slots) && Array.isArray(n.slots.actions)) {
     checkButtons(n.slots.actions.map(unwrap).filter((c): c is Node => Boolean(c)), true, doc, `${at}/slots/actions`, out);
   }
-  if (Array.isArray(n.children)) n.children.forEach((c, i) => walk(c, doc, `${at}/children/${i}`, here, false, out));
+  if (Array.isArray(n.children)) {
+    // A settings page's tab panels and an ItemCard's own row hold in-place commands for one setting or item, not
+    // the dialog's actions; a dialog or card nested in them is checked again (D-408).
+    const content = n.type === "Tabs" || n.type === "ItemCard";
+    // A row's trailing edge: every child of an end-justified Inline, and the last child of a between-justified one.
+    const justify = n.type === "Inline" ? props(n).justify : undefined;
+    const last = n.children.length - 1;
+    n.children.forEach((c, i) => walk(c, doc, `${at}/children/${i}`, here && !content, (trailing && n.type === "Inline") || justify === "end" || (justify === "between" && i === last), out));
+  }
   if (isNode(n.slots)) {
     for (const [name, list] of Object.entries(n.slots)) {
       if (!Array.isArray(list)) continue;

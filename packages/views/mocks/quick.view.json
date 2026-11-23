@@ -820,97 +820,76 @@
             },
             "children": [
              {
-              "type": "Stack",
-              "props": {
-               "gap": "stackGroup"
+              "type": "IconLayout",
+              "slots": {
+               "icon": [
+                {
+                 "type": "ProjectMark",
+                 "props": {
+                  "logo": "book",
+                  "accent": "teal",
+                  "size": "l"
+                 }
+                }
+               ],
+               "heading": [
+                {
+                 "type": "Heading",
+                 "props": {
+                  "value": {
+                   "t": "project.file.inProject"
+                  },
+                  "level": "2"
+                 }
+                },
+                {
+                 "type": "Text",
+                 "props": {
+                  "value": {
+                   "t": "project.file.inProjectPath"
+                  },
+                  "role": "caption",
+                  "tone": "muted"
+                 }
+                }
+               ],
+               "actions": [
+                {
+                 "type": "Button",
+                 "on": {
+                  "press": {
+                   "set": "local.step",
+                   "to": "file"
+                  }
+                 },
+                 "props": {
+                  "label": {
+                   "t": "project.file.openOnly"
+                  },
+                  "variant": "secondary"
+                 }
+                },
+                {
+                 "type": "Button",
+                 "on": {
+                  "press": {
+                   "run": "gallery.open",
+                   "args": {
+                    "id": "mock.projects"
+                   }
+                  }
+                 },
+                 "props": {
+                  "label": {
+                   "t": "project.file.openProject"
+                  },
+                  "variant": "primary",
+                  "icon": "openWindow"
+                 }
+                }
+               ]
               },
               "children": [
-               {
-                "type": "Inline",
-                "props": {
-                 "gap": "inlineGroup",
-                 "align": "center"
-                },
-                "children": [
-                 {
-                  "type": "ProjectMark",
-                  "props": {
-                   "logo": "book",
-                   "accent": "teal",
-                   "size": "l"
-                  }
-                 },
-                 {
-                  "type": "Stack",
-                  "props": {
-                   "gap": "none"
-                  },
-                  "children": [
-                   {
-                    "type": "Heading",
-                    "props": {
-                     "value": {
-                      "t": "project.file.inProject"
-                     },
-                     "level": "2"
-                    }
-                   },
-                   {
-                    "type": "Text",
-                    "props": {
-                     "value": {
-                      "t": "project.file.inProjectPath"
-                     },
-                     "role": "caption",
-                     "tone": "muted"
-                    }
-                   }
-                  ]
-                 }
-                ]
-               },
-               {
-                "type": "Inline",
-                "props": {
-                 "gap": "inlineItem",
-                 "wrap": true
-                },
-                "children": [
-                 {
-                  "type": "Button",
-                  "on": {
-                   "press": {
-                    "run": "gallery.open",
-                    "args": {
-                     "id": "mock.projects"
-                    }
-                   }
-                  },
-                  "props": {
-                   "label": {
-                    "t": "project.file.openProject"
-                   },
-                   "variant": "primary",
-                   "icon": "openWindow"
-                  }
-                 },
-                 {
-                  "type": "Button",
-                  "on": {
-                   "press": {
-                    "set": "local.step",
-                    "to": "file"
-                   }
-                  },
-                  "props": {
-                   "label": {
-                    "t": "project.file.openOnly"
-                   },
-                   "variant": "secondary"
-                  }
-                 }
-                ]
-               },
                {
                 "type": "Text",
                 "props": {
