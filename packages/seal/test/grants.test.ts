@@ -268,7 +268,9 @@ describe("the leak check covers grant secrets (SEC-06)", () => {
     await writeFile(join(i.site, "oops.js"), `const s = "${secret}";`);
     const err = await i.run().catch((e) => e);
     expect(err).toBeInstanceOf(LeakError);
-    expect(err.message).toContain("oops.js (secret)");
+    expect(err.findings).toContainEqual({ file: "oops.js", kind: "secret" });
+    expect(err.message).toContain("(secret)");
+    expect(err.message).not.toContain("oops.js");
     expect(err.message).not.toContain(secret);
     await writeFile(join(i.site, "oops.js"), "nothing here");
     expect(await leakCheck(i.site, [], ["orbit maple quiet river"])).toEqual([]);

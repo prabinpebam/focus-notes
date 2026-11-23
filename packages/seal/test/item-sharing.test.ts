@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { mkdtemp, mkdir, readFile, rm, writeFile, readdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -78,6 +78,26 @@ describe("item shares (SHR-14, SHR-16, SHR-23; MP.17/18)", () => {
     expect(second.scope).toEqual(first.scope);
     expect(b.access.grants[0]).toEqual(first);
     expect(apply({ version: 1, grants: [] }, true).access.grants[0]?.scope.folders).toEqual(["Confidential drafts"]);
+  });
+
+  it("regenerates both identifier collisions before committing an item grant", () => {
+    const initial = apply({ version: 1, grants: [] }).access;
+    initial.grants[0]!.shareCode = "AAAAAAAA";
+    initial.grants[0]!.id = "saaaaaaaaaaaaaaaa";
+    const original = globalThis.crypto.getRandomValues.bind(globalThis.crypto);
+    let codes = 0, ids = 0;
+    const random = vi.spyOn(globalThis.crypto, "getRandomValues").mockImplementation((array) => {
+      if (array instanceof Uint8Array && array.length === 8) { array.fill(codes++ === 0 ? 0 : 1); return array; }
+      if (array instanceof Uint8Array && array.length === 16 && ids < 2) { array.fill(ids++ === 0 ? 0 : 1); return array; }
+      return original(array);
+    });
+    try {
+      const next = apply(initial);
+      expect(next.access.grants[0]).toEqual(initial.grants[0]);
+      expect(next.access.grants[1]).toMatchObject({ id: "sbbbbbbbbbbbbbbbb", shareCode: "BBBBBBBB", name: "" });
+      expect(codes).toBe(2);
+      expect(ids).toBe(2);
+    } finally { random.mockRestore(); }
   });
 
   it("parses identifier case/separators without changing any secret characters", () => {

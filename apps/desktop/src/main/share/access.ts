@@ -9,7 +9,7 @@
 import { readdir, readFile, rm } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { applyAccessChange, audienceOf, hasHiddenText, inviteText, itemInviteText, parseAccessChange, parseAccessMessage, shareGrants, templateProblem, type InviteValues } from "@focus-notes/seal/access";
+import { applyAccessChange, audienceOf, hasHiddenText, inviteText, itemInviteText, itemTemplateProblem, parseAccessChange, parseAccessMessage, shareGrants, templateProblem, type InviteValues } from "@focus-notes/seal/access";
 import { displayShareCode, isActive, noteId, randomId, shareLink, type SiteFetch } from "@focus-notes/seal";
 import { validateAccess, type AccessFile, type Grant } from "@focus-notes/seal/publish";
 import { hasVault } from "@focus-notes/seal/vault";
@@ -76,17 +76,29 @@ export function accessStore(o: AccessStoreOptions) {
     try { raw = JSON.parse(await readFile(file(dir), "utf8")); } catch { throw new Error("private/access.json couldn't be read as JSON."); }
     return validateAccess(raw);
   };
-  /** The owner's invite template (SHR-09, D-143): it holds no secrets; a damaged one is ignored, never quoted. */
-  const messageFile = () => join(o.dir(), "access-message.json");
-  const template = async (): Promise<string | undefined> => {
-    const text = await readFile(messageFile(), "utf8").catch(() => undefined);
-    if (text === undefined) return undefined;
-    try { return parseAccessMessage(JSON.parse(text)); } catch { return undefined; }
+  const messageFile = (dir = o.dir()) => join(dir, "access-message.json");
+  const message = async (dir = o.dir()): Promise<{ value: { template?: unknown; itemTemplate?: unknown }; invalid: boolean }> => {
+    let text: string;
+    try { text = await readFile(messageFile(dir), "utf8"); }
+    catch (error) {
+      if (error instanceof Error && "code" in error && error.code === "ENOENT") return { value: {}, invalid: false };
+      throw new Error("access:template.failed");
+    }
+    let raw: unknown;
+    try { raw = JSON.parse(text); } catch { return { value: {}, invalid: true }; }
+    if (!raw || typeof raw !== "object" || Array.isArray(raw) || Object.keys(raw).some(key => !["template", "itemTemplate"].includes(key))) return { value: {}, invalid: true };
+    return { value: {
+      ...(Object.hasOwn(raw, "template") ? { template: Reflect.get(raw, "template") } : {}),
+      ...(Object.hasOwn(raw, "itemTemplate") ? { itemTemplate: Reflect.get(raw, "itemTemplate") } : {}),
+    }, invalid: false };
   };
   const listing = async (a: AccessFile | undefined): Promise<AccessListing> => {
     if (!a) return { available: false, vault: false, grants: [] };
     const site = await o.site().catch(() => undefined);
-    const t = await template();
+    const saved = await message();
+    const t = parseAccessMessage(saved.value);
+    const item = saved.value.itemTemplate;
+    const itemInvalid = saved.invalid || Object.hasOwn(saved.value, "itemTemplate") && (typeof item !== "string" || Boolean(itemTemplateProblem(item)));
     const dir = o.dir();
     const grants = await Promise.all(shareGrants(a).map(async (g) => {
       const audience = audienceOf(g);
@@ -98,7 +110,8 @@ export function accessStore(o: AccessStoreOptions) {
     }));
     return { available: true, localReview: Boolean(process.env.FOCUS_NOTES_CANDIDATE_SITE), ...(site ? { site } : {}), ...(t ? { template: t } : {}),
       ...(o.configured ? { configured: await o.configured() } : {}),
-      ...(o.setupAvailable ? { setupAvailable: await o.setupAvailable() } : {}), vault: hasVault(a), grants };
+      ...(o.setupAvailable ? { setupAvailable: await o.setupAvailable() } : {}),
+      ...(typeof item === "string" ? { itemTemplate: item } : {}), ...(itemInvalid ? { itemTemplateInvalid: true } : {}), vault: hasVault(a), grants };
   };
   const grant = async (id: unknown, dir = o.dir()): Promise<Grant> => {
     const g = typeof id === "string" ? shareGrants(await read(dir)).find((x) => x.id === id) : undefined;
@@ -194,12 +207,39 @@ export function accessStore(o: AccessStoreOptions) {
     if (what === "information") {
       const request = invite as { template?: unknown } | undefined;
       if (!g.item || !request || typeof request.template !== "string" || Object.keys(request).some((k) => k !== "template")) throw NOT();
-      return itemInviteText(request.template, { title: g.item.label, ...s,
+      const saved = await message(dir);
+      const item = saved.value.itemTemplate;
+      if (saved.invalid || Object.hasOwn(saved.value, "itemTemplate") && typeof item !== "string") throw new Error("access:template.invalid");
+      return itemInviteText(typeof item === "string" ? item : request.template, { title: g.item.label, ...s,
         ...(g.expiresAt ? { expires: new Intl.DateTimeFormat("en", { day: "numeric", month: "long", year: "numeric" }).format(new Date(g.expiresAt)) } : {}) });
     }
     if (what !== "invite") throw NOT();
     const { template, values } = parseInvite(invite);
     return inviteText(template, { ...values, name: g.name, ...s });
+  };
+  const saveTemplate = (raw: unknown, kind: "template" | "itemTemplate"): Promise<AccessListing> => {
+    const dir = o.dir();
+    const run = async () => {
+      if (!existsSync(dir) || o.dir() !== dir) throw new Error("access:failed");
+      if (raw !== null) {
+        if (typeof raw !== "string") throw NOT();
+        const bad = kind === "itemTemplate" ? itemTemplateProblem(raw) : templateProblem(raw);
+        if (bad) throw new Error(`access:${bad.problem}`);
+      }
+      const saved = await message(dir);
+      if (saved.invalid && raw !== null) throw new Error("access:template.invalid");
+      const next = { ...saved.value };
+      if (raw === null) delete next[kind];
+      else next[kind] = raw.replace(/\r\n/g, "\n");
+      if (o.dir() !== dir) throw new Error("access:failed");
+      if (Object.keys(next).length) await o.write(messageFile(dir), `${JSON.stringify(next, null, 2)}\n`);
+      else if (existsSync(messageFile(dir))) await rm(messageFile(dir), { force: true });
+      o.written(messageFile(dir));
+      return listing(await read(dir));
+    };
+    const done = queue.then(run, run);
+    queue = done.catch(() => {});
+    return done;
   };
   return {
     load: async (): Promise<AccessListing> => listing(existsSync(o.dir()) ? await read() : undefined),
@@ -278,24 +318,8 @@ export function accessStore(o: AccessStoreOptions) {
      * Saves the owner's invite template to `private/access-message.json`, or with null removes it (back
      * to the default); committed on the cadence like access.json. Checked here again (D-143).
      */
-    setTemplate: (raw: unknown): Promise<AccessListing> => {
-      const run = async () => {
-        if (!existsSync(o.dir())) throw new Error("access:failed");
-        if (raw === null) {
-          if (existsSync(messageFile())) { await rm(messageFile(), { force: true }); o.written(messageFile()); }
-        } else {
-          if (typeof raw !== "string") throw NOT();
-          const bad = templateProblem(raw);
-          if (bad) throw new Error(`access:${bad.problem}`);
-          await o.write(messageFile(), `${JSON.stringify({ template: raw.replace(/\r\n/g, "\n") }, null, 2)}\n`);
-          o.written(messageFile());
-        }
-        return listing(await read());
-      };
-      const done = queue.then(run, run);
-      queue = done.catch(() => {});
-      return done;
-    },
+    setTemplate: (raw: unknown): Promise<AccessListing> => saveTemplate(raw, "template"),
+    setItemTemplate: (raw: unknown): Promise<AccessListing> => saveTemplate(raw, "itemTemplate"),
     /** One audience's link and passcode, for its open invite. */
     reveal: async (id: unknown): Promise<{ link?: string; passcode?: string; accessCode?: string }> => {
       const { link, passcode, accessCode } = await secrets(await grant(id));

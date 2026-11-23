@@ -33,6 +33,9 @@ export interface AccessListing {
   site?: string;
   /** The owner's own invite template, from `private/access-message.json`; missing, the default (D-143). */
   template?: string;
+  /** The item-share information template; legacy named invitations keep their own template. */
+  itemTemplate?: string;
+  itemTemplateInvalid?: boolean;
   /** Whether the owner's vault grant is in force (it's never sent here). */
   vault: boolean;
   grants: Audience[];
@@ -68,6 +71,7 @@ export interface AccessBridge {
   apply(change: AccessChange): Promise<AccessListing & { id: string }>;
   /** Saves the invite template to `private/access-message.json`, or with null goes back to the default (D-143). */
   setTemplate(template: string | null): Promise<AccessListing>;
+  setItemTemplate?(template: string | null): Promise<AccessListing>;
   /** One audience's link and passcode, for its open invite only (review L2). */
   reveal(id: string): Promise<{ link?: string; passcode?: string; accessCode?: string }>;
   prepareWords?(): Promise<{ id: string; value: string }>;

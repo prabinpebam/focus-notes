@@ -172,7 +172,9 @@ describe("the leak check (SEC-06)", () => {
     await writeFile(join(i.site, "oops.html"), `<p>${secret}</p>`);
     const err = await publish({ site: i.site, private: join(i.root, "private"), owner: "octo" }).catch((e) => e);
     expect(err).toBeInstanceOf(LeakError);
-    expect(err.message).toContain("oops.html (text)");
+    expect(err.findings).toContainEqual({ file: "oops.html", kind: "text" });
+    expect(err.message).toContain("(text)");
+    expect(err.message).not.toContain("oops.html");
     expect(err.message).not.toContain(secret);
     expect(await leakCheck(i.site, [{ path: "Private/Secret plan.md", text: "" }])).toEqual([]);
     await writeFile(join(i.site, "list.json"), JSON.stringify(["Private/Secret plan.md"]));

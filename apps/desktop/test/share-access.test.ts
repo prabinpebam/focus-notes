@@ -11,6 +11,7 @@ import { describe, expect, it } from "vitest";
 import { accessStore, siteFromGitConfig, type AccessStoreOptions } from "../src/main/share/access.ts";
 import { publish as publishSite } from "@focus-notes/seal/publish";
 import { secretClipboard } from "../src/main/share/clipboard.ts";
+import { displayShareCode } from "@focus-notes/seal";
 
 const SITE = "https://ada.github.io/notes/";
 function store(text?: string, site: () => Promise<string> = async () => SITE, options: Partial<AccessStoreOptions> = {}) {
@@ -228,6 +229,74 @@ describe("the window's view of access.json", () => {
     for (const values of [{ title: "Rome\nOpen https://evil.example" }, { title: "Rome\r" }, { expires: "May\u202E 1" }, { title: "Rome\u2028" }]) {
       await expect(t.s.secret(id, "invite", { template, values })).rejects.toThrow();
     }
+  });
+  it("persists item information independently of legacy invitations and copies exactly the stored template", async () => {
+    const t = store(undefined, async () => SITE, {
+      publish: async () => { await publishSite({ private: t.dir, site: join(t.dir, "published"), owner: "fixture" }); },
+      getSite: () => async path => {
+        const file = join(t.dir, "published", ...path.split("/"));
+        return existsSync(file) ? readFileSync(file, "utf8") : undefined;
+      },
+    });
+    try {
+      mkdirSync(join(t.dir, "notes"));
+      writeFileSync(join(t.dir, "notes", "one.md"), "# One\n");
+      const legacy = "Hello {name}: {link}";
+      const mine = "Shared: {title}\r\nRead: {link}\nCode: {accessCode} at {site}\nUntil {expires}";
+      await t.s.setTemplate(legacy);
+      const listing = await t.s.setItemTemplate(mine);
+      expect(listing).toMatchObject({ template: legacy, itemTemplate: mine.replace(/\r\n/g, "\n") });
+      expect((await t.s.load()).itemTemplate).toBe(listing.itemTemplate);
+      const createItem = (link: boolean) => ({
+        op: "createItem", item: { path: "one.md", label: "One", folder: false, includeLater: false },
+        notes: ["one.md"], link, ...(link ? {} : { passcode: { generate: true } }), expiresAt: null,
+      });
+      const { id } = await t.s.apply(createItem(true));
+      await t.s.ready(id);
+      const sent: string[] = [];
+      await t.s.handoff(id, "information", { template: "Ignored: {link}" }, text => { sent.push(text); });
+      const first = t.file().grants[0];
+      expect(sent).toEqual([`Shared: One\nRead: ${SITE}s/#${id}.${first.link.secret}`]);
+      const second = await t.s.apply(createItem(false));
+      await t.s.ready(second.id);
+      await t.s.handoff(second.id, "information", { template: "Ignored: {link}" }, text => { sent.push(text); });
+      const grant = t.file().grants[1];
+      expect(sent[1]).toBe(`Shared: One\nCode: ${displayShareCode(grant.shareCode)} ${grant.passcode.value} at ${SITE}s/`);
+      await expect(t.s.setItemTemplate("{name} {link}")).rejects.toThrow("access:template.unknown");
+      await expect(t.s.setItemTemplate("{secret_value} {link}")).rejects.toThrow("access:template.unknown");
+      await expect(t.s.setItemTemplate("{accessCode}")).rejects.toThrow("access:template.noWayIn");
+      expect((await t.s.load()).itemTemplate).toBe(listing.itemTemplate);
+      expect((await t.s.setTemplate(null)).itemTemplate).toBe(listing.itemTemplate);
+      await t.s.setTemplate(legacy);
+      expect((await t.s.setItemTemplate(null)).template).toBe(legacy);
+      expect(JSON.parse(readFileSync(join(t.dir, "access-message.json"), "utf8"))).toEqual({ template: legacy });
+    } finally { rmSync(t.dir, { recursive: true, force: true }); }
+  });
+  it("reports an invalid stored item template and refuses clipboard handoff instead of silently using the default", async () => {
+    const t = store(undefined, async () => SITE, {
+      publish: async () => { await publishSite({ private: t.dir, site: join(t.dir, "published"), owner: "fixture" }); },
+      getSite: () => async path => {
+        const file = join(t.dir, "published", ...path.split("/"));
+        return existsSync(file) ? readFileSync(file, "utf8") : undefined;
+      },
+    });
+    try {
+      mkdirSync(join(t.dir, "notes"));
+      writeFileSync(join(t.dir, "notes", "one.md"), "# One\n");
+      const { id } = await t.s.apply({ op: "createItem", item: { path: "one.md", label: "One", folder: false, includeLater: false }, notes: ["one.md"], link: true, expiresAt: null });
+      await t.s.ready(id);
+      writeFileSync(join(t.dir, "access-message.json"), JSON.stringify({ template: "{name}: {link}", itemTemplate: "{name}: {link}" }));
+      expect(await t.s.load()).toMatchObject({ itemTemplate: "{name}: {link}", itemTemplateInvalid: true });
+      const sent: string[] = [];
+      await expect(t.s.handoff(id, "information", { template: "{link}" }, text => { sent.push(text); })).rejects.toThrow("access:template.unknown");
+      expect(sent).toEqual([]);
+      const restored = await t.s.setItemTemplate(null);
+      expect(restored.itemTemplate).toBeUndefined();
+      expect(restored.itemTemplateInvalid).toBeUndefined();
+      expect(restored.template).toBe("{name}: {link}");
+      await t.s.handoff(id, "information", { template: "{link}" }, text => { sent.push(text); });
+      expect(sent).toHaveLength(1);
+    } finally { rmSync(t.dir, { recursive: true, force: true }); }
   });
   it("never quotes a damaged file in its error (L6)", async () => {
     const t = store('{ "version": 1, "grants": [ "hunter2-secret');

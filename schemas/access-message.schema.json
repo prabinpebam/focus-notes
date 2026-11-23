@@ -4,15 +4,19 @@
   "title": "private/access-message.json: the invite template",
   "description": "Written by the desktop app's main process when the owner edits the invite in Settings → Sharing (SHR-09, D-143). Missing, the app's default template is used.",
   "type": "object",
-  "required": [
-    "template"
-  ],
+  "minProperties": 1,
   "properties": {
     "template": {
       "type": "string",
       "minLength": 1,
       "maxLength": 2000,
       "description": "Up to 20 lines. Placeholders: {name}, {title}, {link}, {passcode}, {expires}, {site}; any other {word} is refused, and it needs {link} or {passcode}. A line whose placeholder has no value for an audience is left out."
+    },
+    "itemTemplate": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000,
+      "description": "Item-share information, independent of legacy named invitations. Up to 20 lines; only {title}, {link}, {site}, {accessCode}, {expires}. Needs {link} or both {site} and {accessCode}; after omitting disabled-method lines the copied text must still contain a usable way in."
     }
   },
   "additionalProperties": false

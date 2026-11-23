@@ -344,15 +344,17 @@ export const HIDDEN_TEXT = /[\p{Cf}\u0000-\u0008\u000B-\u001F\u007F-\u009F\u2028
 /** Whether text has a hidden character (above). */
 export const hasHiddenText = (s: string) => HIDDEN_TEXT.test(s);
 
-const ITEM_PLACEHOLDERS = ["title", "link", "site", "accessCode", "expires"] as const;
+export const ITEM_PLACEHOLDERS = ["title", "link", "site", "accessCode", "expires"] as const;
 export type ItemInviteValues = Partial<Record<typeof ITEM_PLACEHOLDERS[number], string>>;
+export function itemTemplateProblem(raw: string): { problem: TemplateProblem; placeholder?: string } | undefined {
+  const bad = templateStructureProblem(raw, ITEM_PLACEHOLDERS, /\{([^{}\r\n]+)\}/g);
+  if (bad) return bad;
+  if (!raw.includes("{link}") && !(raw.includes("{site}") && raw.includes("{accessCode}"))) return { problem: "template.noWayIn" };
+  return undefined;
+}
 export function itemInviteText(template: string, values: ItemInviteValues): string {
-  if (!template.trim()) throw new AccessEditError("template.empty");
-  if (template.length > TEMPLATE_MAX || template.split(/\r?\n/).length > TEMPLATE_LINES) throw new AccessEditError("template.long");
-  if (hasHiddenText(template.replace(/\r\n/g, "\n"))) throw new AccessEditError("template.invalid");
-  for (const [, placeholder] of template.matchAll(PLACEHOLDER)) {
-    if (!(ITEM_PLACEHOLDERS as readonly string[]).includes(placeholder!)) throw new AccessEditError("template.unknown");
-  }
+  const bad = itemTemplateProblem(template);
+  if (bad) throw new AccessEditError(bad.problem);
   const text = template.split(/\r?\n/)
     .filter((line) => ITEM_PLACEHOLDERS.every((p) => !line.includes(`{${p}}`) || values[p]))
     .map((line) => line.replace(/\{(title|link|site|accessCode|expires)\}/g, (_, p: keyof ItemInviteValues) => values[p]!)).join("\n").trim();
@@ -366,15 +368,21 @@ export function itemInviteText(template: string, values: ItemInviteValues): stri
  * app doesn't know (`unknown` names it, so the owner can fix a typo such as `{pascode}`), or no way
  * in at all (neither `{link}` nor `{passcode}`).
  */
-export function templateProblem(raw: string): { problem: TemplateProblem; placeholder?: string } | undefined {
+function templateStructureProblem(raw: string, placeholders: readonly string[], pattern = PLACEHOLDER): { problem: TemplateProblem; placeholder?: string } | undefined {
   // CRLF is one line break; a lone CR, U+2028, and U+2029 are refused as hidden.
   const template = raw.replace(/\r\n/g, "\n");
   if (!template.trim()) return { problem: "template.empty" };
   if (template.length > TEMPLATE_MAX || template.split("\n").length > TEMPLATE_LINES) return { problem: "template.long" };
   if (HIDDEN_TEXT.test(template)) return { problem: "template.invalid" };
-  for (const [, p] of template.matchAll(PLACEHOLDER)) {
-    if (!(INVITE_PLACEHOLDERS as readonly string[]).includes(p!)) return { problem: "template.unknown", placeholder: p! };
+  for (const [, p] of template.matchAll(pattern)) {
+    if (!placeholders.includes(p!)) return { problem: "template.unknown", placeholder: p! };
   }
+  return undefined;
+}
+export function templateProblem(raw: string): { problem: TemplateProblem; placeholder?: string } | undefined {
+  const bad = templateStructureProblem(raw, INVITE_PLACEHOLDERS);
+  if (bad) return bad;
+  const template = raw.replace(/\r\n/g, "\n");
   if (!template.includes("{link}") && !template.includes("{passcode}")) return { problem: "template.noWayIn" };
   return undefined;
 }
@@ -382,6 +390,6 @@ export function templateProblem(raw: string): { problem: TemplateProblem; placeh
 /** `access-message.json`'s template, or undefined when the file isn't one (a damaged file falls back to the default). */
 export function parseAccessMessage(raw: unknown): string | undefined {
   const o = raw as { template?: unknown } | null;
-  if (typeof o !== "object" || o === null || Array.isArray(o) || Object.keys(o).some((k) => k !== "template")) return undefined;
+  if (typeof o !== "object" || o === null || Array.isArray(o) || Object.keys(o).some((k) => k !== "template" && k !== "itemTemplate")) return undefined;
   return typeof o.template === "string" && !templateProblem(o.template) ? o.template.replace(/\r\n/g, "\n") : undefined;
 }

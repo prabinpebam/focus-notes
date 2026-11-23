@@ -5,6 +5,7 @@
  * (SEC-06) so no private text or file name ever reaches the site. Node only.
  */
 import { cp, mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { join, relative, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 import {
@@ -261,7 +262,7 @@ export class LeakError extends Error {
   readonly findings: { file: string; kind: LeakKind }[];
   constructor(findings: { file: string; kind: LeakKind }[]) {
     // Never print the private text or name itself: the Actions log is public.
-    super(`Leak check failed: private content found in ${findings.length} place(s): ${findings.map((f) => `${f.file} (${f.kind})`).join(", ")}`);
+    super(`Leak check failed: private content found in ${findings.length} place(s) (${[...new Set(findings.map((f) => f.kind))].join(", ")}). Output was not published.`);
     this.findings = findings;
   }
 }
@@ -313,6 +314,45 @@ function plainText(file: string, body: string): string {
   return out.join("\n");
 }
 const mentions = (text: string, words: readonly string[]) => words.some((w) => text.includes(w));
+const IDENTITY_FIELDS = new Set(["id", "grant", "ref", "kid", "build", "name", "title", "path", "url", "owner", "source"]);
+const identity = (s: string) => s.normalize("NFKC").toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
+function sourceIdentities(sources: readonly string[]): Set<string> {
+  const forms = new Set<string>();
+  for (const source of sources) {
+    if (!source.trim()) continue;
+    const variants = new Set([source, source.normalize("NFC"), source.normalize("NFD"), normalizeName(source)]);
+    for (const variant of variants) {
+      for (const form of [...encodedForms(variant), Buffer.from(variant).toString("base64url")]) forms.add(identity(form));
+      for (const algorithm of ["sha1", "sha256"]) {
+        const hash = createHash(algorithm).update(variant).digest();
+        for (const encoded of [hash.toString("hex"), hash.toString("base64url")]) {
+          for (const length of [8, 16, 32, encoded.length]) forms.add(identity(encoded.slice(0, length)));
+        }
+      }
+    }
+  }
+  forms.delete("");
+  return forms;
+}
+function identifierValues(file: string, body: string): string[] {
+  const parts = file.split("/");
+  const out = parts.length > 1 ? [parts[1]!] : [];
+  if (parts.length > 2 && !(parts[0] === "_access" && parts.length === 3 && parts[2] === "vault.json")) out.push(parts.at(-1)!.replace(/\.json$/i, ""));
+  if (file.endsWith(".json")) {
+    let value: unknown;
+    try { value = JSON.parse(body); } catch { return out; }
+    const walk = (v: unknown) => {
+      if (Array.isArray(v)) v.forEach(walk);
+      else if (v && typeof v === "object") for (const [key, child] of Object.entries(v)) {
+        if (CIPHERTEXT_FIELDS.has(key)) continue;
+        if (IDENTITY_FIELDS.has(key) && typeof child === "string") out.push(child);
+        else walk(child);
+      }
+    };
+    walk(value);
+  }
+  return out.flatMap((value) => [identity(value), ...(value.startsWith("s") ? [identity(value.slice(1))] : [])]);
+}
 
 /**
  * Every text file in the site is searched for each private note's path, each long line of its text,
@@ -329,6 +369,9 @@ export async function leakCheck(
   const keys = [...new Set(secrets.flatMap(secretForms))];
   const audiences = [...new Set(names.map((n) => n.trim()).filter((n) => n.length >= LEAK_MIN_NAME)
     .flatMap((n) => [n, n.normalize("NFC"), normalizeName(n)]).filter((n) => n.length >= LEAK_MIN_NAME).flatMap(encodedForms))];
+  const pathIdentities = sourceIdentities(notes.flatMap((n) => [n.path, ...n.path.split("/"),
+    ...n.path.split("/").map((part) => part.replace(/\.[^.]+$/, ""))]));
+  const nameIdentities = sourceIdentities([...names, ...notes.map((n) => titleOf(n.path, n.text))]);
   const found: { file: string; kind: LeakKind }[] = [];
   const walk = async (d: string) => {
     for (const e of await readdir(d, { withFileTypes: true })) {
@@ -337,7 +380,10 @@ export async function leakCheck(
       if (!TEXT_FILE.test(e.name)) continue;
       const body = await readFile(p, "utf8");
       const file = relative(site, p).split(sep).join("/");
+      const identifiers = NAME_SCOPE(file) ? identifierValues(file, body) : [];
       if (keys.some((x) => body.includes(x))) found.push({ file, kind: "secret" });
+      else if (identifiers.some((x) => pathIdentities.has(x))) found.push({ file, kind: "path" });
+      else if (identifiers.some((x) => nameIdentities.has(x))) found.push({ file, kind: "name" });
       else if (NAME_SCOPE(file) && mentions(plainText(file, body), audiences)) found.push({ file, kind: "name" });
       else if (paths.some((x) => body.includes(x))) found.push({ file, kind: "path" });
       else if (lines.some((x) => body.includes(x))) found.push({ file, kind: "text" });
