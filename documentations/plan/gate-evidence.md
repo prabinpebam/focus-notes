@@ -335,6 +335,22 @@ run on the batch head. Receipts: `focus-notes-work\logs\find-a4-c221-ab.log`,
 `find-a4-454-ab.log`, `find-a4-454-build.log` and the two `find-a4-*-pids.log`
 files.
 
+#### D-162 move journey on batch 1b, 23 November
+
+[Run 45159941669](https://github.com/prabinpebam/focus-notes/actions/runs/45159941669)
+on batch head `0ebc7744dffc79d1681cb160b1eaf4bf138fc8fe` failed one journey:
+`mw-files-menu.spec.ts:105` expected the root `ideas.md` gone right after
+`journal/` listed it (6 jobs green, 146 of 147 journeys passed). A note's move
+publishes its new file first and unlinks the old one only when the whole batch
+is in (`stageNoteMove` then `finish`, `note-move.ts`), so the journey's single
+read could land between the two. This is the journey's race, not the batch:
+locally 1 failure in 30 on the batch head, 0 in 20 on main `7db907e7` and 0 in
+20 on `42ac292a` (before the project-entry commits), and no batch commit
+touches the move path. The journey now polls the end state, every note in
+`journal/` and none left at the root, so a note left behind still fails it:
+30 of 30 and the whole file 3 of 3 on the batch's runtime. The failed run is
+not counted as green; the fixed head needs its own run.
+
 ### Standalone text files, 8 November
 
 **Landed and packaged writing verified.** G4 / PRJ-09 / UC-PROJ-08 extends the existing standalone Markdown path rather than importing text or making a project. All five invisible built-app journeys pass together. Runtime `a30004e91cb24b2353780bf0bd2ef0c2bf165f3d` passed all seven Windows jobs in [42461267072](https://github.com/prabinpebam/focus-notes/actions/runs/42461267072) and landed by non-force fast-forward under the coordinator's landing lock. The scheduled Preview reached `a30004e`; its byte-identical scratch copy passed normal-Shell literal writing and restart checks. Installed Windows association registration was not changed or independently verified on the owner's computer.

@@ -200,8 +200,11 @@ test("D-162: right-click, the row's ⋯, Shift+F10 and the Menu key open an item
   await page.keyboard.type("journal");
   await expect(dialog.getByRole("option")).toHaveCount(1);
   await page.keyboard.press("Enter");
-  await expect.poll(() => ls(join(dirs.docs, "journal"))).toEqual(["Later", "Welcome.md", "day-one.md", "ideas.md"]);
-  expect(existsSync(join(dirs.docs, "ideas.md"))).toBe(false);
+  // A note's move publishes its new file first and removes the old one when the whole batch is in
+  // (note-move.ts), so the end state is both: every note in journal and none left behind.
+  await expect
+    .poll(() => ({ journal: ls(join(dirs.docs, "journal")), left: ["ideas.md", "Welcome.md"].filter((f) => existsSync(join(dirs.docs, f))) }))
+    .toEqual({ journal: ["Later", "Welcome.md", "day-one.md", "ideas.md"], left: [] });
   await quit(l);
 });
 
