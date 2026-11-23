@@ -2,7 +2,10 @@ import { test, expect } from "./fixtures.ts";
 import { launch, quit, tempDirs, type Launched } from "./helpers.ts";
 import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { DATA_FILES } from "@focus-notes/core/inventory";
+import { DATA_FILES, DATA_FOLDERS } from "@focus-notes/core/inventory";
+import { execFileSync } from "node:child_process";
+import { realpathSync } from "node:fs";
+import { attachProject, closeProject, projectEntryApp } from "./project-process.ts";
 import { existingInstance, noTokenInArgs, start, world, type World } from "./github-world.ts";
 
 const HEADING = "Your notes folder is missing";
@@ -240,5 +243,78 @@ test("FRE-12, G5.3: a download that fails keeps recovery with an error, never op
   } finally {
     await quit(l);
     if (w.server.listening) w.server.close();
+  }
+});
+test("FRE-11, G5.2: a last project whose folder is missing opens its own recovery, never the root project, and recovers there", async () => {
+  test.setTimeout(90_000);
+  const dirs = tempDirs();
+  const rootNote = join(dirs.docs, "Root.md");
+  writeFileSync(rootNote, "# Root\n");
+  writeFileSync(join(dirs.userData, DATA_FILES.workspace), JSON.stringify({ version: 1, folder: dirs.docs, kind: "local" }));
+  writeFileSync(join(dirs.userData, DATA_FILES.state), JSON.stringify({ version: 1, firstRun: "done", lastNotePath: rootNote }));
+  // A first launch makes the app's own project store, as any install has.
+  await quit(await launch(dirs));
+  const other = tempDirs();
+  const folder = join(other.docs, "Work");
+  const moved = `${folder}-moved`;
+  mkdirSync(moved);
+  const content = "# Work\n\nThe other project's exact note.\n";
+  writeFileSync(join(moved, "Work.md"), content);
+  const profile = join(dirs.userData, DATA_FOLDERS.projectProfiles, "work");
+  mkdirSync(profile, { recursive: true });
+  writeFileSync(join(profile, DATA_FILES.projectFolder), folder);
+  writeFileSync(join(profile, DATA_FILES.workspace), JSON.stringify({ version: 1, folder, kind: "local" }));
+  writeFileSync(join(profile, DATA_FILES.state), JSON.stringify({ version: 1, firstRun: "done", projectIntroSeen: true, lastNotePath: join(folder, "Work.md") }));
+  writeFileSync(join(dirs.userData, DATA_FILES.lastProject), JSON.stringify({ profile }));
+  const l = await launch(dirs);
+  try {
+    const { page } = l;
+    await expect(page.getByRole("heading", { name: HEADING, exact: true })).toBeVisible();
+    await expect(page.getByText(folder, { exact: true })).toBeVisible();
+    expect(existsSync(folder)).toBe(false);
+    await pick(l, moved);
+    await page.getByRole("button", { name: /^Find the folder/ }).click();
+    await expect(page.getByRole("textbox", { name: "Note", exact: true })).toContainText("The other project's exact note.");
+    expect(readFileSync(join(profile, DATA_FILES.projectFolder), "utf8").toLowerCase()).toBe(moved.toLowerCase());
+    expect(readFileSync(join(moved, "Work.md"), "utf8")).toBe(content);
+    expect(existsSync(folder)).toBe(false);
+    expect(readFileSync(rootNote, "utf8")).toBe("# Root\n");
+    expect(JSON.parse(readFileSync(join(dirs.userData, DATA_FILES.workspace), "utf8")).folder).toBe(dirs.docs);
+  } finally {
+    await quit(l);
+  }
+});
+test("FRE-12, G5.3, D-397: Start with an empty folder makes a new local Git project that lands in an empty Untitled note, keeping the missing project's record", async () => {
+  test.setTimeout(120_000);
+  const { dirs, content, record, moved } = movedProject();
+  const origin = await launch(dirs, { FOCUS_NOTES_GITHUB_API: "" }, { entrypoint: projectEntryApp(dirs.userData) });
+  let child: Awaited<ReturnType<typeof attachProject>> | undefined;
+  try {
+    const { page } = origin;
+    await expect(page.getByRole("heading", { name: HEADING, exact: true })).toBeVisible();
+    await page.getByRole("button", { name: /^Start with an empty folder/ }).click();
+    const name = page.getByRole("textbox", { name: "Folder name", exact: true });
+    await expect(name).toHaveValue("Focus Notes");
+    await page.getByRole("button", { name: "Create folder", exact: true }).click();
+    const folder = join(realpathSync.native(join(dirs.docs, "..")), "Focus Notes");
+    const profiles = join(dirs.userData, DATA_FOLDERS.projectProfiles);
+    await expect.poll(() => existsSync(profiles) && readdirSync(profiles).length, { timeout: 30_000 }).toBe(1);
+    child = await attachProject(join(profiles, readdirSync(profiles)[0]!));
+    const note = child.page.getByRole("textbox", { name: "Note", exact: true });
+    await expect(note).toBeFocused();
+    await expect(note).toHaveText("");
+    await expect(child.page.getByRole("dialog", { name: "Open", exact: true })).toBeHidden();
+    expect(readdirSync(folder, { recursive: true, encoding: "utf8" }).some((f) => /Untitled( \d+)?\.md$/.test(f))).toBe(true);
+    expect(readdirSync(folder, { recursive: true, encoding: "utf8" }).some((f) => /welcome\.md$/i.test(f))).toBe(false);
+    expect(execFileSync("git", ["rev-parse", "--is-inside-work-tree"], { cwd: folder, encoding: "utf8" }).trim()).toBe("true");
+    // The missing project stays as it was, for explicit later recovery.
+    expect(recordOf(dirs.userData)).toEqual(record);
+    expect(existsSync(dirs.docs)).toBe(false);
+    expect(readFileSync(join(moved, "Original.md"), "utf8")).toBe(content);
+  } finally {
+    if (child) await closeProject(child);
+    await quit(origin).catch(() => {});
+    const close = join(import.meta.dirname, "..", "..", "..", "tools", "dev", "close-test-apps.ps1");
+    for (const flags of [["-WhatIf"], []]) execFileSync("pwsh", ["-NoProfile", "-File", close, "-OnlyPid", String(origin.pid), ...flags], { stdio: "inherit" });
   }
 });

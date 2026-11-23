@@ -143,6 +143,8 @@ if (!process.env.FOCUS_NOTES_PROJECTS_PROFILE && !process.env.FOCUS_NOTES_PROJEC
     process.env.FOCUS_NOTES_PROJECTS_PROFILE = rootProfile;
     process.env.FOCUS_NOTES_DOCS = resume.folder;
     process.env.FOCUS_NOTES_LOCAL_NOTES = resume.localNotes ? "1" : "";
+    // As a project window started for this profile has it, so its project data is this profile's.
+    process.env.FOCUS_NOTES_USER_DATA = resume.profile;
     app.setPath("userData", resume.profile);
   }
 }
@@ -2774,17 +2776,10 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   });
   handle("recover:createEmpty", (name) => whileMissing(async (): Promise<RecoverResult> => {
     if (typeof name !== "string" || !folderNameOk(name)) return { ok: false, problem: "name" };
-    const folder = join(emptyParent ?? documentsDir(), name);
-    if (existsSync(folder)) return { ok: false, problem: "taken" };
-    try {
-      await mkdir(folder);
-      await writeFile(join(folder, "Welcome.md"), WELCOME, { flag: "wx" });
-    } catch {
-      return { ok: false, problem: "failed" };
-    }
-    // Offline mode, keeping the old notes' name, so Connect to GitHub… offers them first (D-212).
-    await switchWorkspace(folder, { kind: syncService(folder, syncRoots()) ? "synced" : "local", ...(record?.repository ? { repository: record.repository } : {}) });
-    return { ok: true };
+    // A deliberate new local Git project in its own window (FRE-12, G5.3); this project's record, drafts and history stay for later recovery.
+    const result = await projects.startEmpty(emptyParent ?? documentsDir(), name);
+    if (result.ok) setTimeout(() => app.quit(), 500);
+    return result;
   })());
   handle("sync:conflicts", async () => (await gitOpening)?.conflicts() ?? []);
   handle("sync:resolve", async (choices) => {
