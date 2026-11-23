@@ -7,6 +7,7 @@ import { arch, cpus, release, tmpdir, totalmem } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { largeWorkspace } from "./large.mjs";
+import { rendererSummary } from "./renderer.mjs";
 import { startSummary } from "./start.mjs";
 
 const root = join(import.meta.dirname, "..", "..");
@@ -95,14 +96,23 @@ async function startTimes() {
   return measures;
 }
 
+// DSY-11: separate processes, because one process's result swings with its JIT and the runner's load.
+const RENDERER_RUNS = Number(process.env.FOCUS_NOTES_BENCH_DSY11_RUNS ?? 5);
 function rendererOverhead() {
-  const out = spawnSync("npx vitest run packages/ui-runtime/test/render.test.ts -t \"renderer overhead\" --silent=false", {
-    cwd: root, shell: true, encoding: "utf8", env: { ...process.env, NODE_ENV: "production" }, timeout: STEP_TIMEOUT_MS,
-  });
-  if (out.error) throw new Error(`The renderer benchmark didn't finish: ${out.error.message}`);
-  const m = `${out.stdout}${out.stderr}`.match(/DSY-11: overhead (-?[\d.]+)%/);
-  if (!m) throw new Error("The renderer benchmark produced no result");
-  return { "DSY-11.rendererOverheadPct": Number(m[1]) };
+  const overhead = [];
+  for (let i = 0; i < RENDERER_RUNS; i++) {
+    const out = spawnSync("npx vitest run packages/ui-runtime/test/render.test.ts -t \"renderer overhead\" --silent=false", {
+      cwd: root, shell: true, encoding: "utf8", env: { ...process.env, NODE_ENV: "production" }, timeout: STEP_TIMEOUT_MS / RENDERER_RUNS,
+    });
+    if (out.error) throw new Error(`The renderer benchmark didn't finish: ${out.error.message}`);
+    const m = `${out.stdout}${out.stderr}`.match(/DSY-11: overhead (-?[\d.]+)%/);
+    if (!m) throw new Error("The renderer benchmark produced no result");
+    overhead.push(Number(m[1]));
+  }
+  console.log(`DSY-11 overhead samples: ${overhead.join(", ")}%`);
+  const { measures, samples } = rendererSummary(overhead);
+  diagnostics["DSY-11"] = samples;
+  return measures;
 }
 
 // PRF-07: one `git status` per repository per refresh, and a cached answer within 5 ms. The fixture
