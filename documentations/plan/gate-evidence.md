@@ -251,6 +251,39 @@ The same gate also failed the previously quarantined public/landing PRF-12 lab c
 
 These are combined local checks, not a final seven-job CI gate, landing, native UX proof or release completion. The retained capture still belongs to the earlier `b36d04b1` build. Final normal-branch publication, exact-head seven-green gate, fresh coordinator acknowledgement and serialized non-force landing remain required; root's dirty files, private content, Preview and Docs 8787 are unchanged.
 
+#### D-156 reduced-motion gate investigation, 23 November
+
+**Scoped quarantine; cause unproven, not a green gate.** Exact-head
+[run 45046894568](https://github.com/prabinpebam/focus-notes/actions/runs/45046894568)
+on `c22154be91ef70e51e937bf8b67a567f1c6a1f21` finished with six successful
+jobs and one failed job, `journeys-windows (3)`. Its only failed journey,
+`apps/desktop/e2e/m1-focus-motion.spec.ts:287`, expected one scroll transition
+but sampled only scrollTop 57 (zero transitions). The Find canvas and Surface
+changes were treated as related until the requested candidate/baseline control.
+
+| Matched control | Result |
+| --- | --- |
+| Candidate `c22154be91ef70e51e937bf8b67a567f1c6a1f21` | Desktop build passed; three consecutive unchanged D-156 journeys passed in 17.8 s. Rounded scrollTop: 57 to 2952, then 0 to 2952 twice. |
+| Detached baseline `454513f342bf6c6fb5547d5e6363057910bab7b0` | Pinned kits, frozen-lockfile install from the approved Microsoft npm feed and tokens prepared; desktop build passed. Three consecutive identical journeys passed in 17.5 s, each 0 to 2952. |
+| Commands on both heads | `pnpm --filter @focus-notes/desktop run build`; with `FOCUS_NOTES_E2E=1`, `pnpm --filter @focus-notes/desktop exec playwright test e2e/m1-focus-motion.spec.ts --workers=1 --repeat-each=3 -g 'D-156: with reduced motion the auto-scroll is instant'`. Both used GPU compositing and disposable notes/profiles. |
+| Cleanup | Both runs recorded their own app PIDs and ran `pwsh tools/dev/close-test-apps.ps1 -OnlyPid <recorded-pids> -WhatIf`, then the same scoped command without `-WhatIf`; all six app PIDs were absent afterwards. The temporary detached baseline was removed. Root, private content, Preview, retained candidate and Docs 8787 were untouched. |
+| Evidence validation | `pnpm check`, `node .\slate\scripts\runtime-host.mjs check --repo . --host documentations` and `git diff --check` passed. Headless Edge rendered this worktree's page in light/dark with one H1, the quarantine fields and the new evidence anchor; the owned browser and ephemeral loopback server closed afterwards. |
+
+No candidate-only regression was reproduced. These six local passes do not
+prove the original CI failure unrelated or identify its cause. The sampler
+starts a 400 ms frame window before the separately dispatched end-key command;
+a delayed command could miss that window, but no timing trace establishes that
+as the actual failed-run cause. No production code, test, assertion, timeout,
+retry or benchmark was changed.
+
+| Quarantine field | Value |
+| --- | --- |
+| Scope | Only `D-156: with reduced motion the auto-scroll is instant` in `apps/desktop/e2e/m1-focus-motion.spec.ts`; only the zero-transition observation in run 45046894568. No other D-156, Find or CI failure is waived. |
+| Owner | Coordinator6 (the coordinator), with W-1A4's matched-control evidence. |
+| Expiry | 2026-11-30; requires a timing trace and repair or explicit re-evaluation by the coordinator, not automatic renewal. |
+| Enforcement | Record-only quarantine: the journey remains enabled and unchanged. The new evidence commit still requires its own seven successful terminal jobs and fresh coordinator ACK before held-lock landing. The failed run is never counted as green. |
+| Receipts | `focus-notes-work\logs\find-a4-c221-ab.log`, `find-a4-454-ab.log`, `find-a4-454-build.log` and the two `find-a4-*-pids.log` files. |
+
 ### Standalone text files, 8 November
 
 **Landed and packaged writing verified.** G4 / PRJ-09 / UC-PROJ-08 extends the existing standalone Markdown path rather than importing text or making a project. All five invisible built-app journeys pass together. Runtime `a30004e91cb24b2353780bf0bd2ef0c2bf165f3d` passed all seven Windows jobs in [42461267072](https://github.com/prabinpebam/focus-notes/actions/runs/42461267072) and landed by non-force fast-forward under the coordinator's landing lock. The scheduled Preview reached `a30004e`; its byte-identical scratch copy passed normal-Shell literal writing and restart checks. Installed Windows association registration was not changed or independently verified on the owner's computer.
