@@ -15,7 +15,7 @@ export const readerContracts: ReadonlyMap<string, Contract> = new Map(Object.key
 export type { BlockNode } from "./blocks/NoteContent/NoteContent.tsx";
 
 /** No script, no other origin (PRV-04): styles and fonts from the site itself, nothing else. */
-export const READER_CSP = "default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'none'";
+export const READER_CSP = "default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'";
 
 export interface ReaderDocument {
   title: string;

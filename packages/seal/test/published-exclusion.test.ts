@@ -45,6 +45,24 @@ it("G3.2: the exclusion names exactly a public and private note, never a blanket
   await expect(publish({ ...o, published: ["journeys/elsewhere.md"] })).rejects.toThrow("isn't among both");
 });
 
+it("SEC-06/WP-9.9: published images are placed before the leak check, and an image path naming a private note is a leak", async () => {
+  const withImage = async (name: string) => {
+    const o = await project();
+    const media = join(o.site, "..", "media");
+    await mkdir(join(media, "assets", "images"), { recursive: true });
+    await writeFile(join(media, "assets", "images", name), Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+    return { ...o, published: [TRIP], publicMedia: [`assets/images/${name}`], publicMediaFrom: media };
+  };
+  const fine = await withImage("harbour.png");
+  await expect(publish(fine)).resolves.toMatchObject({ publicNotes: 1 });
+  expect(await readFile(join(fine.site, "assets", "images", "harbour.png"))).toEqual(Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+  // diary.md is private and not published: an image named after it says it exists.
+  for (const name of ["diary.png", "Diary.jpg"]) await expect(publish(await withImage(name))).rejects.toThrow(/Leak check failed.*\(path\)/);
+  // A path outside the media folder or the allowed site roots is refused before anything is written there.
+  const escape = await withImage("harbour.png");
+  await expect(publish({ ...escape, publicMedia: ["../outside.png"] })).rejects.toThrow("A published image has an unusable path.");
+});
+
 it("SHR-23/G3.2: a published note's text and source-derived identifiers stay forbidden in keyrings, sealed files and the manifest", async () => {
   const notes = [{ path: TRIP, text: tripText }, { path: "diary.md", text: diaryText }];
   const site = async (files: Record<string, string>) => {

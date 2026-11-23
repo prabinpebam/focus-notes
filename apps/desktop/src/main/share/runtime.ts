@@ -1,5 +1,5 @@
-import { copyFile, mkdir, mkdtemp, readFile, realpath, rm } from "node:fs/promises";
-import { dirname, join, relative, sep } from "node:path";
+import { mkdtemp, readFile, realpath, rm } from "node:fs/promises";
+import { join, relative, sep } from "node:path";
 import { GitHubError, type GitHubApi } from "@focus-notes/github";
 import { publish } from "@focus-notes/seal/publish";
 import type { SharingLayout } from "./layout.ts";
@@ -112,15 +112,9 @@ export function sharingRuntime(deps: {
         const artifact = await publish(empty ? { site: directory, owner: pairing.owner, siteUrl: pairing.site } : {
           private: privateDir, sealedMedia: sharedImageDestinations,
           // `published`: the confirmed notes are public on purpose; every other private note stays leak-checked.
-          ...(staging ? { notes: staging, published: [...notes], reader: reader!, publicMedia: selected?.media ?? [] } : layout.publicDir ? { notes: join(layout.publicDir, "notes") } : {}),
+          ...(staging ? { notes: staging, published: [...notes], reader: reader!, publicMedia: selected?.media ?? [], publicMediaFrom: join(staging, ".media") } : layout.publicDir ? { notes: join(layout.publicDir, "notes") } : {}),
           site: directory, owner: pairing.owner, siteUrl: pairing.site,
         });
-        // Stripped images sit at their project paths, so the published notes' relative links resolve (WP-9.9).
-        for (const image of selected?.media ?? []) {
-          const to = join(directory, ...image.split("/"));
-          await mkdir(dirname(to), { recursive: true });
-          await copyFile(join(staging!, ".media", ...image.split("/")), to);
-        }
         guard();
         deps.step?.("push");
         if (selection) deps.publishStep?.("publishing");

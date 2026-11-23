@@ -78,6 +78,22 @@ it("WP-9.9: a PNG loses text, EXIF and time chunks and keeps its image and colou
   expect(out).toEqual(Buffer.concat([png.subarray(0, 8), ihdr, srgb, idat, chunk("IEND", Buffer.alloc(0))]));
 });
 
+it("WP-9.9: a JPEG's JFIF thumbnail and JFXX extension never reach the site; the JFIF header stays, with no thumbnail", () => {
+  // A 2×1 RGB thumbnail whose pixels stand in for the pre-crop picture.
+  const thumb = Buffer.from("PRECROP", "latin1").subarray(0, 6);
+  const jfif = Buffer.concat([Buffer.from("JFIF\0\x01\x02\0\0\x01\0\x01\x02\x01", "latin1"), thumb]);
+  const jfxx = Buffer.concat([Buffer.from("JFXX\0\x10", "latin1"), Buffer.from([0xff, 0xd8]), Buffer.from("FULLCROP", "latin1"), Buffer.from([0xff, 0xd9])]);
+  const before = Buffer.concat([Buffer.from([0xff, 0xd8]), seg(0xe0, jfif), seg(0xe0, jfxx), jpeg().subarray(2 + 18)]);
+  const out = stripImageMetadata(before, "photo.jpg")!;
+  const text = out.toString("latin1");
+  for (const leak of ["PRECRO", "JFXX", "FULLCROP"]) expect(text).not.toContain(leak);
+  const at = text.indexOf("JFIF\0");
+  expect(out.readUInt16BE(at - 2)).toBe(16);
+  expect(out.subarray(at, at + 14)).toEqual(Buffer.from("JFIF\0\x01\x02\0\0\x01\0\x01\0\0", "latin1"));
+  expect(out.includes(SCAN)).toBe(true);
+  expect(stripImageMetadata(out, "photo.jpg")).toEqual(out);
+});
+
 it("refuses unsupported types and malformed files rather than publishing them", () => {
   expect(stripImageMetadata(jpeg(), "photo.gif")).toBeUndefined();
   expect(stripImageMetadata(jpeg().subarray(0, 40), "photo.jpg")).toBeUndefined();

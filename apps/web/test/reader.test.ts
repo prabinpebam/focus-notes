@@ -40,7 +40,7 @@ describe("public page document", () => {
     expect(html).toContain("<figcaption>The barn</figcaption>");
     for (const alt of ["Remote", "Not published", "Other asset", "Escape"]) expect(html).toContain(`<em>${alt}</em>`);
     expect(html).not.toContain("evil.example");
-    expect(html).toMatch(/Content-Security-Policy" content="default-src 'none';[^"]*img-src 'self'/);
+    expect(html).toMatch(/Content-Security-Policy" content="default-src 'none';[^"]*img-src 'self';/);
   });
 
   it("PRF-12: preloads only the latin woff2 faces the first screen uses", () => {

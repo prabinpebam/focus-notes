@@ -1,7 +1,7 @@
 /**
  * Published images without their metadata (WP-9.9, SEC-06): no location, camera, dates, comments,
- * XMP or IPTC reach the public site. JPEG keeps only what decoding and display need (JFIF, the ICC
- * profile, Adobe's colour transform, and the orientation as a minimal EXIF); PNG keeps its critical
+ * XMP or IPTC reach the public site. JPEG keeps only what decoding and display need (JFIF without its
+ * thumbnail, the ICC profile, Adobe's colour transform, and the orientation as a minimal EXIF); PNG keeps its critical
  * chunks and colour/animation chunks. Anything else, or a malformed file, is refused (undefined).
  */
 
@@ -34,9 +34,19 @@ function stripPng(bytes: Buffer): Buffer | undefined {
 }
 
 const keepApp = (marker: number, data: Buffer) =>
-  marker === 0xe0 && /^JF(IF|XX)\0/.test(data.toString("latin1", 0, 5)) ||
   marker === 0xe2 && data.toString("latin1", 0, 12) === "ICC_PROFILE\0" ||
   marker === 0xee && data.toString("latin1", 0, 5) === "Adobe";
+
+/**
+ * JFIF's header without its thumbnail: a thumbnail can show the picture before it was cropped. JFXX
+ * (an extension that holds only thumbnails) isn't kept at all.
+ */
+function jfifWithoutThumbnail(data: Buffer): Buffer | undefined {
+  if (data.length < 14 || data.toString("latin1", 0, 5) !== "JFIF\0") return undefined;
+  const header = Buffer.from(data.subarray(0, 14));
+  header[12] = 0; header[13] = 0;
+  return Buffer.concat([Buffer.from([0xff, 0xe0, 0, 16]), header]);
+}
 
 /** EXIF orientation (1–8) from an APP1 Exif payload, if present. */
 function orientation(data: Buffer): number | undefined {
@@ -89,7 +99,9 @@ function stripJpeg(bytes: Buffer): Buffer | undefined {
     at += length;
     if (marker >= 0xe0 && marker <= 0xef) {
       if (marker === 0xe1) rotate ??= orientation(data);
-      if (keepApp(marker, data)) out.push(segment);
+      const jfif = marker === 0xe0 ? jfifWithoutThumbnail(data) : undefined;
+      if (jfif) out.push(jfif);
+      else if (keepApp(marker, data)) out.push(segment);
       continue;
     }
     if (marker === 0xfe) continue;

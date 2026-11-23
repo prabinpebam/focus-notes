@@ -4,7 +4,7 @@
  * share grant with an audience of one, D-41, D-90), writes the site manifest, and runs the leak check
  * (SEC-06) so no private text or file name ever reaches the site. Node only.
  */
-import { cp, mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
+import { copyFile, cp, mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { join, relative, sep } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -40,8 +40,10 @@ export interface PublishOptions {
   siteUrl?: string;
   /** Fixed build ID, for tests. */
   build?: string;
-  /** Published images the caller places in the site (G3.3, already stripped), by site path (`notes/…` or `assets/images/…`); public pages show only these. */
+  /** Published images the caller staged (G3.3, already stripped), by site path (`notes/…` or `assets/images/…`); publish places them from `publicMediaFrom` before the leak check, and public pages show only these. */
   publicMedia?: readonly string[];
+  /** The folder holding each of `publicMedia` at its site path. */
+  publicMediaFrom?: string;
   /**
    * Private notes the person confirmed public (G3), by path under `private/notes`, each also among `notes`.
    * Only their own text and path may then appear in the public notes and pages (leakCheck).
@@ -264,6 +266,15 @@ export async function publish(o: PublishOptions): Promise<PublishResult> {
   const site: SiteManifest = { format: 1, build, notes: PUBLIC_INDEX, vault, ...(nameSalt ? { nameSalt } : {}) };
   await put(join(o.site, "focus-notes.json"), JSON.stringify(site));
 
+  // Published images go in before the leak check, so their paths are checked with everything else.
+  const media = [...new Set(o.publicMedia ?? [])];
+  if (media.length && !o.publicMediaFrom) throw new Error("Published images need the folder they're staged in.");
+  for (const path of media) {
+    if (!isSafePath(`${path}.md`) || !/^(notes|assets\/images)\//.test(path)) throw new Error("A published image has an unusable path.");
+    await mkdir(join(o.site, ...path.split("/"), ".."), { recursive: true });
+    await copyFile(join(o.publicMediaFrom!, ...path.split("/")), join(o.site, ...path.split("/")));
+  }
+
   // A deliberate exclusion must name exactly a public note that is also a private one: never a blanket allowance.
   const published = [...new Set(o.published ?? [])];
   if (published.length && o.private && !(await exists(accessFile))) {
@@ -275,7 +286,7 @@ export async function publish(o: PublishOptions): Promise<PublishResult> {
   }
   const publicPaths = new Set(index.notes.map((n) => n.path)), privatePaths = new Set(privateTexts.map((n) => n.path));
   if (published.some((p) => !publicPaths.has(p) || !privatePaths.has(p))) throw new Error("A published note isn't among both the public and the private notes.");
-  const leaks = await leakCheck(o.site, privateTexts, secrets, names, published);
+  const leaks = await leakCheck(o.site, privateTexts, secrets, names, published, media);
   if (leaks.length) throw new LeakError(leaks);
   const count = (n: number, what: string) => `${n} ${what}${n === 1 ? "" : "s"}`;
   log(`Published ${count(index.notes.length, "public note")}${o.reader ? ` (${count(publicPages, "page")})` : ""}${sealedNotes ? ` and sealed ${count(sealedNotes, "private note")}` : ""}${vault ? " in the vault" : ""}${shares ? ` for ${count(shares, "share audience")}` : ""}. Leak check passed.`);
@@ -384,11 +395,13 @@ function identifierValues(file: string, body: string): string[] {
  * name of LEAK_MIN_NAME characters or more, as written, in NFC, and normalized as the lookup does it (SEC-06).
  * `published` names notes the person confirmed public (G3): their own path and lines may appear in the
  * public notes and pages, never in NAME_SCOPE, and they stay source identifiers everywhere. A line they
- * share with any other private note is still a leak.
+ * share with any other private note is still a leak. Every file's path is checked too, binary or not:
+ * no path may hold another private note's path, and a published image (`media`) may not be named after
+ * a private note or its folder.
  */
 export async function leakCheck(
   site: string, notes: { path: string; text: string }[], secrets: readonly string[] = [], names: readonly string[] = [],
-  published: readonly string[] = [],
+  published: readonly string[] = [], media: readonly string[] = [],
 ): Promise<{ file: string; kind: LeakKind }[]> {
   if (!notes.length && !secrets.length && !names.length) return [];
   const open = new Set(published);
@@ -404,14 +417,26 @@ export async function leakCheck(
   const pathIdentities = sourceIdentities(notes.flatMap((n) => [n.path, ...n.path.split("/"),
     ...n.path.split("/").map((part) => part.replace(/\.[^.]+$/, ""))]));
   const nameIdentities = sourceIdentities([...names, ...notes.map((n) => titleOf(n.path, n.text))]);
+  // A published image's own name and folders must not name a private note or its folder; names the
+  // published notes use themselves (a shared folder) are theirs to show.
+  const segmentsOf = (path: string) => path.split("/").flatMap((part) => [part, part.replace(/\.[^.]+$/, "")]);
+  const shownSegments = sourceIdentities(shown.flatMap((n) => segmentsOf(n.path)));
+  const hiddenSegments = new Set([...sourceIdentities(hidden.flatMap((n) => segmentsOf(n.path)))].filter((x) => !shownSegments.has(x)));
+  const mediaFiles = new Set(media);
   const found: { file: string; kind: LeakKind }[] = [];
   const walk = async (d: string) => {
     for (const e of await readdir(d, { withFileTypes: true })) {
       const p = join(d, e.name);
       if (e.isDirectory()) { await walk(p); continue; }
+      const file = relative(site, p).split(sep).join("/");
+      // Every file's path, binary or not, is checked as well as its body.
+      if (paths.some((x) => file.includes(x)) ||
+        mediaFiles.has(file) && segmentsOf(file.replace(/^(notes|assets\/images)\//, "")).some((x) => hiddenSegments.has(identity(x)))) {
+        found.push({ file, kind: "path" });
+        continue;
+      }
       if (!TEXT_FILE.test(e.name)) continue;
       const body = await readFile(p, "utf8");
-      const file = relative(site, p).split(sep).join("/");
       const identifiers = NAME_SCOPE(file) ? identifierValues(file, body) : [];
       if (keys.some((x) => body.includes(x))) found.push({ file, kind: "secret" });
       else if (identifiers.some((x) => pathIdentities.has(x))) found.push({ file, kind: "path" });
