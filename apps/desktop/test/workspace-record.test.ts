@@ -8,7 +8,7 @@ import { existsSync, mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import {
-  backupToRecord, checkFolder, configUrl, driveOf, envSyncRoots, folderNameOk, movedDocuments, nextFree, parseRecord, recordFor, serializeRecord, shortPath, startDecision, syncService,
+  backupToRecord, checkFolder, configUrl, driveOf, envSyncRoots, folderNameOk, movedDocuments, nextFree, parseRecord, recordFor, recoveredNote, serializeRecord, shortPath, startDecision, syncService,
 } from "../src/main/workspace/record.ts";
 
 vi.mock("node:fs/promises", { spy: true });
@@ -129,5 +129,21 @@ describe("recovery's helpers", () => {
     expect(syncService(join(home, "Documents", "notes"), roots)).toBeUndefined();
     expect(shortPath(join(home, "Documents", "notes"), home)).toBe(join("Documents", "notes"));
     expect(shortPath(resolve(tmpdir(), "elsewhere"), home)).toBe(resolve(tmpdir(), "elsewhere"));
+  });
+});
+
+describe("the last note after recovery (FRE-12, D-397)", () => {
+  const from = abs("Users\\me\\notes"), to = abs("Users\\me\\moved");
+  it("follows the notes into the found folder when the note is there", () => {
+    expect(recoveredNote(resolve(from, "a", "b.md"), from, to, () => true)).toBe(resolve(to, "a", "b.md"));
+  });
+  it("is null when the note isn't in the found folder, so writing opens Untitled, never Open", () => {
+    expect(recoveredNote(resolve(from, "b.md"), from, to, () => false)).toBeNull();
+    expect(recoveredNote(from, from, to, () => true)).toBeNull();
+  });
+  it("leaves a note that was never in the missing folder alone", () => {
+    const other = abs("Users\\me\\notes-other\\x.md");
+    expect(recoveredNote(other, from, to, () => false)).toBe(other);
+    expect(recoveredNote("relative.md", from, to, () => false)).toBe("relative.md");
   });
 });

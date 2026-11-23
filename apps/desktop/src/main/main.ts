@@ -74,7 +74,7 @@ import { forgetLocalData, removalCheck, removeWorkspace } from "./workspace/remo
 import { PrivacyCleanupError, withoutPrivacyTraces, withoutRemovedReferences } from "./privacy-cleanup.ts";
 import { atOrUnder } from "@focus-notes/core/journal";
 import { deletionCheck, deletionGate, isRepoSlug, recycleProject, recycleRefusal, repoStatus } from "./workspace/delete.ts";
-import { backupToRecord, checkFolder, configUrl, driveOf, envSyncRoots, folderNameOk, movedDocuments, nextFree, parseRecord, recordFor, samePath, serializeRecord, shortPath, startDecision, syncService, type FolderCheck, type FolderFacts, type WorkspaceRecord } from "./workspace/record.ts";
+import { backupToRecord, checkFolder, configUrl, driveOf, envSyncRoots, folderNameOk, movedDocuments, nextFree, parseRecord, recordFor, recoveredNote, samePath, serializeRecord, shortPath, startDecision, syncService, type FolderCheck, type FolderFacts, type WorkspaceRecord } from "./workspace/record.ts";
 import type { RecoverAccount, RecoverPlace, RecoverProgress, RecoverResult, RecoverStatus } from "@focus-notes/core/recover";
 import { GitHubError } from "@focus-notes/github";
 import { AppWindowFrame, frameKindFor } from "./window/frame.ts";
@@ -195,6 +195,17 @@ function readRecord(): WorkspaceRecord | undefined {
  * nothing writes into it, re-makes it, or starts Git or the watcher in it.
  */
 let folderState: FolderCheck = "ok";
+/** Recovery reopened the notes from `to` in place of the missing `from`: the last note follows them (FRE-12, D-397). */
+let recoveredFolder: { from: string; to: string } | undefined;
+/** A remembered note path as it is after recovery: re-based into the recovered folder, or undefined when it isn't there. */
+const afterRecovery = (path: string | undefined): string | undefined => {
+  if (!path || !recoveredFolder) return path;
+  const { from, to } = recoveredFolder;
+  // Only the same note, by its place under the old folder, and only when its real path stays inside the found one.
+  const real = (p: string) => { try { return realpathSync.native(p); } catch { return undefined; } };
+  const inFound = (p: string) => { const r = real(p), root = real(to); return Boolean(r && root && inside(root, r)); };
+  return recoveredNote(path, from, to, inFound) ?? undefined;
+};
 const notesHome = () => chosenHome ?? defaultHome();
 const stateFile = () => dataFile(DATA_FILES.state);
 
@@ -656,7 +667,18 @@ async function switchWorkspace(folder: string, keep?: Pick<WorkspaceRecord, "kin
     workspaceIdentity = undefined;
     await saveFirstRun();
   }
+  const missingFolder = folderState !== "ok" ? record?.folder ?? notesHome() : undefined;
   await saveRecord(recordFor(folder, await folderFacts(folder), record, keep));
+  recoveredFolder = missingFolder ? { from: missingFolder, to: resolve(folder) } : undefined;
+  // The project's own folder follows the notes, so writing is admitted there (D-397); another project's is never touched.
+  if (missingFolder) {
+    const named = await readFile(dataFile(DATA_FILES.projectFolder), "utf8").catch(() => undefined);
+    if (named && samePath(named.trim(), missingFolder)) {
+      const to = dataFile(DATA_FILES.projectFolder), temp = `${to}.${process.pid}.tmp`;
+      await writeFile(temp, resolve(folder), "utf8");
+      await rename(temp, to);
+    }
+  }
   await projectMetadata?.resume();
   chosenHome = folder;
   folderState = "ok";
@@ -786,6 +808,16 @@ async function recoverWith<T>(fn: () => Promise<T>): Promise<T> {
 /** Find the folder…: a clone of the recorded notes, with any name, anywhere; in offline mode, a folder of notes as it is. */
 async function takeFolder(folder: string): Promise<RecoverResult> {
   const want = record?.repository ?? recoverRepo;
+  // Still missing, or a folder with nothing of a project in it: never opened as the person's notes (G5.1).
+  // A folder that can't be read is an error, never emptiness; a valid project with no notes yet opens (D-397).
+  let entries: string[];
+  try {
+    if ((await checkFolder(folder)) !== "ok") return recoverProblem("notWorkspace");
+    entries = await readdir(folder);
+  } catch {
+    return { ok: false, problem: "failed" };
+  }
+  if (!entries.length) return recoverProblem("notWorkspace");
   if (recordedLocal() || (!record?.kind && !want)) {
     await switchWorkspace(folder);
     return { ok: true };
@@ -1657,7 +1689,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     if (typeof folder !== "string" || (path !== undefined && typeof path !== "string")) throw new Error("Invalid project pin");
     return projects.pin(folder, path);
   });
-  handle("projects:lastNote", () => process.env.FOCUS_NOTES_PROJECT_NOTE || projects.lastNote());
+  handle("projects:lastNote", async () => process.env.FOCUS_NOTES_PROJECT_NOTE || afterRecovery(await projects.lastNote()));
   handle("projects:position", (path: unknown) => {
     if (typeof path !== "string") throw new Error("Invalid recent note");
     return projects.position(path);
@@ -2691,6 +2723,11 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     try {
       const s = JSON.parse(await readFile(stateFile(), "utf8"));
       if (process.env.FOCUS_NOTES_PROJECT_NOTE) s.lastNotePath = notePath(process.env.FOCUS_NOTES_PROJECT_NOTE);
+      else if (s && typeof s.lastNotePath === "string") {
+        const now = afterRecovery(s.lastNotePath);
+        if (now) s.lastNotePath = now;
+        else delete s.lastNotePath;
+      }
       return s && s.version === 1 ? withoutRemovedReferences(await projects.canCache() ? s : withoutPrivacyTraces(s), await projects.removedRoots()) : { version: 1 };
     } catch {
       return { version: 1 };

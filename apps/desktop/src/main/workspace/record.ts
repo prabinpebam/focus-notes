@@ -168,6 +168,18 @@ const within = (base: string, p: string) => {
   const b = resolve(base).toLowerCase(), f = resolve(p).toLowerCase();
   return f === b || f.startsWith(b.endsWith(sep) ? b : b + sep);
 };
+/**
+ * The last note after recovery reopened the notes from another folder (FRE-12, D-397): the same note
+ * in the folder now when it's there, `null` when it isn't (writing opens a new Untitled note, never
+ * Open), and the path itself when it was never in the missing folder.
+ */
+export function recoveredNote(path: string, from: string, to: string, exists: (p: string) => boolean): string | null {
+  if (!isAbsolute(path) || !within(from, path)) return path;
+  const rel = relative(resolve(from), resolve(path));
+  if (!rel || rel.startsWith("..") || isAbsolute(rel)) return null;
+  const now = resolve(to, rel);
+  return within(to, now) && exists(now) ? now : null;
+}
 /** The service that keeps a folder in sync, or undefined. */
 export function syncService(folder: string, roots: readonly SyncRoot[]): string | undefined {
   return roots.find((r) => within(r.path, folder))?.service;
