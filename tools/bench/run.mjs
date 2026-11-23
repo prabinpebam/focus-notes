@@ -7,6 +7,7 @@ import { arch, cpus, release, tmpdir, totalmem } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { largeWorkspace } from "./large.mjs";
+import { startSummary } from "./start.mjs";
 
 const root = join(import.meta.dirname, "..", "..");
 const budgetsPath = join(import.meta.dirname, "budgets.json");
@@ -89,7 +90,9 @@ async function startTimes() {
     cold.push(await launchReadyMs(userData, docs));
     warm.push(await launchReadyMs(userData, docs));
   }
-  return { "PRF-02.coldReadyMs": median(cold), "PRF-02.warmReadyMs": median(warm) };
+  const { measures, samples } = startSummary(cold, warm);
+  diagnostics["PRF-02"] = samples;
+  return measures;
 }
 
 function rendererOverhead() {
