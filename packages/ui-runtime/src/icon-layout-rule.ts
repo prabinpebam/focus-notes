@@ -63,6 +63,8 @@ function hasHeading(n: Node, depth = 0): boolean {
 function checkButtons(row: Node[], trailing: boolean, doc: string, at: string, out: IconLayoutProblem[]) {
   const buttons = row.filter((c) => c.type === "Button");
   if (!buttons.length || buttons.length !== row.length) return;
+  // A row of toggle chips (aria-pressed presets) is a choice, not actions; segmented controls aren't Buttons.
+  if (buttons.some((b) => props(b).toggle === true || props(b).pressed !== undefined)) return;
   const primary = buttons.findIndex((b) => props(b).variant === "primary");
   if (primary < 0 && buttons.length < 2) return;
   if (!trailing) out.push({ doc, at, message: "actions must sit at the trailing edge: IconLayout's actions, a Dialog's footer, or an Inline with justify \"end\" (D-408)" });
