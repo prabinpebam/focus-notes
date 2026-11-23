@@ -5,8 +5,9 @@
  *     IconLayout (or a Dialog's `visual` slot), so nothing wraps under the icon;
  *   - a row of action buttons sits at the trailing edge (IconLayout's `actions`, a Dialog's `footer`, or an
  *     Inline with justify "end"), with the primary last (D-374).
- * Exempt (D-408): the bottom notification pill (Toast, D-357), the writing window's conflict choices bar,
- * the full-window Layer#recover and Layer#firstRun screens, EmptyState, StatusRow and panelFailure.
+ * Exempt (D-408): the bottom notification pill (Toast, D-357), the writing window's conflict choices bar and its
+ * find bar (Layer#findBar: the writing window's contents are as designed), the full-window Layer#recover and
+ * Layer#firstRun screens, EmptyState, StatusRow and panelFailure.
  */
 type Node = Record<string, unknown>;
 export interface IconLayoutProblem { doc: string; at: string; message: string }
@@ -15,7 +16,7 @@ const CONTAINERS = new Set(["Dialog", "DialogPanel", "PopoverPanel"]);
 const ICONISH = new Set(["Icon", "StepMark", "AppMark", "ProjectMark", "ImageFrame"]);
 const EXEMPT_TYPES = new Set(["Toast", "EmptyState", "StatusRow", "NotificationRegion"]);
 // The conflict choices bar is Dialog#conflict's toolbar slot, which the walk below never treats as actions.
-const EXEMPT_IDS = new Set(["recover", "firstRun", "panelFailure"]);
+const EXEMPT_IDS = new Set(["recover", "firstRun", "panelFailure", "findBar"]);
 
 /**
  * Views not yet on the shared layout, by document id: the area migrations empty this list (D-408).
