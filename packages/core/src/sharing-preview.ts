@@ -17,7 +17,8 @@ export const SHARING_WAITS = {
   unpublishSite: "sharing.unpublishSite",
 } as const;
 
-export interface PublishTaskResult { commit: string; published: readonly string[]; changed: readonly string[] }
+/** `pending`: the build whose commit is on the site but which Pages isn't serving yet; `onLive` says when it is (O4). */
+export interface PublishTaskResult { commit: string; published: readonly string[]; changed: readonly string[]; pending?: string }
 /** The desktop's Publish and Unpublish (G3): the shell stages, seals, leak-checks, pushes and waits for the exact deploy. */
 export interface PublishingBridge {
   /** Notes on the current public site, relative to the notes root. */
@@ -27,8 +28,10 @@ export interface PublishingBridge {
   unpublish(paths: string[]): Promise<PublishTaskResult>;
   /** `saving`, `publishing` (the Pages run for the exact commit) or `removing`. */
   onStep?(listener: (step: string) => void): () => void;
+  /** A pending build is live, or still isn't after the background checks' ceiling. */
+  onLive?(listener: (event: { build: string; live: boolean }) => void): () => void;
 }
-const PUBLISH_PROBLEMS = ["offline", "signedout", "refused", "media", "scope", "unavailable", "busy", "unacknowledged"];
+const PUBLISH_PROBLEMS = ["offline", "signedout", "refused", "media", "scope", "unavailable", "busy", "unacknowledged", "notlive"];
 /** The plain problem for a failed Publish or Unpublish: never the note's text, a path or a secret (G3.2). */
 function publishProblem(error: unknown): string {
   const text = error instanceof Error ? error.message : "";
@@ -49,6 +52,8 @@ export function registerSharingPreview(ctx: {
     page: "home", section: "", article: "", theme: "paper", font: "serif", size: "18",
     readerTheme: "system", readerFocus: false, busy: false, problem: "",
     operation: "", cancelRequested: false, cancelled: false, atomic: false,
+    /** The build of a Publish that's still waiting for Pages, shown as Still publishing in its dialog (O4). */
+    still: "",
   };
   type Part = { label: string; status: "waiting" | "running" | "done" | "failed" };
   let parts: Part[] = [];
@@ -129,7 +134,7 @@ export function registerSharingPreview(ctx: {
     if (!root || root.id === "local" || live() && root.id !== "private") throw new Error(catalog.format("share.item.unavailable"));
     const relative = target.slice(root.path.length).split(/[\\/]/).filter(Boolean).join("/");
     set({ publishOpen: true, target, name: node.kind === "note" ? node.title || node.name.replace(/\.md$/i, "") : node.name,
-      folder: node.kind === "folder", notes: leaves(node, target).length, problem: "", operation: "", cancelled: false,
+      folder: node.kind === "folder", notes: leaves(node, target).length, problem: "", operation: "", cancelled: false, still: "",
       hasShares: Boolean(store.state.ui.share.listing?.grants.some(g => g.item?.path === relative)),
     });
     store.update(s => ({ ...s, ui: { ...s.ui, toolbarOpen: false, files: { ...s.ui.files, open: s.ui.files.pinned } } }));
@@ -139,12 +144,32 @@ export function registerSharingPreview(ctx: {
     if (!state.busy || state.operation === SHARING_WAITS.publishSite || state.operation === SHARING_WAITS.unpublishSite) set({ publishOpen: false });
   });
   /** One leavable live task: not cancellable once started, its problem shown in the dialog or, when closed, a notification with Retry. */
+  const waiters = new Map<string, (live: boolean) => void>();
+  ctx.publishing?.onLive?.(({ build, live }) => { const resolve = waiters.get(build); waiters.delete(build); resolve?.(live); });
+  /**
+   * The push landed but Pages hasn't served it yet (O4): a background task until the shell says it's live, then the
+   * outcome; at the shell's ceiling, an error with Retry. The person can close the dialog and keep working meanwhile.
+   */
+  const awaitLive = (build: string, message: string, command: string, live: () => void) => {
+    const served = new Promise<boolean>(resolve => waiters.set(build, resolve));
+    void tracker.run("sharing.publishLive", message, async () => { if (!await served) throw new Error("sharing:notlive"); },
+      undefined, "fn:sharing.publishLive", "none").then(() => {
+      if (state.still === build) { parts = parts.map(part => ({ ...part, status: "done" })); set({ still: "", publishOpen: false }); }
+      live();
+    }, error => {
+      const problem = catalog.format(publishProblem(error));
+      retry = command;
+      const inDialog = state.still === build && state.publishOpen;
+      if (state.still === build) { parts = parts.map(part => part.status === "running" ? { ...part, status: "failed" } : part); set({ still: "", problem }); }
+      if (!inDialog) ctx.toast(problem, { tone: "error", action: { command: "sharing.operationRetry", label: catalog.format("commit.retry") } });
+    });
+  };
   const liveTask = async (command: string, operation: "publishSite" | "unpublishSite", message: string, labels: string[], work: () => Promise<void>) => {
     if (state.busy) return;
     const target = SHARING_WAITS[operation], publishing = operation === "publishSite";
     retry = command;
     parts = labels.map(label => ({ label, status: "waiting" }));
-    set({ busy: true, problem: "", operation: target, cancelRequested: false, cancelled: false, atomic: true });
+    set({ busy: true, problem: "", operation: target, cancelRequested: false, cancelled: false, atomic: true, still: "" });
     const off = ctx.publishing?.onStep?.(step => {
       if (step === "publishing" && parts[0]?.status === "running") { completed(0); parts[1]!.status = "running"; changed(); }
     });
@@ -172,15 +197,22 @@ export function registerSharingPreview(ctx: {
       parts[0]!.status = "running"; changed();
       const result = await ctx.publishing!.publish({ notes, ...(folder ? { folders: [folder] } : {}) });
       publishedNotes = new Set(result.published);
+      const link = node.kind === "note" ? notes[0] : undefined;
+      const published = () => ctx.toast(catalog.format("sharing.publish.published", { title }), { tone: "success",
+        ...(link && result.published.includes(link) ? { action: { command: "sharing.copyPublishedLink", label: catalog.format("sharing.publish.copyLink"), args: { path: link, title } } } : {}) });
+      if (result.pending) {
+        parts[0]!.status = "done"; parts[1]!.status = "running";
+        set({ still: result.pending });
+        awaitLive(result.pending, "sharing.publish.stillPublishing", "sharing.publish", published);
+        return;
+      }
       parts = parts.map(part => ({ ...part, status: "done" }));
       set({ publishOpen: false });
-      const link = node.kind === "note" ? notes[0] : undefined;
-      ctx.toast(catalog.format("sharing.publish.published", { title }), { tone: "success",
-        ...(link && result.published.includes(link) ? { action: { command: "sharing.copyPublishedLink", label: catalog.format("sharing.publish.copyLink"), args: { path: link, title } } } : {}) });
+      published();
     });
   };
   reg<Record<string, never>>("sharing.publish", async () => {
-    if (state.busy) return;
+    if (state.busy || state.still) return;
     requirePublish();
     const node = findNode(store.state.workspace.tree, state.target)?.node;
     if (!node) throw new Error(catalog.format("share.state.deleted"));
@@ -206,8 +238,14 @@ export function registerSharingPreview(ctx: {
       parts[0]!.status = "running"; changed();
       const result = await ctx.publishing!.unpublish(target.paths);
       publishedNotes = new Set(result.published);
+      const done = () => ctx.toast(catalog.format("sharing.unpublish.done", { title: target.title }), { tone: "success" });
+      if (result.pending) {
+        parts[0]!.status = "done"; parts[1]!.status = "running"; changed();
+        awaitLive(result.pending, "sharing.unpublish.stillRemoving", "sharing.unpublish", done);
+        return;
+      }
       parts = parts.map(part => ({ ...part, status: "done" }));
-      ctx.toast(catalog.format("sharing.unpublish.done", { title: target.title }), { tone: "success" });
+      done();
     });
   });
   /** Unpublish of a note or folder, with the notes of it that are on the site; undefined when none are. */
@@ -333,8 +371,8 @@ export function registerSharingPreview(ctx: {
     id: "vm.sharingPreview", reads: "*",
     setters: Object.fromEntries([...Object.keys(choices), "readerFocus"].map(key => [key, `sharing.preview.${key}`])),
     schema: { type: "object", properties: {
-      open: bool, publishOpen: bool, publishTitle: str, name: str, detail: str, icon: str, publishText: str, hasShares: bool, busy: bool, problem: str,
-      showProgress: bool, failed: bool, recovery: bool, canCancel: bool, cancelRequested: bool, cancelled: bool, appearanceLocked: bool,
+      open: bool, publishOpen: bool, publishTitle: str, name: str, detail: str, icon: str, publishText: str, hasShares: bool, busy: bool, publishBusy: bool, problem: str,
+      showProgress: bool, failed: bool, stillPublishing: bool, recovery: bool, canCancel: bool, cancelRequested: bool, cancelled: bool, appearanceLocked: bool,
       completed: { type: "number" }, total: { type: "number" }, progress: { type: "number" }, progressLabel: str, elapsed: str, cancelLabel: str, cancelReason: str,
       parts: { type: "array", items: { type: "object", properties: { id: str, label: str, icon: str, tone: str, busy: bool } } },
       theme: str, scopeTheme: str, font: str, size: str, contentSize: { type: "number" }, scheme: str, readerTheme: str, readerFocus: bool, page: str,
@@ -354,8 +392,10 @@ export function registerSharingPreview(ctx: {
       const task = store.state.tasks.findLast(task => task.target === state.operation);
       return {
         ...state, publishTitle: catalog.format("sharing.publish.title", { title: state.name }),
-        showProgress: Boolean(state.operation) && (state.busy || Boolean(state.problem) || state.cancelled),
-        failed: Boolean(state.problem), recovery: Boolean(retry),
+        showProgress: Boolean(state.operation) && (state.busy || Boolean(state.problem) || state.cancelled || Boolean(state.still)),
+        failed: Boolean(state.problem), stillPublishing: Boolean(state.still) && !state.busy && !state.problem, recovery: Boolean(retry),
+        // Still publishing keeps Publish busy, so the same notes aren't sent again while GitHub catches up.
+        publishBusy: state.busy || Boolean(state.still) && !state.problem,
         canCancel: state.busy && !state.atomic && !state.cancelRequested,
         appearanceLocked: state.busy && state.operation === "sharing.previewSave",
         completed: done, total: parts.length, progress: parts.length ? done / parts.length * 100 : 0,
@@ -364,7 +404,7 @@ export function registerSharingPreview(ctx: {
         cancelLabel: catalog.format(state.cancelRequested ? "project.new.stopping" : "project.cancel"),
         cancelReason: catalog.format(state.atomic ? "sharing.operation.finishing" : "project.new.stopping"),
         parts: parts.map((part, index) => ({ id: String(index), label: part.label, icon: part.status === "done" ? "check" : part.status === "failed" ? "error" : "document",
-          tone: part.status === "done" ? "success" : part.status === "failed" ? "danger" : "neutral", busy: part.status === "running" && state.busy })),
+          tone: part.status === "done" ? "success" : part.status === "failed" ? "danger" : "neutral", busy: part.status === "running" && (state.busy || Boolean(state.still)) })),
         detail: state.folder ? catalog.format("site.preview.count", { count: state.notes }) : catalog.format("sharing.article"),
         icon: state.folder ? "folder" : "document", publishText: catalog.format(live() ? "sharing.publish.liveText" : "sharing.publish.text", { title: state.name }),
         scheme: state.readerTheme === "system" ? (["ink", "dusk"].includes(state.theme) ? "dark" : "light") : state.readerTheme,

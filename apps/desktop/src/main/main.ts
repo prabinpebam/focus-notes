@@ -2142,6 +2142,9 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
       return existsSync(join(dir, "render.mjs")) ? dir : undefined;
     },
     publishStep: step => sendSharing("sharing:publishStep", step),
+    publishLive: event => sendSharing("sharing:publishLive", event),
+    // Journeys only: a short Pages wait, so Still publishing can be walked without waiting 10 minutes.
+    ...(devEnv("FOCUS_NOTES_PAGES_WAIT_MS") ? { pagesWaitMs: Number(devEnv("FOCUS_NOTES_PAGES_WAIT_MS")), pagesWatch: { delayMs: 500 } } : {}),
     withdrawShares: () => access.withdrawAll(),
   });
   const pagesSite = async () => {

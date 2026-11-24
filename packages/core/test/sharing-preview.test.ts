@@ -170,7 +170,8 @@ it("a refused local Publish announces no success and Retry emits one acknowledge
 async function liveFixture(onSite: string[] = []) {
   const published: string[][] = [], unpublished: string[][] = [], copied: string[] = [];
   let step: ((s: string) => void) | undefined;
-  let next = deferred<{ commit: string; published: string[]; changed: string[] }>();
+  let live: ((event: { build: string; live: boolean }) => void) | undefined;
+  let next = deferred<{ commit: string; published: string[]; changed: string[]; pending?: string }>();
   const bridge: PlatformBridge = {
     platform: "windows", readNote: async () => "# A\n",
     writeNote: async () => {}, chooseNote: async () => undefined, newNotePath: async () => "/w/notes/new.md", defaultNotePath: async () => "/w/notes/a.md",
@@ -186,6 +187,7 @@ async function liveFixture(onSite: string[] = []) {
       publish: async selection => { published.push(selection.notes); return next.promise; },
       unpublish: async paths => { unpublished.push(paths); return next.promise; },
       onStep: listener => { step = listener; return () => { step = undefined; }; },
+      onLive: listener => { live = listener; return () => { live = undefined; }; },
     },
   };
   const app = createApp(bridge, en);
@@ -195,11 +197,45 @@ async function liveFixture(onSite: string[] = []) {
   for (let i = 0; i < 5; i++) await Promise.resolve();
   const vm = () => app.viewModels.select("vm.sharingPreview", app.store.state) as Record<string, unknown>;
   const toasts = () => app.store.state.ui.toasts;
-  return { app, vm, toasts, published, unpublished, copied, step: (s: string) => step?.(s), settle: (value?: Error) => {
+  return { app, vm, toasts, published, unpublished, copied, step: (s: string) => step?.(s), live: (build: string, ok: boolean) => live?.({ build, live: ok }), settle: (value?: Error, pending?: string) => {
     const current = next; next = deferred();
-    if (value) current.reject(value); else current.resolve({ commit: "c".repeat(40), published: ["a.md"], changed: ["a.md"] });
+    if (value) current.reject(value); else current.resolve({ commit: "c".repeat(40), published: ["a.md"], changed: ["a.md"], ...(pending ? { pending } : {}) });
   } };
 }
+
+it("O4: Pages slower than the wait is Still publishing in the dialog, which can close; Published with Copy link once live; never served is an error with Retry", async () => {
+  const t = await liveFixture();
+  await t.app.commands.run("note.publish");
+  let task = t.app.commands.run("sharing.publish");
+  t.step("publishing");
+  t.settle(undefined, "build-1");
+  await task;
+  expect(t.vm()).toMatchObject({ publishOpen: true, busy: false, publishBusy: true, failed: false, stillPublishing: true, showProgress: true });
+  expect((t.vm().parts as { tone: string; busy: boolean }[]).map(p => [p.tone, p.busy])).toEqual([["success", false], ["neutral", true]]);
+  expect(t.app.store.state.tasks.some(x => x.target === "sharing.publishLive")).toBe(true);
+  expect(t.toasts().some(n => n.message.startsWith("Published") || n.tone === "error")).toBe(false);
+  await t.app.commands.run("sharing.publishClose");
+  expect(t.vm()).toMatchObject({ publishOpen: false });
+  t.live("build-1", true);
+  await new Promise(resolve => setTimeout(resolve, 0));
+  const done = t.toasts().find(n => n.message === "Published “A”")!;
+  expect(done.action).toMatchObject({ command: "sharing.copyPublishedLink", label: "Copy link" });
+  // A build still not served at the shell's ceiling: a plain error with Retry, which publishes again.
+  await t.app.commands.run("note.publish");
+  task = t.app.commands.run("sharing.publish");
+  t.settle(undefined, "build-2");
+  await task;
+  await t.app.commands.run("sharing.publishClose");
+  t.live("build-2", false);
+  await new Promise(resolve => setTimeout(resolve, 0));
+  const failed = t.toasts().find(n => n.tone === "error")!;
+  expect(failed.message).toBe("GitHub still hasn’t updated your site after an hour. Your change is saved on GitHub. Try again.");
+  const retry = t.app.commands.run(failed.action!.command);
+  await Promise.resolve();
+  expect(t.published).toHaveLength(3);
+  t.settle();
+  await retry;
+});
 
 it("G3.1/G3.5: live Publish streams Saving to GitHub then Publishing, survives closing its dialog, then offers Copy link", async () => {
   const t = await liveFixture();

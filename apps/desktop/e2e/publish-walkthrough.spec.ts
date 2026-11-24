@@ -80,6 +80,7 @@ test("Publish walk-through: not set up, turn on, publish a folder, read the site
     l = await launch(dirs, {
       FOCUS_NOTES_CANDIDATE_GITHUB_API: fake.origin, FOCUS_NOTES_CANDIDATE_GIT_REMOTES: remotes, FOCUS_NOTES_GIT_REMOTES: remotes,
       FOCUS_NOTES_CANDIDATE_SITE: "", FOCUS_NOTES_MEMORY_CLIPBOARD: "1", FOCUS_NOTES_POINTER_GAP_MS: "0", FOCUS_NOTES_IDLE_COMMIT_MS: "600000",
+      FOCUS_NOTES_PAGES_WAIT_MS: "4000",
     });
     const { page, app } = l;
     await app.evaluate((_electron, fixture) => {
@@ -200,6 +201,27 @@ test("Publish walk-through: not set up, turn on, publish a folder, read the site
     await more();
     await page.getByRole("menuitem", { name: "Unpublish", exact: true }).click();
     await expect(page.getByRole("status").filter({ hasText: "Removed “Rome” from your site." })).toHaveCount(1, { timeout: 60_000 });
+
+    // 6b. Pages slower than the wait (O4): Still publishing, not an error; the dialog closes; Published with Copy link once live.
+    const publishedRome = page.getByRole("status").filter({ hasText: "Published “Rome”" });
+    await expect(publishedRome).toHaveCount(0, { timeout: 20_000 });
+    fake.git.setStale(true);
+    await more();
+    await page.getByRole("menuitem", { name: "Publish…", exact: true }).click();
+    await dialog.getByRole("button", { name: "Publish", exact: true }).click();
+    await expect(dialog.getByText(/^Still publishing\./)).toBeVisible({ timeout: 60_000 });
+    await expect(dialog.locator("[data-status-row=danger]")).toHaveCount(0);
+    await capture("still-publishing");
+    // Recorded now: the commit is on the site's branch, so Pages will serve it.
+    expect(published()).toEqual(["trips/lisbon.md", "trips/rome.md"]);
+    await page.keyboard.press("Escape");
+    await expect(dialog).toHaveCount(0);
+    await expect(publishedRome).toHaveCount(0);
+    fake.git.setStale(false);
+    await expect(publishedRome).toHaveCount(1, { timeout: 30_000 });
+    await expect(publishedRome.getByRole("button", { name: "Copy link", exact: true })).toBeVisible();
+    await capture("published-after-wait");
+    scan();
 
     // 7. Turn off sharing: the site is emptied and nothing published comes back on Turn on.
     await openSettings("Sharing");

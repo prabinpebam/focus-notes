@@ -2,7 +2,9 @@ import type { ConfirmedSelection } from "./public-selection.ts";
 
 /** Saving to GitHub → Publishing → Published, or Removing from your site (G3.5). */
 export type PublicTaskStep = "saving" | "publishing" | "removing";
-export interface PublicTaskResult { commit: string; published: readonly string[]; changed: readonly string[] }
+/** `pending`: the commit landed but Pages hadn't served that build within the wait; checking continues (D-419, O4). */
+export interface PublicTaskResult { commit: string; published: readonly string[]; changed: readonly string[]; pending?: string }
+export interface PublicDeploy { commit: string; pending?: string }
 
 /**
  * Publish and Unpublish as one leavable task per project (G3.1, G3.4, G3.5). The published set is
@@ -16,8 +18,11 @@ export function publicPublishing(deps: {
   current(): Promise<readonly string[]>;
   /** Records the deployed set; called only after `deploy` resolved. */
   record(paths: readonly string[]): Promise<void>;
-  /** Stages, seals with the leak gate and publishes exactly `paths`, resolving with the deployed commit. */
-  deploy(paths: readonly string[], selection: ConfirmedSelection, step: (step: PublicTaskStep) => void): Promise<string>;
+  /**
+   * Stages, seals with the leak gate and publishes exactly `paths`, resolving with the deployed commit, and
+   * `pending` (the build) when the commit is on the site's branch but Pages hasn't served it yet.
+   */
+  deploy(paths: readonly string[], selection: ConfirmedSelection, step: (step: PublicTaskStep) => void): Promise<PublicDeploy>;
   step?(step: PublicTaskStep): void;
 }) {
   let running: Promise<PublicTaskResult> | undefined;
@@ -28,9 +33,10 @@ export function publicPublishing(deps: {
   };
   const deployAndRecord = async (next: string[], selection: ConfirmedSelection, changed: string[], first: PublicTaskStep) => {
     deps.step?.(first);
-    const commit = await deps.deploy(next, selection, step => deps.step?.(step));
+    const { commit, pending } = await deps.deploy(next, selection, step => deps.step?.(step));
+    // A pending deploy is on the site's branch, so Pages will serve exactly this set: record it now.
     await deps.record(next);
-    return { commit, published: next, changed };
+    return { commit, published: next, changed, ...(pending ? { pending } : {}) };
   };
   return {
     /** The running task, so a reopened dialog shows its status instead of starting another. */

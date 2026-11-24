@@ -3,10 +3,11 @@ import { join, relative, sep } from "node:path";
 import { GitHubError, type GitHubApi } from "@focus-notes/github";
 import { publish } from "@focus-notes/seal/publish";
 import type { SharingLayout } from "./layout.ts";
-import { publicPublishing, type PublicTaskStep } from "./public-publishing.ts";
+import { setTimeout as delay } from "node:timers/promises";
+import { publicPublishing, type PublicDeploy, type PublicTaskStep } from "./public-publishing.ts";
 import { stagePublicSelection, type ConfirmedSelection } from "./public-selection.ts";
 import { configurePublicSite, requirePublishedArtifact, type SealedArtifactPublisher } from "./site.ts";
-import { pagesArtifactPublisher, type DeployedSiteGet } from "./site-publish.ts";
+import { fetchDeployedSite, pagesArtifactPublisher, servedBuild, type DeployedSiteGet } from "./site-publish.ts";
 import { sharedImageDestinations } from "./media.ts";
 import { sharingSetup, sitePairingStore, type SharingSetupStep, type SitePairing } from "./setup.ts";
 
@@ -48,6 +49,12 @@ export function sharingRuntime(deps: {
   /** The page renderer's folder (`render.mjs`, `assets/`): plaintext Publish needs its pages for Copy link. */
   reader?(): string | undefined;
   publishStep?(step: PublicTaskStep): void;
+  /** How long a Publish waits for Pages before it reports Still publishing (default 10 minutes). */
+  pagesWaitMs?: number;
+  /** Background checking after that: how often, and for how long before it's a failure (default 15 s, 1 hour). */
+  pagesWatch?: { delayMs?: number; ceilingMs?: number };
+  /** A pending Publish or Unpublish's build is live, or still isn't at the ceiling (O4). */
+  publishLive?(event: { build: string; live: boolean }): void;
 }) {
   let current: { root: string; service: ReturnType<typeof sharingSetup> } | undefined;
   let tasks: ReturnType<typeof publicPublishing> | undefined, tasksRoot: string | undefined;
@@ -58,11 +65,29 @@ export function sharingRuntime(deps: {
     lane = next.catch(() => {});
     return next;
   };
+  const get = deps.get ?? fetchDeployedSite;
   const publisher = deps.publisher ?? pagesArtifactPublisher({
     api: deps.api,
     target: async project => { const saved = await bound().read(); return saved?.project === project ? saved : undefined; },
-    ...(deps.get ? { get: deps.get } : {}),
+    get, ...(deps.pagesWaitMs === undefined ? {} : { timeoutMs: deps.pagesWaitMs }),
   });
+  /** Builds pushed to the site this session, oldest first: a newer one being served means an older one's notes are live too. */
+  const pushed: string[] = [];
+  /** Checks in the background until Pages serves `build` (or a later push), then says so once (O4). */
+  const watchLive = (site: string, build: string, stillHere: () => boolean) => {
+    const at = pushed.indexOf(build), until = Date.now() + (deps.pagesWatch?.ceilingMs ?? 3_600_000);
+    void (async () => {
+      while (Date.now() < until) {
+        await delay(Math.max(1, Math.min(deps.pagesWatch?.delayMs ?? 15_000, until - Date.now())));
+        if (!stillHere()) return;
+        // Offline or a slow answer is only a missed check; the next one tries again.
+        const served = await servedBuild(get, site).catch(() => undefined);
+        if (!stillHere()) return;
+        if (served !== undefined && pushed.indexOf(served) >= at) { deps.publishLive?.({ build, live: true }); return; }
+      }
+      if (stillHere()) deps.publishLive?.({ build, live: false });
+    })();
+  };
   const bound = () => {
     const root = deps.root(), layout = deps.layout();
     const privateDir = layout.privateDir;
@@ -112,7 +137,7 @@ export function sharingRuntime(deps: {
       deps.written(publishedFile);
     };
     /** Seals and deploys the site with the recorded published notes, or `selection` for a Publish or Unpublish (G3). */
-    const build = async (pairing: SitePairing, empty = false, selection?: ConfirmedSelection): Promise<string> => {
+    const build = async (pairing: SitePairing, empty = false, selection?: ConfirmedSelection): Promise<PublicDeploy> => {
       guard();
       const notes = empty || layout.legacy ? [] : selection?.notes ?? await presentPublished();
       const reader = notes.length ? deps.reader?.() : undefined;
@@ -143,9 +168,15 @@ export function sharingRuntime(deps: {
         if (selection) deps.publishStep?.("publishing");
         const sealed = { directory, build: artifact.build };
         const result = await publisher(pairing.project, sealed);
+        if (result.status === "published") pushed.push(sealed.build);
         guard();
-        requirePublishedArtifact(result, pairing, sealed);
-        return result.status === "published" ? result.commit : "";
+        // Only a Publish or Unpublish may outlast the wait: its commit is on the site's branch, so Pages serving it is
+        // a matter of time; setup, sharing pushes and Turn off still need the site served now.
+        const pages = requirePublishedArtifact(result, pairing, sealed, Boolean(selection));
+        const commit = result.status === "published" ? result.commit : "";
+        if (pages === "built") return { commit };
+        watchLive(pairing.site, sealed.build, () => deps.root() === root && deps.layout().privateDir === privateDir);
+        return { commit, pending: sealed.build };
       } finally {
         await rm(directory, { recursive: true, force: true });
         if (staging) await rm(staging, { recursive: true, force: true });

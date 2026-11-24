@@ -52,6 +52,16 @@ export const fetchDeployedSite: DeployedSiteGet = async url => {
   return response.text();
 };
 
+/** The site's `focus-notes.json` address. */
+export const siteManifest = (site: string) => new URL("focus-notes.json", site.endsWith("/") ? site : `${site}/`).href;
+
+/** The build the site serves now, or undefined while it serves none (or an unreadable one). */
+export async function servedBuild(get: DeployedSiteGet, site: string): Promise<string | undefined> {
+  const text = await get(siteManifest(site));
+  try { const build = text === undefined ? undefined : (JSON.parse(text) as { build?: unknown }).build; return typeof build === "string" ? build : undefined; }
+  catch { return undefined; }
+}
+
 /**
  * Pushes a sealed artifact to the paired public site's `site/` folder as one non-forced commit, then
  * waits until GitHub Pages serves that build. Only the public site repository is ever written.
@@ -98,13 +108,11 @@ export function pagesArtifactPublisher(deps: {
     const commit = await api.createCommit(owner, name, "Publish site", tree, [head]);
     await api.updateRef(owner, name, repo.defaultBranch, commit);
     const get = deps.get ?? fetchDeployedSite;
-    const manifest = new URL("focus-notes.json", target.site.endsWith("/") ? target.site : `${target.site}/`).href;
     const until = Date.now() + (deps.timeoutMs ?? 600_000);
     let status: "built" | "building" = "building";
     while (true) {
-      const text = await get(manifest);
-      try { if (text !== undefined && (JSON.parse(text) as { build?: unknown }).build === artifact.build) { status = "built"; break; } }
-      catch { /* An earlier or partial deployment: keep waiting for this build. */ }
+      // An earlier or partial deployment: keep waiting for this build.
+      if (await servedBuild(get, target.site) === artifact.build) { status = "built"; break; }
       if (Date.now() >= until) break;
       await delay(Math.min(deps.delayMs ?? 5000, Math.max(1, until - Date.now())));
     }
