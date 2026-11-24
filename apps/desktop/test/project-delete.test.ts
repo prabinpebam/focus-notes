@@ -13,7 +13,6 @@ import { syncBuiltinESMExports } from "node:module";
 import { GitHubError } from "@focus-notes/github";
 import { createRunner } from "../src/main/git/run.ts";
 import { deletionCheck, deletionFolderIdentity, deletionGate, isRepoSlug, keptPrivateFolder, optionalPlace, recycleProject, recycleRefusal, repoStatus, RemoteProjectDeletion, sameDeletionFolder } from "../src/main/workspace/delete.ts";
-import { withDeletionAuthorization } from "../src/main/workspace/delete-authorization.ts";
 
 const git = (cwd: string, ...args: string[]) => execFileSync("git", ["-c", "user.name=T", "-c", "user.email=t@e.st", "-c", "commit.gpgsign=false", ...args], { cwd, stdio: "pipe" });
 function project() {
@@ -69,8 +68,8 @@ describe("PRJ-23: what deleting would delete", () => {
     git(folder, "push", "-q", "origin", "main");
     writeFileSync(join(folder, "notes", "Ideas.md"), "# Ideas\n\nMore.\n");
     writeFileSync(join(folder, "notes", "New.md"), "# New\n");
-    const c = await deletionCheck(createRunner(), folder, { repo: "ada/field-notes", privateRepo: "ada/field-notes-private" });
-    expect(c).toMatchObject({ kind: "linked", repo: "ada/field-notes", privateRepo: "ada/field-notes-private", siteNotes: 3 });
+    const c = await deletionCheck(createRunner(), folder, { repo: "ada/field-notes", siteRepo: "ada/field-notes-site", privateRepo: "ada/field-notes-private" });
+    expect(c).toMatchObject({ kind: "linked", repo: "ada/field-notes", siteRepo: "ada/field-notes-site", privateRepo: "ada/field-notes-private", siteNotes: 3 });
     expect(c.unsynced).toEqual(["notes/Ideas.md", "notes/New.md"]);
   });
   it("a folder that isn't its own repository is not a project", async () => {
@@ -121,26 +120,34 @@ describe("PRJ-23: what deleting would delete", () => {
   });
 });
 
-describe("DD-PROJ-13: whether GitHub still has the repository", () => {
-  const api = (repo: () => unknown, user: () => unknown = () => ({ login: "ada" })) => ({
+describe("D-413: whether GitHub still has the repository", () => {
+  const api = (repo: () => unknown, user: () => unknown = () => ({ id: 1, login: "ada" })) => ({
     request: async <T,>() => repo() as T,
     user: async () => user(),
   });
-  const fail = (status: number, message = "x") => () => { throw new GitHubError(status, message); };
+  const fail = (status: number, message = "x", retryAfterMs?: number) => () => { throw new GitHubError(status, message, retryAfterMs); };
   it("reads the owner, whether you're an admin, and an organization", async () => {
     expect(await repoStatus(api(() => ({ owner: { login: "lab", type: "Organization" }, permissions: { admin: true } })), "lab/notes"))
       .toEqual({ state: "exists", admin: true, owner: "lab", organization: true });
     expect(await repoStatus(api(() => ({ owner: { login: "grace", type: "User" }, permissions: { admin: false } })), "grace/notes"))
       .toMatchObject({ state: "exists", admin: false, owner: "grace" });
   });
-  it("a 404 is gone only while the account still answers; otherwise sign in", async () => {
-    expect(await repoStatus(api(fail(404)), "ada/notes")).toEqual({ state: "gone" });
+  it("treats 404 as gone ONLY when GET /user returns 200 with a valid account in the same check", async () => {
+    expect(await repoStatus(api(fail(404)), "ada/notes")).toEqual({ state: "gone", account: { id: 1, login: "ada" } });
     expect(await repoStatus(api(fail(404), fail(401)), "ada/notes")).toEqual({ state: "signin" });
+    expect(await repoStatus(api(fail(404), fail(403, "Forbidden")), "ada/notes")).toEqual({ state: "error" });
+    expect(await repoStatus(api(fail(404), fail(429, "Too many requests", 12_000)), "ada/notes", () => 1000)).toEqual({ state: "rateLimit", retryAt: 13_000 });
+    expect(await repoStatus(api(fail(404), fail(500, "Internal")), "ada/notes")).toEqual({ state: "error" });
+    expect(await repoStatus(api(fail(404), fail(0, "offline")), "ada/notes")).toEqual({ state: "offline" });
+    expect(await repoStatus(api(fail(404), () => ({})), "ada/notes")).toEqual({ state: "signin" });
   });
-  it("offline, signed out and a rate limit are named", async () => {
+  it("401, 403, 429, 5xx, offline and timeouts are never gone, and Retry-After is respected", async () => {
     expect(await repoStatus(api(fail(0)), "ada/notes")).toEqual({ state: "offline" });
     expect(await repoStatus(api(() => { throw new TypeError("fetch failed"); }), "ada/notes")).toEqual({ state: "offline" });
     expect(await repoStatus(api(fail(401)), "ada/notes")).toEqual({ state: "signin" });
+    expect(await repoStatus(api(fail(403, "Forbidden")), "ada/notes")).toEqual({ state: "error" });
+    expect(await repoStatus(api(fail(502, "Bad gateway")), "ada/notes")).toEqual({ state: "error" });
+    expect(await repoStatus(api(fail(429, "Rate limit", 25_000)), "ada/notes", () => 1000)).toEqual({ state: "rateLimit", retryAt: 26_000 });
     expect(await repoStatus(api(fail(403, "API rate limit exceeded")), "ada/notes", () => 1000)).toEqual({ state: "rateLimit", retryAt: 61_000 });
     expect(await repoStatus(undefined, "ada/notes")).toEqual({ state: "signin" });
   });
@@ -176,241 +183,26 @@ describe("DD-PROJ-15: to the Recycle Bin", () => {
     expect(() => optionalPlace("documents", () => { throw new TypeError("unexpected"); })).toThrow("unexpected");
   });
 
-  describe("D-394: actual deletion receipts", () => {
-    function remote(opts: { refused?: boolean; visibleAfter?: boolean; uncertain?: boolean } = {}) {
-      const requests: string[] = [];
-      let sent = false;
+  describe("D-413: verified deletion receipts", () => {
+    it("confirmGone marks confirmed only when the verified account matches the preflighted account", async () => {
       const api = {
-        user: async () => ({ id: 1 }),
-        request: async <T,>(method: string): Promise<T> => {
-          requests.push(method);
-          if (method === "DELETE") {
-            sent = true;
-            if (opts.refused) throw new GitHubError(403, "Forbidden");
-            if (opts.uncertain) throw new GitHubError(0, "offline");
-            return undefined as T;
-          }
-          if (sent && !opts.refused && !opts.visibleAfter) throw new GitHubError(404, "Not found");
-          return { id: 42, permissions: { admin: true } } as T;
-        },
+        user: async () => ({ id: 1, login: "ada" }),
+        request: async <T,>(): Promise<T> => ({ id: 42, permissions: { admin: true } } as T),
       };
-      return { api, requests };
-    }
-    for (const dependency of ["foreign", "shared", "linked"] as const) {
-      it(`kept-private ${dependency} preflight refuses with zero remote DELETE calls and no staging`, async () => {
-        const { root, folder, priv, metadata } = privateSubmodule();
-        let originalMetadata = metadata;
-        if (dependency === "foreign") {
-          originalMetadata = join(root, "foreign-metadata");
-          renameSync(metadata, originalMetadata);
-          git(root, "config", "--file", join(originalMetadata, "config"), "core.worktree", priv);
-          renameSync(join(priv, ".git"), join(root, "original-pointer"));
-          writeFileSync(join(priv, ".git"), `gitdir: ${originalMetadata}\n`);
-        } else if (dependency === "shared") {
-          const objects = join(root, "shared-objects");
-          mkdirSync(objects);
-          writeFileSync(join(metadata, "objects", "info", "alternates"), objects);
-        } else {
-          renameSync(join(priv, ".git"), join(root, "original-pointer"));
-          symlinkSync(metadata, join(priv, ".git"), process.platform === "win32" ? "junction" : "dir");
-        }
-        const config = readFileSync(join(originalMetadata, "config"));
-        const draft = readFileSync(join(priv, "notes", "Draft.md"));
-        const fake = remote();
-        const deletion = new RemoteProjectDeletion();
-        await deletion.prepare(fake.api, "ada/notes");
-        const result = await deletion.delete(fake.api, "ada/notes", async () => true, false, folder);
-        expect(fake.requests.filter(method => method === "DELETE")).toEqual([]);
-        expect(result).toEqual({ state: "refused", reason: "privateHistory" });
-        expect(readFileSync(join(originalMetadata, "config"))).toEqual(config);
-        expect(readFileSync(join(priv, "notes", "Draft.md"))).toEqual(draft);
-        expect((await fsPromises.readdir(join(folder, ".git"))).filter(name => name.startsWith("focus-notes-private-retention-"))).toEqual([]);
-      });
-    }
-    it("kept-private canonical preflight reads without copying or changing the source", async () => {
-      const { folder, priv, metadata, pointer, config, head } = privateSubmodule();
-      const copy = vi.spyOn(fsPromises, "cp");
-      syncBuiltinESMExports();
-      try {
-        const fake = remote();
-        const deletion = new RemoteProjectDeletion();
-        await deletion.prepare(fake.api, "ada/notes");
-        expect(await deletion.delete(fake.api, "ada/notes", async () => true, false, folder)).toEqual({ state: "deleted" });
-        expect(fake.requests.filter(method => method === "DELETE")).toEqual(["DELETE"]);
-        expect(copy).not.toHaveBeenCalled();
-        expect(readFileSync(join(priv, ".git"))).toEqual(pointer);
-        expect(readFileSync(join(metadata, "config"))).toEqual(config);
-        expect(git(priv, "rev-parse", "HEAD").toString()).toBe(head);
-        expect((await fsPromises.readdir(join(folder, ".git"))).filter(name => name.startsWith("focus-notes-private-retention-"))).toEqual([]);
-      } finally { copy.mockRestore(); syncBuiltinESMExports(); }
-    });
-    it("kept-private deferred eligibility rechecks current intent before any remote DELETE", async () => {
-      const { folder } = privateSubmodule();
-      let release!: () => void;
-      let checking = false;
-      let allowed = true;
-      const wait = new Promise<void>(resolve => { release = resolve; });
-      const read = vi.spyOn(fsPromises, "readdir").mockImplementationOnce(async () => { checking = true; await wait; return []; });
-      syncBuiltinESMExports();
-      const fake = remote();
       const deletion = new RemoteProjectDeletion();
-      await deletion.prepare(fake.api, "ada/notes");
-      const operation = deletion.delete(fake.api, "ada/notes", async () => allowed, false, folder);
-      try {
-        await expect.poll(() => checking).toBe(true);
-        allowed = false;
-        release();
-        expect(await operation).toEqual({ state: "declined" });
-        expect(fake.requests.filter(method => method === "DELETE")).toEqual([]);
-      } finally { release(); await operation; read.mockRestore(); syncBuiltinESMExports(); }
-    });
-    it("a 403 retains the local-deletion gate and names permission refusal", async () => {
-      const fake = remote({ refused: true });
-      const deletion = new RemoteProjectDeletion();
-      await deletion.prepare(fake.api, "ada/notes");
-      expect(await deletion.delete(fake.api, "ada/notes")).toEqual({ state: "refused", reason: "permission" });
+      await deletion.prepare(api, "ada/notes");
       expect(deletion.confirmed("ada/notes")).toBe(false);
+      expect(deletion.confirmGone("ada/notes", { id: 2, login: "ada" })).toBe(false);
+      expect(deletion.confirmGone("ada/notes", { id: 1, login: "other" })).toBe(false);
+      expect(deletion.confirmed("ada/notes")).toBe(false);
+      expect(deletion.confirmGone("ada/notes", { id: 1, login: "ada" })).toBe(true);
+      expect(deletion.confirmed("ada/notes")).toBe(true);
     });
-    it("accepted DELETE followed by a visible target stays partial; Retry never replays it", async () => {
-      const fake = remote({ visibleAfter: true });
+    it("confirmGone records the verified account for a repository already gone at first check", () => {
       const deletion = new RemoteProjectDeletion();
-      await deletion.prepare(fake.api, "ada/notes");
-      expect(await deletion.delete(fake.api, "ada/notes")).toEqual({ state: "partial" });
-      expect(await deletion.delete(fake.api, "ada/notes")).toEqual({ state: "partial" });
-      expect(fake.requests.filter(method => method === "DELETE")).toHaveLength(1);
-    });
-    it("only acknowledged DELETE and follow-up absence confirm deletion, never an ambiguous transport failure", async () => {
-      for (const uncertain of [false, true]) {
-        const fake = remote({ uncertain });
-        const deletion = new RemoteProjectDeletion();
-        await deletion.prepare(fake.api, "ada/notes");
-        expect(await deletion.delete(fake.api, "ada/notes")).toEqual({ state: uncertain ? "partial" : "deleted" });
-        expect(deletion.confirmed("ada/notes")).toBe(!uncertain);
-        expect(await deletion.delete(fake.api, "ada/notes")).toEqual({ state: uncertain ? "partial" : "deleted" });
-        expect(fake.requests.filter(method => method === "DELETE")).toHaveLength(1);
-      }
-    });
-    it("a replacement identity or changed intent immediately before DELETE never receives the write", async () => {
-      for (const replacement of [false, true]) {
-        let reads = 0;
-        const writes: string[] = [];
-        const api = {
-          user: async () => ({ id: 1, login: "ada" }),
-          request: async <T,>(method: string): Promise<T> => {
-            if (method === "DELETE") writes.push(method);
-            return { id: ++reads > 1 && replacement ? 43 : 42, permissions: { admin: true } } as T;
-          },
-        };
-        const deletion = new RemoteProjectDeletion();
-        await deletion.prepare(api, "ada/notes");
-        const result = await deletion.delete(api, "ada/notes", () => replacement);
-        expect(result.state).not.toBe("deleted");
-        expect(writes).toEqual([]);
-      }
-    });
-  });
-
-  describe("D-400: ephemeral deletion authorization", () => {
-    afterEach(() => vi.unstubAllEnvs());
-    const token = "github_pat_DISPOSABLE0123456789abcdef";
-    function options({ clientId, ...overrides }: Partial<Parameters<typeof withDeletionAuthorization>[0]> & { clientId?: string } = {}) {
-      vi.stubEnv("FOCUS_NOTES_GITHUB_OAUTH_CLIENT_ID", clientId);
-      const controller = new AbortController();
-      return {
-        apiFetch: async () => new Response(JSON.stringify({ id: 1, login: "ada", name: "Ada" }), { status: 200 }),
-        oauthFetch: async () => { throw new Error("No OAuth expected"); },
-        signal: controller.signal, expected: { id: 1, login: "ada" }, current: () => true, code: () => {},
-        ...overrides,
-      };
-    }
-    it("device OAuth asks only delete_repo, polls pending, verifies the account and consumes the token only in its callback", async () => {
-      let polls = 0;
-      const paths: string[] = [];
-      const o = options({
-        clientId: "focus-notes-test",
-        oauthFetch: async (url, init) => {
-          paths.push(new URL(url).pathname);
-          const body = new URLSearchParams(String(init?.body));
-          expect(body.get("client_id")).toBe("focus-notes-test");
-          if (url.endsWith("/code")) {
-            expect(body.get("scope")).toBe("delete_repo");
-            return new Response(JSON.stringify({ device_code: "ephemeral-device", user_code: "ABCD-EFGH", verification_uri: "https://github.com/login/device", expires_in: 10, interval: 0.001 }));
-          }
-          return new Response(JSON.stringify(++polls === 1 ? { error: "authorization_pending" } : { access_token: token, scope: "delete_repo" }));
-        },
-      });
-      expect(await withDeletionAuthorization(o, async api => (await api.user()).id)).toBe(1);
-      expect(paths).toEqual(["/login/device/code", "/login/oauth/access_token", "/login/oauth/access_token"]);
-    });
-    it("declined grant, mismatched account and cancelled intent never enter the destructive callback", async () => {
-      let writes = 0;
-      const use = async () => ++writes;
-      await expect(withDeletionAuthorization(options({ token, expected: { id: 2, login: "other" } }), use)).rejects.toMatchObject({ reason: "identity" });
-      await expect(withDeletionAuthorization(options({ token, expected: { id: 1, login: "other" } }), use)).rejects.toMatchObject({ reason: "identity" });
-      await expect(withDeletionAuthorization(options({ token, current: () => false }), use)).rejects.toMatchObject({ reason: "declined" });
-      const o = options({
-        clientId: "focus-notes-test",
-        oauthFetch: async url => new Response(JSON.stringify(url.endsWith("/code")
-          ? { device_code: "ephemeral-device", user_code: "ABCD-EFGH", verification_uri: "https://github.com/login/device", expires_in: 10, interval: 0.001 }
-          : { error: "access_denied" })),
-      });
-      await expect(withDeletionAuthorization(o, use)).rejects.toMatchObject({ reason: "declined" });
-      expect(writes).toBe(0);
-    });
-    it("an unapproved device verification destination never displays a code or polls a grant", async () => {
-      const codes: string[] = [];
-      const o = options({
-        clientId: "focus-notes-test", code: code => codes.push(code),
-        oauthFetch: async () => new Response(JSON.stringify({ device_code: "device", user_code: "ABCD-EFGH", verification_uri: "https://untrusted.example/login/device", expires_in: 30, interval: 1 })),
-      });
-      await expect(withDeletionAuthorization(o, async () => "must not delete")).rejects.toMatchObject({ reason: "failed" });
-      expect(codes).toEqual([]);
-    });
-    it("slow_down increases the protocol polling interval; expiry never invokes deletion", async () => {
-      vi.useFakeTimers();
-      try {
-        const times: number[] = [];
-        const o = options({
-          clientId: "focus-notes-test",
-          oauthFetch: async url => {
-            if (url.endsWith("/code")) return new Response(JSON.stringify({ device_code: "device", user_code: "ABCD-EFGH", verification_uri: "https://github.com/login/device", expires_in: 30, interval: 1 }));
-            times.push(Date.now());
-            return new Response(JSON.stringify(times.length === 1 ? { error: "slow_down" } : { access_token: token, scope: "delete_repo" }));
-          },
-        });
-        const operation = withDeletionAuthorization(o, async () => "used");
-        await vi.runAllTimersAsync();
-        expect(await operation).toBe("used");
-        expect(times[1]! - times[0]!).toBe(6000);
-        const expiring = options({ clientId: "focus-notes-test", oauthFetch: async () => new Response(JSON.stringify({ device_code: "device", user_code: "ABCD-EFGH", verification_uri: "https://github.com/login/device", expires_in: 1, interval: 2 })) });
-        await expect(withDeletionAuthorization(expiring, async () => { throw new Error("Must not delete"); })).rejects.toMatchObject({ reason: "expired" });
-      } finally { vi.useRealTimers(); }
-    });
-    it("a repository replaced during the grant is never the subsequent DELETE target", async () => {
-      let replacement = false;
-      let writes = 0;
-      const o = options({
-        clientId: "focus-notes-test",
-        apiFetch: async (url, init) => {
-          if (init?.method === "DELETE") writes++;
-          return new Response(JSON.stringify(url.endsWith("/user") ? { id: 1, login: "ada", name: "Ada" } : { id: replacement ? 43 : 42, permissions: { admin: true } }));
-        },
-        oauthFetch: async url => {
-          if (url.endsWith("/code")) return new Response(JSON.stringify({ device_code: "device", user_code: "ABCD-EFGH", verification_uri: "https://github.com/login/device", expires_in: 10, interval: 0.001 }));
-          replacement = true;
-          return new Response(JSON.stringify({ access_token: token, scope: "delete_repo" }));
-        },
-      });
-      const { GitHubApi } = await import("@focus-notes/github");
-      const deletion = new RemoteProjectDeletion();
-      await deletion.prepare(new GitHubApi(token, o.apiFetch), "ada/notes");
-      expect(await withDeletionAuthorization(o, api => deletion.delete(api, "ada/notes"))).toEqual({ state: "refused", reason: "identity" });
-      expect(writes).toBe(0);
-    });
-    it("without a configured client or supplied token, authorization fails closed instead of using gh's shared keyring", async () => {
-      let called = false;
-      await expect(withDeletionAuthorization(options(), async () => { called = true; })).rejects.toMatchObject({ reason: "isolation" });
-      expect(called).toBe(false);
+      expect(deletion.confirmGone("ada/notes", { id: 1, login: "ada" })).toBe(true);
+      expect(deletion.confirmed("ada/notes")).toBe(true);
+      expect(deletion.account("ada/notes")).toEqual({ id: 1, login: "ada" });
     });
   });
   it("a replacement directory at the same spelling is not the confirmed local folder", async () => {
@@ -422,60 +214,6 @@ describe("DD-PROJ-15: to the Recycle Bin", () => {
     writeFileSync(join(folder, "Replacement.md"), "# Do not touch\n");
     expect(await sameDeletionFolder(folder, identity)).toBe(false);
     expect(readFileSync(join(folder, "Replacement.md"), "utf8")).toBe("# Do not touch\n");
-  });
-  it("a policy refusal never asks for authorization that cannot override the organization", async () => {
-    const api = {
-      deletionPermission: "stepup" as const,
-      user: async () => ({ id: 1, login: "ada" }),
-      request: async <T,>(method: string): Promise<T> => {
-        if (method === "DELETE") throw new GitHubError(403, "Organization policy refuses deletion");
-        return { id: 42, permissions: { admin: true } } as T;
-      },
-    };
-    const deletion = new RemoteProjectDeletion();
-    await deletion.prepare(api, "ada/notes");
-    expect(await deletion.delete(api, "ada/notes", () => true, true)).toEqual({ state: "refused", reason: "permission" });
-  });
-  it("fallback cleanup needs explicit confirmation, unavailable target, and the preflighted account and intent", async () => {
-    let unavailable = false;
-    let login = "ada";
-    const api = {
-      user: async () => ({ id: 1, login }),
-      request: async <T,>(): Promise<T> => {
-        if (unavailable) throw new GitHubError(404, "Not found");
-        return { id: 42, permissions: { admin: true } } as T;
-      },
-    };
-    const deletion = new RemoteProjectDeletion();
-    await deletion.prepare(api, "ada/notes");
-    expect(await deletion.confirmExternal(api, "ada/notes", () => true)).toEqual({ state: "partial" });
-    unavailable = true;
-    expect(await deletion.delete(api, "ada/notes")).toEqual({ state: "partial" });
-    expect(deletion.confirmed("ada/notes")).toBe(false);
-    login = "other";
-    expect(await deletion.confirmExternal(api, "ada/notes", () => true)).toEqual({ state: "refused", reason: "identity" });
-    login = "ada";
-    expect(await deletion.confirmExternal(api, "ada/notes", () => false)).toEqual({ state: "refused", reason: "identity" });
-    expect(await deletion.confirmExternal(api, "ada/notes", () => true)).toEqual({ state: "deleted" });
-  });
-  it("a repository already gone records the signed-in account, so only that account can confirm it, and is never deleted", async () => {
-    let login = "ada";
-    const methods: string[] = [];
-    const api = {
-      user: async () => ({ id: 1, login }),
-      request: async <T,>(method: string): Promise<T> => { methods.push(method); throw new GitHubError(404, "Not found"); },
-    };
-    const deletion = new RemoteProjectDeletion();
-    expect(await deletion.confirmExternal(api, "ada/notes", () => true)).toEqual({ state: "refused", reason: "identity" });
-    await deletion.prepareGone(api, "ada/notes");
-    expect(deletion.account("ada/notes")).toEqual({ id: 1, login: "ada" });
-    expect(await deletion.delete(api, "ada/notes")).toEqual({ state: "partial" });
-    login = "other";
-    expect(await deletion.confirmExternal(api, "ada/notes", () => true)).toEqual({ state: "refused", reason: "identity" });
-    login = "ada";
-    expect(await deletion.confirmExternal(api, "ada/notes", () => true)).toEqual({ state: "deleted" });
-    expect(deletion.confirmed("ada/notes")).toBe(true);
-    expect(methods).not.toContain("DELETE");
   });
   it("a changed project before recycling is a refusal, not a private-history failure, when no private notes are kept", async () => {
     const { folder } = project();

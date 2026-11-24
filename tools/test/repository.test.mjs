@@ -15,8 +15,6 @@ const workflows = () => readdirSync(join(root, ".github", "workflows")).filter((
 const ci = () => yaml.load(read(".github/workflows/ci.yml"));
 const ciRuns = () => Object.values(ci().jobs).flatMap((j) => j.steps ?? []).map((s) => s.run ?? "").join("\n");
 const node = (...args) => execFileSync(process.execPath, args, { cwd: root, encoding: "utf8" });
-const deviceAuthorization = join(root, "apps/desktop/src/main/workspace/delete-authorization.ts");
-const configuredClient = /\bconst clientId = process\.env\.FOCUS_NOTES_GITHUB_OAUTH_CLIENT_ID;/;
 function checkShippedClient(text, file) {
   expect(text, file).not.toMatch(/\bIv1\.[0-9a-f]{16}\b/);
   expect(text, file).not.toMatch(/\bOv23li[0-9A-Za-z]{14}\b/);
@@ -24,13 +22,7 @@ function checkShippedClient(text, file) {
 function checkUnhostedSource(file, text) {
   expect(text, file).not.toMatch(/\b(telemetry|sentry|posthog|analytics|applicationinsights)\b/i);
   checkShippedClient(text, file);
-  if (file !== deviceAuthorization) {
-    expect(text, file).not.toMatch(/\b(client_id|clientId)\b/i);
-  } else {
-    expect(text, file).toMatch(configuredClient);
-    expect(text.replace(configuredClient, ""), file).not.toMatch(/\bclientId\s*[:=]/);
-    expect(text, file).not.toMatch(/\bclient_id:\s*(?!clientId\b)\S/);
-  }
+  expect(text, file).not.toMatch(/\b(client_id|clientId)\b/i);
 }
 
 describe("the product repository", () => {
@@ -56,15 +48,12 @@ describe("the product repository", () => {
     for (const file of tracked.split("\0").filter(Boolean)) checkShippedClient(read(file), file);
   });
 
-  it("PKG-06, D-403: rejects shipped IDs, device defaults and OAuth fields outside the device module", () => {
-    const source = readFileSync(deviceAuthorization, "utf8");
+  it("PKG-06, D-403, D-413: rejects shipped IDs and OAuth client fields anywhere in production source", () => {
     const outside = join(root, "apps/desktop/src/main/main.ts");
     for (const literal of ["Iv1." + "0123456789abcdef", "Ov23li" + "0123456789abcd"]) {
-      expect(() => checkUnhostedSource(deviceAuthorization, source.replace(configuredClient, `const clientId = "${literal}";`))).toThrow();
       expect(() => checkUnhostedSource(outside, `const application = "${literal}";`)).toThrow();
     }
     expect(() => checkUnhostedSource(outside, "const body = { client_id: configured };")).toThrow();
-    expect(() => checkUnhostedSource(deviceAuthorization, source.replace(configuredClient, 'const clientId = process.env.FOCUS_NOTES_GITHUB_OAUTH_CLIENT_ID || "default";'))).toThrow();
   });
 
   it("LIC-01: is MIT licensed", () => {

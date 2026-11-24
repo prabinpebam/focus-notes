@@ -1,13 +1,14 @@
 /**
- * Deleting a project (PRJ-23, DD-PROJ-09 to 17; Settings → Project → Delete project…). GitHub's side is
- * confirmed in the app under D-394/D-400, with GitHub's page as the fallback. This computer's side
- * moves the project's folder to the Recycle Bin, never deletes it outright,
+ * Deleting a project (PRJ-23, D-413, DD-PROJ-09 to 17; Settings → Project → Delete project…).
+ * GitHub's side is deleted on GitHub's own Settings page; Focus Notes verifies deletion by checking
+ * authenticated GET /repos/{owner}/{repo} === 404 AND GET /user === 200 in the same check. This
+ * computer's side moves the project's folder to the Recycle Bin, never deletes it outright,
  * and only the open project's own folder: never a drive's root, the home folder or the app's data.
  */
 import { existsSync, realpathSync } from "node:fs";
 import { cp, lstat, mkdtemp, readFile, readdir, realpath, rename, rm, stat } from "node:fs/promises";
 import { basename, dirname, isAbsolute, join, parse, relative, resolve } from "node:path";
-import type { DeletionCheck, DeletionResult, RemoteDeletionResult, RepoStatus } from "@focus-notes/core";
+import type { DeletionCheck, DeletionResult, RepoStatus } from "@focus-notes/core";
 import { GitHubError } from "@focus-notes/github";
 import { createRunner, type GitRunner } from "../git/run.ts";
 
@@ -83,16 +84,17 @@ async function notOnRemote(git: GitRunner, dir: string, prefix: string): Promise
 }
 
 /**
- * What deleting the project would delete. `repo` and `privateRepo` are its repositories on GitHub
- * (owner/name), read by the caller from their remotes; without `repo` the project is offline and
- * nothing on GitHub is involved.
+ * What deleting the project would delete. `repo`, `siteRepo`, and `privateRepo` are its repositories
+ * on GitHub (owner/name), read by the caller from their remotes and site pairing; without `repo` the
+ * project is offline and nothing on GitHub is involved.
  */
-export async function deletionCheck(git: GitRunner, folder: string, repos: { repo?: string; privateRepo?: string }): Promise<DeletionCheck> {
+export async function deletionCheck(git: GitRunner, folder: string, repos: { repo?: string; siteRepo?: string; privateRepo?: string }): Promise<DeletionCheck> {
   const top = await git({ cwd: folder, args: ["rev-parse", "--show-toplevel"], read: true });
-  const base = { name: basename(folder), folder, repo: "", privateRepo: "", privateCount: 0, siteNotes: 0, unsynced: [] as string[] };
+  const base = { name: basename(folder), folder, repo: "", siteRepo: "", privateRepo: "", privateCount: 0, siteNotes: 0, unsynced: [] as string[] };
   if (top.code !== 0 || real(top.stdout.trim()) !== real(folder)) return { kind: "offline", problem: "notProject", ...base };
   const repo = isRepoSlug(repos.repo) ? repos.repo : "";
   const privateRepo = repo && isRepoSlug(repos.privateRepo) ? repos.privateRepo : "";
+  const siteRepo = repo && isRepoSlug(repos.siteRepo) && repos.siteRepo !== repo && repos.siteRepo !== privateRepo ? repos.siteRepo : "";
   const priv = join(folder, "private");
   const privateCount = existsSync(join(priv, "notes")) ? await countNotes(join(priv, "notes")) : 0;
   const siteNotes = repo ? await countNotes(join(folder, "notes")) : 0;
@@ -100,37 +102,44 @@ export async function deletionCheck(git: GitRunner, folder: string, repos: { rep
   const unsynced = repo
     ? [...(await notOnRemote(git, folder, "")), ...(existsSync(join(priv, ".git")) ? await notOnRemote(git, priv, "private/") : [])]
     : [];
-  return { ...base, kind: repo ? "linked" : "offline", repo, privateRepo, privateCount, siteNotes, unsynced };
+  return { ...base, kind: repo ? "linked" : "offline", repo, siteRepo, privateRepo, privateCount, siteNotes, unsynced };
 }
 
 interface ReadsGitHub {
   request<T>(method: string, path: string): Promise<T>;
   user(): Promise<unknown>;
-  readonly deletionPermission?: "granted" | "stepup" | "unknown";
 }
 
-/** Receipts stay in this process: a retry reads first and never replays an accepted DELETE. */
+export type VerifiedRepoStatus =
+  | RepoStatus
+  | { state: "gone"; account: { id: number; login: string } };
+
+/**
+ * Receipts stay in this process (D-413): each repository is confirmed deleted only when an
+ * authenticated GET /repos/{owner}/{repo} returns 404 AND GET /user returns 200 for the same
+ * signed-in account in the same check. Local cleanup refuses to run until every required target
+ * is confirmed here.
+ */
 export class RemoteProjectDeletion {
-  readonly #targets = new Map<string, { id: number; account: number; login?: string; sent: boolean; accepted: boolean; confirmed: boolean }>();
+  readonly #targets = new Map<string, { account: number; login: string; confirmed: boolean }>();
   async prepare(api: ReadsGitHub, repo: string): Promise<void> {
-    if (!isRepoSlug(repo)) throw new Error("Not a repository");
-    const target = await api.request<{ id: number }>("GET", `/repos/${repo}`);
-    const user = await api.user() as { id?: number; login?: string };
-    if (!Number.isSafeInteger(target.id) || !Number.isSafeInteger(user.id)) throw new Error("Invalid deletion identity");
-    const previous = this.#targets.get(repo);
-    if (previous) return;
-    this.#targets.set(repo, { id: target.id, account: user.id!, login: user.login, sent: false, accepted: false, confirmed: false });
-  }
-  /**
-   * A repository GitHub already doesn't show (404, or a delete resumed after a restart): only the signed-in
-   * account is recorded, so the person's explicit confirmation is checked against it. Never a DELETE.
-   */
-  async prepareGone(api: ReadsGitHub, repo: string): Promise<void> {
     if (!isRepoSlug(repo)) throw new Error("Not a repository");
     const user = await api.user() as { id?: number; login?: string };
     if (!Number.isSafeInteger(user.id) || typeof user.login !== "string" || !user.login) throw new Error("Invalid deletion identity");
     if (this.#targets.has(repo)) return;
-    this.#targets.set(repo, { id: 0, account: user.id!, login: user.login, sent: false, accepted: false, confirmed: false });
+    this.#targets.set(repo, { account: user.id!, login: user.login, confirmed: false });
+  }
+  /** Confirm a repository is gone only when the verified session matches the preflighted account. */
+  confirmGone(repo: string, verified: { id: number; login: string }): boolean {
+    if (!isRepoSlug(repo) || !Number.isSafeInteger(verified.id) || !verified.login) return false;
+    const receipt = this.#targets.get(repo);
+    if (receipt) {
+      if (receipt.account !== verified.id || receipt.login !== verified.login) return false;
+      receipt.confirmed = true;
+      return true;
+    }
+    this.#targets.set(repo, { account: verified.id, login: verified.login, confirmed: true });
+    return true;
   }
   account(repo: string) {
     const receipt = this.#targets.get(repo);
@@ -138,89 +147,22 @@ export class RemoteProjectDeletion {
     return { id: receipt.account, login: receipt.login };
   }
   confirmed(repo: string): boolean { return this.#targets.get(repo)?.confirmed === true; }
-  /** A person's explicit fallback confirmation, never a 404-driven automatic cleanup. */
-  async confirmExternal(api: ReadsGitHub | undefined, repo: string, intent: () => boolean | Promise<boolean>): Promise<RemoteDeletionResult> {
-    if (!isRepoSlug(repo)) throw new Error("Not a repository");
-    const receipt = this.#targets.get(repo);
-    if (!api || !receipt) return { state: "refused", reason: "identity" };
-    try {
-      await api.request("GET", `/repos/${repo}`);
-      return { state: "partial" };
-    } catch (error) {
-      if (!(error instanceof GitHubError) || error.status !== 404) throw error;
-    }
-    const user = await api.user() as { id?: number; login?: string };
-    if (user.id !== receipt.account || receipt.login && user.login !== receipt.login || !await intent()) return { state: "refused", reason: "identity" };
-    receipt.confirmed = true;
-    return { state: "deleted" };
-  }
-  async delete(api: ReadsGitHub | undefined, repo: string, intent: () => boolean | Promise<boolean> = () => true, stepUp = false, keptPrivateFolder?: string): Promise<RemoteDeletionResult> {
-    if (!isRepoSlug(repo) || !this.#targets.has(repo)) throw new Error("Repository was not preflighted");
-    if (!api) return { state: "refused", reason: "permission" };
-    const receipt = this.#targets.get(repo)!;
-    try {
-      const user = await api.user() as { id?: number; login?: string };
-      if (user.id !== receipt.account || receipt.login && user.login !== receipt.login || !await intent()) return { state: "refused", reason: "identity" };
-      let current: { id: number; permissions?: { admin?: boolean } };
-      try { current = await api.request("GET", `/repos/${repo}`); }
-      catch (error) {
-        if (!(error instanceof GitHubError) || error.status !== 404) throw error;
-        if (!receipt.accepted) return { state: "partial" };
-        const stillSignedIn = await api.user() as { id?: number; login?: string };
-        if (stillSignedIn.id !== receipt.account || receipt.login && stillSignedIn.login !== receipt.login || !await intent()) return { state: "refused", reason: "identity" };
-        receipt.confirmed = true;
-        return { state: "deleted" };
-      }
-      if (current.id !== receipt.id) return { state: "refused", reason: "identity" };
-      if (!current.permissions?.admin) return { state: "refused", reason: "notAdmin" };
-      if (receipt.sent) return { state: "partial" };
-      if (keptPrivateFolder !== undefined) {
-        try { await privateHistoryEligibility(keptPrivateFolder); }
-        catch {
-          console.error("Private Git history preflight failed.");
-          return { state: "refused", reason: "privateHistory" };
-        }
-      }
-      if (!await intent()) return { state: "declined" };
-      receipt.sent = true;
-      try {
-        await api.request("DELETE", `/repos/${repo}`);
-        receipt.accepted = true;
-      } catch (error) {
-        if (error instanceof GitHubError && (error.status === 401 || error.status === 403)) {
-          receipt.sent = false;
-          if (stepUp && api.deletionPermission !== "granted" && !/organization|policy|saml|sso/i.test(error.message)) return { state: "stepup" };
-          return { state: "refused", reason: "permission" };
-        }
-        throw error;
-      }
-      try { await api.request("GET", `/repos/${repo}`); }
-      catch (error) {
-        if (!(error instanceof GitHubError) || error.status !== 404) throw error;
-        const stillSignedIn = await api.user() as { id?: number; login?: string };
-        if (stillSignedIn.id !== receipt.account || receipt.login && stillSignedIn.login !== receipt.login || !await intent()) return { state: "refused", reason: "identity" };
-        receipt.confirmed = true;
-        return { state: "deleted" };
-      }
-      return { state: "partial" };
-    } catch (error) {
-      if (error instanceof GitHubError) return { state: "partial" };
-      throw error;
-    }
-  }
+  clear(): void { this.#targets.clear(); }
 }
 
 /**
- * Whether a repository is still on GitHub, for the person deleting it there (DD-PROJ-13). A 404 is
- * `gone` only when the account itself still answers: otherwise it's sign-in, never "deleted".
+ * Whether a repository is still on GitHub, for the person deleting it on GitHub's web page (D-413).
+ * Treated as `gone` ONLY when authenticated GET /repos/{owner}/{repo} returns 404 AND GET /user
+ * returns 200 with a valid account in the same check. 401, 403, 429, 5xx, offline, and timeouts
+ * are NEVER `gone`.
  */
-export async function repoStatus(api: ReadsGitHub | undefined, repo: string, now = Date.now): Promise<RepoStatus> {
+export async function repoStatus(api: ReadsGitHub | undefined, repo: string, now = Date.now): Promise<VerifiedRepoStatus> {
   if (!api) return { state: "signin" };
-  if (!isRepoSlug(repo)) return { state: "gone" };
+  if (!isRepoSlug(repo)) return { state: "error" };
   const problem = (e: unknown): RepoStatus | undefined => {
     if (!(e instanceof GitHubError)) return { state: "offline" };
     if (e.status === 0) return { state: "offline" };
-    if (e.rateLimited) return { state: "rateLimit", retryAt: now() + 60_000 };
+    if (e.rateLimited) return { state: "rateLimit", retryAt: now() + Math.max(5_000, e.retryAfterMs ?? 60_000) };
     if (e.unauthorized) return { state: "signin" };
     return undefined;
   };
@@ -230,13 +172,16 @@ export async function repoStatus(api: ReadsGitHub | undefined, repo: string, now
   } catch (e) {
     const p = problem(e);
     if (p) return p;
-    if (!(e instanceof GitHubError) || e.status !== 404) return { state: "offline" };
+    if (!(e instanceof GitHubError) || e.status !== 404) return { state: "error" };
   }
   try {
-    await api.user();
-    return { state: "gone" };
+    const u = await api.user() as { id?: number; login?: string } | undefined;
+    if (!u || !Number.isSafeInteger(u.id) || typeof u.login !== "string" || !u.login) return { state: "signin" };
+    return { state: "gone", account: { id: u.id!, login: u.login } };
   } catch (e) {
-    return problem(e) ?? { state: "signin" };
+    const p = problem(e);
+    if (p) return p;
+    return e instanceof GitHubError ? { state: "error" } : { state: "offline" };
   }
 }
 

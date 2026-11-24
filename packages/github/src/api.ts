@@ -10,9 +10,11 @@ export type Fetch = (input: string, init?: RequestInit) => Promise<Response>;
 
 export class GitHubError extends Error {
   readonly status: number;
-  constructor(status: number, message: string) {
+  readonly retryAfterMs: number | undefined;
+  constructor(status: number, message: string, retryAfterMs?: number) {
     super(message);
     this.status = status;
+    this.retryAfterMs = retryAfterMs;
   }
   /** The token is missing, expired, revoked, or lacks access. */
   get unauthorized(): boolean {
@@ -21,6 +23,18 @@ export class GitHubError extends Error {
   get rateLimited(): boolean {
     return this.status === 429 || (this.status === 403 && /rate limit/i.test(this.message));
   }
+}
+
+function parseRetryAfterMs(headers: Headers, now = Date.now()): number | undefined {
+  const retryAfter = headers.get("Retry-After")?.trim();
+  if (retryAfter) {
+    if (/^\d+$/.test(retryAfter)) return Math.max(0, Number(retryAfter) * 1000);
+    const at = Date.parse(retryAfter);
+    if (Number.isFinite(at)) return Math.max(0, at - now);
+  }
+  const reset = headers.get("X-RateLimit-Reset")?.trim();
+  if (reset && /^\d+$/.test(reset)) return Math.max(0, Number(reset) * 1000 - now);
+  return undefined;
 }
 
 export interface Repo {
@@ -96,7 +110,6 @@ export function base64ToUtf8(b64: string): string {
 export class GitHubApi {
   readonly #token: string;
   readonly #fetch: Fetch;
-  #oauthScopes: string | undefined;
 
   constructor(token: string, fetchImpl: Fetch = (i, init) => fetch(i, init)) {
     this.#token = token;
@@ -127,8 +140,7 @@ export class GitHubApi {
       } catch {
         // Not JSON; keep the status text.
       }
-      this.#oauthScopes = res.headers.get("X-OAuth-Scopes") ?? this.#oauthScopes;
-      throw new GitHubError(res.status, message);
+      throw new GitHubError(res.status, message, parseRetryAfterMs(res.headers));
     }
     if (res.status === 204) return undefined as T;
     // Some writes (an Actions secret, for example) answer 201 with no body.
@@ -138,13 +150,6 @@ export class GitHubApi {
 
   user() {
     return this.request<{ login: string; id: number; name: string | null; avatar_url?: string | null }>("GET", "/user");
-  }
-
-  /** Classic OAuth scopes are explicit; fine-grained tokens prove Administration with the write itself. */
-  get deletionPermission(): "granted" | "stepup" | "unknown" {
-    if (this.#token.startsWith("github_pat_")) return "granted";
-    if (this.#oauthScopes === undefined) return "unknown";
-    return this.#oauthScopes.split(/[ ,]+/).includes("delete_repo") ? "granted" : "stepup";
   }
 
   /** The signed-in account's own repositories, most recently pushed first (the first run's Open from GitHub). */
