@@ -183,7 +183,7 @@ for (const route of ["Projects card", "Open project…"] as const) {
   });
 }
 
-test("Launch restoration after a different last note was deleted lands in writing and keeps the written first note (P0-entry.5)", async () => {
+test("Launch restoration after the last note was deleted reopens the session's remaining tab, with no new note (P0-entry.5, D-420)", async () => {
   test.setTimeout(90_000);
   const dirs = tempDirs();
   writeFileSync(join(dirs.userData, DATA_FILES.state), JSON.stringify({ version: 1, firstRun: "done", lastNotePath: "" }));
@@ -208,10 +208,13 @@ test("Launch restoration after a different last note was deleted lands in writin
     // The person deletes the later note, which was the last one open.
     for (const file of markdown(dirs.docs).filter(file => file !== kept)) rmSync(join(dirs.docs, file));
     instance = await launch(dirs);
-    const app = instance.app;
-    await assertWriting(instance.page, () => app.windows().length, dirs.docs, "Fresh start.");
+    // The session's other tab is still there: it opens, focused, and nothing is created (D-420).
+    const restored = instance.page.getByRole("textbox", { name: "Note", exact: true });
+    await expect(restored).toHaveText("Kept first words.");
+    await expect(restored).toBeFocused();
+    await expect(instance.page.getByRole("dialog", { name: "Open", exact: true })).toBeHidden();
     expect(readFileSync(join(dirs.docs, kept), "utf8")).toBe(keptBytes);
-    expect(markdown(dirs.docs)).toHaveLength(2);
+    expect(markdown(dirs.docs)).toEqual([kept]);
   } finally {
     if (instance) await quitOwned(instance);
     rmSync(dirs.userData, { recursive: true, force: true });

@@ -874,3 +874,66 @@ describe("Open from GitHub with a copy already here (D-415)", () => {
     expect(view()).toMatchObject({ githubOpen: false, githubError: "", githubCanRetry: false });
   });
 });
+
+describe("Project session (D-420)", () => {
+  const folder = "/w", a = "/w/notes/a.md", b = "/w/notes/b.md", c = "/w/notes/c.md";
+  function sessionApp(disk: Record<string, string | null | Error>, state: Record<string, unknown>) {
+    const firstNote = vi.fn(async () => "/w/notes/Untitled.md");
+    const saveAppState = vi.fn(async () => {});
+    const read = async (path: string): Promise<string | null> => {
+      const value = disk[path] ?? null;
+      if (value instanceof Error) throw value;
+      return value;
+    };
+    const app = appWith({
+      firstNote, lastNote: async () => state.lastNotePath as string | undefined, list: async () => [],
+      position: async () => undefined, remember: async () => {},
+    }, async (path: string): Promise<string> => { const text = await read(path); if (text === null || text === undefined) throw new Error("missing"); return text; }, {
+      readNoteIfExists: read, saveAppState,
+      workspace: {
+        info: async () => ({ folder, format: '{"formatVersion":1}' }),
+        scan: async () => ({ folder, roots: [{ id: "public", path: "/w/notes", readOnly: false }], entries: [] }),
+        writeFormat: async () => {}, renameNote: async () => {}, onChange: () => () => {},
+      },
+      loadAppState: async () => ({ version: 1, firstRun: "done", ...state }),
+    });
+    return { app, firstNote, saveAppState };
+  }
+
+  it("restores the saved tabs in order with the active note and no Untitled", async () => {
+    const { app, firstNote } = sessionApp({ [a]: "# A", [b]: "# B", [c]: "# C" }, { lastNotePath: b, filesOpened: [a, b, c] });
+    await app.start();
+    expect(app.store.state.note).toMatchObject({ path: b, status: "ready" });
+    expect(app.store.state.ui.files.opened).toEqual([a, b, c]);
+    expect(firstNote).not.toHaveBeenCalled();
+  });
+
+  it("drops a deleted note and keeps the rest", async () => {
+    const { app, firstNote } = sessionApp({ [a]: "# A", [c]: "# C" }, { lastNotePath: c, filesOpened: [a, b, c] });
+    await app.start();
+    expect(app.store.state.ui.files.opened).toEqual([a, c]);
+    expect(app.store.state.note.path).toBe(c);
+    expect(firstNote).not.toHaveBeenCalled();
+  });
+
+  it("lands in an empty Untitled when every note in the session is gone", async () => {
+    const { app, firstNote } = sessionApp({ "/w/notes/Untitled.md": "" }, { lastNotePath: b, filesOpened: [a, b] });
+    await app.start();
+    expect(firstNote).toHaveBeenCalledWith("history");
+    expect(app.store.state.note.path).toBe("/w/notes/Untitled.md");
+  });
+
+  it("shows an error with Retry on a failed read, never overwriting the saved tabs, and Retry restores them", async () => {
+    const disk: Record<string, string | null | Error> = { [a]: "# A", [b]: new Error("EBUSY"), [c]: "# C" };
+    const { app, firstNote, saveAppState } = sessionApp(disk, { lastNotePath: a, filesOpened: [a, b, c] });
+    await app.start();
+    expect(firstNote).not.toHaveBeenCalled();
+    const toast = app.store.state.ui.toasts.find((t) => t.message === en["project.session.restoreFailed"]);
+    expect(toast).toMatchObject({ tone: "error", action: { command: "project.session.retry" } });
+    for (const [s] of saveAppState.mock.calls as unknown as [{ filesOpened?: string[] }][]) if (s.filesOpened) expect(s.filesOpened).toEqual([a, b, c]);
+    disk[b] = "# B";
+    await app.commands.run("project.session.retry");
+    expect(app.store.state.ui.files.opened).toEqual([a, b, c]);
+    expect(app.store.state.note.path).toBe(a);
+  });
+});
