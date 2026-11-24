@@ -90,12 +90,13 @@ export const referenceCard = style({
   },
 });
 // A list of pressable cards (D-416): a transparent edge at rest, the accent only while hovered or pressed; the box never changes.
+// Plain :hover and :active, never :has(), so every other button's hover and press stays cheap to restyle (PRF-14).
 export const accentOnHover = style({
   borderColor: t.action.restBorder,
   transitionProperty: "background-color, border-color, box-shadow",
   selectors: {
     "&[data-unavailable]": { borderColor: t.action.restBorder },
-    '&[data-hovered]:not([aria-disabled="true"]), &[data-pressed]:not([aria-disabled="true"])': { borderColor: t.action.border },
-    [`&:has(${cardHit}[data-hovered]):not([aria-disabled="true"]), &:has(${cardHit}[data-pressed]):not([aria-disabled="true"])`]: { borderColor: t.action.border },
+    '&[data-pressed]:not([aria-disabled="true"]):not([data-unavailable]), &:active:not([aria-disabled="true"]):not([data-unavailable])': { borderColor: t.action.border },
   },
+  "@media": { "(hover: hover)": { selectors: { '&:hover:not([aria-disabled="true"]):not([data-unavailable])': { borderColor: t.action.border } } } },
 });
