@@ -113,7 +113,10 @@ test("G2.1-G2.3: confirmed setup creates one paired public site, Cancel and fail
     await off.getByRole("button", { name: "Turn off sharing", exact: true }).click();
     await expect(page.getByText("Sharing is off. The site is empty, and its history stays on GitHub.")).toBeVisible();
     expect(pairing().phase).toBe("off");
-    expect([...fake.git.site("ada/notes-site").keys()].sort()).toEqual(["focus-notes.json", "notes/index.json"]);
+    // Empty of notes: only the site's record and D-421's "Nothing published here yet" home with its assets.
+    const emptied = [...fake.git.site("ada/notes-site").keys()].sort();
+    expect(emptied.filter(path => !path.startsWith("assets/"))).toEqual(["focus-notes.json", "index.html", "notes/index.json"]);
+    expect(fake.git.site("ada/notes-site").get("index.html")).toContain("Nothing published here yet");
     expect(readFileSync(draft, "utf8")).toBe(text);
 
     // Re-enable reuses the empty site and never republishes what was there.
