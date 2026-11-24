@@ -89,7 +89,7 @@ test("G2.1-G2.3: confirmed setup creates one paired public site, Cancel and fail
     await turnOn.click();
     await expect(confirmation).toContainText("ada/notes-site");
     await confirmation.getByRole("button", { name: "Turn on sharing", exact: true }).click();
-    await expect(confirmation).toContainText("Turning on sharing isn’t available yet. Your notes stay private.");
+    await expect(confirmation).toContainText("GitHub refused to set up the site. Check that your account can create and change public repositories, then retry. Your notes stay private.");
     await expect(confirmation).toContainText("ada/notes-site");
     expect(pairing()).toMatchObject({ name: "notes-site", phase: "created" });
     expect(fake.git.pushes).toEqual([]);

@@ -135,7 +135,7 @@ for (const theme of ["light", "dark"] as const) {
       });
       github.beforeRequest = undefined;
       release();
-      await expect(confirmation).toContainText("Turning on sharing isn’t available yet. Your notes stay private.");
+      await expect(confirmation).toContainText("GitHub refused to set up the site.");
       await shot(l, theme, "07-setup-github-error-retry");
       await confirmation.getByRole("button", { name: "Retry", exact: true }).click();
       await expect(confirmation).toHaveCount(0);

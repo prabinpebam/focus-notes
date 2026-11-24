@@ -32,6 +32,12 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
   reg<Record<string, never>>("sharing.confirmClose", () => { if (!state().busy) { set({ dialog: "" }); settingsOpen(true); } });
   let setupGeneration = 0;
   let setupPending = false;
+  // One honest reason with its recovery (G2.2): the main process names the cause as `sharing:<code>`.
+  const setupProblem = (error: unknown) => {
+    const code = [...(error instanceof Error ? error.message : String(error)).matchAll(/sharing:([a-z]+)/g)].at(-1)?.[1];
+    const key = `sharing.setup.problem.${code}`;
+    return catalog.format(code && catalog.has(key) ? key : "sharing.setup.problem.failed");
+  };
   const projectKey = () => `${store.state.workspace.folder ?? ""}:${store.state.workspace.repo ?? ""}`;
   reg<{ resume?: boolean }>("sharing.firstOpen", async ({ resume = false }) => {
     if (setupPending) return;
@@ -48,7 +54,7 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
       if (generation === setupGeneration && project === projectKey()) set({ setupPreview: preview });
     } catch (error) {
       console.error("Sharing setup preview failed", opErrorCode(error));
-      if (generation === setupGeneration && project === projectKey()) set({ problem: catalog.format("sharing.setup.unavailable") });
+      if (generation === setupGeneration && project === projectKey()) set({ problem: setupProblem(error) });
     } finally {
       setupPending = false;
       if (generation === setupGeneration && project === projectKey()) set({ busy: false });
@@ -86,7 +92,7 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
       }, undefined, "fn:sharing.setup.enable", "success");
     } catch (error) {
       console.error("Sharing setup failed", opErrorCode(error));
-      if (current()) set({ problem: catalog.format("sharing.setup.unavailable") });
+      if (current()) set({ problem: setupProblem(error) });
     } finally {
       unsubscribe?.();
       setupPending = false;
