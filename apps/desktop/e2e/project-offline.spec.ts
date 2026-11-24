@@ -349,6 +349,37 @@ test("D-413: paired public site repository shows a second link and requires both
   } finally { await fx.close(); }
 });
 
+test("owner, 24 Nov: a project fully on GitHub reads backed up, and Delete shows no unsaved warning for the blank Untitled", async () => {
+  const fx = await startLinkedProject({
+    handler: (req, _res, send) => {
+      if (req.url === "/user") return send(200, { id: 1, login: "ada", name: "Ada" });
+      if (req.url === "/repos/ada/notes" && req.method === "GET") return send(200, { id: 42, owner: { login: "ada", type: "User" }, name: "notes", default_branch: "main", permissions: { admin: true, push: true } });
+      send(404, { message: "Not Found" });
+    },
+  });
+  const { page } = fx.l;
+  try {
+    await expect(page.getByRole("textbox", { name: "Note", exact: true })).toBeFocused();
+    // The blank Untitled project entry leaves on disk (D-397): made empty, outside sync, holding nothing.
+    writeFileSync(join(fx.dirs.docs, "Untitled.md"), "");
+    writeFileSync(join(fx.dirs.docs, "notes", "Untitled.md"), "\n");
+    await expect(page.locator("#saveState")).toHaveAttribute("data-state", "synced", { timeout: 15_000 });
+
+    await page.keyboard.press(process.platform === "darwin" ? "Meta+," : "Control+,");
+    const settings = page.getByRole("dialog", { name: "Settings", exact: true });
+    await settings.getByRole("tab", { name: "Project", exact: true }).click();
+    await settings.getByRole("button", { name: "Delete project…", exact: true }).click();
+    const dialog = page.getByRole("dialog", { name: /^Delete .+\?$/ });
+    await expect(dialog).toBeVisible();
+    await expect(dialog).not.toContainText(/on GitHub yet|Couldn't check what's backed up/);
+    await dialog.getByRole("button", { name: "Continue", exact: true }).click();
+    // Straight to the typed-name confirmation: no Not on GitHub yet step.
+    await expect(dialog.getByRole("textbox", { name: /^Type .+ to confirm$/ })).toBeVisible();
+    await expect(dialog).not.toContainText(/on GitHub yet|Delete without saving|Couldn't check what's backed up/);
+    expect(existsSync(fx.dirs.docs)).toBe(true);
+  } finally { await fx.close(); }
+});
+
 test("D-413: unsynced notes warn with optional Save a copy and allow Delete without saving", async () => {
   let gone = false;
   const fx = await startLinkedProject({
