@@ -54,11 +54,16 @@ test("Share New words is icon-only, aligned and keeps pending feedback on its ow
     await page.getByRole("menuitem", { name: "Share…", exact: true }).click();
     const share = page.getByRole("dialog", { name: "Share “trips”", exact: true });
     await share.getByText("Passcode", { exact: true }).click();
+    await expect(share.getByText("Access code", { exact: true })).toBeVisible();
+    await expect(share.getByText("Copy", { exact: true })).toHaveCount(0);
     const button = share.getByRole("button", { name: "New words", exact: true });
     await expect(button).toHaveText("");
     await expect(button.locator("svg")).toHaveCount(1);
-    const passcode = share.getByRole("textbox", { name: "Passcode", exact: true });
-    await expect(passcode).toHaveAttribute("readonly", "");
+    const codeBlock = share.locator("[data-code-block]");
+    const codeText = codeBlock.locator("code");
+    await expect(codeText).toHaveText(/^[A-Z0-9]{4}-[A-Z0-9]{4} [a-z]+(-[a-z]+){3}$/);
+    const copyInBlock = codeBlock.getByRole("button", { name: "Copy access code", exact: true });
+    await expect(copyInBlock).toBeVisible();
     for (const [width, height] of [[900, 700], [480, 360]] as const) {
       await l.app.evaluate(({ BrowserWindow }, size) => {
         const window = BrowserWindow.getAllWindows()[0]!;
@@ -66,16 +71,19 @@ test("Share New words is icon-only, aligned and keeps pending feedback on its ow
         return window.getSize();
       }, { width, height });
       await button.scrollIntoViewIfNeeded();
-      const box = await button.boundingBox(), field = await passcode.boundingBox();
+      const box = await button.boundingBox(), field = await codeBlock.boundingBox(), copyBox = await copyInBlock.boundingBox();
       expect(box).not.toBeNull();
       expect(field).not.toBeNull();
-      expect(box!.y).toBe(field!.y);
-      expect(box!.height).toBe(field!.height);
+      expect(copyBox).not.toBeNull();
+      expect(Math.abs(box!.y - field!.y)).toBeLessThanOrEqual(2);
+      expect(Math.abs(box!.height - field!.height)).toBeLessThanOrEqual(2);
+      expect(copyBox!.y).toBeGreaterThanOrEqual(field!.y);
+      expect(copyBox!.y + copyBox!.height).toBeLessThanOrEqual(field!.y + field!.height + 1);
       const row = await button.evaluate(el => {
         const box = el.parentElement!.getBoundingClientRect();
         return { right: box.right, width: box.width };
       });
-      expect(box!.x + box!.width).toBe(row.right);
+      expect(Math.abs(box!.x + box!.width - row.right)).toBeLessThanOrEqual(2);
       expect(field!.width).toBeGreaterThan(row.width / 2);
     }
     const before = await button.boundingBox();
@@ -85,7 +93,7 @@ test("Share New words is icon-only, aligned and keeps pending feedback on its ow
     await l.app.evaluate(({ ipcMain }) => {
       ipcMain.removeHandler("access:words");
       ipcMain.handle("access:words", () => new Promise(resolve => setTimeout(() => resolve({
-        id: "new-words-ui-fixture", value: "cedar-silver-meadow-stone",
+        id: "new-words-ui-fixture", value: "K7QM-4DRP cedar-silver-meadow-stone",
       }), 800)));
     });
     await button.click();
@@ -93,7 +101,7 @@ test("Share New words is icon-only, aligned and keeps pending feedback on its ow
     await expect(button.locator('[data-border-progress="pending"]')).toHaveCount(1);
     await expect(button.locator("svg")).toHaveCount(1);
     expect(await button.boundingBox()).toEqual(before);
-    await expect(passcode).toHaveValue("cedar-silver-meadow-stone");
+    await expect(codeText).toHaveText("K7QM-4DRP cedar-silver-meadow-stone");
     await expect(button).toHaveAttribute("data-commit", "rest");
   } finally {
     try { await quit(l); } finally {
@@ -159,10 +167,10 @@ test("SHR-16: first copy waits for a real deployed share; both methods work and 
     await open();
     const share = page.getByRole("dialog", { name: "Share “trips”", exact: true });
     await share.getByText("Passcode", { exact: true }).click();
-    const passcode = share.getByRole("textbox", { name: "Passcode", exact: true });
-    await expect(passcode).toBeVisible();
-    await expect(passcode).toHaveAttribute("readonly", "");
-    await expect(passcode).toHaveValue(/^[a-z]+(-[a-z]+){3}$/);
+    const codeText = share.locator("[data-code-block] code");
+    await expect(codeText).toBeVisible();
+    await expect(codeText).toHaveText(/^[A-Z0-9]{4}-[A-Z0-9]{4} [a-z]+(-[a-z]+){3}$/);
+    const shownAccessCode = (await codeText.textContent())!;
     await share.getByRole("button", { name: "Copy share information", exact: true }).click();
     await expect(share.getByText("Publishing this share. It copies when the site is ready.", { exact: true })).toBeVisible();
     await expect.poll(() => existsSync(join(priv, "access.json")) ? access().grants.filter((g) => !g.owner).length : 0).toBe(1);
@@ -170,8 +178,13 @@ test("SHR-16: first copy waits for a real deployed share; both methods work and 
     available = true;
     await expect(share.getByText("Share information copied.", { exact: true })).toBeVisible({ timeout: 20_000 });
     const first = access().grants.find((g) => !g.owner)!;
-    expect(await copied()).toContain(first.passcode!.value);
-    expect(await copied()).not.toContain("{link}");
+    const copiedMessage = await copied();
+    expect(copiedMessage).toContain("I’ve shared “trips” with you to read.");
+    expect(copiedMessage).toContain(`Open it here: ${site}s/#${first.id}.${first.link!.secret}`);
+    expect(copiedMessage).toContain(`To use the access code, open ${site}s/ and enter: ${shownAccessCode}`);
+    expect(copiedMessage).not.toContain("Whoever gets this can pass it on.");
+    expect(copiedMessage).not.toContain("{link}");
+    await expect(share.getByText("Whoever gets this can pass it on. Copies they download stay after the share expires or you withdraw it.", { exact: true })).toBeVisible();
     const reader = () => new SiteReader(async (p) => {
       const result = await fetch(new URL(p, origin));
       return result.status === 404 ? undefined : result.text();
@@ -220,6 +233,139 @@ test("SHR-16: first copy waits for a real deployed share; both methods work and 
     await expect(page.getByRole("region", { name: "Notifications", exact: true }).getByRole("button", { name: "Undo", exact: true })).toHaveCount(0);
     expect(readFileSync(join(priv, "notes", "trips", "rome.md"), "utf8")).toBe(noteBeforeWithdrawal);
     await expect(reader().openLinkSession(first.id, first.link!.secret)).rejects.toThrow();
+  } finally {
+    try { await quit(l); } finally {
+      if (process.platform === "win32") {
+        for (const flags of [["-WhatIf"], []]) execFileSync("pwsh", ["-File", join(import.meta.dirname, "..", "..", "..", "tools", "dev", "close-test-apps.ps1"), "-OnlyPid", String(l.pid), ...flags], { stdio: "inherit" });
+      }
+      server.closeAllConnections();
+      await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+    }
+  }
+});
+
+test("G6.3 / SHR-19: share information template edit, live preview, copy-time validation, and reset", async () => {
+  test.setTimeout(120_000);
+  const { dirs } = instance();
+  write(join(dirs.userData, DATA_FILES.state), JSON.stringify({ version: 1, firstRun: "done", lastNotePath: join(dirs.docs, "notes", "hello.md") }));
+  const priv = join(dirs.docs, "private"), siteDir = join(dirs.userData, "published-template-fixture");
+  write(join(priv, "notes", "trips", "rome.md"), "# Rome\n\nTemplate fixture.\n");
+  write(join(priv, "notes", "trips", "paris.md"), "# Paris\n\nSecond fixture.\n");
+  git(priv, "add", "-A"); git(priv, "commit", "-qm", "Add template fixture notes");
+  let revision = "";
+  let building: Promise<unknown> | undefined;
+  const server = createServer(async (req, res) => {
+    try {
+      const current = readFileSync(join(priv, "access.json"), "utf8");
+      if (revision !== current) {
+        building ??= publish({ private: priv, site: siteDir, owner: "fixture" }).then(() => { revision = current; }).finally(() => { building = undefined; });
+        await building;
+      }
+      const path = new URL(req.url!, "http://fixture").pathname.split("/").filter(Boolean).map(decodeURIComponent);
+      if (path.some((part) => part === ".." || part.includes("\\") || part.includes(":"))) { res.writeHead(400).end(); return; }
+      const text = await readFile(join(siteDir, ...path), "utf8");
+      res.writeHead(200, { "content-type": "application/json" }).end(text);
+    } catch (error) {
+      if (error instanceof Error && "code" in error && error.code === "ENOENT") res.writeHead(404).end();
+      else res.writeHead(500).end();
+    }
+  });
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const address = server.address();
+  if (!address || typeof address === "string") throw new Error("Missing fixture server address");
+  const origin = `http://127.0.0.1:${address.port}/`;
+  const site = "https://sharing.test/";
+  write(join(dirs.userData, DATA_FILES.setup), JSON.stringify({ version: 1, site, steps: {} }));
+  await configureSharing(dirs, site);
+  const l = await launch(dirs, { FOCUS_NOTES_MEMORY_CLIPBOARD: "1", FOCUS_NOTES_POINTER_GAP_MS: "0", FOCUS_NOTES_IDLE_COMMIT_MS: "600000" });
+  const copied = () => l.app.evaluate(() => (globalThis as { memoryClipboard?: { text: string } }).memoryClipboard?.text ?? "");
+  try {
+    await l.app.evaluate((_electron, fixture) => {
+      const nativeFetch = globalThis.fetch;
+      globalThis.fetch = (input, init) => {
+        const url = new URL(typeof input === "string" ? input : input instanceof URL ? input.href : input.url);
+        return nativeFetch(url.origin === new URL(fixture.site).origin ? new URL(`${url.pathname}${url.search}`, fixture.origin) : input, init);
+      };
+    }, { site, origin });
+    const { page } = l;
+    await expect(page.getByRole("textbox", { name: "Note" })).toBeVisible();
+    // Create one link-only share ("Rome") and one link+access-code share ("Paris").
+    await page.keyboard.press(process.platform === "darwin" ? "Meta+Shift+E" : "Control+Shift+E");
+    await page.getByRole("treeitem", { name: "trips", exact: true }).click();
+    await page.keyboard.press("ArrowRight");
+    await page.getByRole("treeitem", { name: "Rome rome.md", exact: true }).click({ button: "right" });
+    await page.getByRole("menuitem", { name: "Share…", exact: true }).click();
+    let share = page.getByRole("dialog", { name: "Share “Rome”", exact: true });
+    await share.getByRole("button", { name: "Copy share information", exact: true }).click();
+    await expect(share.getByText("Share information copied.", { exact: true })).toBeVisible({ timeout: 20_000 });
+    await page.keyboard.press("Escape");
+
+    await page.keyboard.press(process.platform === "darwin" ? "Meta+Shift+E" : "Control+Shift+E");
+    await page.getByRole("treeitem", { name: "Paris paris.md", exact: true }).click({ button: "right" });
+    await page.getByRole("menuitem", { name: "Share…", exact: true }).click();
+    share = page.getByRole("dialog", { name: "Share “Paris”", exact: true });
+    await share.getByText("Passcode", { exact: true }).click();
+    await share.getByRole("button", { name: "Copy share information", exact: true }).click();
+    await expect(share.getByText("Share information copied.", { exact: true })).toBeVisible({ timeout: 20_000 });
+    await page.keyboard.press("Escape");
+
+    // Open Settings -> Sharing -> Share information -> Edit.
+    await page.keyboard.press(process.platform === "darwin" ? "Meta+," : "Control+,");
+    const settings = page.getByRole("dialog", { name: "Settings", exact: true });
+    await settings.getByRole("tab", { name: "Sharing", exact: true }).click();
+    await expect(settings.getByText("Share information", { exact: true })).toBeVisible();
+    await expect(settings.getByText("Default", { exact: true })).toBeVisible();
+    await settings.getByRole("button", { name: "Edit", exact: true }).click();
+
+    const tplDialog = page.getByRole("dialog", { name: "Share information", exact: true });
+    const field = tplDialog.getByRole("textbox", { name: "Message", exact: true });
+    await expect(field).toBeVisible();
+    await expect(tplDialog.getByText("I’ve shared “Trip plans” with you to read.", { exact: true })).toBeVisible();
+    await expect(tplDialog.getByRole("button", { name: "Reset to default", exact: true })).toBeDisabled();
+
+    // Reject {name} and {passcode}.
+    await field.fill("Hi {name}, open {link}");
+    await expect(tplDialog.getByText("Remove {name}. Shares never ask for a name.", { exact: true })).toBeVisible();
+    await expect(tplDialog.getByRole("button", { name: "Save", exact: true })).toBeDisabled();
+
+    await field.fill("Open {site} and enter {passcode}");
+    await expect(tplDialog.getByText("Use {accessCode} instead of {passcode}.", { exact: true })).toBeVisible();
+    await expect(tplDialog.getByRole("button", { name: "Save", exact: true })).toBeDisabled();
+
+    // Save a valid access-code-only custom template.
+    await field.fill("Custom for “{title}”:\nGo to {site} with {accessCode}");
+    await expect(tplDialog.getByText(`Go to ${site}s/ with K7QM-4DRP harbor-maple-river-cloud`, { exact: true })).toBeVisible();
+    await tplDialog.getByRole("button", { name: "Save", exact: true }).click();
+    await expect(tplDialog).not.toBeVisible();
+    await expect(settings.getByText("Edited", { exact: true })).toBeVisible();
+    expect(existsSync(join(priv, "access-message.json"))).toBe(true);
+
+    // Copy share information on the link-only share ("Rome") -> copy-time validation blocks and offers recovery.
+    const beforeCopy = await copied();
+    const copyButtons = settings.getByRole("button", { name: "Copy again", exact: true });
+    await copyButtons.nth(0).click();
+    await page.getByRole("menuitem", { name: "Copy share information", exact: true }).click();
+    await expect(settings.getByText("Add a link, or the site address and access code, for this share.", { exact: true })).toBeVisible();
+    expect(await copied()).toBe(beforeCopy);
+
+    // Use default this time copies the recipient-voice default message.
+    await settings.getByRole("button", { name: "Use default this time", exact: true }).click();
+    await expect(settings.getByText("Share information copied with the default message.", { exact: true })).toBeVisible({ timeout: 20_000 });
+    expect(await copied()).toContain("I’ve shared “Rome” with you to read.");
+    expect(await copied()).toContain(`Open it here: ${site}s/#`);
+
+    // Copy share information on the link+code share ("Paris") uses the custom template.
+    await copyButtons.nth(1).click();
+    await page.getByRole("menuitem", { name: "Copy share information", exact: true }).click();
+    await expect(settings.getByText("Copied.", { exact: true })).toBeVisible({ timeout: 20_000 });
+    expect(await copied()).toMatch(/^Custom for “Paris”:\nGo to https:\/\/sharing\.test\/s\/ with [A-Z0-9]{4}-[A-Z0-9]{4} [a-z]+(-[a-z]+){3}$/);
+
+    // Reset to default removes private/access-message.json.
+    await settings.getByRole("button", { name: "Edit", exact: true }).click();
+    await tplDialog.getByRole("button", { name: "Reset to default", exact: true }).click();
+    await tplDialog.getByRole("button", { name: "Save", exact: true }).click();
+    await expect(settings.getByText("Default", { exact: true })).toBeVisible();
+    expect(existsSync(join(priv, "access-message.json"))).toBe(false);
   } finally {
     try { await quit(l); } finally {
       if (process.platform === "win32") {
