@@ -56,6 +56,8 @@ export interface GitSyncOptions {
    * push URL of the remote is checked, before the push and again before a retry.
    */
   checkRemote?: (url: string) => Promise<"ok" | "template" | "unreadable">;
+  /** Called before committing/pushing; returning false pauses backup (e.g. mass external deletion, FRE-13). */
+  beforeSync?: () => Promise<boolean>;
   /** Logs counts and problems, never paths or note text. */
   log?: (line: string) => void;
 }
@@ -739,6 +741,9 @@ export class GitSync {
 
   async #syncNow(reasons: Set<SyncReason>): Promise<SyncReport> {
     if (this.#disposed) return this.#report;
+    if (this.#o.beforeSync && !(await this.#o.beforeSync().catch(() => true))) {
+      return this.#report;
+    }
     if (!(await this.#lock())) {
       this.#emit({ state: "problem", problem: this.#fail("locked") });
       return this.#report;

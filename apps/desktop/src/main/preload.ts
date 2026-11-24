@@ -422,6 +422,16 @@ contextBridge.exposeInMainWorld("focusNotes", {
       return () => ipcRenderer.removeListener("sync:status", handler);
     },
   },
+  // Account and sync recovery alert while writing carries on (FRE-13, G5.4, D-213).
+  syncAlert: {
+    status: () => ipcRenderer.invoke("syncAlert:status"),
+    act: (action: "sync" | "restore" | "removeRemote" | "retry") => ipcRenderer.invoke("syncAlert:act", action),
+    onStatus: (listener: (report: unknown) => void) => {
+      const handler = (_e: unknown, report: unknown) => listener(report);
+      ipcRenderer.on("syncAlert:status", handler);
+      return () => ipcRenderer.removeListener("syncAlert:status", handler);
+    },
+  },
   // Set up my instance (WP-3.1, FRE-08): intent-level steps; the passphrase is passed only to run the vault step.
   setup: {
     status: () => ipcRenderer.invoke("setup:status"),

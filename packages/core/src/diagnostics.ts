@@ -181,6 +181,8 @@ export const MEASURE_NAMES: readonly string[] = [
   // The recovery view's waits (D-212): RECOVER_WAITS in recover-app.ts.
   ...["account", "download", "open", "find", "place", "create"].map((t) => `fn:recover.${t}`),
   ...["account", "download", "open", "find", "place", "create"].map((t) => `focus-notes:recover.${t}`),
+  // The recovery alert's waits (FRE-13, G5.4, D-213): recovery-alert-app.ts.
+  ...["sync", "restore", "removeRemote", "retry"].flatMap((t) => [`fn:recoveryAlert.${t}`, `focus-notes:recoveryAlert.${t}`]),
 ];
 /** A measure's name is kept only if it's on the allow-list. */
 export const isMeasureName = (name: string) => MEASURE_NAMES.includes(name);

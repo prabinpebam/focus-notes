@@ -62,9 +62,15 @@ export const dialogsAMocks = {
   label: "Mocks: two-column dialogs and cards, canvas and settings (D-408)",
   models: { dialogsA: {
     saveState: {
-      backupVisible: true, state: "pending", label: "Saved on this computer", interactive: true, icon: "cloud", tone: "warning",
+      backupVisible: true, state: "pending", label: "Saved on this computer", text: "", cardLabel: "Backup", interactive: true, icon: "cloud", tone: "warning",
       backingUp: false, backupTime: "Last backed up yesterday at 18:40", waitingText: "2 notes waiting for backup",
       canBackUp: true, backupReason: "Already backing up",
+    },
+    syncAlert: {
+      active: false, headerAlert: false, cause: "", icon: "warning", tone: "warning", busy: false,
+      title: "", line: "", progress: 0, progressLabel: "", hasProgress: false,
+      facts: [{ id: "a", text: "" }], primary: "", hasPrimary: false, secondary: "", hasSecondary: false,
+      notNow: "", hasNotNow: false, alertLabel: "", cornerState: "error", cornerText: "", cornerOpen: false, headerOpen: false,
     },
     repoBackup: { private: repo("Private notes", "prabin/notes-private", false), public: repo("Public notes", "prabin/notes", true) },
     imageCaption: {

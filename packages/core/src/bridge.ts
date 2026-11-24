@@ -5,6 +5,7 @@ import type { SetupBridge } from "./setup.ts";
 import type { FirstRunBridge, FirstRunStep } from "./first-run.ts";
 
 import type { RecoverBridge } from "./recover.ts";
+import type { SyncAlertBridge } from "./recovery-alert.ts";
 import type { ConflictChoiceKind, DeletedNote, NoteVersion } from "./history.ts";
 import type { KeybindingsBridge } from "./keybindings-app.ts";
 import type { HeldNotes } from "./held.ts";
@@ -137,6 +138,8 @@ export interface PlatformBridge {
    * about it, and the ways back. The desktop's only.
    */
   recover?: RecoverBridge;
+  /** Account and sync recovery alert while writing carries on (FRE-13, G5.4, D-213). The desktop's only. */
+  syncAlert?: SyncAlertBridge;
   /** Synced settings in the private repository (PRV-03, D-46). Absent where there can't be one (the browser). */
   settings?: SettingsBridge;
   /** Share audiences in the private repository's access.json (WP-5.3, D-134). Absent in the browser. */
