@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, realpath, rm } from "node:fs/promises";
+import { cp, mkdtemp, readFile, realpath, rm, stat } from "node:fs/promises";
 import { join, relative, sep } from "node:path";
 import { GitHubError, type GitHubApi } from "@focus-notes/github";
 import { publish } from "@focus-notes/seal/publish";
@@ -116,6 +116,13 @@ export function sharingRuntime(deps: {
           site: directory, owner: pairing.owner, siteUrl: pairing.site,
         });
         guard();
+        // The share reader page (s/), so a link or access code opens on the site itself; static app code only,
+        // placed after the leak check, which looks for private text and names in the site's data.
+        const page = empty ? undefined : deps.reader?.();
+        if (page && await stat(join(page, "site", "s", "index.html")).then(() => true, () => false)) {
+          await cp(join(page, "site"), directory, { recursive: true, force: false, errorOnExist: false });
+          guard();
+        }
         deps.step?.("push");
         if (selection) deps.publishStep?.("publishing");
         const sealed = { directory, build: artifact.build };

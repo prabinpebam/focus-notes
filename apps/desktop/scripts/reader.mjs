@@ -18,6 +18,7 @@ export function readerProblem(dir) {
   if (!existsSync(join(dir, "render.mjs"))) return `The page renderer is missing: ${join(dir, "render.mjs")}. Build it with pnpm --filter @focus-notes/web run build:reader.`;
   const assets = join(dir, "assets");
   if (!existsSync(assets) || !statSync(assets).isDirectory() || readdirSync(assets).length === 0) return `The page renderer's assets are missing: ${assets}.`;
+  if (!existsSync(join(dir, "site", "s", "index.html"))) return `The share reader page is missing: ${join(dir, "site", "s", "index.html")}. Build it with pnpm --filter @focus-notes/web run build:reader.`;
   return undefined;
 }
 
