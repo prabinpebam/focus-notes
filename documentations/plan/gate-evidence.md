@@ -5,6 +5,20 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 > [!NOTE]
 > **TL;DR.** All 150 requirements in these six stages are named by at least one automated test (`pnpm trace` lists none untraced), and on 2026-10-15 every one of them has a test that passed on Windows in CI run 38639327074 on `be2f820` (now `main`): repository checks, typecheck, 1,054 unit tests, the bench (`pnpm bench --check`), 147 desktop journeys (5 skipped, all macOS-only or packaged) and 27 web journeys. Every demo script is automated and passed there. Even so, none of the 31 *verifying* work packages in M1, MW, M3, M2, and M4 can move to *done* yet, because rows of the [work package definition of done](definition-of-done.md#work-package-definition-of-done) have no evidence: for all of them, recorded review approvals, a dependency audit, and a nightly build that installs and starts on Windows; for the 24 with surfaces, approved visual baselines and the light and dark screenshot review; and for eight, open high CodeQL findings. No gate can pass until these are closed and the owner runs each demo on a clean Windows 11 machine, confirms the proposed decisions, and accepts it.
 
+## Opened files in Files (FIL-20, WP-P.24, D-410), 24 November
+
+Wired on `fix-opened-files-24nov` over the approved `34cd088e` design: `OpenedFiles` (`#filesOpened`) above Pinned in `canvas.view.json`, backed by `vm.opened`, `files.activateOpened`, `files.closeOpened`, `files.closeAllOpened` and Recent exclusion in `packages/core/src/files-app.ts`. No central files (`app.ts`, `main.ts`, `preload`, `en.json`) edited.
+
+| Command | Result |
+| --- | --- |
+| `pnpm check` | PASS (boundaries, kits, chain, plan, 69 actions-proof, licenses, generated, spacing, notification inventory, `ui:check` 886 docs / 87 components / 807 commands) |
+| `pnpm typecheck` | PASS (all 13 workspace projects) |
+| `pnpm exec vitest run packages/core/test/opened-files.test.ts packages/core/test/files-app.test.ts packages/core/test/files-menu.test.ts packages/core/test/files-sort.test.ts` | PASS (4 files, 77 tests; 6 new opened-files tests) |
+| `pnpm --filter @focus-notes/desktop run build` | PASS |
+| `pnpm --filter @focus-notes/desktop exec playwright test e2e/opened-files.spec.ts --workers=1` (`FOCUS_NOTES_E2E=1`) | PASS (1 passed, 0 axe violations; verifies Opened files above Pinned, single-click activate, hover × close, ⋯ Close all without confirm, section hidden when empty, Recent exclusion) |
+| `pnpm --filter @focus-notes/desktop exec playwright test e2e/mw-files.spec.ts e2e/mw-files-menu.spec.ts --workers=1` (`FOCUS_NOTES_E2E=1`) | PASS (5 passed) |
+| `node slate/scripts/runtime-host.mjs check --repo . --host documentations` | PASS |
+
 ## In-app Delete partial checkpoint, 22 November
 
 PRJ-23 / F4.2 / D-400, isolated work branch from `87ee96a2`; not landed and not full six-state acceptance. At 18:30 the normal in-app Settings → Project → Delete flow reached an actual loopback `DELETE /repos/ada/notes` 403, displayed the approved refusal/fallback, and kept exact disposable note bytes and Git HEAD. Renderer-only capture and request provenance: `focus-notes-work\review\delete-22nov\refused.png` and `provenance.json`. No native exposure or real-account certification claimed. Exact owned journey PIDs closed; retained Preview/candidate untouched.
