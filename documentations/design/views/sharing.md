@@ -226,7 +226,7 @@ GitHub Pages is **purely a website** (D-292). No browser editor, IndexedDB notes
 | Offline | **“You're offline. Your share will publish when you're back online.”** The share is saved as Waiting to publish; Copy actions wait. A first share (site creation) is unavailable offline, with that reason |
 | Sign-in expired | **“Sign in to GitHub again to publish this share.”** Sign in; the same action resumes |
 | No permission (a collaborator who can't write to the site) | **“Only someone who can change the site can share from this project.”** Actions disabled with that reason; Manage on GitHub |
-| Sharing turned off, or site still being set up | The first-share step, or **Continue setup**, in place |
+| Sharing turned off, or site still being set up | The first-share step, or **Continue setup**, in place. As built (D-418): Share… is offered in any project that can turn sharing on; it opens the Turn on sharing confirmation, and Turn on sharing continues into the item's Share dialog |
 | Item deleted while open | **“This item was deleted. Close sharing or restore it in Files.”** |
 
 **Components and their status:** Dialog, ItemCard (with its badge slot), Button, Field and FileTree (`readOnly`, for Review) exist; **Switch** (WP-P.16) and **Select** are planned, **SegmentedControl** serves Generated/Custom, and **Disclosure** and **ShareRow** are new and specified with the work. The view can't be wired before those land. Expressed as JSON before wiring. At 320 px actions wrap without horizontal scrolling; only review's tree and the normal dialog content scroll, not a second nested action pane. Fields and target stay stable during waits/errors.

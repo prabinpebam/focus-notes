@@ -52,6 +52,11 @@ export function sharingAvailable(state: { ui: { share: ShareManageState } }): bo
   const share = state.ui.share;
   return Boolean(share.listing?.available && (share.listing.localReview || share.listing.site && (share.listing.configured || share.listing.vault)) && !share.settings.off);
 }
+/** Share… is offered when sharing is on, or when this project can turn it on from the first share (D-418). */
+export function shareEntryAvailable(state: { ui: { share: ShareManageState } }): boolean {
+  const listing = state.ui.share.listing;
+  return sharingAvailable(state) || Boolean(listing?.available && (listing.setupAvailable || listing.localReview));
+}
 /** The desktop's access.json (D-134). Absent in the browser. */
 export interface AccessBridge {
   setup?: {

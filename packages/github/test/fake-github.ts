@@ -54,6 +54,8 @@ export class FakeGitHub {
   /** Every request as sent, headers included, for checking where the token went. */
   readonly raw: { url: string; init?: RequestInit }[] = [];
   offline = false;
+  /** The token stops working, as after it is revoked: every request answers 401. */
+  revoked = false;
   beforeRequest?: (method: string, path: string) => Promise<void>;
   /** Other accounts, by token: they can only ask who they are (`GET /user`), for switching account. */
   readonly others = new Map<string, { login: string; id: number; name: string }>();
@@ -124,7 +126,7 @@ export class FakeGitHub {
     this.calls.push({ method, path, ...(body !== undefined ? { body } : {}) });
     const auth = new Headers(init?.headers).get("Authorization") ?? "";
     const other = this.others.get(auth.replace(/^Bearer /, ""));
-    if (auth !== "Bearer " + this.token && !(auth.startsWith("Bearer ") && other)) return json(401, { message: "Bad credentials" });
+    if (this.revoked || auth !== "Bearer " + this.token && !(auth.startsWith("Bearer ") && other)) return json(401, { message: "Bad credentials" });
     if (other) return method === "GET" && path === "/user" ? json(200, other) : json(403, { message: "Resource not accessible" });
     const planned = this.failures.get(`${method} ${path}`)?.shift();
     if (planned) return json(planned.status, { message: planned.message });

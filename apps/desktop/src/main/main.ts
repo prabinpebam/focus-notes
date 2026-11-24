@@ -2385,7 +2385,14 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     if (!g) throw new Error("access:site.unavailable");
     const report = await g.request("save");
     if (report.state === "problem") throw new Error(`access:${report.problem ?? "failed"}`);
-    if (!projectLayout().legacy) await sharing.publish();
+    if (projectLayout().legacy) return;
+    // The share dialog names offline and signed out with their recovery (sharing.md States).
+    try { await sharing.publish(); } catch (error) {
+      const code = error instanceof Error ? /sharing:([a-z]+)/.exec(error.message)?.[1] : undefined;
+      if (code === "offline") throw new Error("access:offline");
+      if (code === "signedout") throw new Error("access:signedOut");
+      throw error;
+    }
   };
   const access = accessStore({
     dir: privateDir,

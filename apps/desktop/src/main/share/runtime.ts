@@ -203,7 +203,7 @@ export function sharingRuntime(deps: {
     publish: (): Promise<void> => serial(async () => {
       const ctx = bound(), saved = await ctx.read();
       if (!saved || saved.phase !== "ready") throw new Error("access:site.unavailable");
-      await ctx.build(saved);
+      try { await ctx.build(saved); } catch (error) { throw publishProblem(error); }
     }),
     /** Notes on the current public site (G3). */
     published: async (): Promise<string[]> => bound().readPublished(),
