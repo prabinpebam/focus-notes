@@ -173,13 +173,26 @@ export function registerFiles(ctx: Ctx) {
   // The opened-files tabs are the project's session (D-420): saved as they change, so a close, a switch
   // or a crash keeps the latest. Only once entry has restored them, so an empty start never overwrites them.
   let sessionSaved: readonly string[] | undefined;
+  // One save in flight, the latest queued behind it: every rename key changes a tab's path, and a write per key
+  // would queue the main process's draft writes behind atomic state writes (QLT-06).
+  let openedSaving = false, openedQueued: string[] | undefined;
+  const saveOpened = async (kept: string[]): Promise<void> => {
+    if (openedSaving) { openedQueued = kept; return; }
+    openedSaving = true;
+    try { await ctx.persistAppState({ filesOpened: kept }); } catch { console.error("Could not save the opened files."); }
+    finally {
+      openedSaving = false;
+      const next = openedQueued;
+      openedQueued = undefined;
+      if (next) void saveOpened(next);
+    }
+  };
   store.subscribe(() => {
     const opened = files().opened;
     if (sessionSaved === undefined || opened === sessionSaved) return;
     sessionSaved = opened;
     if (!cacheEnabled) return;
-    const kept = opened.filter(p => sourceOf(p) !== "private" && !filteredRoots.some(root => atOrUnder(p, root)));
-    void ctx.persistAppState({ filesOpened: kept }).catch(() => console.error("Could not save the opened files."));
+    void saveOpened(opened.filter(p => sourceOf(p) !== "private" && !filteredRoots.some(root => atOrUnder(p, root))));
   });
 
   // ---- opening, revealing, closing ----
