@@ -166,13 +166,13 @@ export const MEASURE_NAMES: readonly string[] = [
   "fn:project.firstNote", "focus-notes:project.firstNote",
   "focus-notes:files.move", "focus-notes:files.rename",
   "focus-notes:image.caption.open", "focus-notes:image.caption.generate",
-  // Deleting a project (PRJ-23): the copy of the notes not on GitHub, and the Recycle Bin.
-  "fn:project.deletePreserve", "fn:project.deleteLocal", "fn:project.deleteRemote",
+  // Deleting a project (PRJ-23, D-413): preserving unsynced notes, checking GitHub deletion, and the Recycle Bin.
+  "fn:project.deletePreserve", "fn:project.deleteLocal", "fn:project.deleteCheck",
   "fn:ai.chooseWriter", "fn:ai.discover.window", "fn:rewrite.anchor", "fn:rewrite.deselect",
   "focus-notes:settings.writer", "focus-notes:rewrite.writer", "focus-notes:actions.ai",
   "focus-notes:newNote.create", "focus-notes:ai.discover",
   ...["history.restore", "history.undo", "sharing.publishDraft", "sharing.preview", "sharing.previewSave", "sharing.invite", "sharing.change",
-    "project.create", "project.open", "project.pin", "project.reveal", "project.delete", "project.deleteExport", "project.deleteRemote",
+    "project.create", "project.open", "project.pin", "project.reveal", "project.delete", "project.deleteExport", "project.deleteCheck",
     "share.item.words", "share.item.count", "share.item.addNotes", "share.item.publish", "share.item.handoff",
     "share.item.withdraw", "share.item.create", "share.item.reveal"].map(t => `focus-notes:${t}`),
   ...["note.save", "note.convert", "conflict", "import.confirm", "notes.export", "unlock.remember", "unlock.submit", "account.signOut", "workspace.remove", "files.copyItem", "files.import", "repoBackup.private", "repoBackup.public", "feedback.send", "note.print"].map((t) => `focus-notes:${t}`),

@@ -591,22 +591,15 @@ export interface WorkspaceBridge {
    */
   link?(): Promise<void>;
   /**
-   * Deleting the project (PRJ-23, DD-PROJ-09 to 17): what it would delete, read once the dialog opens.
+   * Deleting the project (PRJ-23, D-413, DD-PROJ-09 to 17): what it would delete, read once the dialog opens.
    * Never deletes anything, and never calls GitHub except to read.
    */
   deletion?(): Promise<DeletionCheck>;
-  /** Whether a repository is still on GitHub, read while the person deletes it there (DD-PROJ-13). */
+  /** Whether a repository is still on GitHub, read while the person deletes it on GitHub's web page (D-413). */
   repoStatus?(repo: string): Promise<RepoStatus>;
-  /** D-394: delete a preflighted target, then reconcile its identity. Never returns credentials. */
-  deleteRepo?(repo: string, opts: { keepPrivate: boolean }): Promise<RemoteDeletionResult>;
-  authorizeDelete?(repo: string, token: string | undefined, opts: { keepPrivate: boolean }): Promise<RemoteDeletionResult>;
   cancelDelete?(): Promise<void>;
-  onDeleteCode?(listener: (code: string) => void): () => void;
-  openDeleteAuthorization?(): Promise<void>;
-  deletionAuthorizationMethod?(): Promise<"device" | "token">;
-  /** Opens the repository's own Settings page on GitHub, where its Danger Zone is (DD-PROJ-12). */
+  /** Opens the repository's own Settings page on GitHub, where its Danger Zone is (D-413). */
   openRepoSettings?(repo: string): Promise<void>;
-  confirmRepoDeletion?(repo: string): Promise<RemoteDeletionResult>;
   /** Copies the notes not on GitHub yet to a folder the person picks, outside the project. Undefined when they cancel. */
   exportUnsynced?(): Promise<string | undefined>;
   /**
@@ -651,6 +644,8 @@ export interface DeletionCheck {
   folder: string;
   /** owner/name, or "" when offline. */
   repo: string;
+  /** The paired public site repository as owner/name, or "" without one. */
+  siteRepo?: string;
   /** The private notes' own repository as owner/name, or "" without one. */
   privateRepo: string;
   /** How many private notes `private/` holds. */
@@ -661,19 +656,14 @@ export interface DeletionCheck {
   unsynced: string[];
 }
 
-/** A repository on GitHub, as the person deletes it there. A 404 is `gone` only once the account still works (DD-PROJ-13). */
+/** A repository on GitHub, as the person deletes it on GitHub's web page (D-413). `gone` requires 404 + valid session. */
 export type RepoStatus =
   | { state: "exists"; admin: boolean; owner: string; organization: boolean }
   | { state: "gone" }
   | { state: "offline" }
   | { state: "signin" }
+  | { state: "error" }
   | { state: "rateLimit"; retryAt: number };
-
-export type RemoteDeletionResult =
-  | { state: "deleted" }
-  | { state: "stepup" | "declined" }
-  | { state: "refused"; reason: "notAdmin" | "permission" | "identity" | "authorization" | "preservation" | "privateHistory" }
-  | { state: "partial" };
 
 /** Deleting the project on this computer: done, a file another app holds, refused (not this project's folder), or failed. */
 export interface DeletionResult {

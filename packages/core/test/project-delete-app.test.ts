@@ -1,13 +1,15 @@
 /**
- * Deleting a project (PRJ-23, SC-PROJ-08 → UC-PROJ-13, DD-PROJ-09 to 17) against a fake shell: nothing is
- * ever deleted. The consequences, the notes not on GitHub, the name typed exactly, GitHub's own page for
- * a linked project with the person confirming once GitHub no longer shows it, then the Recycle Bin; an
- * offline project goes straight to the Recycle Bin; a locked file says exactly what's left.
+ * Deleting a project (PRJ-23, D-413, SC-PROJ-08 → UC-PROJ-13, DD-PROJ-09 to 17) against a fake shell:
+ * nothing is ever deleted. Consequences, unsynced copy, exact name typed, then GitHub web-delete
+ * instructions with automatic polling + focus detection (authenticated 404 + valid session -> gone;
+ * 401/403/429/5xx/offline -> never deleted), automatic local cleanup when all repos are gone, and
+ * the completion state.
  */
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
-  createApp, type AccountStatus, type DeletionCheck, type DeletionRecord, type DeletionResult, type FirstRunBridge, type PlatformBridge, type RepoStatus, type RemoteDeletionResult,
+  createApp, type AccountStatus, type DeletionCheck, type DeletionRecord, type DeletionResult, type FirstRunBridge, type PlatformBridge, type RepoStatus,
 } from "../src/index.ts";
+import { DELETE_POLL_MS } from "../src/project-delete-app.ts";
 import en from "../../views/messages/en.json" with { type: "json" };
 
 const settle = () => new Promise((r) => setTimeout(r, 0));
@@ -16,15 +18,56 @@ const LINKED: DeletionCheck = {
   privateCount: 3, siteNotes: 12, unsynced: [],
 };
 
-function shell(opts: { check?: DeletionCheck; status?: RepoStatus[]; result?: DeletionResult[]; account?: AccountStatus; accountReady?: Promise<void>; record?: DeletionRecord | null; remote?: RemoteDeletionResult[]; grant?: RemoteDeletionResult } = {}) {
+function spyTimers() {
+  let nextId = 1;
+  const scheduled = new Map<number, { fn: () => void; ms: number }>();
+  const delays: number[] = [];
+  const origSet = globalThis.setTimeout;
+  const origClear = globalThis.clearTimeout;
+  const setSpy = vi.spyOn(globalThis, "setTimeout").mockImplementation(((fn: (...a: unknown[]) => void, ms?: number) => {
+    if (!ms || ms < 1000) return origSet(fn, ms);
+    const id = nextId++;
+    scheduled.set(id, { fn: () => fn(), ms });
+    delays.push(ms);
+    return id as unknown as ReturnType<typeof setTimeout>;
+  }) as typeof setTimeout);
+  const clearSpy = vi.spyOn(globalThis, "clearTimeout").mockImplementation(((h?: ReturnType<typeof setTimeout>) => {
+    if (typeof h === "number" && scheduled.has(h)) { scheduled.delete(h); return; }
+    origClear(h);
+  }) as typeof clearTimeout);
+  return {
+    delays,
+    pendingCount: () => scheduled.size,
+    fireNext: async () => {
+      const first = scheduled.entries().next().value as [number, { fn: () => void; ms: number }] | undefined;
+      if (!first) return false;
+      scheduled.delete(first[0]);
+      first[1].fn();
+      await settle();
+      return true;
+    },
+    restore: () => { setSpy.mockRestore(); clearSpy.mockRestore(); },
+  };
+}
+
+let activeClock: ReturnType<typeof spyTimers> | undefined;
+afterEach(() => { activeClock?.restore(); activeClock = undefined; });
+
+function shell(opts: {
+  check?: DeletionCheck;
+  status?: RepoStatus[] | ((repo: string) => RepoStatus | Promise<RepoStatus>);
+  result?: DeletionResult[];
+  account?: AccountStatus;
+  accountReady?: Promise<void>;
+  record?: DeletionRecord | null;
+  useFakeTimers?: boolean;
+} = {}) {
   const calls: string[] = [];
-  /** The resumable record, when the shell has the port: what was last saved, or null once cleared. */
   const saved: { current: DeletionRecord | null | undefined; history: DeletionRecord[] } = { current: opts.record, history: [] };
-  const statuses = [...(opts.status ?? [{ state: "exists", owner: "ada", admin: true, organization: false }])];
+  const statusList = Array.isArray(opts.status) ? [...opts.status] : [{ state: "exists" as const, owner: "ada", admin: true, organization: false }];
+  const statusFn = typeof opts.status === "function" ? opts.status : () => (statusList.length > 1 ? statusList.shift()! : statusList[0]!);
   const results = [...(opts.result ?? [{ state: "deleted" }])];
-  const remote = [...(opts.remote ?? [])];
-  /** Repositories this process's main confirmed deleted; a new shell is a restarted app with none. */
-  const confirmedHere = new Set<string>();
+  const clock = opts.useFakeTimers ? (activeClock?.restore(), activeClock = spyTimers()) : undefined;
   const fr = {
     account: async () => (await opts.accountReady, opts.account ?? { account: { login: "ada", id: 1, name: "Ada" }, gcm: true, gh: false, via: "gcm" }),
     onSignIn: () => () => {},
@@ -48,33 +91,14 @@ function shell(opts: { check?: DeletionCheck; status?: RepoStatus[]; result?: De
       writeFormat: async () => {},
       renameNote: async () => {},
       deletion: async () => (calls.push("deletion"), opts.check ?? LINKED),
-      repoStatus: async (repo) => (calls.push(`status:${repo}`), statuses.length > 1 ? statuses.shift()! : statuses[0]!),
+      repoStatus: async (repo) => (calls.push(`status:${repo}`), await statusFn(repo)),
       openRepoSettings: async (repo) => void calls.push(`open:${repo}`),
+      cancelDelete: async () => void calls.push("cancel"),
       exportUnsynced: async () => (calls.push("export"), "/home/ada/Documents/Field notes (not on GitHub)"),
       deleteLocal: async (o) => {
         calls.push(`deleteLocal:keepPrivate=${o.keepPrivate}`);
-        // Like main: with in-app delete, the folder goes only once this process confirmed every repository deleted.
-        const c = opts.check ?? LINKED;
-        if (opts.remote && c.kind === "linked" && (!confirmedHere.has(c.repo) || !o.keepPrivate && c.privateRepo && !confirmedHere.has(c.privateRepo))) return { state: "refused" };
         return results.length > 1 ? results.shift()! : results[0]!;
       },
-      ...(opts.remote ? {
-        deleteRepo: async (repo: string) => {
-          calls.push(`DELETE:${repo}`);
-          const r = remote.length > 1 ? remote.shift()! : remote[0]!;
-          if (r.state === "deleted") confirmedHere.add(repo);
-          return r;
-        },
-        confirmRepoDeletion: async (repo: string) => (calls.push(`confirm:${repo}`), confirmedHere.add(repo), { state: "deleted" as const }),
-        authorizeDelete: async (repo: string) => {
-          calls.push(`authorize:${repo}`);
-          const r = opts.grant ?? { state: "declined" as const };
-          if (r.state === "deleted") confirmedHere.add(repo);
-          return r;
-        },
-        cancelDelete: async () => void calls.push("cancel"),
-        deletionAuthorizationMethod: async () => "token" as const,
-      } : {}),
       reveal: async () => void calls.push("reveal"),
       ...(opts.record !== undefined ? {
         deletionRecord: {
@@ -90,7 +114,7 @@ function shell(opts: { check?: DeletionCheck; status?: RepoStatus[]; result?: De
   const runVm = () => app.viewModels.select("vm.projectDeleteRun", app.store.state) as Record<string, any>;
   const run = async (id: string, args?: Record<string, unknown>) => { await app.commands.run(id, args); await settle(); };
   const toast = () => app.store.state.ui.toasts.at(-1)?.message;
-  return { app, bridge, vm, runVm, run, calls, toast, saved };
+  return { app, bridge, vm, runVm, run, calls, toast, saved, clock };
 }
 
 async function started(opts?: Parameters<typeof shell>[0]) {
@@ -101,9 +125,16 @@ async function started(opts?: Parameters<typeof shell>[0]) {
   return t;
 }
 
-describe("PRJ-23: deleting a linked project", () => {
-  it("shows the consequences, asks for the name exactly, then GitHub's own page, and only then the Recycle Bin", async () => {
-    const t = await started();
+describe("PRJ-23, D-413: deleting a linked project on GitHub web with automatic detection", () => {
+  it("opens GitHub settings, polls until 404+valid session (gone), auto-advances to local cleanup and completion state", async () => {
+    const t = await started({
+      useFakeTimers: true,
+      status: [
+        { state: "exists", owner: "ada", admin: true, organization: false },
+        { state: "exists", owner: "ada", admin: true, organization: false },
+        { state: "gone" },
+      ],
+    });
     expect(t.vm()).toMatchObject({ open: true, step: "consequences", kind: "linked", problem: "", repo: "ada/field-notes", siteNotes: 12, privateCount: 3 });
     expect(t.calls).not.toContain("open:ada/field-notes");
     await t.run("project.deleteContinue");
@@ -113,197 +144,171 @@ describe("PRJ-23: deleting a linked project", () => {
     expect(t.vm().step).toBe("confirm");
     await t.run("project.deleteType", { value: "Field notes" });
     await t.run("project.deleteConfirm");
-    expect(t.vm()).toMatchObject({ step: "github", repos: [{ id: "ada/field-notes", canOpen: true, ask: false }] });
+    expect(t.vm()).toMatchObject({ step: "github", repos: [{ id: "ada/field-notes", canOpen: false, waiting: true, deleted: false }] });
     expect(t.calls.some((c) => c.startsWith("deleteLocal"))).toBe(false);
-    await t.run("project.deleteOpenGitHub", { id: "ada/field-notes" });
+
+    await t.run("project.deleteOpenGitHub");
     expect(t.calls).toContain("open:ada/field-notes");
-    expect(t.vm().repos[0]).toMatchObject({ waiting: true });
-    // Confirming before GitHub no longer shows it does nothing (DD-PROJ-13).
-    await t.run("project.deleteConfirmGitHub", { id: "ada/field-notes" });
+    // First poll: still exists, backs off and keeps waiting.
+    await t.clock!.fireNext();
+    expect(t.vm().step).toBe("github");
     expect(t.calls.some((c) => c.startsWith("deleteLocal"))).toBe(false);
-    t.calls.length = 0;
-    await t.run("project.deletePoll");
-    expect(t.calls).toEqual(["status:ada/field-notes"]);
-    expect(t.vm().repos[0]).toMatchObject({ waiting: true });
-    // Gone on GitHub: the person confirms, then the folder goes to the Recycle Bin, keeping the private notes.
-    const t2 = await started({ status: [{ state: "exists", owner: "ada", admin: true, organization: false }, { state: "gone" }] });
-    await t2.run("project.deleteContinue");
-    await t2.run("project.deleteType", { value: "Field notes" });
-    await t2.run("project.deleteConfirm");
-    await t2.run("project.deleteOpenGitHub", { id: "ada/field-notes" });
-    await t2.run("project.deletePoll");
-    expect(t2.vm().repos[0]).toMatchObject({ ask: true });
-    expect(t2.calls.some((c) => c.startsWith("deleteLocal"))).toBe(false);
-    await t2.run("project.deleteConfirmGitHub", { id: "ada/field-notes" });
-    expect(t2.calls).toContain("deleteLocal:keepPrivate=true");
-    expect(t2.vm().open).toBe(false);
-    expect(t2.toast()).toContain("Field notes");
+    // Second poll: gone -> automatically runs deleteLocal (keeping private notes) and shows done step.
+    await t.clock!.fireNext();
+    expect(t.calls).toContain("deleteLocal:keepPrivate=true");
+    expect(t.vm()).toMatchObject({ open: true, step: "done", busy: false });
+    expect(t.clock!.pendingCount()).toBe(0);
+
+    await t.run("project.deleteFinish");
+    expect(t.vm().open).toBe(false);
+    expect(t.toast()).toContain("Field notes");
   });
 
-  describe("D-400: actual six-state controller", () => {
-    async function confirmed(remote: RemoteDeletionResult[], grant?: RemoteDeletionResult) {
-      const t = await started({ check: { ...LINKED, privateRepo: "" }, remote, grant });
-      await t.run("project.deleteContinue");
-      await t.run("project.deleteType", { value: "Field notes" });
-      await t.run("project.deleteConfirm");
-      return t;
-    }
-    it("missing permission enters step-up; declining leaves every local copy and clears the token", async () => {
-      const t = await confirmed([{ state: "stepup" }]);
-      expect(t.vm()).toMatchObject({ step: "inApp", remoteState: "stepup" });
-      await t.run("project.deleteToken", { value: "github_pat_disposable" });
-      await t.run("project.deleteAuthorize");
-      expect(t.vm()).toMatchObject({ remoteState: "declined", remoteToken: "" });
-      expect(t.calls.some(call => call.startsWith("deleteLocal"))).toBe(false);
-      await t.run("project.deleteCancel");
-      expect(t.vm().open).toBe(false);
-    });
-    it("confirmed remote deletion recycles once, shows actual completion, and Open dismisses the result", async () => {
-      const t = await confirmed([{ state: "stepup" }], { state: "deleted" });
-      await t.run("project.deleteAuthorize");
-      expect(t.vm()).toMatchObject({ remoteState: "deleted", open: true, busy: false });
-      expect(t.calls.filter(call => call.startsWith("deleteLocal"))).toEqual(["deleteLocal:keepPrivate=false"]);
-      await t.run("project.deleteFinish");
-      expect(t.vm().open).toBe(false);
-    });
-    it("partial verification retries without local cleanup, and refusal exposes fallback only", async () => {
-      const t = await confirmed([{ state: "partial" }, { state: "refused", reason: "permission" }]);
-      expect(t.vm().remoteState).toBe("partial");
-      await t.run("project.deleteRetry");
-      expect(t.vm().remoteState).toBe("refused");
-      expect(t.calls.some(call => call.startsWith("deleteLocal"))).toBe(false);
-      await t.run("project.deleteOpenGitHub", { id: LINKED.repo });
-      expect(t.calls).toContain(`open:${LINKED.repo}`);
-    });
-    it("names a local identity stop differently from GitHub's permission refusal", async () => {
-      const local = await confirmed([{ state: "refused", reason: "identity" }]);
-      expect(local.vm()).toMatchObject({
-        remoteTitle: "Deletion stopped",
-        remoteDetail: "The project or GitHub account changed.",
-        remoteKept: "Your local project is kept. Reopen Delete project to check the target again.",
+  it("401 (signin), 403/5xx (error), 429 (rateLimit) and offline are never treated as deleted and keep waiting honestly", async () => {
+    for (const [status, expectedProblem] of [
+      [{ state: "signin" } as RepoStatus, "signin"],
+      [{ state: "error" } as RepoStatus, "error"],
+      [{ state: "offline" } as RepoStatus, "offline"],
+      [{ state: "rateLimit", retryAt: Date.now() + 45_000 } as RepoStatus, "rateLimit"],
+    ] as const) {
+      const t = await started({
+        useFakeTimers: true,
+        status: [{ state: "exists", owner: "ada", admin: true, organization: false }, status],
       });
-      const remote = await confirmed([{ state: "refused", reason: "permission" }]);
-      expect(remote.vm().remoteTitle).toBe("GitHub refused deletion");
-      expect(remote.vm().remoteKept).toContain("Ask a repository admin");
-      const preservation = await confirmed([{ state: "refused", reason: "preservation" }]);
-      expect(preservation.vm().remoteTitle).toBe("Deletion stopped");
-      expect(preservation.vm().remoteKept).toBe("Your local project is kept. Save a fresh copy before deleting.");
-      const history = await confirmed([{ state: "refused", reason: "privateHistory" }]);
-      expect(history.vm().remoteTitle).toBe("Deletion stopped");
-      expect(history.vm().remoteDetail).toBe("Private Git history could not be kept safely. Nothing was deleted.");
-      expect(history.vm().remoteKept).toBe("Your project is kept. Fix its private Git setup before retrying.");
-      expect(history.calls.some(call => call.startsWith("deleteLocal"))).toBe(false);
-    });
-    it("closing during authorization cancels it, clears the entered token, and ignores a late remote success", async () => {
-      const t = await confirmed([{ state: "stepup" }]);
-      let complete: ((result: RemoteDeletionResult) => void) | undefined;
-      t.bridge.workspace!.authorizeDelete = async () => new Promise(resolve => { complete = resolve; });
-      await t.run("project.deleteToken", { value: "github_pat_disposable" });
-      const active = t.run("project.deleteAuthorize");
-      await Promise.resolve();
+      await t.run("project.deleteContinue");
+      await t.run("project.deleteType", { value: "Field notes" });
+      await t.run("project.deleteConfirm");
+      await t.run("project.deleteRetry");
+      expect(t.vm()).toMatchObject({ open: true, step: "github", problem: expectedProblem });
+      expect(t.calls.some((c) => c.startsWith("deleteLocal"))).toBe(false);
+      if (status.state === "rateLimit") {
+        expect(t.clock!.delays.at(-1)).toBeGreaterThanOrEqual(40_000);
+      }
       await t.run("project.deleteCancel");
-      complete?.({ state: "deleted" });
-      await active;
-      expect(t.vm()).toMatchObject({ open: false, remoteToken: "" });
-      expect(t.calls).toContain("cancel");
-      expect(t.calls.some(call => call.startsWith("deleteLocal"))).toBe(false);
-    });
-    it("one-time authorization is only for the repository whose permission step the person approved", async () => {
-      const t = await started({ remote: [{ state: "stepup" }, { state: "stepup" }], grant: { state: "deleted" } });
-      await t.run("project.deletePrivate", { value: true });
-      await t.run("project.deleteContinue");
-      await t.run("project.deleteType", { value: "Field notes" });
-      await t.run("project.deleteConfirm");
-      await t.run("project.deleteAuthorize");
-      expect(t.vm()).toMatchObject({ remoteState: "stepup", remoteTarget: LINKED.privateRepo });
-      expect(t.calls.filter(call => call.startsWith("authorize"))).toEqual([`authorize:${LINKED.repo}`]);
-      expect(t.calls.some(call => call.startsWith("deleteLocal"))).toBe(false);
-    });
-    it("clears the device code and token and disposes its listener when authorization throws", async () => {
-      const t = await started({ remote: [{ state: "stepup" }] });
-      let listener: ((code: string) => void) | undefined;
-      let disposed = 0;
-      t.bridge.workspace!.onDeleteCode = code => {
-        listener = code;
-        return () => { listener = undefined; disposed++; };
-      };
-      t.bridge.workspace!.authorizeDelete = async () => {
-        listener?.("ABCD-EFGH");
-        expect(t.vm().remoteCode).toBe("ABCD-EFGH");
-        throw new Error("Authorization transport failed");
-      };
-      await t.run("project.deleteContinue");
-      await t.run("project.deleteType", { value: "Field notes" });
-      await t.run("project.deleteConfirm");
-      await t.run("project.deleteToken", { value: "disposable-token" });
-      await t.run("project.deleteAuthorize");
-      expect(t.vm()).toMatchObject({ remoteState: "partial", remoteToken: "", remoteCode: "", busy: false });
-      expect(t.toast()).toBeTruthy();
-      expect(listener).toBeUndefined();
-      expect(disposed).toBe(2);
-      expect(t.calls.some(call => call.startsWith("deleteLocal"))).toBe(false);
-    });
-    it("an old authorization throw cannot clear a newer dialog's code or token", async () => {
-      const t = await confirmed([{ state: "stepup" }]);
-      let listener: ((code: string) => void) | undefined;
-      t.bridge.workspace!.onDeleteCode = code => { listener = code; return () => {}; };
-      let fail: ((error: Error) => void) | undefined;
-      t.bridge.workspace!.authorizeDelete = async () => new Promise((_resolve, reject) => { fail = reject; });
-      const old = t.run("project.deleteAuthorize");
-      await settle();
-      await t.run("project.deleteCancel");
-      await t.run("project.delete");
-      await t.run("project.deleteContinue");
-      await t.run("project.deleteType", { value: "Field notes" });
-      await t.run("project.deleteConfirm");
-      let finish: ((result: RemoteDeletionResult) => void) | undefined;
-      t.bridge.workspace!.authorizeDelete = async () => new Promise(resolve => { finish = resolve; });
-      await t.run("project.deleteToken", { value: "new-disposable-token" });
-      const next = t.run("project.deleteAuthorize");
-      await settle();
-      listener?.("NEW-CODE");
-      fail?.(new Error("Old authorization failed"));
-      await old;
-      expect(t.vm()).toMatchObject({ open: true, busy: true, remoteToken: "new-disposable-token", remoteCode: "NEW-CODE" });
-      finish?.({ state: "declined" });
-      await next;
-      expect(t.vm()).toMatchObject({ remoteToken: "", remoteCode: "", busy: false });
-    });
+    }
   });
+
+  it("backs off on unchanged polls, resets on window focus and manual Check again, and stops immediately on close", async () => {
+    const t = await started({
+      useFakeTimers: true,
+      status: [{ state: "exists", owner: "ada", admin: true, organization: false }],
+    });
+    await t.run("project.deleteContinue");
+    await t.run("project.deleteType", { value: "Field notes" });
+    await t.run("project.deleteConfirm");
+    expect(t.clock!.delays.at(-1)).toBe(DELETE_POLL_MS);
+    await t.clock!.fireNext();
+    const afterFirst = t.clock!.delays.at(-1)!;
+    await t.clock!.fireNext();
+    const afterSecond = t.clock!.delays.at(-1)!;
+    expect(afterSecond).toBeGreaterThan(afterFirst);
+
+    // Window focus triggers an immediate check and resets backoff.
+    const beforeFocus = t.calls.filter((c) => c === "status:ada/field-notes").length;
+    await t.run("project.deleteFocus");
+    expect(t.calls.filter((c) => c === "status:ada/field-notes").length).toBe(beforeFocus + 1);
+    expect(t.clock!.delays.at(-1)).toBe(DELETE_POLL_MS);
+
+    // Closing stops polling cleanly.
+    await t.run("project.deleteCancel");
+    expect(t.vm().open).toBe(false);
+    expect(t.clock!.pendingCount()).toBe(0);
+    expect(t.calls).toContain("cancel");
+  });
+
+  it("requires both the notes repo and paired public site repo to be confirmed gone before local cleanup", async () => {
+    const gone = new Set<string>();
+    const t = await started({
+      useFakeTimers: true,
+      check: { ...LINKED, siteRepo: "ada/field-notes-site", privateRepo: "" },
+      status: (repo) => (gone.has(repo) ? { state: "gone" } : { state: "exists", owner: "ada", admin: true, organization: false }),
+    });
+    await t.run("project.deleteContinue");
+    await t.run("project.deleteType", { value: "Field notes" });
+    await t.run("project.deleteConfirm");
+    expect(t.vm().siteRepo).toBe("ada/field-notes-site");
+    expect(t.vm().repos.map((r: { id: string }) => r.id)).toEqual(["ada/field-notes", "ada/field-notes-site"]);
+
+    // Only main repo deleted so far -> stays on github step, no deleteLocal.
+    gone.add("ada/field-notes");
+    await t.run("project.deleteRetry");
+    expect(t.vm().step).toBe("github");
+    expect(t.vm().repos).toMatchObject([
+      { id: "ada/field-notes", deleted: true, canOpen: false },
+      { id: "ada/field-notes-site", deleted: false, canOpen: true },
+    ]);
+    expect(t.calls.some((c) => c.startsWith("deleteLocal"))).toBe(false);
+
+    // Primary Open GitHub settings now targets the remaining paired site repo.
+    await t.run("project.deleteOpenGitHub");
+    expect(t.calls).toContain("open:ada/field-notes-site");
+
+    // Once paired site repo is also gone -> auto-advances and finishes locally.
+    gone.add("ada/field-notes-site");
+    await t.run("project.deleteFocus");
+    expect(t.calls).toContain("deleteLocal:keepPrivate=false");
+    expect(t.vm()).toMatchObject({ open: true, step: "done" });
+  });
+
   it("deletes the private repository too only when the switch is on", async () => {
-    const t = await started({ status: [{ state: "exists", owner: "ada", admin: true, organization: false }, { state: "gone" }] });
+    const gone = new Set<string>();
+    const t = await started({
+      useFakeTimers: true,
+      status: (repo) => (gone.has(repo) ? { state: "gone" } : { state: "exists", owner: "ada", admin: true, organization: false }),
+    });
     await t.run("project.deletePrivate", { value: true });
     await t.run("project.deleteContinue");
     await t.run("project.deleteType", { value: "Field notes" });
     await t.run("project.deleteConfirm");
     expect(t.vm().repos.map((r: { id: string }) => r.id)).toEqual(["ada/field-notes", "ada/field-notes-private"]);
-    await t.run("project.deleteOpenGitHub", { id: "ada/field-notes" });
-    await t.run("project.deleteOpenGitHub", { id: "ada/field-notes-private" });
-    await t.run("project.deletePoll");
-    await t.run("project.deleteConfirmGitHub", { id: "ada/field-notes" });
+    gone.add("ada/field-notes");
+    await t.run("project.deleteRetry");
     expect(t.calls.some((c) => c.startsWith("deleteLocal"))).toBe(false);
-    await t.run("project.deleteConfirmGitHub", { id: "ada/field-notes-private" });
+    gone.add("ada/field-notes-private");
+    await t.run("project.deleteRetry");
     expect(t.calls).toContain("deleteLocal:keepPrivate=false");
   });
-  it("offers to copy the notes not on GitHub first, and keeps the step open if the copy fails", async () => {
+
+  it("warns about notes not on GitHub with optional Save a copy, and lets you proceed without saving", async () => {
     const t = await started({ check: { ...LINKED, unsynced: ["Trips/Iceland.md", "Ideas.md"] } });
     await t.run("project.deleteContinue");
-    expect(t.vm()).toMatchObject({ step: "unsynced", unsyncedCount: 2, unsynced: [{ label: "Iceland", description: "Trips" }, { label: "Ideas", description: "" }] });
-    await t.run("project.deleteContinue");
-    expect(t.vm().step).toBe("unsynced");
-    expect(t.toast()).toBe("Save a copy before continuing.");
-    await t.run("project.deleteExport");
-    expect(t.vm()).toMatchObject({ exported: true, exportPath: "/home/ada/Documents/Field notes (not on GitHub)" });
+    expect(t.vm()).toMatchObject({ step: "unsynced", exported: false, unsyncedCount: 2, unsynced: [{ label: "Iceland", description: "Trips" }, { label: "Ideas", description: "" }] });
+    // Proceeding without saving is enabled immediately (D-413).
     await t.run("project.deleteContinue");
     expect(t.vm().step).toBe("confirm");
     await t.run("project.deleteBack");
     expect(t.vm().step).toBe("unsynced");
+    // Optional Save a copy still works too.
+    await t.run("project.deleteExport");
+    expect(t.vm()).toMatchObject({ exported: true, exportPath: "/home/ada/Documents/Field notes (not on GitHub)" });
+    await t.run("project.deleteContinue");
+    expect(t.vm().step).toBe("confirm");
   });
-  it("closing while waiting on GitHub stops, and changes nothing on this computer", async () => {
-    const t = await started();
+
+  it("Back from the GitHub step stops polling and returns to confirm when nothing is deleted yet", async () => {
+    const t = await started({ useFakeTimers: true });
     await t.run("project.deleteContinue");
     await t.run("project.deleteType", { value: "Field notes" });
     await t.run("project.deleteConfirm");
+    expect(t.vm().step).toBe("github");
+    expect(t.clock!.pendingCount()).toBe(1);
+    await t.run("project.deleteBack");
+    expect(t.vm().step).toBe("confirm");
+    expect(t.clock!.pendingCount()).toBe(0);
+  });
+
+  it("closing while waiting on GitHub after a partial deletion stops and changes nothing on this computer", async () => {
+    const gone = new Set<string>();
+    const t = await started({
+      useFakeTimers: true,
+      check: { ...LINKED, siteRepo: "ada/field-notes-site", privateRepo: "" },
+      status: (repo) => (gone.has(repo) ? { state: "gone" } : { state: "exists", owner: "ada", admin: true, organization: false }),
+    });
+    await t.run("project.deleteContinue");
+    await t.run("project.deleteType", { value: "Field notes" });
+    await t.run("project.deleteConfirm");
+    gone.add("ada/field-notes");
+    await t.run("project.deleteRetry");
     await t.run("project.deleteCancel");
     expect(t.vm()).toMatchObject({ open: true, step: "stopped" });
     expect(t.calls.some((c) => c.startsWith("deleteLocal"))).toBe(false);
@@ -318,49 +323,25 @@ describe("PRJ-23: what stops a deletion, and its recovery (DD-PROJ-17)", () => {
     expect(t.vm().step).toBe("consequences");
   });
   it("an organization's repository says its policy may block it", async () => {
-    const t = await started({ status: [{ state: "exists", owner: "lab", admin: true, organization: true }] });
+    const t = await started({ useFakeTimers: true, status: [{ state: "exists", owner: "lab", admin: true, organization: true }] });
     expect(t.vm()).toMatchObject({ problem: "", org: "lab" });
     await t.run("project.deleteContinue");
     await t.run("project.deleteType", { value: "Field notes" });
     await t.run("project.deleteConfirm");
     expect(t.vm()).toMatchObject({ step: "github", problem: "policy" });
   });
-  it("offline, signed out, already gone and a rate limit are each named", async () => {
+  it("offline, signed out and already gone are handled cleanly", async () => {
     expect((await started({ status: [{ state: "offline" }] })).vm().problem).toBe("offline");
-    // Already unavailable: never deleted by itself; the person goes on and confirms it, then the folder goes.
-    const gone = await started({ status: [{ state: "gone" }] });
+    const gone = await started({ useFakeTimers: true, status: [{ state: "gone" }] });
     expect(gone.vm().problem).toBe("gone");
     await gone.run("project.deleteContinue");
     await gone.run("project.deleteType", { value: "Field notes" });
     await gone.run("project.deleteConfirm");
-    expect(gone.vm()).toMatchObject({ step: "github", problem: "", repos: [{ id: "ada/field-notes", ask: true }] });
-    expect(gone.calls.some((c) => c.startsWith("deleteLocal"))).toBe(false);
-    await gone.run("project.deleteConfirmGitHub", { id: "ada/field-notes" });
+    expect(gone.vm()).toMatchObject({ step: "github", problem: "" });
+    // Fresh check confirms gone and finishes locally.
+    await gone.run("project.deleteRetry");
     expect(gone.calls).toContain("deleteLocal:keepPrivate=true");
     expect((await started({ account: { gcm: true, gh: false } })).vm().problem).toBe("signin");
-    const t = await started({ status: [{ state: "exists", owner: "ada", admin: true, organization: false }, { state: "rateLimit", retryAt: Date.now() + 60_000 }] });
-    await t.run("project.deleteContinue");
-    await t.run("project.deleteType", { value: "Field notes" });
-    await t.run("project.deleteConfirm");
-    await t.run("project.deleteOpenGitHub", { id: "ada/field-notes" });
-    await t.run("project.deletePoll");
-    expect(t.vm()).toMatchObject({ problem: "rateLimit" });
-    expect(t.vm().retryAt).not.toBe("");
-    await t.run("project.deleteStop");
-  });
-  it("already gone with in-app delete: Delete asks the person to confirm it, never sends a GitHub delete, then the folder goes", async () => {
-    const gone = await started({ check: { ...LINKED, privateRepo: "" }, status: [{ state: "gone" }], remote: [{ state: "partial" }] });
-    expect(gone.vm().problem).toBe("gone");
-    await gone.run("project.deleteContinue");
-    await gone.run("project.deleteType", { value: "Field notes" });
-    await gone.run("project.deleteConfirm");
-    expect(gone.vm()).toMatchObject({ step: "github", problem: "", busy: false, repos: [{ id: "ada/field-notes", ask: true, canOpen: false }] });
-    expect(gone.calls.some((c) => c.startsWith("DELETE:") || c.startsWith("deleteLocal"))).toBe(false);
-    await gone.run("project.deleteConfirmGitHub", { id: "ada/field-notes" });
-    expect(gone.calls).toContain("confirm:ada/field-notes");
-    expect(gone.calls).toContain("deleteLocal:keepPrivate=false");
-    expect(gone.vm()).toMatchObject({ step: "inApp", remoteState: "deleted" });
-    expect(gone.calls.some((c) => c.startsWith("DELETE:"))).toBe(false);
   });
   it("a local refusal says so, never that a file is open in another app", async () => {
     const t = await started({ check: { ...LINKED, kind: "offline", repo: "", privateRepo: "" }, result: [{ state: "refused" }] });
@@ -401,85 +382,47 @@ describe("PRJ-23: what stops a deletion, and its recovery (DD-PROJ-17)", () => {
     expect(t.vm().open).toBe(false);
     expect(t.toast()).toBeTruthy();
   });
-  it("names unsafe private history without claiming a file lock, and Retry does not replay remote deletion", async () => {
-    const t = await started({ remote: [{ state: "deleted" }], result: [{ state: "failed", reason: "privateHistory" }, { state: "deleted" }] });
+  it("names unsafe private history without claiming a file lock", async () => {
+    const t = await started({ useFakeTimers: true, status: [{ state: "exists", owner: "ada", admin: true, organization: false }, { state: "gone" }], result: [{ state: "failed", reason: "privateHistory" }, { state: "deleted" }] });
     await t.run("project.deleteContinue");
     await t.run("project.deleteType", { value: "Field notes" });
     await t.run("project.deleteConfirm");
+    await t.run("project.deleteRetry");
     expect(t.vm()).toMatchObject({ open: true, step: "progress", problem: "partialLocal", busy: false });
     expect(t.vm().localError).toContain("private Git history could not be kept safely");
     expect(t.vm().localError).not.toContain("open in another app");
     await t.run("project.deleteRetry");
-    expect(t.vm()).toMatchObject({ step: "inApp", remoteState: "deleted" });
-    expect(t.calls.filter(call => call.startsWith("DELETE:"))).toEqual(["DELETE:ada/field-notes"]);
-  });
-  it("a late private-history failure cannot overwrite a reopened dialog's later choice", async () => {
-    const t = await started({ remote: [{ state: "deleted" }] });
-    let copying = false;
-    let release!: () => void;
-    const held = new Promise<void>(resolve => { release = resolve; });
-    t.bridge.workspace!.deleteLocal = async () => { copying = true; await held; return { state: "failed", reason: "privateHistory" }; };
-    await t.run("project.deleteContinue");
-    await t.run("project.deleteType", { value: "Field notes" });
-    const confirmation = t.run("project.deleteConfirm");
-    await expect.poll(() => copying).toBe(true);
-    await t.run("project.deleteSetOpen", { open: false });
-    await t.run("project.delete");
-    await t.run("project.deleteType", { value: "Later choice" });
-    release();
-    await confirmation;
-    expect(t.vm()).toMatchObject({ open: true, step: "consequences", typed: "Later choice", problem: "", busy: false });
+    expect(t.vm()).toMatchObject({ step: "done" });
   });
 });
 
 const states = (steps: { id: string; state: string }[]) => Object.fromEntries(steps.map((s) => [s.id, s.state]));
-const GONE_AFTER_OPEN: RepoStatus[] = [{ state: "exists", owner: "ada", admin: true, organization: false }, { state: "gone" }];
 
-describe("PRJ-23: the run's steps and a delete left unfinished (DD-PROJ-14, state only)", () => {
-  it("lists each step with its state as the delete goes on", async () => {
-    const t = await started({ status: GONE_AFTER_OPEN, record: null });
-    expect(states(t.runVm().steps)).toEqual({ check: "done", "repo:ada/field-notes": "waiting", "repo:ada/field-notes-private": "skipped", local: "waiting", recent: "waiting" });
+describe("PRJ-23: the run's steps and a delete left unfinished (DD-PROJ-14)", () => {
+  it("records nothing until a repository is confirmed gone, then each deletion, and clears it when finished", async () => {
+    const gone = new Set<string>();
+    const t = await started({
+      useFakeTimers: true,
+      record: null,
+      status: (repo) => (gone.has(repo) ? { state: "gone" } : { state: "exists", owner: "ada", admin: true, organization: false }),
+    });
     await t.run("project.deletePrivate", { value: true });
     await t.run("project.deleteContinue");
     await t.run("project.deleteType", { value: "Field notes" });
     await t.run("project.deleteConfirm");
-    await t.run("project.deleteOpenGitHub", { id: "ada/field-notes" });
-    expect(states(t.runVm().steps)).toMatchObject({ "repo:ada/field-notes": "working", "repo:ada/field-notes-private": "waiting" });
-    await t.run("project.deleteOpenGitHub", { id: "ada/field-notes-private" });
-    await t.run("project.deletePoll");
-    await t.run("project.deleteConfirmGitHub", { id: "ada/field-notes" });
-    expect(states(t.runVm().steps)).toMatchObject({ "repo:ada/field-notes": "done", "repo:ada/field-notes-private": "working" });
-    await t.run("project.deleteStop");
-    expect(states(t.runVm().steps)).toMatchObject({ "repo:ada/field-notes": "done", "repo:ada/field-notes-private": "paused" });
-  });
-  it("shows a step that fails, and an offline project skips GitHub", async () => {
-    expect(states((await started({ status: [{ state: "offline" }] })).runVm().steps)).toMatchObject({ check: "failed" });
-    const off = await started({ check: { ...LINKED, kind: "offline", repo: "", privateRepo: "" }, result: [{ state: "locked", file: "Trips/Iceland.md" }] });
-    expect(states(off.runVm().steps)).toMatchObject({ check: "skipped", repo: "skipped", local: "waiting" });
-    await off.run("project.deleteType", { value: "Field notes" });
-    await off.run("project.deleteConfirm");
-    expect(states(off.runVm().steps)).toMatchObject({ local: "failed", recent: "waiting" });
-  });
-  it("records nothing until something is gone, then each deletion, and clears it when finished", async () => {
-    const t = await started({ status: GONE_AFTER_OPEN, record: null });
-    await t.run("project.deletePrivate", { value: true });
-    await t.run("project.deleteContinue");
-    await t.run("project.deleteType", { value: "Field notes" });
-    await t.run("project.deleteConfirm");
-    await t.run("project.deleteOpenGitHub", { id: "ada/field-notes" });
-    await t.run("project.deleteOpenGitHub", { id: "ada/field-notes-private" });
-    await t.run("project.deletePoll");
     expect(t.saved.history).toHaveLength(0);
-    await t.run("project.deleteConfirmGitHub", { id: "ada/field-notes" });
+
+    gone.add("ada/field-notes");
+    await t.run("project.deleteRetry");
     expect(t.saved.current).toEqual({
       version: 1, name: "Field notes", folder: LINKED.folder, kind: "linked",
       repos: [{ id: "ada/field-notes", deleted: true }, { id: "ada/field-notes-private", deleted: false }], keepPrivate: false, local: false,
     });
-    await t.run("project.deleteConfirmGitHub", { id: "ada/field-notes-private" });
+    gone.add("ada/field-notes-private");
+    await t.run("project.deleteRetry");
     expect(t.saved.history.at(-1)).toMatchObject({ local: true, repos: [{ deleted: true }, { deleted: true }] });
     expect(t.saved.current).toBeNull();
     expect(t.runVm()).toMatchObject({ resume: false, done: true, doneName: "Field notes", doneRepos: [{ id: "ada/field-notes" }, { id: "ada/field-notes-private" }] });
-    expect(states(t.runVm().steps)).toEqual({});
   });
   it("a locked folder keeps the record; Close leaves it to finish later", async () => {
     const t = await started({ check: { ...LINKED, kind: "offline", repo: "", privateRepo: "" }, result: [{ state: "locked", file: "Trips/Iceland.md" }], record: null });
@@ -487,12 +430,12 @@ describe("PRJ-23: the run's steps and a delete left unfinished (DD-PROJ-14, stat
     await t.run("project.deleteConfirm");
     expect(t.saved.current).toMatchObject({ kind: "offline", local: true, repos: [] });
   });
-  it("on the next start, offers to finish, and never opens or asks about a repository already deleted", async () => {
+  it("on the next start, offers to finish, and never opens a repository already deleted", async () => {
     const record: DeletionRecord = {
       version: 1, name: "Field notes", folder: LINKED.folder, kind: "linked",
       repos: [{ id: "ada/field-notes", deleted: true }, { id: "ada/field-notes-private", deleted: false }], keepPrivate: false, local: false,
     };
-    const t = shell({ record, status: [{ state: "gone" }, { state: "exists", owner: "ada", admin: true, organization: false }] });
+    const t = shell({ useFakeTimers: true, record, status: [{ state: "gone" }, { state: "exists", owner: "ada", admin: true, organization: false }] });
     await t.app.start();
     await settle();
     expect(t.runVm()).toMatchObject({ resume: true, resumeName: "Field notes" });
@@ -500,7 +443,7 @@ describe("PRJ-23: the run's steps and a delete left unfinished (DD-PROJ-14, stat
     expect(t.calls.some((c) => c.startsWith("open:") || c.startsWith("deleteLocal"))).toBe(false);
     await t.run("project.deleteResume");
     expect(t.vm()).toMatchObject({ open: true, step: "github", private: true, typed: "Field notes" });
-    expect(t.vm().repos).toMatchObject([{ id: "ada/field-notes", canOpen: false, ask: false }, { id: "ada/field-notes-private", canOpen: true }]);
+    expect(t.vm().repos).toMatchObject([{ id: "ada/field-notes", canOpen: false, deleted: true }, { id: "ada/field-notes-private", canOpen: true, deleted: false }]);
     await t.run("project.deleteOpenGitHub");
     expect(t.calls).toContain("open:ada/field-notes-private");
     expect(t.calls).not.toContain("open:ada/field-notes");
@@ -514,7 +457,7 @@ describe("PRJ-23: the run's steps and a delete left unfinished (DD-PROJ-14, stat
     expect(t.calls).toContain("deleteLocal:keepPrivate=true");
     expect(t.calls.some((c) => c.startsWith("open:"))).toBe(false);
     expect(t.saved.current).toBeNull();
-    expect(t.vm().open).toBe(false);
+    expect(t.vm()).toMatchObject({ open: true, step: "done" });
     const k = shell({ record });
     await k.app.start();
     await settle();
@@ -532,39 +475,5 @@ describe("PRJ-23: the run's steps and a delete left unfinished (DD-PROJ-14, stat
     expect(t.vm().open).toBe(false);
     expect(t.calls.some((c) => c.startsWith("deleteLocal"))).toBe(false);
     expect(t.saved.current).toEqual(record);
-  });
-  it("resumed after a restart with in-app delete: asks again about each deleted repository, then the folder goes", async () => {
-    const record: DeletionRecord = { version: 1, name: "Field notes", folder: LINKED.folder, kind: "linked", repos: [{ id: "ada/field-notes", deleted: true }], keepPrivate: true, local: true };
-    const t = shell({ record, status: [{ state: "gone" }], remote: [{ state: "partial" }] });
-    await t.app.start();
-    await settle();
-    await t.run("project.deleteResume");
-    expect(t.vm()).toMatchObject({ open: true, step: "github", problem: "", repos: [{ id: "ada/field-notes", ask: true }] });
-    expect(t.calls.some((c) => c.startsWith("DELETE:") || c.startsWith("deleteLocal"))).toBe(false);
-    await t.run("project.deleteConfirmGitHub", { id: "ada/field-notes" });
-    expect(t.calls).toEqual(expect.arrayContaining(["confirm:ada/field-notes", "deleteLocal:keepPrivate=true"]));
-    expect(t.vm()).toMatchObject({ step: "inApp", remoteState: "deleted" });
-    expect(t.saved.current).toBeNull();
-    expect(t.calls.some((c) => c.startsWith("DELETE:"))).toBe(false);
-  });
-  it("resumed with in-app delete: deletes what's left in the app after copying unsaved notes again, then asks about the gone one", async () => {
-    const record: DeletionRecord = {
-      version: 1, name: "Field notes", folder: LINKED.folder, kind: "linked",
-      repos: [{ id: "ada/field-notes", deleted: true }, { id: "ada/field-notes-private", deleted: false }], keepPrivate: false, local: false,
-    };
-    const t = shell({ record, check: { ...LINKED, unsynced: ["Trips/Iceland.md"] }, status: [{ state: "gone" }], remote: [{ state: "deleted" }] });
-    await t.app.start();
-    await settle();
-    await t.run("project.deleteResume");
-    expect(t.vm()).toMatchObject({ step: "unsynced", typed: "Field notes", private: true });
-    await t.run("project.deleteExport");
-    await t.run("project.deleteContinue");
-    expect(t.vm().step).toBe("confirm");
-    await t.run("project.deleteConfirm");
-    expect(t.calls.filter((c) => c.startsWith("DELETE:"))).toEqual(["DELETE:ada/field-notes-private"]);
-    expect(t.vm()).toMatchObject({ step: "github", repos: [{ id: "ada/field-notes", ask: true }, { id: "ada/field-notes-private", ask: false }] });
-    await t.run("project.deleteConfirmGitHub", { id: "ada/field-notes" });
-    expect(t.calls).toContain("deleteLocal:keepPrivate=false");
-    expect(t.vm()).toMatchObject({ step: "inApp", remoteState: "deleted" });
   });
 });
