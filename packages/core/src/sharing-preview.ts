@@ -69,8 +69,11 @@ export function registerSharingPreview(ctx: {
   const folder = () => store.state.workspace.folder ?? "";
   const draft = (): SharingDraft => ctx.appState().sharingDrafts?.[folder()] ?? { owner: "personal", people: [] };
   const local = () => Boolean(store.state.ui.share.listing?.localReview || ctx.appState().sharingDrafts?.[folder()]);
-  /** Live Publish: the desktop, with a ready paired site and no local review draft (G3). */
-  const live = () => !local() && Boolean(ctx.publishing && store.state.ui.share.listing?.configured);
+  /**
+   * Live Publish: the desktop, with a ready paired site and no local review draft (G3). A project with public notes/
+   * publishes by moving notes there, to its own repository's site; its paired site carries only shares (D-425).
+   */
+  const live = () => !local() && Boolean(ctx.publishing && store.state.ui.share.listing?.configured) && !store.state.workspace.tree.roots.some(r => r.id === "public");
   const requireLocal = () => { if (!local()) throw new Error(catalog.format("share.item.unavailable")); };
   const requirePublish = () => { if (!local() && !live()) throw new Error(catalog.format("share.item.unavailable")); };
   /** A tree path relative to its private notes root, or undefined outside one. */

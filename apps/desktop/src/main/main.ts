@@ -2148,13 +2148,13 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     ...(devEnv("FOCUS_NOTES_PAGES_WAIT_MS") ? { pagesWaitMs: Number(devEnv("FOCUS_NOTES_PAGES_WAIT_MS")), pagesWatch: { delayMs: 500 } } : {}),
     withdrawShares: () => access.withdrawAll(),
   });
+  // A legacy pair's own repository site, where its public notes are (D-424); shares go to its paired site (D-425).
+  const legacySite = async () => (await setup()).report().site ?? siteFromGitConfig(await readFile(join(notesHome(), ".git", "config"), "utf8"));
   const pagesSite = async () => {
-    if (!settingsAvailable()) return projectLayout().legacy
-      ? (await setup()).report().site ?? siteFromGitConfig(await readFile(join(notesHome(), ".git", "config"), "utf8")) : undefined;
+    if (!settingsAvailable()) return projectLayout().legacy ? legacySite() : undefined;
     const pairing = await sharing.pairing();
     if (pairing) return pairing.phase === "ready" ? pairing.site : undefined;
-    return projectLayout().legacy
-      ? (await setup()).report().site ?? siteFromGitConfig(await readFile(join(notesHome(), ".git", "config"), "utf8")) : undefined;
+    return projectLayout().legacy ? legacySite() : undefined;
   };
   handle("sharing:setupPreview", () => sharing.describe());
   handle("sharing:setupEnable", (name: unknown) => {
@@ -2232,7 +2232,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     return r ? `${r.owner}/${r.name}` : undefined;
   };
   handle("workspace:info", async () => {
-    const [format, site, repo] = await Promise.all([readFormat(), pagesSite().catch(() => undefined), notesRepo().catch(() => undefined)]);
+    const [format, site, repo] = await Promise.all([readFormat(), (projectLayout().legacy ? legacySite() : pagesSite()).catch(() => undefined), notesRepo().catch(() => undefined)]);
     return { folder: notesHome(), ...(format !== undefined ? { format } : {}), ...(site ? { site } : {}), ...(repo ? { repo } : {}) };
   });
   // Open local folder (D-188): the workspace's folder in the system's file manager, nothing else.
@@ -2396,7 +2396,8 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     if (!g) throw new Error("access:site.unavailable");
     const report = await g.request("save");
     if (report.state === "problem") throw new Error(`access:${report.problem ?? "failed"}`);
-    if (projectLayout().legacy) return;
+    // A legacy pair without its own paired site still deploys through its repository's Actions (D-425).
+    if (projectLayout().legacy && (await sharing.pairing().catch(() => undefined))?.phase !== "ready") return;
     // The share dialog names offline and signed out with their recovery (sharing.md States).
     try { await sharing.publish(); } catch (error) {
       const code = error instanceof Error ? /sharing:([a-z]+)/.exec(error.message)?.[1] : undefined;
@@ -2409,7 +2410,8 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     dir: privateDir,
     site: pagesSite,
     configured: async () => (await sharing.pairing())?.phase === "ready",
-    setupAvailable: async () => !projectLayout().legacy && Boolean(await githubRepo(privateDir())),
+    // A legacy pair pairs its private repository with a shares-only public site, like New project (D-425).
+    setupAvailable: async () => Boolean(await githubRepo(privateDir())),
     write: async (file, text) => { await assertWritable(file); await atomicWrite(file, text); },
     written: (file) => withGit((g) => g.written(file)),
     writeNoteId: async (file, text, expected) => {
@@ -2441,7 +2443,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     if (!settingsAvailable()) throw new Error("access:failed");
     const result = await access.apply(change);
     const op = (change as { op?: unknown } | null)?.op;
-    if (op !== "createItem" && op !== "addItemNotes" && !projectLayout().legacy && (await sharing.pairing())?.phase === "ready") await redeployAfter();
+    if (op !== "createItem" && op !== "addItemNotes" && (await sharing.pairing())?.phase === "ready") await redeployAfter();
     return result;
   });
   // A secret goes to the window only for an open invite, and to the clipboard only from here, cleared after 90 s (review L1, L2).

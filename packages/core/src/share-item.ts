@@ -66,8 +66,8 @@ export interface ItemShareState {
   /** A published (public) note: Share… offers its web address only, no encryption (D-424). */
   published: boolean;
   publicUrl: string;
-  /** Why sharing can't start here yet (D-424): outside a project, a project not linked to GitHub, or the older public-and-private layout. */
-  setup: "" | "notInProject" | "unlinked" | "legacy";
+  /** What's missing before sharing can start (D-424, D-425): outside a project, or a project not linked to GitHub. */
+  setup: "" | "notInProject" | "unlinked";
 }
 
 export const ITEM_SHARE_CLOSED: ItemShareState = {
@@ -133,11 +133,9 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
       // Sharing off in a project that can turn it on: the first-share confirmation, then this item's dialog (D-418).
       const firstShare = listing.localReview ? store.state.ui.share.settings.off || !listing.site : !sharingAvailable(store.state) && Boolean(listing.available && listing.setupAvailable);
       if (firstShare) await commands.run("sharing.firstOpen", { resume: true });
-      // Share… shows for every note (D-424): where sharing can't be turned on here, the dialog says what to do.
-      // A project with public and private sections is the older layout, where sharing can't be turned on from here.
+      // Share… shows for every note (D-424): where the project isn't linked to GitHub yet, the dialog says how to link it.
       else if (!sharingAvailable(store.state) && !listing.localReview) {
-        const legacy = store.state.workspace.tree.roots.some((r) => r.id === "public");
-        set({ setup: !listing.available ? "notInProject" : legacy ? "legacy" : "unlinked" });
+        set({ setup: !listing.available ? "notInProject" : "unlinked" });
       }
     } catch (error) {
       if (current === generation) {

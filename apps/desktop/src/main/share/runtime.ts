@@ -171,7 +171,8 @@ export function sharingRuntime(deps: {
         const artifact = await publish(empty ? { site: directory, owner: pairing.owner, siteUrl: pairing.site } : {
           private: privateDir, sealedMedia: sharedImageDestinations,
           // `published`: the confirmed notes are public on purpose; every other private note stays leak-checked.
-          ...(staging ? { notes: staging, published: [...notes], reader: reader!, publicMedia: selected?.media ?? [], publicMediaFrom: join(staging, ".media") } : layout.publicDir ? { notes: join(layout.publicDir, "notes") } : {}),
+          // A legacy pair's public notes stay on its own repository's site: its paired site holds only sealed shares (D-425).
+          ...(staging ? { notes: staging, published: [...notes], reader: reader!, publicMedia: selected?.media ?? [], publicMediaFrom: join(staging, ".media") } : {}),
           site: directory, owner: pairing.owner, siteUrl: pairing.site,
         });
         guard();
@@ -232,13 +233,10 @@ export function sharingRuntime(deps: {
       },
       preserve: async () => {
         ctx.guard();
-        if (ctx.layout.publicDir) {
-          // A legacy pair's public source needs the caller's write lane and its own preservation.
-          if (!deps.preserve || !deps.removalLane) throw new Error("sharing:unavailable");
-          await deps.preserve(ctx.layout);
-        } else if (deps.preserve) await deps.preserve(ctx.layout);
+        if (deps.preserve) await deps.preserve(ctx.layout);
         else {
-          // Working notes and media already live only in the private project; removal never touches them.
+          // Working notes and media already live only in the private project (a legacy pair's public notes stay in
+          // its own repository, D-425); removal empties only the paired site and never touches them.
           const notes = ctx.layout.privateNotes;
           if (!notes) throw new Error("sharing:preservation");
           const [root, real] = await Promise.all([realpath(ctx.privateDir), realpath(notes).catch(() => undefined)]);
@@ -252,7 +250,6 @@ export function sharingRuntime(deps: {
       remove: async pairing => {
         ctx.guard();
         if (deps.remove) await deps.remove(pairing, ctx.layout);
-        else if (ctx.layout.publicDir) throw new Error("sharing:unavailable");
         else {
           await ctx.build(pairing, true);
           // Nothing published before Turn off may reappear when the site is turned back on (G3).

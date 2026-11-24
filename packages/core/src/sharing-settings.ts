@@ -221,7 +221,7 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
       return {
         project: s.workspace.repo?.split("/").at(-1) ?? s.workspace.folder?.split(/[\\/]/).at(-1) ?? "",
         site: listing?.site ?? s.workspace.site ?? "", on: sharingAvailable(s), off: !sharingAvailable(s),
-        offDetail: catalog.format(listing?.localReview || listing?.site && (listing.configured || listing.vault) ? "share.settings.offDetail" : "sharing.setup.unavailable"),
+        offDetail: catalog.format(listing?.localReview || listing?.setupAvailable || listing?.site && (listing.configured || listing.vault) ? "share.settings.offDetail" : "share.item.setup.unlinked"),
         localReview: Boolean(listing?.localReview), busy: m.busy, status: m.status === "off" ? catalog.format("share.settings.offDone") : m.status ? catalog.format("share.settings.status", { status: m.status }) : "",
         copyLabel: catalog.format("share.settings.copyAgain"), extendLabel: catalog.format("share.settings.extend"),
         templateBadge: catalog.format(listing?.itemTemplate ? "share.manage.template.edited" : "share.manage.template.default"),

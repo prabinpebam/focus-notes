@@ -74,7 +74,7 @@ for (const theme of ["light", "dark"] as const) {
         await page.keyboard.press("Control+,");
         const settings = page.getByRole("dialog", { name: "Settings", exact: true });
         await settings.getByRole("tab", { name: "Sharing", exact: true }).click();
-        await expect(settings.getByText("Turning on sharing isn’t available yet. Your notes stay private.", { exact: true })).toBeVisible();
+        await expect(settings.getByText("To share, link this project to GitHub in Settings → Project.", { exact: true })).toBeVisible();
         await shot(l, theme, "02-settings-sharing-unavailable");
         await page.keyboard.press("Escape");
         await step("03 files menu without Share", async () => {

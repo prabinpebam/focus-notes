@@ -172,12 +172,12 @@ it("D-424: offers Share… for a note where sharing can't start yet, and the dia
   expect(t.vm("vm.toolbar").items.map((i: { id: string }) => i.id)).toContain("note.share");
   expect(menuBarModel(t.app.commands, catalog, "macos").menus.find(m => m.id === "file")!.items).toContainEqual(expect.objectContaining({ id: "note.share", enabled: true }));
   await t.run("note.share");
-  expect(t.vm("vm.shareItem")).toMatchObject({ dialogOpen: true, setupVisible: true, setupMessage: en["share.item.setup.legacy"], setupFixable: false, actionsDisabled: true });
-  // This shell has public and private sections, the older layout: the reason has no fix button, and closing changes nothing.
+  expect(t.vm("vm.shareItem")).toMatchObject({ dialogOpen: true, setupVisible: true, setupMessage: en["share.item.setup.unlinked"], setupFixable: true, actionsDisabled: true });
+  // Not linked to GitHub: the only reason left (D-425); its fix opens Settings → Project, and nothing changes.
   await t.run("share.item.fixSetup");
   expect(t.app.store.state.ui.share.item.open).toBe(false);
-  expect(t.vm("vm.sharingSettings")).toMatchObject({ off: true, localReview: false, offDetail: en["sharing.setup.unavailable"] });
-  expect(String(t.vm("vm.sharingSettings").offDetail)).not.toContain("Settings");
+  expect(t.vm("vm.sharingSettings")).toMatchObject({ off: true, localReview: false, offDetail: en["share.item.setup.unlinked"] });
+  expect(Object.keys(en).filter(k => /^share\.item\.setup\.legacy$|^sharing\.setup\.unavailable$/.test(k))).toEqual([]);
   expect(t.access().grants).toHaveLength(1);
   t.bridge.access!.load = async () => configured;
   await t.run("share.manage.load");

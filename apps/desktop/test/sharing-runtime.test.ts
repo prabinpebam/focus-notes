@@ -87,6 +87,34 @@ it("places the share reader page on the sealed site, never on the emptied one af
   } finally { await rm(t.directory, { recursive: true, force: true }); }
 });
 
+it("D-425: pairs a legacy public+private project's private repository with a shares-only site, and turns it off without touching notes/", async () => {
+  const t = await fixture();
+  const legacy = join(t.directory, "legacy");
+  await mkdir(join(legacy, "notes"), { recursive: true });
+  await mkdir(join(legacy, "private", "notes"), { recursive: true });
+  await mkdir(join(legacy, "private", ".git"));
+  await writeFile(join(legacy, "notes", "hello.md"), "# Hello\n\nAlready public words.\n");
+  await writeFile(join(legacy, "private", "notes", "diary.md"), "# Diary\n\nNever publish this source.\n");
+  t.switch(legacy);
+  const sites: string[][] = [];
+  const runtime = sharingRuntime({ ...t.deps, publisher: async (project, artifact) => {
+    sites.push((await readdir(artifact.directory, { recursive: true })).map(p => p.split("\\").join("/")));
+    const bytes = await Promise.all((await readdir(artifact.directory, { recursive: true, withFileTypes: true })).filter(e => e.isFile()).map(e => readFile(join(e.parentPath, e.name), "utf8")));
+    expect(bytes.join("\n")).not.toContain("Never publish this source.");
+    expect(bytes.join("\n")).not.toContain("Already public words.");
+    return t.deps.publisher(project, artifact);
+  } });
+  try {
+    await expect(runtime.enable("quiet-site")).resolves.toMatchObject({ phase: "ready", project: "ada/book" });
+    expect(JSON.parse(await readFile(join(legacy, "private", ".focus-notes", "site-pairing.json"), "utf8"))).toMatchObject({ phase: "ready" });
+    await runtime.publish();
+    await expect(runtime.disable()).resolves.toMatchObject({ phase: "off" });
+    expect(sites).toHaveLength(3);
+    expect(await readFile(join(legacy, "notes", "hello.md"), "utf8")).toBe("# Hello\n\nAlready public words.\n");
+    expect(await readFile(join(legacy, "private", "notes", "diary.md"), "utf8")).toBe("# Diary\n\nNever publish this source.\n");
+  } finally { await rm(t.directory, { recursive: true, force: true }); }
+});
+
 it("keeps partial setup for Retry when G3's real artifact publisher is unavailable, never reports readiness", async () => {
   const t = await fixture();
   try {
