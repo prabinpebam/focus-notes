@@ -203,6 +203,8 @@ The owner asked (5 November) what is done and pending for publishing notes as pu
 
 **24 November (D-423, decided by main, owner unavailable, open to reversal):** renaming or moving a published note in the app follows the rename. One deploy publishes it at the new path and removes the old page; the person gets one *Published at the new address* notification with Copy link. A failed deploy keeps the old page live and offers Retry. This replaces the redirect from old article URLs above for in-app renames.
 
+**24 November (D-421):** with nothing published (after Turn off, or before the first Publish), the site's address shows the public index's own empty state, *Notes* and *Nothing published here yet*, instead of a 404. It holds static words only. The designed home with sections and counts is still WP-P.14.
+
 **Pending:** real Publish and Unpublish from the approved dialog; the deploy status (UC-SHARE-02's *Live / Publishing… / Not published yet* has no strings yet); the site theme on the live site (WP-P.12); the home with sections and counts (WP-P.14); the site's empty, missing-page and failure states; published images (IMG-13).
 
 **Gaps found and filled here:** the approved project model (D-312, a separate `notes-site` repository per project, WP-P.4) conflicts with the built instance model, so nothing could ship until projects land; this page now proposes publishing on today's workspace first (D-349, SHR-25, P1). There was no deploy status (D-351, SHR-26), no unpublish flow, no rule for links to unpublished notes (D-350) and no Definition of Done rows with a Try it (MP.32, MP.33). The risk that matters is real accounts: an agent never publishes to the owner's real site (D-343); every agent test uses GitHub protocol fakes.

@@ -1,6 +1,6 @@
 /** WP-5.1: the published page's document, rendered from the reader view through the UI runtime (DSY-06, SHR-06, PRV-04). */
 import { describe, expect, it } from "vitest";
-import { renderIndexPage, renderNotePage } from "../reader/render.ts";
+import { renderEmptyHome, renderIndexPage, renderNotePage } from "../reader/render.ts";
 
 const assets = { css: ["style-abc.css"], fonts: ["roboto-mono-latin-400-normal-abc.woff2", "roboto-mono-latin-400-normal-abc.woff", "roboto-mono-latin-700-normal-def.woff2", "roboto-mono-latin-ext-400-normal-x.woff2"] };
 const page = (markdown: string, path = "Guides/Garden.md") =>
@@ -76,6 +76,17 @@ describe("public notes index (D-139)", () => {
     expect(html).toContain('data-theme="auto"');
     expect(html).not.toMatch(/<script/);
     expect(html).not.toMatch(/https?:\/\/(?!octo\.github\.io\/notes\/n\/)/);
+  });
+
+  it("D-421: with nothing published, the site's root is the index's own empty state, not a 404", () => {
+    const { file, html } = renderEmptyHome({ siteUrl: "https://octo.github.io/notes", assets });
+    expect(file).toBe("index.html");
+    expect(html).toContain("Nothing published here yet");
+    expect(html).toContain('<link rel="canonical" href="https://octo.github.io/notes/" />');
+    expect(html).toContain('<link rel="stylesheet" href="assets/style-abc.css" />');
+    expect(html.match(/<h1/g)).toHaveLength(1);
+    expect(html).not.toContain("public note");
+    expect(html).not.toMatch(/<script/);
   });
 
   it("lists each public note as a row, newest first: its title linking to its page, when it was updated, and its excerpt if it has one", () => {

@@ -1,5 +1,6 @@
-import { cp, mkdtemp, readFile, realpath, rm, stat, writeFile } from "node:fs/promises";
+import { cp, mkdtemp, readdir, readFile, realpath, rm, stat, writeFile } from "node:fs/promises";
 import { isAbsolute, join, relative, sep } from "node:path";
+import { pathToFileURL } from "node:url";
 import { GitHubError, type GitHubApi } from "@focus-notes/github";
 import { publish } from "@focus-notes/seal/publish";
 import type { SharingLayout } from "./layout.ts";
@@ -14,6 +15,19 @@ import { sharingSetup, sitePairingStore, type SharingSetupStep, type SitePairing
 const exists = (path: string) => stat(path).then(() => true, () => false);
 /** Static, script-free: the site's root sends readers to the published index at `n/`. */
 const HOME_REDIRECT = '<!doctype html>\n<meta charset="utf-8">\n<meta http-equiv="refresh" content="0; url=n/">\n<link rel="canonical" href="n/">\n<title>Published notes</title>\n<a href="n/">Published notes</a>\n';
+/** The page renderer's empty home (apps/web/reader/render.ts, D-421); renderers before it have none. */
+type EmptyHomeRenderer = { renderEmptyHome?(input: { siteUrl?: string; assets: { css: string[]; fonts: string[] } }): { file: string; html: string } };
+/** Writes the site's empty home with the renderer's stylesheet and fonts: static words only, nothing from the project. */
+async function writeEmptyHome(reader: string | undefined, directory: string, siteUrl: string): Promise<void> {
+  if (!reader || !await exists(join(reader, "render.mjs"))) return;
+  const renderer = await import(pathToFileURL(join(reader, "render.mjs")).href) as EmptyHomeRenderer;
+  if (!renderer.renderEmptyHome) return;
+  const files = await readdir(join(reader, "assets")).catch(() => [] as string[]);
+  if (files.length) await cp(join(reader, "assets"), join(directory, "assets"), { recursive: true, force: false, errorOnExist: false });
+  const { file, html } = renderer.renderEmptyHome({ siteUrl, assets: { css: files.filter(f => f.endsWith(".css")), fonts: files.filter(f => /\.woff2?$/.test(f)) } });
+  if (file !== "index.html") return;
+  await writeFile(join(directory, file), html);
+}
 /** Notes on the current public site, by notes-root-relative path (G3). Recorded only after their deploy. */
 function parsePublished(text: string): string[] {
   const value = JSON.parse(text) as { version?: unknown; notes?: unknown };
@@ -168,8 +182,11 @@ export function sharingRuntime(deps: {
           await cp(join(page, "site"), directory, { recursive: true, force: false, errorOnExist: false });
           guard();
         }
-        // The paired site is this project's alone: its own address opens the published notes' index (D-419).
-        if (await exists(join(directory, "n", "index.html")) && !await exists(join(directory, "index.html"))) await writeFile(join(directory, "index.html"), HOME_REDIRECT);
+        // The paired site is this project's alone: its own address opens the published notes' index (D-419),
+        // or, with nothing published (Turn off too), a home that says so instead of a 404 (D-421).
+        if (await exists(join(directory, "n", "index.html"))) {
+          if (!await exists(join(directory, "index.html"))) await writeFile(join(directory, "index.html"), HOME_REDIRECT);
+        } else if (!await exists(join(directory, "index.html"))) await writeEmptyHome(deps.reader?.(), directory, pairing.site);
         deps.step?.("push");
         if (selection) deps.publishStep?.("publishing");
         const sealed = { directory, build: artifact.build };

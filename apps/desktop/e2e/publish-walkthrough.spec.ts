@@ -253,6 +253,19 @@ test("Publish walk-through: not set up, turn on, publish a folder, read the site
     expect([...deployed().keys()].some(p => p.startsWith("notes/") && p.endsWith(".md"))).toBe(false);
     expect(published()).toEqual([]);
     scan();
+    // D-421: the site's address is a home saying nothing's published, not a 404.
+    const home = await fetch(`${siteOrigin}/notes-site/`);
+    expect(home.status).toBe(200);
+    expect(await home.text()).toContain("Nothing published here yet");
+    if (CAPTURES) {
+      const viewer = await chromium.launch();
+      try {
+        const empty = await viewer.newPage();
+        await empty.goto(`${siteOrigin}/notes-site/`);
+        await expect(empty.getByText("Nothing published here yet")).toBeVisible();
+        await empty.screenshot({ path: join(CAPTURES, `${String(++shot).padStart(2, "0")}-empty-home.png`) });
+      } finally { await viewer.close(); }
+    }
     expect(readFileSync(diary, "utf8")).toBe(DIARY);
   } finally {
     try { if (l) await quit(l); } finally {

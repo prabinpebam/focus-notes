@@ -30,7 +30,8 @@ async function project(o: { reader?: boolean; notes?: Record<string, string>; le
   if (o.reader !== false) {
     reader = await temp();
     await mkdir(join(reader, "assets"));
-    await writeFile(join(reader, "render.mjs"), "export function renderNotePage({ path }) { const stem = path.replace(/\\.md$/, ''); return { file: `n/${stem}/index.html`, html: `<p>${stem}</p>`, title: stem }; }\n");
+    await writeFile(join(reader, "render.mjs"), "export function renderNotePage({ path }) { const stem = path.replace(/\\.md$/, ''); return { file: `n/${stem}/index.html`, html: `<p>${stem}</p>`, title: stem }; }\n" +
+      "export function renderEmptyHome() { return { file: 'index.html', html: '<h1>Nothing published here yet</h1>' }; }\n");
   }
   const github = new FakeGitHub();
   github.add({ owner: "ada", name: "quiet-site", files: [".github/workflows/pages.yml"] });
@@ -175,6 +176,8 @@ it("G3/PRJ-10 Turn off: once the emptied site is served, the published list is c
   t.git.setStale(false);
   await t.runtime.disable();
   expect(t.site().has("notes/trip.md")).toBe(false);
+  // D-421: the emptied site's address is a home saying nothing's published, not a 404.
+  expect(t.site().get("index.html")).toBe("<h1>Nothing published here yet</h1>");
   expect(await t.record()).toEqual({ version: 1, notes: [] });
   expect(await readFile(join(t.notesDir, "trip.md"), "utf8")).toBe(TRIP);
 });

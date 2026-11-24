@@ -54,6 +54,8 @@ export interface IndexPageInput {
   notes: readonly PublicIndexEntry[];
   siteUrl?: string;
   assets: ReaderAssets;
+  /** At the site's root (`index.html`) rather than `n/` (D-421). */
+  home?: boolean;
 }
 
 /** The index of public notes at `n/` (D-139): the same renderer, stylesheet, and document as the notes' pages. */
@@ -61,15 +63,24 @@ export function renderIndexPage(input: IndexPageInput): { file: string; html: st
   const en = messages.en!;
   const heading = en["publicIndex.title"]!;
   const model = publicIndexModel(heading, input.notes);
-  const asset = (name: string) => `../assets/${name}`;
+  const asset = (name: string) => `${input.home ? "" : "../"}assets/${name}`;
   const preload = ["400-normal", "700-normal"].flatMap((face) => input.assets.fonts.filter((f) => f.endsWith(".woff2") && f.includes(`-latin-${face}-`)).slice(0, 1)).map(asset);
   const body = renderStaticView({ views: pages, view: "index", registry: readerRegistry, contracts: readerContracts, messages: en, data: { [PUBLIC_INDEX_VIEW_MODEL.id]: model } });
+  const site = input.siteUrl ? (input.siteUrl.endsWith("/") ? input.siteUrl : `${input.siteUrl}/`) : undefined;
   const html = renderReaderDocument({
     title: heading,
-    ...(input.siteUrl ? { canonical: new URL("n/", input.siteUrl.endsWith("/") ? input.siteUrl : `${input.siteUrl}/`).href } : {}),
+    ...(site ? { canonical: input.home ? site : new URL("n/", site).href } : {}),
     stylesheets: input.assets.css.map(asset),
     preload,
     body,
   });
-  return { file: "n/index.html", html };
+  return { file: input.home ? "index.html" : "n/index.html", html };
+}
+
+/**
+ * The site's home when nothing is published (D-421): the index's own empty state at the root, so the
+ * site's address never shows a 404 after Turn off. Static words only; nothing from the project.
+ */
+export function renderEmptyHome(input: { siteUrl?: string; assets: ReaderAssets }): { file: string; html: string } {
+  return renderIndexPage({ ...input, notes: [], home: true });
 }

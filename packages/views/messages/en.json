@@ -798,7 +798,7 @@
   "publicIndex.title": "Notes",
   "publicIndex.skip": "Skip to the notes",
   "publicIndex.count": "{count, plural, one {# public note} other {# public notes}}",
-  "publicIndex.empty": "No public notes yet",
+  "publicIndex.empty": "Nothing published here yet",
   "command.note.copyPublicLink.private": "Only public notes have a public link",
   "command.note.copyPublicLink.noSite": "Public links work once your site is set up",
   "toast.publicLinkCopied": "Public link to “{note}” copied",
