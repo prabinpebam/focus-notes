@@ -49,6 +49,7 @@ import { registerItemShare } from "./share-item.ts";
 import { registerSharingSettings } from "./sharing-settings.ts";
 import { registerSharingPeople } from "./sharing-people.ts";
 import { registerSharingPreview } from "./sharing-preview.ts";
+import { PUBLISH_STATUS_COMMAND, PUBLISH_STATUS_TITLE } from "./publish-status.ts";
 import { registerWindow, initialWindow, type WindowState } from "./window-app.ts";
 import { registerTextMenu, TEXT_MENU_CLOSED, type TextMenuState } from "./text-menu-app.ts";
 import { registerMenuBar } from "./menu-bar.ts";
@@ -278,7 +279,7 @@ export const MORE_MENU: { id: string; label: string; items: MenuEntry[] }[] = [
     ],
   },
   { id: "edit", label: "menu.edit", items: ["table.insert", "image.insert", "find.open", "find.replace", "find.allNotes"] },
-  { id: "note", label: "menu.note", items: ["note.share", "note.publish", "note.unpublish", "note.copyPublicLink", "history.open", "note.print", "print.pageNumbers"] },
+  { id: "note", label: "menu.note", items: ["note.share", "note.publishStatus", "note.publish", "note.unpublish", "note.copyPublicLink", "history.open", "note.print", "print.pageNumbers"] },
   // Settings is available only where there's a GitHub account to manage (the desktop, FRE-07).
   { id: "app", label: "menu.app", items: ["settings.open", "feedback.open", "toolbar.customize", "shortcuts.open", "help.open"] },
 ];
@@ -1409,7 +1410,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   });
   const menuBar = registerMenuBar({ store, commands, catalog, platform: bridge.platform, ...(bridge.nativeWindow ? { bridge: bridge.nativeWindow } : {}) });
   // The actions that can be pinned (UI-08, D-170): the six defaults, then ⋯'s own commands.
-  const pinnable = () => [...new Set([...DEFAULT_TOOLBAR, ...[...MORE_MENU, ...extraMenu].flatMap((g) => g.items.filter((e): e is string => typeof e === "string"))])].filter((id) => commands.has(id) && (id !== "note.share" || sharingAvailable(store.state)));
+  const pinnable = () => [...new Set([...DEFAULT_TOOLBAR, ...[...MORE_MENU, ...extraMenu].flatMap((g) => g.items.filter((e): e is string => typeof e === "string"))])].filter((id) => commands.has(id) && id !== PUBLISH_STATUS_COMMAND && (id !== "note.share" || sharingAvailable(store.state)));
   registerToolbarCustomize({
     store, commands, viewModels, catalog, persistAppState, announce, toast, pinnable, defaults: DEFAULT_TOOLBAR,
     describeItem,
@@ -1533,7 +1534,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         ...[...MORE_MENU.slice(0, -1), ...extraMenu, ...MORE_MENU.slice(-1)].map((g) => ({
           ...g,
           items: (bridge.projects?.local && g.id === "note" ? ["local.import", "note.print", "print.pageNumbers"] : g.items)
-            .filter((e) => typeof e !== "string" || (!s.toolbarPinned.includes(e) && (e !== "note.share" || sharingAvailable(s)))),
+            .filter((e) => typeof e !== "string" || (!s.toolbarPinned.includes(e) && (e !== "note.share" || sharingAvailable(s))
+              && (e !== PUBLISH_STATUS_COMMAND || commands.describe(e).title !== PUBLISH_STATUS_TITLE))),
         })),
       ].filter((g) => g.items.length).map((g) => (g.id === "theme" && s.settingsSync !== "unavailable" ? { ...g, items: [...g.items, "settings.sync"] } : g)).map((g) => ({
         id: g.id, label: catalog.format(g.label),

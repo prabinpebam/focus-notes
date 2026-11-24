@@ -75,6 +75,8 @@ export interface CommandDef<S, A extends Record<string, unknown> = Record<string
   id: string;
   /** Message key for the command's name. */
   title: string;
+  /** A message key that replaces `title` where the command is shown, by state: a status line's words (D-422). */
+  label?: (state: S) => string;
   icon?: string;
   shortcut?: Shortcut;
   enabled?: (state: S) => boolean;
@@ -197,7 +199,7 @@ export class CommandRegistry<S> {
     if (!def) throw new CommandError(`Unknown command ${id}`);
     const state = this.getState();
     const held = this.#held(id);
-    const d: CommandDescription = { id, title: def.title, enabled: !held && (def.enabled ? def.enabled(state) : true) };
+    const d: CommandDescription = { id, title: def.label?.(state) ?? def.title, enabled: !held && (def.enabled ? def.enabled(state) : true) };
     if (def.icon) d.icon = def.icon;
     // The effective key: the person's own first, else the default they kept (D-170).
     const chord = this.#chords(id, def, this.platform)[0];

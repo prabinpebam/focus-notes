@@ -10,6 +10,7 @@ import { BUILT_IN_THEMES, CONTENT_FONTS } from "./themes.ts";
 import { shortcutFor, type CommandRegistry, type Platform } from "./commands.ts";
 import type { MessageCatalog } from "./messages.ts";
 import type { Store } from "./store.ts";
+import { PUBLISH_STATUS_COMMAND, PUBLISH_STATUS_TITLE } from "./publish-status.ts";
 
 /** System items macOS draws and runs itself. */
 export const MENU_ROLES = [
@@ -46,7 +47,7 @@ export const MENU_BAR: readonly MenuBarMenu[] = [
   },
   {
     id: "file", label: "menu.file",
-    items: ["note.new", "note.newIn", "note.open", "projects.open", "spotlight.quickOpen", "note.openInNewWindow", "-", "note.save", "sync.now", "-", "note.share", "note.publish", "note.unpublish", "note.copyPublicLink", "files.makePublic", "files.makePrivate", "-", "notes.import", "files.import", "-", "note.print", "print.pageNumbers", "-", { role: "close" }],
+    items: ["note.new", "note.newIn", "note.open", "projects.open", "spotlight.quickOpen", "note.openInNewWindow", "-", "note.save", "sync.now", "-", "note.share", "note.publishStatus", "note.publish", "note.unpublish", "note.copyPublicLink", "files.makePublic", "files.makePrivate", "-", "notes.import", "files.import", "-", "note.print", "print.pageNumbers", "-", { role: "close" }],
   },
   {
     id: "edit", label: "menu.edit",
@@ -110,7 +111,7 @@ export const NOT_IN_MENU_BAR: readonly { why: string; ids: RegExp }[] = [
   { why: "renderer failure and panel reload events", ids: /^app\.(reportFailure|reloadPanel)$/ },
   { why: "notification layout and note position events", ids: /^(toast\.wrapped|note\.position)$/ },
   { why: "Actions and a file result's Copy Markdown link", ids: /^note\.copyLink$/ },
-  { why: "Files row pins and shortcuts", ids: /^files\.(publish|selectShortcut|activateShortcut|saveItemPin|pinItem)$/ },
+  { why: "Files row pins and shortcuts", ids: /^files\.(publish|unpublish|selectShortcut|activateShortcut|saveItemPin|pinItem)$/ },
   { why: "Opened files vertical tab buttons and header menu (D-410)", ids: /^files\.(activateOpened|closeOpened|closeAllOpened)$/ },
   { why: "In-writing account and sync recovery alert card actions (D-408, G5.4)", ids: /^recoveryAlert\.(notNow|primary|secondary)$/ },
   { why: "panel retry, reading preview and local-note reveal controls", ids: /^(files\.retryDeleted|history\.retry|reading\.preview|note\.revealLocal)$/ },
@@ -151,6 +152,7 @@ export function menuBarModel(commands: CommandRegistry<AppState>, catalog: Messa
     if (!commands.has(id)) return undefined;
     const d = commands.describe(id);
     if (id === "note.share" && d.disabledReason === "share.item.unavailable") return undefined;
+    if (id === PUBLISH_STATUS_COMMAND && d.title === PUBLISH_STATUS_TITLE) return undefined;
     const chord = shortcutFor(commands.shortcut(id), platform);
     return {
       kind: "command", id, label: catalog.format(d.title), enabled: d.enabled,

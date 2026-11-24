@@ -6,6 +6,7 @@ import { BLOCK_LIST_SCHEMA, publicNoteUrl, publicPage } from "./public-page.ts";
 import { findNode, joinPath, rootOf, type NoteNode, type TreeNode } from "./workspace.ts";
 import type { SharingDraft } from "./sharing-people.ts";
 import type { PMNode } from "@focus-notes/markdown";
+import { NO_PUBLICATION, PUBLISH_STATUS_COMMAND, PUBLISH_STATUS_TITLE, publishPathOf, publishStatus, type SitePublication } from "./publish-status.ts";
 
 interface Article { id: string; title: string; titleBlocks: PMNode[]; section: string; excerpt: string; updated: string; blocks: PMNode[] }
 
@@ -64,24 +65,30 @@ export function registerSharingPreview(ctx: {
   const requireLocal = () => { if (!local()) throw new Error(catalog.format("share.item.unavailable")); };
   const requirePublish = () => { if (!local() && !live()) throw new Error(catalog.format("share.item.unavailable")); };
   /** A tree path relative to its private notes root, or undefined outside one. */
-  const relativeOf = (path: string) => {
-    const root = rootOf(store.state.workspace.tree, path);
-    return root?.id === "private" ? path.slice(root.path.length).split(/[\\/]/).filter(Boolean).join("/") || undefined : undefined;
-  };
+  const relativeOf = (path: string) => publishPathOf(store.state.workspace.tree, path);
   let unpublishTarget: { paths: string[]; title: string } | undefined;
-  /** Notes on the current site (G3), so Unpublish is offered only for what's published; read when the live site appears. */
-  let publishedNotes = new Set<string>(), publishedFor: unknown;
+  /** The site's notes and the Publish in flight live in the store (D-422), so Files and the menus derive their status from them. */
+  const publication = () => store.state.ui.share.publication;
+  const setPublication = (patch: Partial<SitePublication>) =>
+    store.update(s => ({ ...s, ui: { ...s.ui, share: { ...s.ui.share, publication: { ...s.ui.share.publication, ...patch } } } }));
+  let publishedFor: unknown;
   const refreshPublished = async () => {
-    try { publishedNotes = new Set(await ctx.publishing!.published()); changed(); } catch { /* Unknown: Unpublish stays offered only for known notes. */ }
+    try { setPublication({ published: await ctx.publishing!.published() }); } catch { /* Unknown: Unpublish stays offered only for known notes. */ }
   };
   store.subscribe(() => {
     const listing = store.state.ui.share.listing;
-    if (!ctx.publishing || !live() || publishedFor === listing) return;
+    // Off this site (no live site, or another project's): nothing is Live here until it's read again.
+    if (!ctx.publishing || !live()) {
+      publishedFor = undefined;
+      if (publication() !== NO_PUBLICATION) store.update(s => ({ ...s, ui: { ...s.ui, share: { ...s.ui.share, publication: NO_PUBLICATION } } }));
+      return;
+    }
+    if (publishedFor === listing) return;
     publishedFor = listing;
     void refreshPublished();
   });
   /** The notes a path covers that are on the site: the note, or a folder's published descendants. */
-  const publishedUnder = (rel: string) => [...publishedNotes].filter(p => p === rel || p.startsWith(`${rel}/`));
+  const publishedUnder = (rel: string) => publication().published.filter(p => p === rel || p.startsWith(`${rel}/`));
   const reg = <A extends Record<string, unknown>>(id: string, run: (args: A) => void | Promise<void>) =>
     commands.register<A>({ id, title: "site.preview.title", run });
   const settings = (open: boolean) => store.update(s => ({ ...s, ui: { ...s.ui, settings: { ...s.ui.settings, open, section: "sharing" } } }));
@@ -170,13 +177,18 @@ export function registerSharingPreview(ctx: {
     await liveTask("sharing.publish", "publishSite", "sharing.publish.savingGitHub",
       [catalog.format("sharing.operation.saveGitHub"), catalog.format("sharing.operation.deploy")], async () => {
       parts[0]!.status = "running"; changed();
-      const result = await ctx.publishing!.publish({ notes, ...(folder ? { folders: [folder] } : {}) });
-      publishedNotes = new Set(result.published);
-      parts = parts.map(part => ({ ...part, status: "done" }));
-      set({ publishOpen: false });
-      const link = node.kind === "note" ? notes[0] : undefined;
-      ctx.toast(catalog.format("sharing.publish.published", { title }), { tone: "success",
-        ...(link && result.published.includes(link) ? { action: { command: "sharing.copyPublishedLink", label: catalog.format("sharing.publish.copyLink"), args: { path: link, title } } } : {}) });
+      setPublication({ publishing: notes });
+      try {
+        const result = await ctx.publishing!.publish({ notes, ...(folder ? { folders: [folder] } : {}) });
+        setPublication({ published: result.published, publishing: [] });
+        parts = parts.map(part => ({ ...part, status: "done" }));
+        set({ publishOpen: false });
+        const link = node.kind === "note" ? notes[0] : undefined;
+        ctx.toast(catalog.format("sharing.publish.published", { title }), { tone: "success",
+          ...(link && result.published.includes(link) ? { action: { command: "sharing.copyPublishedLink", label: catalog.format("sharing.publish.copyLink"), args: { path: link, title } } } : {}) });
+      } finally {
+        if (publication().publishing.length) setPublication({ publishing: [] });
+      }
     });
   };
   reg<Record<string, never>>("sharing.publish", async () => {
@@ -205,7 +217,7 @@ export function registerSharingPreview(ctx: {
       [catalog.format("sharing.operation.removeGitHub"), catalog.format("sharing.operation.deploy")], async () => {
       parts[0]!.status = "running"; changed();
       const result = await ctx.publishing!.unpublish(target.paths);
-      publishedNotes = new Set(result.published);
+      setPublication({ published: result.published });
       parts = parts.map(part => ({ ...part, status: "done" }));
       ctx.toast(catalog.format("sharing.unpublish.done", { title: target.title }), { tone: "success" });
     });
@@ -248,6 +260,15 @@ export function registerSharingPreview(ctx: {
   commands.register({
     id: "note.publish", title: "command.note.publish", icon: "globe", enabled: () => (local() || live()) && Boolean(store.state.note.path),
     disabledReason: "sharing.publish.localOnly", run: () => commands.run("sharing.publishOpen"),
+  });
+  // The open note's status line in ⋯ and File (D-422): words, never an action; hidden where it can't publish.
+  commands.register({
+    id: PUBLISH_STATUS_COMMAND, title: PUBLISH_STATUS_TITLE, icon: "globe", enabled: () => false,
+    label: s => {
+      const status = live() ? publishStatus(publishPathOf(s.workspace.tree, s.note.path), s.ui.share.publication) : undefined;
+      return status ? `sharing.publish.status.${status}` : PUBLISH_STATUS_TITLE;
+    },
+    run: () => undefined,
   });
   commands.register({
     id: "files.publish", title: "command.note.publish", icon: "globe", enabled: () => local() || live(),

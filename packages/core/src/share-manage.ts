@@ -20,6 +20,7 @@ import type { ViewModelRegistry } from "./view-models.ts";
 import { findNode, rootOf, stemOf, type TreeNode, type WorkspaceTree } from "./workspace.ts";
 import { inScope, noteId } from "@focus-notes/seal/grants";
 import { defaultItemShareTemplate, ITEM_SHARE_CLOSED, type ItemShareState } from "./share-item.ts";
+import { NO_PUBLICATION, type SitePublication } from "./publish-status.ts";
 
 /** What the shell reports: whether there's a private repository, the site, and the share audiences, without their secrets. */
 export interface AccessListing {
@@ -171,13 +172,15 @@ export interface ShareManageState {
   note: { open: boolean; copied?: string };
   /** Where a dialog goes back to when it closes: Settings → Sharing, the Share popover, or the item Share dialog. */
   from: "settings" | "note" | "shareItem";
+  /** The paired site's published notes and the Publish in flight (G3, D-422): the one source for Unpublish and every publish status. */
+  publication: SitePublication;
 }
 const EDITOR_CLOSED: ShareEditor = { open: false, name: "", link: true, passcode: true, mode: "generate", renew: false, own: "", notes: [], folders: [], filter: "", expiry: DEFAULT_EXPIRY, until: "", busy: false };
 export const SHARE_MANAGE_CLOSED: ShareManageState = {
   settings: { filter: "all", query: "", status: "", problem: "", problemRow: "", busy: false, dialog: "", id: "", off: false, more: false, resume: false },
   item: ITEM_SHARE_CLOSED,
   loading: false, failed: false, editor: EDITOR_CLOSED, invite: { open: false }, confirm: { open: false, kind: "withdraw", busy: false },
-  template: { open: false, value: "", failed: false, busy: false }, note: { open: false }, from: "settings",
+  template: { open: false, value: "", failed: false, busy: false }, note: { open: false }, from: "settings", publication: NO_PUBLICATION,
 };
 
 interface S {
