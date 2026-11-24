@@ -8233,6 +8233,161 @@
                                       }
                                     ]
                                   },
+                                  "copies": {
+                                    "type": "Stack",
+                                    "props": {
+                                      "gap": "stackGroup"
+                                    },
+                                    "children": [
+                                      {
+                                        "type": "StatusRow",
+                                        "when": {
+                                          "get": "vm.firstRun.hasError"
+                                        },
+                                        "props": {
+                                          "message": {
+                                            "get": "vm.firstRun.error"
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "type": "Text",
+                                        "props": {
+                                          "value": {
+                                            "get": "vm.firstRun.copiesWhy"
+                                          },
+                                          "role": "lead"
+                                        }
+                                      },
+                                      {
+                                        "type": "Stack",
+                                        "props": {
+                                          "gap": "stackItem"
+                                        },
+                                        "children": [
+                                          {
+                                            "each": {
+                                              "get": "vm.firstRun.copies"
+                                            },
+                                            "as": "item",
+                                            "key": "item.id",
+                                            "empty": {
+                                              "type": "Text",
+                                              "props": {
+                                                "value": {
+                                                  "t": "firstRun.notes.none"
+                                                },
+                                                "tone": "muted"
+                                              }
+                                            },
+                                            "render": {
+                                              "type": "ItemCard",
+                                              "props": {
+                                                "title": {
+                                                  "get": "item.label"
+                                                },
+                                                "detail": {
+                                                  "get": "item.detail"
+                                                },
+                                                "badge": {
+                                                  "get": "item.badge"
+                                                },
+                                                "icon": "folder",
+                                                "personal": "title"
+                                              },
+                                              "children": [
+                                                {
+                                                  "type": "Button",
+                                                  "props": {
+                                                    "label": {
+                                                      "t": "firstRun.copies.use"
+                                                    },
+                                                    "variant": {
+                                                      "get": "item.variant"
+                                                    },
+                                                    "autoFocus": {
+                                                      "get": "item.first"
+                                                    },
+                                                    "busy": {
+                                                      "get": "vm.firstRun.busy"
+                                                    },
+                                                    "size": "l"
+                                                  },
+                                                  "on": {
+                                                    "press": {
+                                                      "run": "firstRun.useCopy",
+                                                      "args": {
+                                                        "id": {
+                                                          "get": "item.id"
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              ]
+                                            }
+                                          },
+                                          {
+                                            "type": "ItemCard",
+                                            "props": {
+                                              "title": {
+                                                "t": "firstRun.copies.new"
+                                              },
+                                              "detail": {
+                                                "t": "firstRun.copies.newDetail"
+                                              },
+                                              "icon": "download"
+                                            },
+                                            "children": [
+                                              {
+                                                "type": "Button",
+                                                "props": {
+                                                  "label": {
+                                                    "t": "firstRun.copies.new"
+                                                  },
+                                                  "variant": "secondary",
+                                                  "busy": {
+                                                    "get": "vm.firstRun.busy"
+                                                  },
+                                                  "size": "l"
+                                                },
+                                                "on": {
+                                                  "press": {
+                                                    "run": "firstRun.newCopy"
+                                                  }
+                                                }
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "type": "Inline",
+                                        "props": {
+                                          "gap": "inlineItem",
+                                          "justify": "start",
+                                          "wrap": true
+                                        },
+                                        "children": [
+                                          {
+                                            "type": "Button",
+                                            "props": {
+                                              "label": {
+                                                "t": "firstRun.back"
+                                              },
+                                              "variant": "subtle",
+                                              "bleed": true
+                                            },
+                                            "on": {
+                                              "press": {
+                                                "run": "firstRun.back"
+                                              }
+                                            }
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
                                   "create": {
                                     "type": "Stack",
                                     "props": {
