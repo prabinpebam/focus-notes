@@ -5,10 +5,10 @@ const t = tokens.cmp.itemCard;
 
 export const base = style({
   display: "flex", alignItems: "center", flexWrap: "wrap", gap: t.gap, minWidth: 0,
-  padding: t.padding.m, backgroundColor: t.background, borderStyle: "solid", borderWidth: t.borderWidth, borderColor: t.border, borderRadius: t.radius,
+  paddingBlock: t.paddingBlock.m, paddingInline: t.padding.m, backgroundColor: t.background, borderStyle: "solid", borderWidth: t.borderWidth, borderColor: t.border, borderRadius: t.radius,
   fontFamily: t.font, lineHeight: t.lineHeight,
 });
-export const large = style({ padding: t.padding.l });
+export const large = style({ paddingBlock: t.paddingBlock.l, paddingInline: t.padding.l });
 const pendingBorder = keyframes({ from: { borderStyle: "solid" }, to: { borderStyle: "dashed" } });
 export const choiceCard = style({
   selectors: {

@@ -32,62 +32,6 @@
       }
     }
   },
-  "slots": {
-    "footer": [
-      {
-        "type": "Stack",
-        "when": { "expr": { "==": [{ "get": "vm.projectDelete.step" }, "inApp"] } },
-        "children": [
-          {
-            "switch": { "get": "vm.projectDelete.remoteState" },
-            "cases": {
-              "stepup": {
-                "type": "Inline", "props": { "gap": "inlineItem", "justify": "end", "wrap": true },
-                "children": [
-                  { "type": "Button", "props": { "label": { "t": "project.back" }, "variant": "secondary" }, "on": { "press": { "run": "project.deleteBack" } } },
-                  { "type": "Button", "props": { "label": { "t": "project.delete.inApp.stepup.action" }, "variant": "primary" }, "on": { "press": { "run": "project.deleteAuthorize" } } }
-                ]
-              },
-              "deleted": {
-                "type": "Inline", "props": { "justify": "end" },
-                "children": [
-                  { "type": "Button", "props": { "label": { "t": "project.delete.inApp.deleted.action" }, "variant": "primary" }, "on": { "press": { "run": "project.deleteFinish" } } }
-                ]
-              },
-              "declined": {
-                "type": "Inline", "props": { "gap": "inlineItem", "justify": "end", "wrap": true },
-                "children": [
-                  { "type": "Button", "props": { "label": { "t": "project.delete.inApp.keep" }, "variant": "secondary" }, "on": { "press": { "run": "project.deleteCancel" } } },
-                  { "type": "Button", "props": { "label": { "t": "project.delete.github.open" }, "variant": "primary" }, "on": { "press": { "run": "project.deleteOpenGitHub", "args": { "id": { "get": "vm.projectDelete.remoteTarget" } } } } }
-                ]
-              },
-              "deleting": {
-                "type": "Inline", "props": { "gap": "inlineItem", "justify": "end" },
-                "children": [
-                  { "type": "Button", "props": { "label": { "t": "project.delete.github.stop" }, "variant": "secondary" }, "on": { "press": { "run": "project.deleteCancel" } } },
-                  { "type": "Button", "props": { "label": { "get": "vm.projectDelete.remoteTitle" }, "variant": "danger", "commit": "pending", "feedback": "border" } }
-                ]
-              },
-              "partial": {
-                "type": "Inline", "props": { "gap": "inlineItem", "justify": "end", "wrap": true },
-                "children": [
-                  { "type": "Button", "props": { "label": { "t": "project.delete.inApp.keep" }, "variant": "secondary" }, "on": { "press": { "run": "project.deleteCancel" } } },
-                  { "type": "Button", "props": { "label": { "t": "commit.retry" }, "variant": "primary" }, "on": { "press": { "run": "project.deleteRetry" } } }
-                ]
-              },
-              "refused": {
-                "type": "Inline", "props": { "gap": "inlineItem", "justify": "end", "wrap": true },
-                "children": [
-                  { "type": "Button", "props": { "label": { "t": "project.delete.inApp.keep" }, "variant": "secondary" }, "on": { "press": { "run": "project.deleteCancel" } } },
-                  { "type": "Button", "props": { "label": { "t": "project.delete.github.open" }, "variant": "primary" }, "on": { "press": { "run": "project.deleteOpenGitHub", "args": { "id": { "get": "vm.projectDelete.remoteTarget" } } } } }
-                ]
-              }
-            }
-          }
-        ]
-      }
-    ]
-  },
   "children": [
     {
       "switch": {
@@ -335,7 +279,7 @@
                     "linked": {
                       "type": "Stack",
                       "props": {
-                        "gap": "stackGroup"
+                        "gap": "stackItem"
                       },
                       "children": [
                         {
@@ -572,100 +516,6 @@
                           }
                         },
                         {
-                          "type": "Stack",
-                          "props": {
-                            "gap": "stackPair"
-                          },
-                          "children": [
-                            {
-                              "type": "ItemCard",
-                              "props": {
-                                "icon": "lock",
-                                "title": {
-                                  "t": "project.delete.private.title",
-                                  "args": {
-                                    "repo": {
-                                      "get": "vm.projectDelete.privateRepo"
-                                    }
-                                  }
-                                },
-                                "detail": {
-                                  "t": "project.delete.private.detail",
-                                  "args": {
-                                    "count": {
-                                      "get": "vm.projectDelete.privateCount"
-                                    }
-                                  }
-                                },
-                                "personal": "title",
-                                "titleLabel": {
-                                  "t": "command.github.reference",
-                                  "args": {
-                                    "reference": {
-                                      "get": "vm.projectDelete.privateRepo"
-                                    }
-                                  }
-                                }
-                              },
-                              "children": [
-                                {
-                                  "type": "Switch",
-                                  "props": {
-                                    "label": {
-                                      "t": "project.delete.private.switch"
-                                    },
-                                    "checked": {
-                                      "bind": "vm.projectDelete.private"
-                                    },
-                                    "onLabel": {
-                                      "t": "switch.on"
-                                    },
-                                    "offLabel": {
-                                      "t": "switch.off"
-                                    }
-                                  }
-                                }
-                              ],
-                              "on": {
-                                "titlePress": {
-                                  "run": "github.open",
-                                  "args": {
-                                    "reference": {
-                                      "get": "vm.projectDelete.privateRepo"
-                                    }
-                                  }
-                                }
-                              }
-                            },
-                            {
-                              "type": "Text",
-                              "props": {
-                                "value": {
-                                  "t": "project.delete.private.keep"
-                                },
-                                "tone": "muted"
-                              },
-                              "when": {
-                                "expr": {
-                                  "!": {
-                                    "get": "vm.projectDelete.private"
-                                  }
-                                }
-                              }
-                            }
-                          ],
-                          "when": {
-                            "expr": {
-                              "!=": [
-                                {
-                                  "get": "vm.projectDelete.privateRepo"
-                                },
-                                ""
-                              ]
-                            }
-                          }
-                        },
-                        {
                           "type": "ItemCard",
                           "props": {
                             "icon": "hardDrive",
@@ -692,6 +542,112 @@
                       }
                     }
                   }
+                },
+                {
+                  "type": "Stack",
+                  "props": {
+                    "gap": "stackPair"
+                  },
+                  "children": [
+                    {
+                      "type": "ItemCard",
+                      "props": {
+                        "icon": "lock",
+                        "title": {
+                          "t": "project.delete.private.title",
+                          "args": {
+                            "repo": {
+                              "get": "vm.projectDelete.privateRepo"
+                            }
+                          }
+                        },
+                        "detail": {
+                          "t": "project.delete.private.detail",
+                          "args": {
+                            "count": {
+                              "get": "vm.projectDelete.privateCount"
+                            }
+                          }
+                        },
+                        "personal": "title",
+                        "titleLabel": {
+                          "t": "command.github.reference",
+                          "args": {
+                            "reference": {
+                              "get": "vm.projectDelete.privateRepo"
+                            }
+                          }
+                        }
+                      },
+                      "children": [
+                        {
+                          "type": "Switch",
+                          "props": {
+                            "label": {
+                              "t": "project.delete.private.switch"
+                            },
+                            "checked": {
+                              "bind": "vm.projectDelete.private"
+                            },
+                            "onLabel": {
+                              "t": "switch.on"
+                            },
+                            "offLabel": {
+                              "t": "switch.off"
+                            }
+                          }
+                        }
+                      ],
+                      "on": {
+                        "titlePress": {
+                          "run": "github.open",
+                          "args": {
+                            "reference": {
+                              "get": "vm.projectDelete.privateRepo"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "type": "Text",
+                      "props": {
+                        "value": {
+                          "t": "project.delete.private.keep"
+                        },
+                        "tone": "muted"
+                      },
+                      "when": {
+                        "expr": {
+                          "!": {
+                            "get": "vm.projectDelete.private"
+                          }
+                        }
+                      }
+                    }
+                  ],
+                  "when": {
+                    "expr": {
+                      "and": [
+                        {
+                          "==": [
+                            {
+                              "get": "vm.projectDelete.kind"
+                            },
+                            "linked"
+                          ]
+                        },
+                        {
+                          "!=": [
+                            {
+                              "get": "vm.projectDelete.privateRepo"
+                            },
+                            ""
+                          ]
+                        }
+                      ]
+                    }
+                  }
                 }
               ]
             },
@@ -708,20 +664,6 @@
                     "wrap": true
                   },
                   "children": [
-                    {
-                      "type": "Button",
-                      "props": {
-                        "label": {
-                          "t": "remove.cancel"
-                        },
-                        "variant": "secondary"
-                      },
-                      "on": {
-                        "press": {
-                          "run": "project.deleteCancel"
-                        }
-                      }
-                    },
                     {
                       "type": "Button",
                       "props": {
@@ -782,7 +724,7 @@
                 "offline": {
                   "type": "Stack",
                   "props": {
-                    "gap": "stackGroup"
+                    "gap": "stackSection"
                   },
                   "children": [
                     {
@@ -809,20 +751,6 @@
                         "wrap": true
                       },
                       "children": [
-                        {
-                          "type": "Button",
-                          "props": {
-                            "label": {
-                              "t": "remove.cancel"
-                            },
-                            "variant": "secondary"
-                          },
-                          "on": {
-                            "press": {
-                              "run": "project.deleteCancel"
-                            }
-                          }
-                        },
                         {
                           "type": "Button",
                           "props": {
@@ -866,7 +794,7 @@
         "unsynced": {
           "type": "Stack",
           "props": {
-            "gap": "stackGroup"
+            "gap": "stackSection"
           },
           "children": [
             {
@@ -1026,19 +954,9 @@
                   "type": "Button",
                   "props": {
                     "label": {
-                      "t": "project.delete.continue"
+                      "get": "vm.projectDelete.unsyncedProceedLabel"
                     },
-                    "variant": "primary",
-                    "disabled": {
-                      "expr": {
-                        "!": {
-                          "get": "vm.projectDelete.exported"
-                        }
-                      }
-                    },
-                    "disabledReason": {
-                      "t": "project.delete.unsynced.copyFirst"
-                    }
+                    "variant": "primary"
                   },
                   "on": {
                     "press": {
@@ -1053,7 +971,7 @@
         "confirm": {
           "type": "Stack",
           "props": {
-            "gap": "stackGroup"
+            "gap": "stackSection"
           },
           "children": [
             {
@@ -1224,52 +1142,92 @@
             }
           ]
         },
-        "inApp": {
-          "type": "Stack",
-          "props": { "gap": "stackGroup" },
-          "children": [
-            {
-              "type": "ItemCard",
-              "props": { "title": { "get": "vm.projectDelete.name" }, "icon": "github", "chevron": false },
-              "children": [
-                {
-                  "type": "Text",
-                  "props": { "value": { "get": "vm.projectDelete.remoteTarget" }, "label": { "t": "command.github.reference", "args": { "reference": { "get": "vm.projectDelete.remoteTarget" } } }, "role": "secondary" },
-                  "on": { "press": { "run": "github.open", "args": { "reference": { "get": "vm.projectDelete.remoteTarget" } } } }
-                }
-              ]
-            },
-            { "type": "StatusRow", "props": { "message": { "get": "vm.projectDelete.remoteTitle" }, "tone": { "get": "vm.projectDelete.remoteTone" } } },
-            {
-              "type": "Stack", "props": { "gap": "stackPair" },
-              "when": { "expr": { "==": [{ "get": "vm.projectDelete.remoteState" }, "stepup"] } },
-              "children": [
-                { "type": "Text", "props": { "value": { "t": "project.delete.inApp.stepup.permission" }, "tone": "muted", "role": "secondary" } },
-                { "type": "TextField", "when": { "expr": { "==": [{ "get": "vm.projectDelete.remoteMethod" }, "token"] } }, "props": { "label": { "t": "project.delete.inApp.stepup.token" }, "description": { "t": "project.delete.inApp.stepup.hint" }, "type": "password", "value": { "bind": "vm.projectDelete.remoteToken" } } }
-              ]
-            },
-            {
-              "type": "Stack", "props": { "gap": "stackPair" },
-              "when": { "expr": { "!=": [{ "get": "vm.projectDelete.remoteCode" }, ""] } },
-              "children": [
-                { "type": "Text", "props": { "value": { "get": "vm.projectDelete.remoteCodeLabel" }, "role": "secondary", "announce": true } },
-                { "type": "Text", "props": { "value": { "t": "project.delete.inApp.device.open" } }, "on": { "press": { "run": "project.deleteOpenAuthorization" } } }
-              ]
-            },
-            {
-              "type": "Stack",
-              "props": { "gap": "stackPair" },
-              "children": [
-                { "type": "Text", "props": { "value": { "get": "vm.projectDelete.remoteDetail" } } },
-                { "type": "Text", "props": { "value": { "get": "vm.projectDelete.remoteKept" }, "tone": "muted" } }
-              ]
-            }
-          ]
-        },
         "github": {
-          "type": "Stack",
-          "props": {
-            "gap": "stackGroup"
+          "type": "IconLayout",
+          "slots": {
+            "icon": [
+              {
+                "type": "StepMark",
+                "props": {
+                  "icon": "github",
+                  "size": "compact",
+                  "tone": "accent",
+                  "busy": {
+                    "get": "vm.projectDelete.checking"
+                  }
+                }
+              }
+            ],
+            "heading": [
+              {
+                "type": "Heading",
+                "props": {
+                  "level": "2",
+                  "value": {
+                    "t": "project.delete.github.heading"
+                  }
+                }
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "value": {
+                    "t": "project.delete.github.intro"
+                  }
+                }
+              }
+            ],
+            "actions": [
+              {
+                "type": "Button",
+                "when": {
+                  "get": "vm.projectDelete.canBackFromGithub"
+                },
+                "props": {
+                  "label": {
+                    "t": "project.back"
+                  },
+                  "variant": "secondary"
+                },
+                "on": {
+                  "press": {
+                    "run": "project.deleteBack"
+                  }
+                }
+              },
+              {
+                "type": "Button",
+                "props": {
+                  "label": {
+                    "t": "project.delete.github.checkAgain"
+                  },
+                  "variant": "secondary",
+                  "busy": {
+                    "get": "vm.projectDelete.checking"
+                  }
+                },
+                "on": {
+                  "press": {
+                    "run": "project.deleteRetry"
+                  }
+                }
+              },
+              {
+                "type": "Button",
+                "props": {
+                  "label": {
+                    "t": "project.delete.github.open"
+                  },
+                  "variant": "primary",
+                  "icon": "openWindow"
+                },
+                "on": {
+                  "press": {
+                    "run": "project.deleteOpenGitHub"
+                  }
+                }
+              }
+            ]
           },
           "children": [
             {
@@ -1282,7 +1240,7 @@
                   "type": "Text",
                   "props": {
                     "value": {
-                      "t": "project.delete.github.intro"
+                      "t": "project.delete.github.step1"
                     }
                   }
                 },
@@ -1290,7 +1248,41 @@
                   "type": "Text",
                   "props": {
                     "value": {
-                      "t": "project.delete.github.where"
+                      "t": "project.delete.github.step2"
+                    }
+                  }
+                },
+                {
+                  "type": "Text",
+                  "props": {
+                    "value": {
+                      "t": "project.delete.github.step3"
+                    }
+                  }
+                },
+                {
+                  "type": "Text",
+                  "props": {
+                    "value": {
+                      "t": "project.delete.github.step4"
+                    }
+                  }
+                },
+                {
+                  "type": "Text",
+                  "when": {
+                    "expr": {
+                      "!=": [
+                        {
+                          "get": "vm.projectDelete.siteRepo"
+                        },
+                        ""
+                      ]
+                    }
+                  },
+                  "props": {
+                    "value": {
+                      "t": "project.delete.github.siteStep"
                     },
                     "tone": "muted"
                   }
@@ -1306,7 +1298,7 @@
                 "tone": "warning",
                 "icon": "cloudOff",
                 "actionLabel": {
-                  "t": "commit.retry"
+                  "t": "project.delete.github.checkAgain"
                 }
               },
               "when": {
@@ -1316,6 +1308,34 @@
                       "get": "vm.projectDelete.problem"
                     },
                     "offline"
+                  ]
+                }
+              },
+              "on": {
+                "action": {
+                  "run": "project.deleteRetry"
+                }
+              }
+            },
+            {
+              "type": "StatusRow",
+              "props": {
+                "message": {
+                  "t": "project.delete.problem.error"
+                },
+                "tone": "warning",
+                "icon": "warning",
+                "actionLabel": {
+                  "t": "project.delete.github.checkAgain"
+                }
+              },
+              "when": {
+                "expr": {
+                  "==": [
+                    {
+                      "get": "vm.projectDelete.problem"
+                    },
+                    "error"
                   ]
                 }
               },
@@ -1489,59 +1509,27 @@
                     },
                     "children": [
                       {
-                        "type": "Inline",
-                        "props": {
-                          "gap": "inlineItem",
-                          "wrap": true
+                        "type": "Button",
+                        "when": {
+                          "get": "r.canOpen"
                         },
-                        "children": [
-                          {
-                            "type": "Button",
-                            "when": {
-                              "get": "r.canOpen"
-                            },
-                            "props": {
-                              "label": {
-                                "t": "project.delete.github.open"
-                              },
-                              "variant": "secondary",
-                              "icon": "openWindow"
-                            },
-                            "on": {
-                              "press": {
-                                "run": "project.deleteOpenGitHub",
-                                "args": {
-                                  "id": {
-                                    "get": "r.id"
-                                  }
-                                }
-                              }
-                            }
+                        "props": {
+                          "label": {
+                            "t": "project.delete.github.open"
                           },
-                          {
-                            "type": "Button",
-                            "when": {
-                              "get": "r.ask"
-                            },
-                            "props": {
-                              "label": {
-                                "t": "project.delete.github.confirmDeleted"
-                              },
-                              "variant": "secondary",
-                              "icon": "check"
-                            },
-                            "on": {
-                              "press": {
-                                "run": "project.deleteConfirmGitHub",
-                                "args": {
-                                  "id": {
-                                    "get": "r.id"
-                                  }
-                                }
+                          "variant": "secondary",
+                          "icon": "openWindow"
+                        },
+                        "on": {
+                          "press": {
+                            "run": "project.deleteOpenGitHub",
+                            "args": {
+                              "id": {
+                                "get": "r.id"
                               }
                             }
                           }
-                        ]
+                        }
                       }
                     ],
                     "on": {
@@ -1566,37 +1554,75 @@
                   }
                 }
               ]
-            },
-            {
-              "type": "Inline",
-              "props": {
-                "gap": "inlineItem",
-                "justify": "end",
-                "wrap": true
-              },
-              "children": [
-                {
-                  "type": "Button",
-                  "props": {
-                    "label": {
-                      "t": "project.delete.github.stop"
-                    },
-                    "variant": "secondary"
-                  },
-                  "on": {
-                    "press": {
-                      "run": "project.deleteStop"
-                    }
+            }
+          ]
+        },
+        "done": {
+          "type": "IconLayout",
+          "slots": {
+            "icon": [
+              {
+                "type": "StepMark",
+                "props": {
+                  "icon": "check",
+                  "size": "compact",
+                  "tone": "success",
+                  "busy": false
+                }
+              }
+            ],
+            "heading": [
+              {
+                "type": "Heading",
+                "props": {
+                  "level": "2",
+                  "value": {
+                    "t": "project.delete.done.title"
                   }
                 }
-              ]
+              },
+              {
+                "type": "Text",
+                "props": {
+                  "value": {
+                    "t": "project.delete.done.detail"
+                  }
+                }
+              }
+            ],
+            "actions": [
+              {
+                "type": "Button",
+                "props": {
+                  "label": {
+                    "t": "project.delete.done.action"
+                  },
+                  "variant": "primary"
+                },
+                "on": {
+                  "press": {
+                    "run": "project.deleteFinish"
+                  }
+                }
+              }
+            ]
+          },
+          "children": [
+            {
+              "type": "Text",
+              "props": {
+                "value": {
+                  "t": "project.delete.done.kept"
+                },
+                "tone": "muted"
+              }
             }
           ]
         },
         "progress": {
           "type": "Stack",
           "props": {
-            "gap": "stackGroup"
+            "gap": "stackSection"
           },
           "children": [
             {

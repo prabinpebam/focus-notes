@@ -4,6 +4,7 @@
   "borderWidth": { "$type": "dimension", "$value": "{border.hairline}" },
   "radius": { "$type": "dimension", "$value": "{radius.popover}" },
   "padding": { "$type": "dimension", "m": { "$value": "{space.scale.m}" }, "l": { "$value": "{space.scale.l}" } },
+  "paddingBlock": { "$type": "dimension", "m": { "$value": "{space.insetSm}" }, "l": { "$value": "{space.insetMd}" } },
   "gap": { "$type": "dimension", "$value": "{space.scale.m}" },
   "textGap": { "$type": "dimension", "$value": "{space.inlinePair}" },
   "textMin": { "$type": "dimension", "$value": "{layout.sheetMin}", "$description": "Narrower than this, the actions wrap below the text (D-111)." },

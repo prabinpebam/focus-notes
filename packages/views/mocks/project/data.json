@@ -381,17 +381,9 @@
   "del": {
     "name": "Garden notes",
     "repo": "prabin/garden-notes",
+    "siteRepo": "prabin/garden-notes-site",
     "privateRepo": "prabin/garden-notes-private",
-    "remoteState": "deleting",
-    "remoteToken": "",
-    "remoteCode": "",
-    "remoteMethod": "token",
-    "remoteTarget": "prabin/garden-notes",
-    "remoteTitle": "Deleting repository…",
-    "remoteTone": "info",
-    "remoteCodeLabel": "",
-    "remoteDetail": "GitHub has not confirmed deletion yet.",
-    "remoteKept": "Your local project is still here.",
+    "unsyncedProceedLabel": "Delete without saving",
     "otherRepo": "meera/garden-notes",
     "otherOwner": "@meera",
     "org": "green-thumbs",
@@ -403,8 +395,8 @@
     "peopleNames": "@meera and @arjun",
     "privateCount": 12,
     "repos": [
-      { "id": "prabin/garden-notes", "label": "prabin/garden-notes", "detail": "Deleted on GitHub", "icon": "check", "waiting": false, "canOpen": false, "ask": false },
-      { "id": "prabin/garden-notes-private", "label": "prabin/garden-notes-private", "detail": "Waiting for you to delete it…", "icon": "github", "waiting": true, "canOpen": true, "ask": false }
+      { "id": "prabin/garden-notes", "label": "prabin/garden-notes", "detail": "Deleted on GitHub", "icon": "check", "waiting": false, "deleted": true, "canOpen": false },
+      { "id": "prabin/garden-notes-site", "label": "prabin/garden-notes-site", "detail": "Waiting for deletion on GitHub…", "icon": "github", "waiting": true, "deleted": false, "canOpen": true }
     ],
     "unsyncedCount": 3,
     "unsynced": [
