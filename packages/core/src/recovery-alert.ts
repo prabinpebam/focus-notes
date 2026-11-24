@@ -153,8 +153,8 @@ export function recoveryAlertView(input: RecoveryAlertViewInput, catalog: Messag
       alertLabel: "",
       cornerState: "error",
       cornerText: "",
-      cornerOpen: false,
-      headerOpen: false,
+      cornerOpen,
+      headerOpen,
     };
   }
 

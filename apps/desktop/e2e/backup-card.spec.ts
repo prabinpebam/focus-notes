@@ -39,6 +39,7 @@ test("UI-12: an outlined icon replaces the desktop name; its hover card does not
       const mark = await card.locator("[data-step-mark-size=compact]").boundingBox();
       return { width: mark?.width, height: mark?.height };
     }).toEqual({ width: 36, height: 36 });
+    // D-408 (66eea17b): comfortable popover cards use roomier insetLg (24px) padding.
     expect(await card.evaluate((el) => {
       const s = getComputedStyle(el.closest("[data-surface=popover]")!);
       return [s.paddingTop, s.paddingRight, s.paddingBottom, s.paddingLeft];
