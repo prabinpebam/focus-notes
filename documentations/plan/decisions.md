@@ -1,7 +1,33 @@
 # Decisions
 
 > [!NOTE]
-> **TL;DR.** D-412 records the owner's 24 November approval of all pending designs (D-408 two-column dialogs, D-409 Share information message, G6.3/SHR-19 share-information template mock, D-410 Opened files vertical tabs, and the Web export mock) for end-to-end integration and review, plus the 24 November worker-model override (workers on `gemini-4-neon`, coordinators on `claude-opus-5.5`). D-411 lets the leak gate pass a private line that is only an image reference to a published image. D-410 (approved) adds Opened files vertical tabs above Pinned in Files. D-409 (approved) makes Share information a message to the recipient in the sharer's voice. D-408 (approved) puts every dialog, alert card and popover card on IconLayout. Earlier decisions D-407–D-393 govern chat archiving, worker caps, 1.1.0 batch gating, Autopilot scope, GitHub links, Delete and Find.
+> **TL;DR.** D-413 replaces the complex one-time deletion token step (superseding D-394/D-400) with step-by-step web deletion on GitHub plus automatic focus/polling detection (authenticated 404 + valid GET /user 200), and makes "Save a copy…" optional on unsynced notes with an immediate "Delete without saving" proceed action. D-412 records the owner's 24 November approval of all pending designs (D-408 two-column dialogs, D-409 Share information message, G6.3/SHR-19 share-information template mock, D-410 Opened files vertical tabs, and the Web export mock) for end-to-end integration and review, plus the 24 November worker-model override (workers on `gemini-4-neon`, coordinators on `claude-opus-5.5`). D-411 lets the leak gate pass a private line that is only an image reference to a published image. D-410 (approved) adds Opened files vertical tabs above Pinned in Files. D-409 (approved) makes Share information a message to the recipient in the sharer's voice. D-408 (approved) puts every dialog, alert card and popover card on IconLayout. Earlier decisions D-407–D-393 govern chat archiving, worker caps, 1.1.0 batch gating, Autopilot scope, GitHub links, Delete and Find.
+
+## D-413: delete linked projects on GitHub web with automatic detection, and optional unsynced save
+
+**Decided (owner, 24 November 2026, 11:58 IST and 12:26 IST; ID assigned by coordinator); supersedes the one-time-token / in-app-DELETE step of [D-394](#d-394-delete-the-repository-in-the-app-with-one-time-step-up) and [D-400](#d-400-one-time-deletion-authorization-without-expanding-retained-sign-in), and the forced-save blocker on unsynced notes.** The owner, verbatim on review build `53e83c9b`:
+
+> "The flow of getting a token is complex, I had instructed to just show a step by step instruction on how to delete it on the web and come back and complete it in the app. If there's an automatic callback after the deletion on web is complete, that will be great. The current delete flow is complicated because getting the token is more complicated than deleting the repo on web."
+
+And verbatim on review build `85df50d5` (12:26 IST):
+
+> "Why ask for a save before deleting? Well in-case the user might want to recover later, but this should not be a blocker. You should get option to delete without saving."
+
+And verbatim on review build `85df50d5` (12:28 IST):
+
+> "The spacing here is wrong. Content within a group should be closer together than the spacing between groups at a higher level. There's more gap between the list items than the spcing between the parent group and the adjacent group."
+
+Owner feedback screenshots are stored outside the repository in `focus-notes-work/review/delete-flow-feedback-24nov/` (`confirm-step.png`, `one-time-token-step.png`, `unsynced-save-blocker.png`, `consequences-spacing.png`).
+
+- **Spacing hierarchy & no duplicate Cancel (D-374):** `ItemCard` now uses `cmp.itemCard.paddingBlock` (`space.insetSm`, 8 px for `m`) separately from inline padding (`space.scale.m`, 16 px), and Delete's "What's deleted" item list uses `stackItem` (8 px) instead of `stackGroup` (16 px) inside `stackSection` (32 px) outer stacks across all steps. Before: visual content gap between sibling items was 48 px (16 + 16 + 16) vs 32 px section gap. After: title→description 4 px, heading→list 8 px (16 px visual), item→item 8 px (24 px visual), section→section 32 px. Removed the duplicate Cancel button beside the close × on the Consequences step.
+
+- **No one-time token or `delete_repo` step:** Focus Notes never asks for a PAT or device-code `delete_repo` grant and never calls `DELETE /repos/{owner}/{repo}`.
+- **Two-column web-delete step ([D-408](#d-408-dialogs-and-cards-two-columns-icon-first-actions-trailing)):** uses `IconLayout` (GitHub mark in column 1, heading, short numbered Danger Zone instructions, repository cards and honest status in column 2; right-aligned footer with no Cancel beside the close ×, secondary Back and Check again, and primary **Open GitHub settings** opening `https://github.com/<owner>/<repo>/settings` through the external-link policy). When a paired public site repository exists, it appears as a second link and step and must also be confirmed deleted.
+- **Automatic detection (data safety):** GitHub offers no web-delete callback, so while this step is open Focus Notes checks on window focus and via lightweight polling (starting at 5 s with backoff up to 30 s; stops immediately on close) using the existing signed-in GitHub session. A repository is treated as deleted **only** when authenticated `GET /repos/{owner}/{repo}` returns `404` **and** `GET /user` returns `200` for the same signed-in account in the same check. `401`, `403`, `429`, `5xx`, offline, timeouts and account mismatches are never treated as deleted; Focus Notes shows one honest status, respects `Retry-After` / `X-RateLimit-Reset`, and keeps waiting. Once all relevant repositories are confirmed gone, Focus Notes automatically runs local cleanup (moving the folder to the Recycle Bin) and shows the completion state.
+- **Optional save on unsynced notes:** the "notes aren't on GitHub yet" step keeps its warning and **Save a copy…** as an optional secondary action, while the proceed button is enabled immediately (**Delete without saving** before saving a copy, **Continue** after saving). The final explicit typed-name confirmation still applies.
+- **Wait inventory & diagnostics:** checking GitHub deletion runs through the task tracker (`project.deleteCheck`, `fn:project.deleteCheck`, `focus-notes:project.deleteCheck`).
+
+**Affects:** [Deleting a project](../experience/project-model.md#deleting-a-project), [PRJ-23](../product/requirements.md), [Definition of Done → F4.2 & MP.34](definition-of-done.md#backlog-f42-delete-in-the-app), [Perceived performance](../architecture/perceived-performance.md).
 
 ## D-412: all pending designs approved for integration; worker model override
 
