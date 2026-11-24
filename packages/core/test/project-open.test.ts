@@ -856,4 +856,21 @@ describe("Open from GitHub with a copy already here (D-415)", () => {
     await app.commands.run("projects.githubOpen", { id: "ada/notes" });
     expect(openGitHub).toHaveBeenCalledWith("ada", "notes");
   });
+  it("a failed step keeps the choice and Retry runs it again; a failed look never downloads", async () => {
+    let lookFails = true;
+    const openGitHub = vi.fn(async (_o: string, _n: string, _use?: string) => { if (openGitHub.mock.calls.length === 1) throw new Error("offline"); });
+    const app = appWith({ list: async () => [], githubRepos: async () => [{ owner: "ada", name: "notes", private: true }], githubCopies: async () => { if (lookFails) { lookFails = false; throw new Error("offline"); } return []; }, openGitHub });
+    const view = () => app.viewModels.select("vm.projects", app.store.state) as Record<string, unknown>;
+    await app.commands.run("projects.github");
+    await app.commands.run("projects.githubOpen", { id: "ada/notes" });
+    expect(openGitHub).not.toHaveBeenCalled();
+    expect(view()).toMatchObject({ githubOpen: true, githubCanRetry: true });
+    expect(view().githubError).toContain("couldn’t be checked");
+    await app.commands.run("projects.githubRetry");
+    expect(openGitHub).toHaveBeenCalledTimes(1);
+    expect(view()).toMatchObject({ githubOpen: true, githubCanRetry: true, repos: [{ id: "ada/notes" }] });
+    await app.commands.run("projects.githubRetry");
+    expect(openGitHub).toHaveBeenCalledTimes(2);
+    expect(view()).toMatchObject({ githubOpen: false, githubError: "", githubCanRetry: false });
+  });
 });

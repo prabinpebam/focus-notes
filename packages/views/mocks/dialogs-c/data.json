@@ -15,7 +15,7 @@
     "confirmOpen": false, "reviewOpen": false, "reviewTitle": "", "reviewSummary": "", "items": [], "reviewFocus": ""
   },
   "projects": {
-    "githubOpen": true, "githubWaiting": false, "githubLoading": false, "githubError": "", "githubPending": false, "githubChoosing": false, "githubCopiesWhy": "", "githubCopies": [{ "id": "C:\\Users\\ada\\Documents\\notes", "label": "notes", "detail": "C:\\Users\\ada\\Documents\\notes", "badge": "Updated 3 days ago", "variant": "primary", "first": true }], "githubStatus": "",
+    "githubOpen": true, "githubWaiting": false, "githubLoading": false, "githubError": "", "githubCanRetry": false, "githubRetrying": false, "githubPending": false, "githubChoosing": false, "githubCopiesWhy": "", "githubCopies": [{ "id": "C:\\Users\\ada\\Documents\\notes", "label": "notes", "detail": "C:\\Users\\ada\\Documents\\notes", "badge": "Updated 3 days ago", "variant": "primary", "first": true }], "githubStatus": "",
     "repos": [
       { "id": "prabin/book-drafts", "label": "book-drafts", "description": "Notes for the book", "owner": "prabin", "busy": false },
       { "id": "prabin/garden", "label": "garden", "description": "Public notes", "owner": "prabin", "busy": false }

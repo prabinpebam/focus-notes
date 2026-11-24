@@ -19,6 +19,8 @@
   "githubPending": false, "githubChoosing": false, "githubCopiesWhy": "", "githubCopies": [{ "id": "C:\\Users\\ada\\Documents\\notes", "label": "notes", "detail": "C:\\Users\\ada\\Documents\\notes", "badge": "Updated 3 days ago", "variant": "primary", "first": true }],
   "githubStatus": "",
   "githubError": "",
+  "githubCanRetry": false,
+  "githubRetrying": false,
   "repos": [{ "id": "r/x", "owner": "r", "label": "x", "description": "", "busy": false }],
   "error": "",
   "details": "",

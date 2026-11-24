@@ -500,6 +500,8 @@
   "project.github.newCopy": "Create a new copy",
   "project.github.cloneFailed": "{name} couldn’t be downloaded. Check your connection and try again.",
   "project.github.notWorkspace": "{name} isn’t a Focus Notes project.",
+  "project.github.useFailed": "The folder for {name} couldn’t be opened. Check your connection and try again.",
+  "project.github.copiesFailed": "Copies of {name} on this computer couldn’t be checked, so nothing was downloaded. Try again.",
   "rewrite.caret.done": "Written at the caret. Ctrl+Z takes it out.",
   "rewrite.caret.placeholder": "Three ideas for the next scene",
   "rewrite.caret.privacy": "Only your prompt is sent, not the note. The answer goes in at the caret.",

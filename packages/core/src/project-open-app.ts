@@ -29,7 +29,7 @@ export function registerProjectOpen(ctx: {
 }) {
   const { store, commands, viewModels, bridge } = ctx;
   const state = { open: false, full: false, query: "", active: "", pending: false, loading: false, retrying: false, searchFocus: 0, error: "", details: "", entries: [] as ProjectEntry[] };
-  const github = { open: false, loading: false, pending: "", error: "", repos: [] as { owner: string; name: string; private: boolean }[], copiesFor: "", copies: [] as ExistingCopy[], waitKey: "project.github.cloning" };
+  const github = { open: false, loading: false, pending: "", error: "", repos: [] as { owner: string; name: string; private: boolean }[], copiesFor: "", copies: [] as ExistingCopy[], waitKey: "project.github.cloning", retry: undefined as (() => Promise<void>) | undefined, retrying: false };
   const localImport = { open: false, pending: false, retrying: false, error: "", targets: [] as {id: string; label: string; description: string}[] };
   let importRecovery: { command: string; args: Record<string, unknown> } | undefined;
   let importReceipt: { path: string; folder: string; request: string } | undefined;
@@ -302,26 +302,44 @@ export function registerProjectOpen(ctx: {
   commands.register({
     id: "projects.github", title: "project.openFromGitHub", enabled: () => Boolean(bridge.projects?.githubRepos),
     run: async () => {
-      github.open = true; github.loading = true; github.error = ""; github.pending = ""; changed();
-      try { github.repos = await bridge.projects!.githubRepos!(); }
-      catch (e) { github.error = ctx.catalog.format(String(e).includes("signedOut") ? "project.github.signedOut" : "project.github.failed"); }
-      finally { github.loading = false; changed(); }
+      github.open = true; github.loading = true; github.error = ""; github.retry = undefined; github.pending = ""; changed();
+      const load = async () => {
+        try { github.repos = await bridge.projects!.githubRepos!(); github.error = ""; github.retry = undefined; }
+        catch (e) {
+          const signedOut = String(e).includes("signedOut");
+          github.error = ctx.catalog.format(signedOut ? "project.github.signedOut" : "project.github.failed");
+          github.retry = signedOut ? undefined : async () => { github.loading = true; changed(); await load(); };
+        }
+        finally { github.loading = false; changed(); }
+      };
+      await load();
     },
   });
+  // Every failure keeps the list and the choice made, and Retry runs that same step again.
+  commands.register({ id: "projects.githubRetry", title: "commit.retry", enabled: () => Boolean(github.retry) && !github.pending && !github.retrying, run: async () => {
+    const again = github.retry;
+    if (!again) return;
+    github.retrying = true; github.error = ""; changed();
+    try { await again(); } finally { github.retrying = false; changed(); }
+  } });
   commands.register({ id: "projects.githubBack", title: "project.github.back", enabled: () => !github.pending, run: () => {
     // From the copies already here, Back is the list again (D-415).
-    if (github.copiesFor) { github.copiesFor = ""; github.copies = []; github.error = ""; }
+    if (github.copiesFor) { github.copiesFor = ""; github.copies = []; github.error = ""; github.retry = undefined; }
     else github.open = false;
     changed();
   } });
   const openRepo = async (repo: { owner: string; name: string }, use?: string) => {
-    github.pending = repo.name; github.error = ""; github.waitKey = use ? "project.github.updating" : "project.github.cloning"; changed();
+    github.pending = repo.name; github.error = ""; github.retry = undefined; github.waitKey = use ? "project.github.updating" : "project.github.cloning"; changed();
     try {
       await (use ? ctx.tracker.run("project.useCopy", "project.github.updating", () => bridge.projects!.openGitHub!(repo.owner, repo.name, use), undefined, "fn:project.useCopy") : bridge.projects!.openGitHub!(repo.owner, repo.name));
       github.copiesFor = ""; github.copies = [];
       close();
     }
-    catch (e) { github.error = ctx.catalog.format(String(e).includes("notWorkspace") ? "project.github.notWorkspace" : "project.github.cloneFailed", { name: repo.name }); }
+    catch (e) {
+      const notProject = String(e).includes("notWorkspace");
+      github.error = ctx.catalog.format(notProject ? "project.github.notWorkspace" : use ? "project.github.useFailed" : "project.github.cloneFailed", { name: repo.name });
+      github.retry = notProject ? undefined : () => openRepo(repo, use);
+    }
     finally { github.pending = ""; changed(); }
   };
   commands.register<{id: string}>({
@@ -331,8 +349,15 @@ export function registerProjectOpen(ctx: {
       if (!repo) throw new Error("Unknown repository");
       // A copy already here is offered before another download (D-415); none, or the look failed: as before.
       if (bridge.projects?.githubCopies) {
-        github.pending = repo.name; github.error = ""; github.waitKey = "project.github.lookingForCopies"; changed();
-        const copies = await ctx.tracker.run("project.copies", "project.github.lookingForCopies", () => bridge.projects!.githubCopies!(repo.owner, repo.name), undefined, "fn:project.copies").catch(() => [] as ExistingCopy[]);
+        github.pending = repo.name; github.error = ""; github.retry = undefined; github.waitKey = "project.github.lookingForCopies"; changed();
+        let copies: ExistingCopy[];
+        try { copies = await ctx.tracker.run("project.copies", "project.github.lookingForCopies", () => bridge.projects!.githubCopies!(repo.owner, repo.name), undefined, "fn:project.copies"); }
+        catch {
+          // Never a silent second download when the look failed: say so, and Retry looks again.
+          github.pending = ""; github.error = ctx.catalog.format("project.github.copiesFailed", { name: repo.name });
+          github.retry = () => commands.run("projects.githubOpen", { id }) as Promise<void>;
+          changed(); return;
+        }
         github.pending = "";
         if (copies.length && github.open) { github.copiesFor = id; github.copies = copies; changed(); return; }
       }
@@ -387,7 +412,7 @@ export function registerProjectOpen(ctx: {
       open: { type: "boolean" }, full: { type: "boolean" }, dialog: { type: "boolean" }, pending: { type: "boolean" }, loading: { type: "boolean" }, recentWaiting: { type: "boolean" }, entriesWaiting: { type: "boolean" }, error: text,
       retrying: { type: "boolean" }, searchFocus: { type: "number" }, details: text, recoveryAction: text, pendingLabel: text,
       emptyTitle: text, emptyDetail: text, emptyAction: text, emptyRecentTitle: text, emptyRecentDetail: text, emptyRecentAction: text,
-      githubOpen: { type: "boolean" }, githubLoading: { type: "boolean" }, githubWaiting: { type: "boolean" }, githubPending: { type: "boolean" }, githubStatus: text, githubError: text,
+      githubOpen: { type: "boolean" }, githubLoading: { type: "boolean" }, githubWaiting: { type: "boolean" }, githubPending: { type: "boolean" }, githubStatus: text, githubError: text, githubCanRetry: { type: "boolean" }, githubRetrying: { type: "boolean" },
       githubChoosing: { type: "boolean" }, githubCopiesWhy: text, githubCopies: { type: "array", items: { type: "object", properties: { id: text, label: text, detail: text, badge: text, variant: text, first: { type: "boolean" } } } },
       repos: { type: "array", items: { type: "object", properties: { id: text, owner: text, label: text, description: text, busy: { type: "boolean" } } } }, query: text, active: text,
       recent: { type: "array", items: item },
@@ -416,7 +441,7 @@ export function registerProjectOpen(ctx: {
         emptyRecentDetail: ctx.catalog.format(query ? "uiStates.empty.matchesDetail" : "uiStates.empty.recentDetail"),
         emptyRecentAction: ctx.catalog.format(query ? "uiStates.empty.clearSearch" : "uiStates.empty.openProject"),
         githubOpen: github.open, githubLoading: github.loading, githubWaiting: github.loading && github.repos.length === 0, githubPending: Boolean(github.pending),
-        githubStatus: github.pending ? ctx.catalog.format(github.waitKey, { name: github.pending }) : "", githubError: github.error,
+        githubStatus: github.pending ? ctx.catalog.format(github.waitKey, { name: github.pending }) : "", githubError: github.error, githubCanRetry: Boolean(github.retry), githubRetrying: github.retrying,
         githubChoosing: Boolean(github.copiesFor),
         githubCopiesWhy: ctx.catalog.format("firstRun.copies.why", { count: github.copies.length }),
         githubCopies: github.copies.map((c, n) => ({ id: c.folder, label: c.name, detail: c.folder, badge: updatedLabel(ctx.catalog, Date.now(), c.updated), first: n === 0, variant: n === 0 ? "primary" : "secondary" })),

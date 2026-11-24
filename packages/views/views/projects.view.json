@@ -350,11 +350,22 @@
         "type": "StatusRow",
         "when": {
          "expr": {
-          "!=": [
+          "and": [
            {
-            "get": "vm.projects.githubError"
+            "!=": [
+             {
+              "get": "vm.projects.githubError"
+             },
+             ""
+            ]
            },
-           ""
+           {
+            "!": [
+             {
+              "get": "vm.projects.githubCanRetry"
+             }
+            ]
+           }
           ]
          }
         },
@@ -363,6 +374,46 @@
           "get": "vm.projects.githubError"
          },
          "tone": "danger"
+        }
+       },
+       {
+        "type": "StatusRow",
+        "when": {
+         "expr": {
+          "and": [
+           {
+            "!=": [
+             {
+              "get": "vm.projects.githubError"
+             },
+             ""
+            ]
+           },
+           {
+            "get": "vm.projects.githubCanRetry"
+           }
+          ]
+         }
+        },
+        "props": {
+         "message": {
+          "get": "vm.projects.githubError"
+         },
+         "tone": "danger",
+         "actionLabel": {
+          "t": "commit.retry"
+         },
+         "actionBusy": {
+          "get": "vm.projects.githubRetrying"
+         },
+         "actionBusyLabel": {
+          "t": "uiStates.recovery.retrying"
+         }
+        },
+        "on": {
+         "action": {
+          "run": "projects.githubRetry"
+         }
         }
        },
        {
