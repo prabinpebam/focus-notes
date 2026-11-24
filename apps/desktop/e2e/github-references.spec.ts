@@ -76,7 +76,9 @@ test("GitHub references independently open exact destinations across landed surf
     await activate(settings.getByRole("button", { name: "Open ada/notes on GitHub", exact: true }), "https://github.com/ada/notes");
     await activate(settings.getByRole("button", { name: "Open grace on GitHub", exact: true }), "https://github.com/grace");
     await settings.getByRole("tab", { name: "Sharing", exact: true }).click();
-    await expect(settings.getByRole("button", { name: "Turn on sharing…", exact: true })).toHaveCount(0);
+    // D-425: a public+private project can turn sharing on; no "isn't available yet" line.
+    await expect(settings.getByRole("button", { name: "Turn on sharing…", exact: true })).toBeVisible();
+    await expect(settings.getByText(/isn’t available yet/)).toHaveCount(0);
     await settings.getByRole("button", { name: "Close", exact: true }).click();
 
     await page.keyboard.press("Control+o");
