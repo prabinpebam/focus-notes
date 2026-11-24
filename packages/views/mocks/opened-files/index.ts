@@ -23,7 +23,7 @@ const findSheet = (node: unknown): Node | undefined => {
   return undefined;
 };
 
-const MODELS = /^vm\.(files|project|deleted|recovered|opened)\b/;
+const MODELS = /^vm\.(files|project|deleted|recovered|opened|syncAlert)\b/;
 const mockOf = (node: unknown, model: string): unknown => {
   if (Array.isArray(node)) return node.map((n) => mockOf(n, model));
   if (!node || typeof node !== "object") return typeof node === "string" ? node.replace(MODELS, `vm.${model}.$1`) : node;
@@ -54,6 +54,12 @@ const modelFor = (open: Item[]) => {
       items: data.files.items.map((i) => ({ ...i, current: i.id === current })),
     },
     opened: { items: open, menu: data.opened.menu },
+    syncAlert: {
+      active: false, headerAlert: false, cause: "", icon: "warning", tone: "warning", busy: false,
+      title: "", line: "", progress: 0, progressLabel: "", hasProgress: false,
+      facts: [{ id: "a", text: "" }], primary: "", hasPrimary: false, secondary: "", hasSecondary: false,
+      notNow: "", hasNotNow: false, alertLabel: "", cornerState: "error", cornerText: "", cornerOpen: false, headerOpen: false,
+    },
   };
 };
 const before = { ...modelFor([]), files: { ...modelFor([]).files, shortcuts: [...section("pinned", "Pinned", data.pinned), ...section("recent", "Recent", data.recent)], items: data.files.items } };
