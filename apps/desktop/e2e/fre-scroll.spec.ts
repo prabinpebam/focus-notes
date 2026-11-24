@@ -1,7 +1,9 @@
 /**
  * FRE / Welcome scroll geometry: overflowing onboarding steps (expanded More options,
  * active clone progress) must start at the top when scrolled to 0 and scroll all the way
- * to their last item with at least the scroll surface's token bottom inset as clearance.
+ * to their last item with at least the page-margin token (space.marginPage) of clearance, and
+ * never less than the scroller's top inset (the owner, 24 November: "We need bigger bottom
+ * margin for the content on this screen, else the content is stuck to the bottom edge.").
  */
 import { execFileSync } from "node:child_process";
 import { join } from "node:path";
@@ -16,6 +18,8 @@ interface ScrollGeometry {
   maxScrollTop: number;
   paddingTop: number;
   paddingBottom: number;
+  marginPage: number;
+  overflows: boolean;
   topClearanceAtZero: number;
   bottomClearanceAtEnd: number;
   firstItemTop: number;
@@ -54,6 +58,12 @@ async function measureFreScroll(page: Page): Promise<ScrollGeometry> {
     const cs = getComputedStyle(scroller);
     const paddingTop = parseFloat(cs.paddingTop);
     const paddingBottom = parseFloat(cs.paddingBottom);
+    const probe = document.createElement("div");
+    probe.style.paddingTop = "var(--fn-space-margin-page)";
+    document.body.append(probe);
+    const marginPage = parseFloat(getComputedStyle(probe).paddingTop);
+    probe.remove();
+    if (!(marginPage > 0)) throw new Error("space.marginPage did not resolve");
 
     const visibleLeaves = () => {
       const els = [...content.querySelectorAll("h1, h2, p, button, span, [role='progressbar'], [data-app-mark], [data-visual-anchor], svg")];
@@ -85,6 +95,8 @@ async function measureFreScroll(page: Page): Promise<ScrollGeometry> {
       maxScrollTop: scroller.scrollTop,
       paddingTop,
       paddingBottom,
+      marginPage,
+      overflows: scroller.scrollHeight > scroller.clientHeight,
       topClearanceAtZero: Math.round(topClearanceAtZero * 10) / 10,
       bottomClearanceAtEnd: Math.round(bottomClearanceAtEnd * 10) / 10,
       firstItemTop: Math.round(first.r.top * 10) / 10,
@@ -96,7 +108,7 @@ async function measureFreScroll(page: Page): Promise<ScrollGeometry> {
   });
 }
 
-test("FRE We found your notes: expanded More options and clone progress scroll to bottom with token clearance", async () => {
+test("FRE We found your notes: expanded More options and clone progress scroll to the end with at least the page margin below the last item", async () => {
   test.setTimeout(120_000);
   const w = await world({ gcm: true });
   existingInstance(w);
@@ -108,25 +120,43 @@ test("FRE We found your notes: expanded More options and clone progress scroll t
   const l = await start(w);
   const { page } = l;
   try {
+    // Small (below breakpoint.short = 560), about 720 tall, the default and a large window.
+    const sizes = [
+      ["720x480", 720, 480],
+      ["960x720", 960, 720],
+      ["1100x780", 1100, 780],
+      ["1440x1000", 1440, 1000],
+    ] as const;
+    const check = async (step: string) => {
+      for (const [size, width, height] of sizes) {
+        await resizeDrawnWindow(l, width, height);
+        const m = await measureFreScroll(page);
+        const label = `${step} ${size}`;
+        process.stdout.write(`[fre-scroll] ${label}: ${JSON.stringify(m)}\n`);
+        expect(m.topClearanceAtZero, `${label}: top item reachable at scrollTop 0`).toBeGreaterThanOrEqual(m.paddingTop - 1);
+        expect(m.bottomClearanceAtEnd, `${label}: last item has >= space.marginPage (${m.marginPage}px) below it`).toBeGreaterThanOrEqual(m.marginPage - 1);
+        expect(m.bottomClearanceAtEnd, `${label}: no less space below the last item than the scroller's top inset`).toBeGreaterThanOrEqual(m.paddingTop - 1);
+      }
+    };
+
     await heading(page, "A quiet place to write");
+    await check("welcome");
     await card(page).getByRole("button", { name: "Get started" }).click();
     await expect(card(page).getByRole("button", { name: "Continue as Ada" })).toBeVisible({ timeout: 20_000 });
+    await check("sign-in");
     await card(page).getByRole("button", { name: "Continue as Ada" }).click();
     await heading(page, "We found your notes");
     await expect(card(page).getByRole("button", { name: "Open", exact: true }).first()).toBeVisible({ timeout: 15_000 });
+    await check("found");
 
-    // 1) Expanded "More options" at small window height (below breakpoint.short = 560)
+    // Expanded "More options": overflows in the small window.
     await card(page).getByRole("button", { name: "More options" }).click();
     await expect(card(page).getByRole("button", { name: "Open from GitHub…" })).toBeVisible();
+    await check("more-options");
     await resizeDrawnWindow(l, 720, 480);
-    const moreSmall = await measureFreScroll(page);
-    process.stdout.write(`[fre-scroll] more-options 720x480: ${JSON.stringify(moreSmall)}\n`);
-    expect(moreSmall.scrollHeight).toBeGreaterThan(moreSmall.clientHeight);
-    expect(moreSmall.topClearanceAtZero).toBeGreaterThanOrEqual(moreSmall.paddingTop - 1);
-    expect(moreSmall.bottomClearanceAtEnd).toBeGreaterThanOrEqual(moreSmall.paddingBottom - 1);
+    expect((await measureFreScroll(page)).overflows, "more-options 720x480 scrolls").toBe(true);
 
-    // 2) Expanded progress section ("Getting your notes" / "Download to this computer")
-    // at default height (1100x780) and medium/small heights (960x660, 720x480).
+    // Expanded progress ("Getting the private notes", the bar, Cancel, the checklist ending in "Link them").
     await resizeDrawnWindow(l, 960, 660);
     await l.app.evaluate(() => {
       (globalThis as { focusNotesSlow?: Record<string, number> }).focusNotesSlow = { "firstRun:clone": 25_000 };
@@ -134,18 +164,9 @@ test("FRE We found your notes: expanded More options and clone progress scroll t
     await card(page).getByRole("button", { name: "Open", exact: true }).first().click();
     await expect(card(page).getByRole("button", { name: "Cancel" })).toBeVisible({ timeout: 15_000 });
     await expect(card(page).getByText(/Download to this computer/i)).toBeVisible({ timeout: 15_000 });
-
-    for (const [label, width, height] of [
-      ["progress 960x660", 960, 660],
-      ["progress 720x480", 720, 480],
-      ["progress 1100x780", 1100, 780],
-    ] as const) {
-      await resizeDrawnWindow(l, width, height);
-      const m = await measureFreScroll(page);
-      process.stdout.write(`[fre-scroll] ${label}: ${JSON.stringify(m)}\n`);
-      expect(m.topClearanceAtZero, `${label}: top item reachable at scrollTop 0`).toBeGreaterThanOrEqual(m.paddingTop - 1);
-      expect(m.bottomClearanceAtEnd, `${label}: bottom item has >= ${m.paddingBottom}px clearance`).toBeGreaterThanOrEqual(m.paddingBottom - 1);
-    }
+    await check("progress");
+    await resizeDrawnWindow(l, 720, 480);
+    expect((await measureFreScroll(page)).overflows, "progress 720x480 scrolls").toBe(true);
 
     await l.app.evaluate(() => {
       delete (globalThis as { focusNotesSlow?: Record<string, number> }).focusNotesSlow;
