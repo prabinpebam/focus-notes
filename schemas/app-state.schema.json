@@ -91,6 +91,13 @@
         "type": "string"
       }
     },
+    "filesOpened": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "The opened-files tabs in their order, the project's session; never a private note's path (D-410, D-420)."
+    },
     "lightTheme": {
       "enum": [
         "paper",

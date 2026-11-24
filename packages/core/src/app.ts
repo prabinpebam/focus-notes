@@ -15,6 +15,7 @@ import { NotificationQueue, type NotificationOptions } from "./notifications.ts"
 import { CommitTracker, TaskTracker, busyProps, type Clock, type TaskView, type CommitView } from "./tasks.ts";
 import { registerFormatting, FORMAT_CLOSED, type FormatState } from "./format.ts";
 import { registerFiles, FILES_CLOSED, type FilesState } from "./files-app.ts";
+import { planSessionRestore, type SessionProbe } from "./session-restore.ts";
 import { dirOf, joinPath, newNoteFolder } from "./workspace.ts";
 import { registerImport, IMPORT_CLOSED, type ImportState } from "./import-app.ts";
 import { registerPublicLink } from "./public-link-app.ts";
@@ -409,7 +410,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   bridge.onPrivacyCleared?.(() => {
     activeSearch?.stop();
     activeSearch = undefined;
-    for (const key of ["lastNotePath", "filesPins", "filesRecent"] as const) {
+    for (const key of ["lastNotePath", "filesPins", "filesRecent", "filesOpened"] as const) {
       delete appState[key];
       delete deviceState[key];
     }
@@ -427,9 +428,9 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   let persisting: Promise<void> = Promise.resolve();
   const persistAppState = (patch: Partial<AppStateFile>) => {
     const write = async () => {
-      // A window opened for a note never changes which note the app reopens at launch (DSK-06, D-179).
-      if (bridge.windows?.secondary && "lastNotePath" in patch) {
-        const { lastNotePath: _, ...rest } = patch;
+      // A window opened for a note never changes which note, or which tabs, the app reopens at launch (DSK-06, D-179, D-420).
+      if (bridge.windows?.secondary && ("lastNotePath" in patch || "filesOpened" in patch)) {
+        const { lastNotePath: _, filesOpened: __, ...rest } = patch;
         if (!Object.keys(rest).length) return;
         patch = rest;
       }
@@ -1918,7 +1919,29 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
           catch { restoreFailed = true; toast(catalog.format("project.launch.restoreFailed"), { tone: "error" }); }
         }
         const saved = currentProjectNote(appState.lastNotePath || undefined);
-        const last = bridge.windows?.initialOpen ? undefined : bridge.windows?.initialNote ?? remembered ?? saved;
+        let last = bridge.windows?.initialOpen ? undefined : bridge.windows?.initialNote ?? remembered ?? saved;
+        // The project's session (D-420): its opened-files tabs in order and the active note, with no Untitled on top.
+        // Notes that are gone are dropped quietly; a note that can't be read is an error, and the saved tabs stay as they were.
+        let sessionGone = false;
+        const sessionTabs = bridge.windows?.initialOpen || bridge.windows?.initialNote || bridge.windows?.secondary || restoreFailed
+          ? undefined : (appState.filesOpened ?? []).map(currentProjectNote).filter((path): path is string => Boolean(path));
+        if (sessionTabs?.length && bridge.readNoteIfExists) {
+          const probes = new Map<string, SessionProbe>();
+          await Promise.all([...new Set([...sessionTabs, ...(last ? [last] : [])])].map(async (path) => {
+            try { probes.set(path, (await bridge.readNoteIfExists!(path)) === null ? "missing" : "present"); }
+            catch { probes.set(path, "error"); }
+          }));
+          const plan = planSessionRestore({ opened: sessionTabs, active: last }, (path) => probes.get(path));
+          if (plan.kind === "error") {
+            restoreFailed = true;
+            toast(catalog.format("project.launch.restoreFailed"), { tone: "error" });
+          } else {
+            if (plan.dropped) console.warn("session.restore.dropped", plan.dropped);
+            files.restoreOpened(plan.kind === "restore" ? plan.opened : []);
+            if (plan.kind === "restore") last = plan.active;
+            else { sessionGone = plan.gone; last = undefined; }
+          }
+        } else if (sessionTabs) files.restoreOpened([]);
         let reopened = last !== undefined && (await openNote(last));
         const tried = last !== undefined ? [last] : [];
         // A crash can leave protected metadata behind a completed rename. The saved disk path is
@@ -1936,13 +1959,13 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
           catch { lastGone = false; }
         }
         let startupSuperseded = false;
-        if (!reopened && (!last || lastGone) && !restoreFailed && !bridge.windows?.initialOpen && !bridge.windows?.secondary
+        if (!reopened && (!last || lastGone || sessionGone) && !restoreFailed && !bridge.windows?.initialOpen && !bridge.windows?.secondary
           && store.state.workspace.access === "write" && bridge.projects?.firstNote) {
           const initialKey = store.state.note.key;
           const initialPath = store.state.note.path;
           try {
             reopened = await tracker.run("project.firstNote", "command.note.new", async () => {
-              const path = await bridge.projects!.firstNote!(...(lastGone ? ["history" as const] : []));
+              const path = await bridge.projects!.firstNote!(...(lastGone || sessionGone ? ["history" as const] : []));
               startupSuperseded = store.state.note.key !== initialKey || store.state.note.path !== initialPath;
               if (startupSuperseded) return false;
               if (!path) return false;

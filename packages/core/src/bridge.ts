@@ -804,6 +804,8 @@ export interface AppStateFile {
   filesSort?: "changed";
   filesPins?: string[];
   filesRecent?: string[];
+  /** The opened-files tabs in their order, the project's session (D-410, D-420); never a private note's path. */
+  filesOpened?: string[];
   /** The chosen light and dark themes (THM-08). */
   lightTheme?: string;
   darkTheme?: string;

@@ -169,6 +169,17 @@ export function registerFiles(ctx: Ctx) {
     setFiles(() => ({ visits, opened }));
     void ctx.persistAppState({ filesRecent: visits.filter(p => sourceOf(p) !== "private") });
   });
+  // The opened-files tabs are the project's session (D-420): saved as they change, so a close, a switch
+  // or a crash keeps the latest. Only once entry has restored them, so an empty start never overwrites them.
+  let sessionSaved: readonly string[] | undefined;
+  store.subscribe(() => {
+    const opened = files().opened;
+    if (sessionSaved === undefined || opened === sessionSaved) return;
+    sessionSaved = opened;
+    if (!cacheEnabled) return;
+    const kept = opened.filter(p => sourceOf(p) !== "private" && !filteredRoots.some(root => atOrUnder(p, root)));
+    void ctx.persistAppState({ filesOpened: kept }).catch(() => console.error("Could not save the opened files."));
+  });
 
   // ---- opening, revealing, closing ----
   // Opened before the workspace was first listed: the current note is revealed once it is. Focus was
@@ -1857,6 +1868,11 @@ export function registerFiles(ctx: Ctx) {
     /** Lists Recovered again: after launch has sorted the last session's drafts, and after one goes (D-221). */
     restoreShortcuts(pins: readonly string[] = [], visits: readonly string[] = []): void {
       setFiles(() => ({ pins, visits }));
+    },
+    /** At entry: the session's tabs in their order (D-420); from now on, changes to them are saved. */
+    restoreOpened(opened: readonly string[]): void {
+      setFiles(() => ({ opened: [...opened] }));
+      sessionSaved = files().opened;
     },
     canCreateIn: validNewFolder,
     listRecovered,

@@ -38,6 +38,7 @@ export function withoutPrivacyTraces<T extends object>(state: T): T {
   const out = withoutRecent(state);
   Reflect.deleteProperty(out, "filesPins");
   Reflect.deleteProperty(out, "filesRecent");
+  Reflect.deleteProperty(out, "filesOpened");
   return out;
 }
 export function withoutRemovedReferences<T extends object>(state: T, folders: readonly string[]): T {
@@ -47,7 +48,7 @@ export function withoutRemovedReferences<T extends object>(state: T, folders: re
   });
   const out = { ...state } as Record<string, unknown>;
   if (references(out.lastNotePath)) delete out.lastNotePath;
-  for (const field of ["filesPins", "filesRecent"]) {
+  for (const field of ["filesPins", "filesRecent", "filesOpened"]) {
     if (Array.isArray(out[field])) out[field] = out[field].filter(value => !references(value));
   }
   return out as T;
