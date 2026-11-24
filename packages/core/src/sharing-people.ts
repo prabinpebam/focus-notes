@@ -86,7 +86,7 @@ export function registerSharingPeople(ctx: {
     id: "vm.sharingPeople", reads: "*",
     setters: { user: "sharing.inviteUser", role: "sharing.inviteRole" },
     schema: { type: "object", properties: {
-      available: bool, ready: bool, open: bool, user: str, role: str, owner: str, org: bool, personal: bool, busy: bool, problem: str, canSend: bool, canOpen: bool, detail: str, status: str, stepLabel: str, repository: str, feedback: str, feedbackTone: str, sendLabel: str, target: str,
+      available: bool, ready: bool, open: bool, user: str, role: str, owner: str, org: bool, personal: bool, busy: bool, problem: str, canSend: bool, canOpen: bool, canRetry: bool, detail: str, status: str, stepLabel: str, repository: str, feedback: str, feedbackTone: str, sendLabel: str, target: str,
       roles: { type: "array", items: { type: "object", properties: { id: str, label: str } } },
       people: { type: "array", items: { type: "object", properties: { id: str, login: str, initials: str, detail: str, badge: str } } },
     } },
@@ -94,6 +94,7 @@ export function registerSharingPeople(ctx: {
       ...state, available: Boolean(people), ready: Boolean(project), owner: project?.owner ?? "personal",
       repository: project?.repository ?? "", org: project?.owner === "org", personal: project?.owner !== "org",
       canSend: Boolean(project && state.user.trim()) && !state.busy, canOpen: Boolean(project) && !state.loading && !state.busy,
+      canRetry: !project && Boolean(state.problem) && !state.loading && !state.busy,
       detail: state.loading ? catalog.format("sharing.invite.checking") : state.problem && !state.open ? state.problem : state.busy ? catalog.format(`sharing.invite.step.${state.step}`) : state.status || catalog.format("share.invite.notShare"),
       stepLabel: state.busy ? catalog.format(`sharing.invite.step.${state.step}`) : "",
       feedback: state.problem || (state.busy ? catalog.format(`sharing.invite.step.${state.step}`) : ""),

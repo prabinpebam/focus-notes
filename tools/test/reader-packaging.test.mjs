@@ -16,7 +16,7 @@ const desktop = JSON.parse(readFileSync(join(root, "apps/desktop/package.json"),
 describe("the page renderer in the desktop package", () => {
   it("is built with the desktop app and packed at resources/reader, Store package included", () => {
     expect(desktop.scripts.build).toMatch(/pnpm --filter @focus-notes\/web run build:reader$/);
-    const resource = { from: READER_SOURCE, to: "reader", filter: ["render.mjs", "assets/**"] };
+    const resource = { from: READER_SOURCE, to: "reader", filter: ["render.mjs", "assets/**", "site/**"] };
     expect(desktop.build.extraResources).toContainEqual(resource);
     expect(desktop.build.afterPack).toBe("./scripts/reader.mjs");
     const store = storeConfig(desktop.build, join(root, "apps", "desktop", "vendor", "git"));
@@ -34,6 +34,9 @@ describe("the page renderer in the desktop package", () => {
       writeFileSync(join(reader, "render.mjs"), "export {};\n");
       await expect(afterPack(context)).rejects.toThrow(/assets are missing/);
       writeFileSync(join(reader, "assets", "style.css"), "");
+      await expect(afterPack(context)).rejects.toThrow(/share reader page is missing/);
+      mkdirSync(join(reader, "site", "s"), { recursive: true });
+      writeFileSync(join(reader, "site", "s", "index.html"), "<!doctype html>\n");
       expect(readerProblem(reader)).toBeUndefined();
       await expect(afterPack(context)).resolves.toBeUndefined();
     } finally {

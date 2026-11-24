@@ -116,6 +116,19 @@ describe("G2 read-only default site confirmation", () => {
     await t.run("sharing.firstClose");
     expect(t.vm("vm.sharingSettings")).toMatchObject({ firstOpen: false, on: false });
   });
+  it("names why turning on failed, with its recovery, never that sharing isn't available (G2.2)", async () => {
+    const t = await setup();
+    await t.run("sharing.firstOpen");
+    await t.run("sharing.firstAccept");
+    expect(t.vm("vm.sharingSettings").problem).toBe(en["sharing.setup.problem.failed"]);
+    const enable = vi.mocked(t.bridge.access!.setup!.enable);
+    enable.mockImplementation(async () => { throw new Error("Error invoking remote method 'sharing:enable': Error: sharing:refused"); });
+    await t.run("sharing.firstAccept");
+    expect(t.vm("vm.sharingSettings").problem).toBe(en["sharing.setup.problem.refused"]);
+    enable.mockImplementation(async () => { throw new Error("sharing:offline"); });
+    await t.run("sharing.firstAccept");
+    expect(t.vm("vm.sharingSettings")).toMatchObject({ problem: en["sharing.setup.problem.offline"], firstOpen: true, repo: "ada/notes-site" });
+  });
   it("enables modern sharing only after the matching ready pairing loads, without an owner vault", async () => {
     const t = await setup();
     t.bridge.access!.setup!.enable = async () => ({ phase: "ready", site: preview.site });

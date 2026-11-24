@@ -66,6 +66,27 @@ it("PRJ-10: wires persisted New-project setup without a candidate flag, owner va
   } finally { await rm(t.directory, { recursive: true, force: true }); }
 });
 
+it("places the share reader page on the sealed site, never on the emptied one after Turn off", async () => {
+  const t = await fixture();
+  const reader = join(t.directory, "reader");
+  await mkdir(join(reader, "site", "s"), { recursive: true });
+  await mkdir(join(reader, "site", "assets"), { recursive: true });
+  await writeFile(join(reader, "site", "s", "index.html"), "<!doctype html><title>Private note</title>\n");
+  await writeFile(join(reader, "site", "assets", "share.js"), "export {};\n");
+  const pages: string[][] = [];
+  const runtime = sharingRuntime({ ...t.deps, reader: () => reader, publisher: async (project, artifact) => {
+    pages.push((await readdir(artifact.directory, { recursive: true })).map(p => p.split("\\").join("/")).filter(p => p.startsWith("s/") || p.startsWith("assets/")).sort());
+    return t.deps.publisher(project, artifact);
+  } });
+  try {
+    await runtime.enable("quiet-site");
+    await runtime.publish();
+    expect(pages).toEqual([["assets/share.js", "s/index.html"], ["assets/share.js", "s/index.html"]]);
+    await runtime.disable();
+    expect(pages[2]).toEqual([]);
+  } finally { await rm(t.directory, { recursive: true, force: true }); }
+});
+
 it("keeps partial setup for Retry when G3's real artifact publisher is unavailable, never reports readiness", async () => {
   const t = await fixture();
   try {

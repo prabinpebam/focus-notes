@@ -6,9 +6,9 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "build": "node scripts/entry.mjs && vite build --config vite.config.ts && vite build --config vite.reader.config.ts && vite build --config vite.site.config.ts && vite build --config vite.config.ts --mode app",
+    "build": "node scripts/entry.mjs && vite build --config vite.config.ts && vite build --config vite.reader.config.ts && vite build --config vite.share.config.ts && vite build --config vite.site.config.ts && vite build --config vite.config.ts --mode app",
     "dev": "node scripts/entry.mjs && vite --config vite.config.ts",
-    "build:reader": "vite build --config vite.reader.config.ts",
+    "build:reader": "vite build --config vite.reader.config.ts && vite build --config vite.share.config.ts",
     "build:publish": "vite build --config vite.publish.config.ts",
     "preview": "vite preview --config vite.config.ts",
     "typecheck": "tsc -p tsconfig.json",

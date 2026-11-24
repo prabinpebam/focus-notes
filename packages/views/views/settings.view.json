@@ -828,12 +828,19 @@
                         "children": [
                           {
                             "type": "Text",
+                            "when": { "expr": { "!": { "get": "vm.sharingPeople.canRetry" } } },
                             "props": {
                               "value": {
                                 "get": "vm.sharingPeople.detail"
                               },
                               "tone": "muted"
                             }
+                          },
+                          {
+                            "type": "StatusRow",
+                            "when": { "get": "vm.sharingPeople.canRetry" },
+                            "props": { "message": { "get": "vm.sharingPeople.problem" }, "tone": "danger", "actionLabel": { "t": "commit.retry" } },
+                            "on": { "action": { "run": "sharing.peopleLoad" } }
                           },
                           {
                             "type": "Stack",
