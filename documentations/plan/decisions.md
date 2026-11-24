@@ -20,6 +20,14 @@ The owner's Documents had `prabins-notes` and `prabins-notes 2` to `7`: every se
 
 **Affects:** [First run](../experience/first-run.md#your-notes), [Projects](../experience/projects.md), [FRE-06](../product/requirements.md), [Perceived performance](../architecture/perceived-performance.md).
 
+**Addendum (owner's report, 24 November 2026, 14:18 IST).** The owner, verbatim, on Open from GitHub reached from the Open dialog with the project pill reading "prabins-notes 8":
+
+> "This workflow doesn't work. Can't open from existing repo on Github. It should also ideally show only compatible repo and not all repos. The accent border on all items looks too chaotic. Accent border only on hover."
+
+- **Cause:** without copy matching, every pick cloned into the next free `<name> N` and opened that new copy, never the project already here; hence `prabins-notes 8`. Copy matching compared only the clone address, so a copy whose origin used another address for the same repository (or a review build's local remote) was missed and a silent `<name> N` followed. A failed look for copies fell back to downloading, and failures offered no recovery.
+- **Fix:** a copy matches the clone address *or* `https://github.com/<owner>/<name>` in any spelling. A failed look for copies downloads nothing; it says so, and **Retry** looks again. Every failure in Open from GitHub (listing, looking, downloading, using a folder) keeps the list and the choice and offers **Retry** (`projects.githubRetry`), except "isn't a Focus Notes project" and signed out, which a retry can't change. A project removed earlier from the same folder is brought back instead of failing on its leftover profile. Using the copy that's already this window's project keeps writing in this window.
+- **Evidence:** journey `open-from-github.spec.ts` (a project opens in its own window with the caret and typing; with `prabins-notes` … `prabins-notes 8` here, *Use existing folder* opens one and no ninth folder is made; a removed project's folder opens again).
+
 ## D-pending: what "on GitHub" means is the save state's measure; unknown is its own answer
 
 **Decided (owner's report, 24 November 2026, 12:46 IST; orchestrator to number).** The owner, verbatim on review build `efa48941`:
