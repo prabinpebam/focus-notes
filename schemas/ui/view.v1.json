@@ -7654,6 +7654,22 @@
                 }
               ]
             },
+            "accent": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "rest",
+                    "hover"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
             "label": {
               "anyOf": [
                 {

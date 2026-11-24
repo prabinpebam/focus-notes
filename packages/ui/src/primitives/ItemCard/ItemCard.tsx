@@ -27,6 +27,8 @@ export interface ItemCardProps {
   reading?: boolean;
   /** A trailing navigation cue; published article entries deliberately omit it. */
   chevron?: boolean;
+  /** A pressable card's accent edge: "rest" for a step's main action (D-131), "hover" for a list of them (D-416). */
+  accent?: "rest" | "hover";
   label?: string;
   /** A pressable card's action is running: it stays focusable, says so, and doesn't run again. */
   busy?: boolean;
@@ -53,7 +55,7 @@ const PICTURE = /^data:image\/(png|jpeg|gif|webp);base64,/;
  * @a11y A choice uses native grouped radios; its slot actions are outside the choice label.
  * @key Arrow keys choose within the native radio group; Space chooses the focused radio.
  */
-export function ItemCard({ title, detail, titleLabel, detailLabel, onTitlePress, onDetailPress, badge, icon, avatar, initials, mark, size = "m", personal = "none", reading = false, chevron = true, label, busy, disabled, autoFocus, skeleton, id, children, onPress, choiceGroup, choiceValue, selected, onChoose }: ItemCardProps) {
+export function ItemCard({ title, detail, titleLabel, detailLabel, onTitlePress, onDetailPress, badge, icon, avatar, initials, mark, size = "m", personal = "none", reading = false, chevron = true, accent = "rest", label, busy, disabled, autoFocus, skeleton, id, children, onPress, choiceGroup, choiceValue, selected, onChoose }: ItemCardProps) {
   // The shared busy policy (D-199): inert, aria-busy and data-busy, the same as Button's.
   const { inert, attrs: busyAttrs, ref: busyRef } = useBusy({ busy, label: label ?? "", disabled });
   if (skeleton) {
@@ -69,6 +71,7 @@ export function ItemCard({ title, detail, titleLabel, detailLabel, onTitlePress,
   }
   const Glyph = icon ? ICONS[icon] : undefined;
   const pressable = Boolean(onPress);
+  const accentClass = accent === "hover" ? s.accentOnHover : "";
   const references = Boolean(onTitlePress || onDetailPress);
   const GitHub = ICONS.github;
   const Chevron = ICONS.chevronRight;
@@ -116,7 +119,7 @@ export function ItemCard({ title, detail, titleLabel, detailLabel, onTitlePress,
   if (pressable) {
     if (references) {
       return (
-        <div id={id} className={`${s.base} ${s.pressable} ${s.referenceCard} ${size === "l" ? s.large : ""} ${reading ? s.reading : ""}`} data-item-card="" {...busyAttrs} data-unavailable={disabled ? "" : undefined}>
+        <div id={id} className={`${s.base} ${s.pressable} ${s.referenceCard} ${accentClass} ${size === "l" ? s.large : ""} ${reading ? s.reading : ""}`} data-item-card="" data-accent={accent} {...busyAttrs} data-unavailable={disabled ? "" : undefined}>
           <AriaButton className={s.cardHit} aria-label={label ?? [title, detail].filter(Boolean).join(" ")} {...busyAttrs} ref={busyRef} {...(autoFocus ? { autoFocus: true } : {})} onPress={inert ? undefined : onPress} />
           {visual}
           {text}
@@ -127,8 +130,9 @@ export function ItemCard({ title, detail, titleLabel, detailLabel, onTitlePress,
     return (
       <AriaButton
         id={id}
-        className={`${s.base} ${s.pressable} ${size === "l" ? s.large : ""} ${reading ? s.reading : ""}`}
+        className={`${s.base} ${s.pressable} ${accentClass} ${size === "l" ? s.large : ""} ${reading ? s.reading : ""}`}
         data-item-card=""
+        data-accent={accent}
         data-reading={reading ? "" : undefined}
         aria-label={label}
         {...busyAttrs}

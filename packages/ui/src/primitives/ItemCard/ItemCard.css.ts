@@ -89,3 +89,13 @@ export const referenceCard = style({
     [`&:has(${cardHit}[data-pressed]):not([aria-disabled="true"])`]: { backgroundColor: t.action.pressed },
   },
 });
+// A list of pressable cards (D-416): a transparent edge at rest, the accent only while hovered or pressed; the box never changes.
+export const accentOnHover = style({
+  borderColor: t.action.restBorder,
+  transitionProperty: "background-color, border-color, box-shadow",
+  selectors: {
+    "&[data-unavailable]": { borderColor: t.action.restBorder },
+    '&[data-hovered]:not([aria-disabled="true"]), &[data-pressed]:not([aria-disabled="true"])': { borderColor: t.action.border },
+    [`&:has(${cardHit}[data-hovered]):not([aria-disabled="true"]), &:has(${cardHit}[data-pressed]):not([aria-disabled="true"])`]: { borderColor: t.action.border },
+  },
+});

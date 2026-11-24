@@ -42,6 +42,7 @@
   "markSize": { "$type": "dimension", "$value": "{size.iconS}" },
   "action": {
     "border": { "$type": "color", "$value": "{color.accent}", "$description": "A card that is the step's main action (D-131)." },
+    "restBorder": { "$type": "color", "$value": "{color.none}", "$description": "A list of pressable cards inside an enclosure: no edge at rest, the accent only on hover (D-416); the same box in every state." },
     "tileBackground": { "$type": "color", "$value": "{color.accentMuted}", "$description": "Its tile in the accent: stronger than the step's title around it (D-142)." },
     "tileColor": { "$type": "color", "$value": "{color.accent}" },
     "title": { "$type": "dimension", "$value": "{font.uiTitle}" },
