@@ -7417,6 +7417,7 @@
         "vm.picker",
         "vm.account",
         "vm.saveState",
+        "vm.syncAlert",
         "vm.repoBackup",
         "vm.unlock",
         "vm.about",

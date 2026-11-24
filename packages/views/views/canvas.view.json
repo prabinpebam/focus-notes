@@ -21,6 +21,7 @@
     "vm.picker",
     "vm.account",
     "vm.saveState",
+    "vm.syncAlert",
     "vm.repoBackup",
     "vm.unlock",
     "vm.about",
@@ -3938,11 +3939,24 @@
                 },
                 "props": {
                   "label": {
-                    "t": "save.backup.title"
+                    "get": "vm.saveState.cardLabel"
                   },
                   "placement": "top start",
                   "padding": "comfortable",
-                  "hoverOpen": true
+                  "hoverOpen": true,
+                  "open": {
+                    "get": "vm.syncAlert.cornerOpen"
+                  }
+                },
+                "on": {
+                  "openChange": {
+                    "run": "recoveryAlert.setCornerOpen",
+                    "args": {
+                      "open": {
+                        "get": "event.open"
+                      }
+                    }
+                  }
                 },
                 "slots": {
                   "trigger": [
@@ -3952,6 +3966,7 @@
                       "props": {
                         "state": { "get": "vm.saveState.state" },
                         "label": { "get": "vm.saveState.label" },
+                        "text": { "get": "vm.saveState.text" },
                         "interactive": { "get": "vm.saveState.interactive" }
                       }
                     }
@@ -3959,6 +3974,13 @@
                   "content": [
                     {
                       "type": "IconLayout",
+                      "when": {
+                        "expr": {
+                          "!": {
+                            "get": "vm.syncAlert.active"
+                          }
+                        }
+                      },
                       "slots": {
                         "icon": [
                           {
@@ -3996,6 +4018,73 @@
                       "children": [
                         { "type": "Text", "props": { "value": { "get": "vm.saveState.backupTime" }, "tone": "muted" } },
                         { "type": "Text", "props": { "value": { "get": "vm.saveState.waitingText" } } }
+                      ]
+                    },
+                    {
+                      "type": "IconLayout",
+                      "id": "recoveryAlertCardCorner",
+                      "when": {
+                        "get": "vm.syncAlert.active"
+                      },
+                      "slots": {
+                        "icon": [
+                          {
+                            "type": "StepMark",
+                            "props": {
+                              "icon": { "get": "vm.syncAlert.icon" },
+                              "size": "compact",
+                              "tone": { "get": "vm.syncAlert.tone" },
+                              "busy": { "get": "vm.syncAlert.busy" }
+                            }
+                          }
+                        ],
+                        "heading": [
+                          { "type": "Heading", "props": { "value": { "get": "vm.syncAlert.title" }, "level": "2" } },
+                          { "type": "Text", "props": { "value": { "get": "vm.syncAlert.line" } } }
+                        ],
+                        "actions": [
+                          {
+                            "type": "Button",
+                            "when": { "get": "vm.syncAlert.hasNotNow" },
+                            "props": { "label": { "get": "vm.syncAlert.notNow" }, "variant": "subtle" },
+                            "on": { "press": { "run": "recoveryAlert.notNow" } }
+                          },
+                          {
+                            "type": "Button",
+                            "when": { "get": "vm.syncAlert.hasSecondary" },
+                            "props": { "label": { "get": "vm.syncAlert.secondary" }, "variant": "secondary" },
+                            "on": { "press": { "run": "recoveryAlert.secondary" } }
+                          },
+                          {
+                            "type": "Button",
+                            "when": { "get": "vm.syncAlert.hasPrimary" },
+                            "props": { "label": { "get": "vm.syncAlert.primary" }, "variant": "primary" },
+                            "on": { "press": { "run": "recoveryAlert.primary" } }
+                          }
+                        ]
+                      },
+                      "children": [
+                        {
+                          "type": "ProgressBar",
+                          "when": { "get": "vm.syncAlert.hasProgress" },
+                          "props": {
+                            "value": { "get": "vm.syncAlert.progress" },
+                            "label": { "get": "vm.syncAlert.progressLabel" }
+                          }
+                        },
+                        {
+                          "type": "Stack",
+                          "props": { "gap": "stackPair" },
+                          "children": [
+                            {
+                              "each": { "get": "vm.syncAlert.facts" },
+                              "as": "fact",
+                              "key": "fact.id",
+                              "empty": { "type": "Text", "props": { "value": { "t": "recoveryAlert.empty" }, "tone": "muted" } },
+                              "render": { "type": "Text", "props": { "value": { "get": "fact.text" }, "role": "caption", "tone": "muted" } }
+                            }
+                          ]
+                        }
                       ]
                     }
                   ]
@@ -4276,6 +4365,115 @@
                       ]
                     }
                   ]
+                },
+                {
+                  "type": "PopoverPanel",
+                  "id": "filesRecoveryAlertPopover",
+                  "when": {
+                    "get": "vm.syncAlert.headerAlert"
+                  },
+                  "props": {
+                    "label": {
+                      "t": "recoveryAlert.cardLabel"
+                    },
+                    "placement": "bottom",
+                    "padding": "comfortable",
+                    "hoverOpen": true,
+                    "open": {
+                      "get": "vm.syncAlert.headerOpen"
+                    }
+                  },
+                  "on": {
+                    "openChange": {
+                      "run": "recoveryAlert.setHeaderOpen",
+                      "args": {
+                        "open": {
+                          "get": "event.open"
+                        }
+                      }
+                    }
+                  },
+                  "slots": {
+                    "trigger": [
+                      {
+                        "type": "IconButton",
+                        "id": "filesRecoveryAlert",
+                        "props": {
+                          "icon": "warning",
+                          "label": {
+                            "get": "vm.syncAlert.alertLabel"
+                          },
+                          "bleed": true
+                        }
+                      }
+                    ],
+                    "content": [
+                      {
+                        "type": "IconLayout",
+                        "id": "recoveryAlertCardHeader",
+                        "slots": {
+                          "icon": [
+                            {
+                              "type": "StepMark",
+                              "props": {
+                                "icon": { "get": "vm.syncAlert.icon" },
+                                "size": "compact",
+                                "tone": { "get": "vm.syncAlert.tone" },
+                                "busy": { "get": "vm.syncAlert.busy" }
+                              }
+                            }
+                          ],
+                          "heading": [
+                            { "type": "Heading", "props": { "value": { "get": "vm.syncAlert.title" }, "level": "2" } },
+                            { "type": "Text", "props": { "value": { "get": "vm.syncAlert.line" } } }
+                          ],
+                          "actions": [
+                            {
+                              "type": "Button",
+                              "when": { "get": "vm.syncAlert.hasNotNow" },
+                              "props": { "label": { "get": "vm.syncAlert.notNow" }, "variant": "subtle" },
+                              "on": { "press": { "run": "recoveryAlert.notNow" } }
+                            },
+                            {
+                              "type": "Button",
+                              "when": { "get": "vm.syncAlert.hasSecondary" },
+                              "props": { "label": { "get": "vm.syncAlert.secondary" }, "variant": "secondary" },
+                              "on": { "press": { "run": "recoveryAlert.secondary" } }
+                            },
+                            {
+                              "type": "Button",
+                              "when": { "get": "vm.syncAlert.hasPrimary" },
+                              "props": { "label": { "get": "vm.syncAlert.primary" }, "variant": "primary" },
+                              "on": { "press": { "run": "recoveryAlert.primary" } }
+                            }
+                          ]
+                        },
+                        "children": [
+                          {
+                            "type": "ProgressBar",
+                            "when": { "get": "vm.syncAlert.hasProgress" },
+                            "props": {
+                              "value": { "get": "vm.syncAlert.progress" },
+                              "label": { "get": "vm.syncAlert.progressLabel" }
+                            }
+                          },
+                          {
+                            "type": "Stack",
+                            "props": { "gap": "stackPair" },
+                            "children": [
+                              {
+                                "each": { "get": "vm.syncAlert.facts" },
+                                "as": "fact",
+                                "key": "fact.id",
+                                "empty": { "type": "Text", "props": { "value": { "t": "recoveryAlert.empty" }, "tone": "muted" } },
+                                "render": { "type": "Text", "props": { "value": { "get": "fact.text" }, "role": "caption", "tone": "muted" } }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
                 },
                 {
                   "type": "IconButton",

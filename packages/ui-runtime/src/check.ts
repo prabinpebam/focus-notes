@@ -287,7 +287,7 @@ export function checkUi(inputs: CheckInputs): Problem[] {
       }
       if (c.a11y.name && c.props[c.a11y.name] && "required" in c.props[c.a11y.name]! && (c.props[c.a11y.name] as { required?: boolean }).required && props[c.a11y.name] === undefined)
         add("accessibility", at, `${node.type} needs an accessible name (${c.a11y.name})`);
-      const here = node.type === "Dialog" || node.type === "DialogPanel" || node.type === "Layer" ? at : surface;
+      const here = node.type === "Dialog" || node.type === "DialogPanel" || node.type === "PopoverPanel" || node.type === "Layer" ? at : surface;
       if (node.type === "Button" && props.variant === "primary") primaries.set(here, (primaries.get(here) ?? 0) + 1);
       for (const [e, actions] of Object.entries(node.on ?? {})) checkActions(actions, `${at}/on/${e}`, scope, c.events[e]?.payload);
       const kids = node.children ?? [];
