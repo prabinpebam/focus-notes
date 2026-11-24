@@ -30,6 +30,10 @@ export interface PublishingBridge {
   onStep?(listener: (step: string) => void): () => void;
   /** A pending build is live, or still isn't after the background checks' ceiling. */
   onLive?(listener: (event: { build: string; live: boolean }) => void): () => void;
+  /** D-423: a renamed or moved published note's deploy at its new address: `live`, `pending` (with its build) or `failed`. */
+  onRenameFollowed?(listener: (event: { paths: string[]; status: string; build?: string; problem?: string }) => void): () => void;
+  /** Deploys the recorded notes at their current paths again, after a rename's deploy failed. */
+  followRetry?(): Promise<void>;
 }
 const PUBLISH_PROBLEMS = ["offline", "signedout", "refused", "media", "scope", "unavailable", "busy", "unacknowledged", "notlive"];
 /** The plain problem for a failed Publish or Unpublish: never the note's text, a path or a secret (G3.2). */
@@ -164,6 +168,23 @@ export function registerSharingPreview(ctx: {
       if (!inDialog) ctx.toast(problem, { tone: "error", action: { command: "sharing.operationRetry", label: catalog.format("commit.retry") } });
     });
   };
+  /**
+   * D-423: one notification for a published note that followed its rename: Published at the new address with Copy
+   * link (one note), or the problem with Retry while the old page stays live. Pages being slow is Still publishing (O4).
+   */
+  ctx.publishing?.onRenameFollowed?.(({ paths, status, build, problem }) => {
+    void refreshPublished();
+    const moved = () => ctx.toast(catalog.format("sharing.publish.followed"), { tone: "success",
+      ...(paths.length === 1 ? { action: { command: "sharing.copyPublishedLink", label: catalog.format("sharing.publish.copyLink"), args: { path: paths[0] } } } : {}) });
+    if (status === "live") moved();
+    else if (status === "pending" && build) awaitLive(build, "sharing.publish.stillPublishing", "sharing.followRetry", moved);
+    else {
+      retry = "sharing.followRetry";
+      ctx.toast(catalog.format(/sharing:offline/.test(problem ?? "") ? "sharing.publish.followOffline" : "sharing.publish.followFailed"),
+        { tone: "error", action: { command: "sharing.operationRetry", label: catalog.format("commit.retry") } });
+    }
+  });
+  reg<Record<string, never>>("sharing.followRetry", async () => { await ctx.publishing?.followRetry?.(); });
   const liveTask = async (command: string, operation: "publishSite" | "unpublishSite", message: string, labels: string[], work: () => Promise<void>) => {
     if (state.busy) return;
     const target = SHARING_WAITS[operation], publishing = operation === "publishSite";

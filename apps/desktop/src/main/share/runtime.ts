@@ -1,5 +1,5 @@
 import { cp, mkdtemp, readFile, realpath, rm, stat, writeFile } from "node:fs/promises";
-import { join, relative, sep } from "node:path";
+import { isAbsolute, join, relative, sep } from "node:path";
 import { GitHubError, type GitHubApi } from "@focus-notes/github";
 import { publish } from "@focus-notes/seal/publish";
 import type { SharingLayout } from "./layout.ts";
@@ -26,6 +26,8 @@ function publishProblem(error: unknown): unknown {
   return new Error(`sharing:${error.status === 0 ? "offline" : error.unauthorized ? "signedout"
     : error.status === 403 || error.status === 404 ? "refused" : "failed"}`);
 }
+
+export type RenameFollowed = { paths: string[]; status: "live" } | { paths: string[]; status: "pending"; build: string } | { paths: string[]; status: "failed"; problem: string };
 
 export function sharingRuntime(deps: {
   root(): string;
@@ -55,9 +57,13 @@ export function sharingRuntime(deps: {
   pagesWatch?: { delayMs?: number; ceilingMs?: number };
   /** A pending Publish or Unpublish's build is live, or still isn't at the ceiling (O4). */
   publishLive?(event: { build: string; live: boolean }): void;
+  /** A renamed or moved published note's deploy at its new address (D-423): live, pending (O4) or failed with Retry. */
+  renameFollowed?(event: RenameFollowed): void;
 }) {
   let current: { root: string; service: ReturnType<typeof sharingSetup> } | undefined;
   let tasks: ReturnType<typeof publicPublishing> | undefined, tasksRoot: string | undefined;
+  /** The new paths of the last rename deploy, for its Retry (D-423). */
+  let lastFollow: string[] = [];
   // Publishing, setup and removal never interleave, so a share can't redeploy a site being turned off.
   let lane: Promise<unknown> = Promise.resolve();
   const serial = <T>(work: () => Promise<T>): Promise<T> => {
@@ -258,7 +264,45 @@ export function sharingRuntime(deps: {
     publishing: () => tasks?.pending(),
     publishNotes: (selection: ConfirmedSelection) => publicTasks().publish(selection),
     unpublishNotes: (paths: readonly string[]) => publicTasks().unpublish(paths),
+    /**
+     * D-423: a published note (or a folder with published notes) renamed or moved inside the notes follows the
+     * rename. Its recorded path changes at once, so no later deploy can drop it, then one deploy publishes it at
+     * the new path and removes the old page, with the usual staging and leak check. A failure leaves the old
+     * page live, with Retry; nothing is ever silently unpublished.
+     */
+    async followRename(from: string, to: string): Promise<void> {
+      const ctx = bound(), notes = ctx.layout.privateNotes;
+      if (!notes || ctx.layout.legacy) return;
+      const rel = (p: string) => { const r = relative(notes, p); return !r || r === ".." || r.startsWith(`..${sep}`) || isAbsolute(r) ? undefined : r.split(sep).join("/"); };
+      const a = rel(from), b = rel(to);
+      if (!a || !b || a === b) return;
+      const paths = await serial(async () => {
+        const current = await ctx.readPublished();
+        const next = current.map(p => p === a ? b : p.startsWith(`${a}/`) ? `${b}${p.slice(a.length)}` : p);
+        const moved = next.filter((p, i) => p !== current[i]);
+        if (moved.length) await ctx.writePublished([...new Set(next)].sort());
+        return moved;
+      });
+      if (paths.length) await deployFollow(paths);
+    },
+    /** Retry of a rename's deploy that failed or never went live: the recorded notes, at their current paths. */
+    followRetry: () => deployFollow(lastFollow),
   };
+  function deployFollow(paths: string[]): Promise<void> {
+    lastFollow = paths;
+    return serial(async () => {
+      try {
+        const ctx = bound(), saved = await ctx.read();
+        // Not set up (or turned off meanwhile): the record already follows, and there's no site to update.
+        if (!saved || saved.phase !== "ready") return;
+        const { pending } = await ctx.build(saved, false, { notes: await ctx.presentPublished() });
+        deps.renameFollowed?.(pending ? { paths, status: "pending", build: pending } : { paths, status: "live" });
+      } catch (error) {
+        const problem = publishProblem(error);
+        deps.renameFollowed?.({ paths, status: "failed", problem: problem instanceof Error ? problem.message : "sharing:failed" });
+      }
+    });
+  }
   function publicTasks() {
     const ctx = bound();
     if (ctx.layout.legacy) throw new Error("sharing:unavailable");
