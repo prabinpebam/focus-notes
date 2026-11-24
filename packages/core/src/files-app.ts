@@ -1553,7 +1553,7 @@ export function registerFiles(ctx: Ctx) {
       importFiles: Boolean(ws?.chooseImport && ws.readImport && ctx.htmlToMarkdown),
     });
     if (bridge.access && sharingAvailable(s) && focus.kind !== "root") sections.splice(1, 0, ["files.share"]);
-    if (focus.kind !== "root" && commands.describe("files.publish").enabled) sections.splice(2, 0, ["files.publish"]);
+    if (focus.kind !== "root" && commands.describe("files.publish").enabled) sections.splice(2, 0, ["files.publish", ...(commands.describe("files.unpublish").enabled ? ["files.unpublish"] : [])]);
     const menu = sections.map((ids, i) => ({ id: `rowMenu${i}`, items: ids.map(item) }));
     if (focus.kind !== "root") menu[0]?.items.splice(1, 0, item("files.pinItem"));
     const what = acted.length > 1 ? catalog.format("files.items", { count: acted.length }) : catalog.format("files.quoted", { name: focus.kind === "root" ? rootLabel(focus.rootId) : focus.label });

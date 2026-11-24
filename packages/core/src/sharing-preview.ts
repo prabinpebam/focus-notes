@@ -68,7 +68,20 @@ export function registerSharingPreview(ctx: {
     const root = rootOf(store.state.workspace.tree, path);
     return root?.id === "private" ? path.slice(root.path.length).split(/[\\/]/).filter(Boolean).join("/") || undefined : undefined;
   };
-  let unpublishTarget: { path: string; title: string } | undefined;
+  let unpublishTarget: { paths: string[]; title: string } | undefined;
+  /** Notes on the current site (G3), so Unpublish is offered only for what's published; read when the live site appears. */
+  let publishedNotes = new Set<string>(), publishedFor: unknown;
+  const refreshPublished = async () => {
+    try { publishedNotes = new Set(await ctx.publishing!.published()); changed(); } catch { /* Unknown: Unpublish stays offered only for known notes. */ }
+  };
+  store.subscribe(() => {
+    const listing = store.state.ui.share.listing;
+    if (!ctx.publishing || !live() || publishedFor === listing) return;
+    publishedFor = listing;
+    void refreshPublished();
+  });
+  /** The notes a path covers that are on the site: the note, or a folder's published descendants. */
+  const publishedUnder = (rel: string) => [...publishedNotes].filter(p => p === rel || p.startsWith(`${rel}/`));
   const reg = <A extends Record<string, unknown>>(id: string, run: (args: A) => void | Promise<void>) =>
     commands.register<A>({ id, title: "site.preview.title", run });
   const settings = (open: boolean) => store.update(s => ({ ...s, ui: { ...s.ui, settings: { ...s.ui.settings, open, section: "sharing" } } }));
@@ -158,6 +171,7 @@ export function registerSharingPreview(ctx: {
       [catalog.format("sharing.operation.saveGitHub"), catalog.format("sharing.operation.deploy")], async () => {
       parts[0]!.status = "running"; changed();
       const result = await ctx.publishing!.publish({ notes, ...(folder ? { folders: [folder] } : {}) });
+      publishedNotes = new Set(result.published);
       parts = parts.map(part => ({ ...part, status: "done" }));
       set({ publishOpen: false });
       const link = node.kind === "note" ? notes[0] : undefined;
@@ -190,21 +204,35 @@ export function registerSharingPreview(ctx: {
     await liveTask("sharing.unpublish", "unpublishSite", "sharing.unpublish.removing",
       [catalog.format("sharing.operation.removeGitHub"), catalog.format("sharing.operation.deploy")], async () => {
       parts[0]!.status = "running"; changed();
-      await ctx.publishing!.unpublish([target.path]);
+      const result = await ctx.publishing!.unpublish(target.paths);
+      publishedNotes = new Set(result.published);
       parts = parts.map(part => ({ ...part, status: "done" }));
       ctx.toast(catalog.format("sharing.unpublish.done", { title: target.title }), { tone: "success" });
     });
   });
+  /** Unpublish of a note or folder, with the notes of it that are on the site; undefined when none are. */
+  const unpublishOf = (path: string | undefined) => {
+    const rel = path ? relativeOf(path) : undefined;
+    const paths = rel ? publishedUnder(rel) : [];
+    if (!path || !rel || !paths.length) return undefined;
+    const node = findNode(store.state.workspace.tree, path)?.node;
+    return { paths, title: node?.kind === "note" ? node.title || node.name.replace(/\.md$/i, "") : node?.name ?? rel };
+  };
   commands.register({
     id: "note.unpublish", title: "command.note.unpublish", icon: "globe",
-    enabled: () => live() && !state.busy && Boolean(store.state.note.path && relativeOf(store.state.note.path)),
-    disabledReason: "sharing.unpublish.unavailable",
+    enabled: () => live() && !state.busy && Boolean(unpublishOf(store.state.note.path)),
+    disabledReason: () => live() ? "sharing.unpublish.notPublished" : "sharing.unpublish.unavailable",
     run: async () => {
-      const path = store.state.note.path, rel = path ? relativeOf(path) : undefined;
-      if (!path || !rel) return;
-      const node = findNode(store.state.workspace.tree, path)?.node;
-      unpublishTarget = { path: rel, title: node?.kind === "note" ? node.title || node.name.replace(/\.md$/i, "") : rel };
-      await commands.run("sharing.unpublish");
+      unpublishTarget = unpublishOf(store.state.note.path);
+      if (unpublishTarget) await commands.run("sharing.unpublish");
+    },
+  });
+  commands.register({
+    id: "files.unpublish", title: "command.note.unpublish", icon: "globe",
+    enabled: () => live() && !state.busy && Boolean(unpublishOf(store.state.ui.files.selection.focus)),
+    run: async () => {
+      unpublishTarget = unpublishOf(store.state.ui.files.selection.focus);
+      if (unpublishTarget) await commands.run("sharing.unpublish");
     },
   });
   reg<{ path: string; title?: string }>("sharing.copyPublishedLink", async ({ path, title }) => {
