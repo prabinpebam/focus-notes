@@ -87,7 +87,7 @@ export function registerImport(ctx: Ctx): void {
     },
   });
   // The ⋯ menu's Notes group on the desktop: who can see the open note, and Import notes.
-  if (ws?.chooseBundle) ctx.menu.push({ id: "notes", label: "menu.notes", items: ["files.makePublic", "files.makePrivate", "notes.import"] });
+  if (ws?.chooseBundle) ctx.menu.push({ id: "notes", label: "menu.notes", items: ["notes.import"] });
 
   viewModels.register({
     id: "vm.import",

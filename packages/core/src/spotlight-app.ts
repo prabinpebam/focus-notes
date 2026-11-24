@@ -19,7 +19,6 @@ import {
   type ActionContext, type ActionId, type GroupId, type QuickAction, type SpotlightMode, type SpotlightRow,
 } from "./spotlight.ts";
 import { ANCHORS, actionAvailability, CATALOG, catalogEntry, listable, stepsFor, type ActionScope, type CatalogEntry } from "./actions-catalog.ts";
-import { shareEntryAvailable } from "./share-manage.ts";
 import { atOrUnder } from "./journal.ts";
 
 export interface SpotlightState {
@@ -155,7 +154,7 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
   const onOff = (on: boolean) => msg(on ? "spotlight.on" : "spotlight.off");
   const actionLabel = (e: CatalogEntry) => msg(e.label, platformArgs);
   /** Every step's command is in this app (the web app has fewer). */
-  const runnable = (e: CatalogEntry) => e.steps.every(([id]) => commands.has(id)) && (e.id !== "note.share" || !bridge.access || shareEntryAvailable(store.state));
+  const runnable = (e: CatalogEntry) => e.steps.every(([id]) => commands.has(id)) ;
   const entries = () => CATALOG.filter(runnable);
   const keywords = (key: string) => (catalog.has(key) ? catalog.format(key).split(/\s+/).filter(Boolean) : []);
   const commandItems = (): SearchItem[] => entries().map((e) => {

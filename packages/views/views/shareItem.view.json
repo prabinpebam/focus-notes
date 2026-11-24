@@ -63,6 +63,16 @@
                 "props": { "value": { "get": "vm.shareItem.problem" }, "tone": "danger", "announce": true }
               },
               {
+                "type": "StatusRow", "when": { "get": "vm.shareItem.setupVisible" },
+                "props": { "message": { "get": "vm.shareItem.setupMessage" }, "tone": "info", "icon": "info" }
+              },
+              {
+                "type": "Inline", "when": { "get": "vm.shareItem.setupFixable" }, "props": { "gap": "inlineItem", "justify": "end" },
+                "children": [
+                  { "type": "Button", "id": "shareItemSetup", "props": { "label": { "get": "vm.shareItem.setupAction" }, "variant": "secondary" }, "on": { "press": { "run": "share.item.fixSetup" } } }
+                ]
+              },
+              {
                 "type": "Inline",
                 "when": { "get": "vm.shareItem.templateInvalid" },
                 "props": { "gap": "inlineItem", "wrap": true, "justify": "end" },
@@ -312,6 +322,21 @@
               }
             ]
           }
+        ]
+      },
+      {
+        "type": "Dialog", "id": "shareItemPublishedDialog", "when": { "get": "vm.shareItem.publishedOpen" },
+        "props": { "title": { "get": "vm.shareItem.title" }, "closeLabel": { "t": "dialog.close" }, "open": { "get": "vm.shareItem.publishedOpen" }, "size": "s", "height": "content" },
+        "on": { "openChange": { "run": "share.item.setOpen", "args": { "open": { "get": "event.open" } } } },
+        "children": [
+          { "type": "Stack", "props": { "gap": "stackGroup" }, "children": [
+            { "type": "ItemCard", "props": { "title": { "get": "vm.shareItem.name" }, "detail": { "get": "vm.shareItem.publicUrl" }, "icon": "globe", "badge": { "t": "share.item.public" } } },
+            { "type": "Text", "props": { "value": { "t": "share.item.published.text" }, "tone": "muted", "role": "secondary" } },
+            { "type": "Text", "when": { "get": "vm.shareItem.hasProblem" }, "props": { "value": { "get": "vm.shareItem.problem" }, "tone": "danger", "announce": true } },
+            { "type": "Inline", "props": { "gap": "inlineItem", "justify": "end" }, "children": [
+              { "type": "Button", "id": "shareItemCopyPublished", "props": { "label": { "t": "share.dialog.copyLink" }, "variant": "primary", "autoFocus": true, "disabled": { "get": "vm.shareItem.copyDisabled" }, "disabledReason": { "get": "vm.shareItem.copyReason" } }, "on": { "press": { "run": "share.item.copyPublished" } } }
+            ] }
+          ] }
         ]
       },
       {

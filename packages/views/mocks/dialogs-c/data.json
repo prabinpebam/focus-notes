@@ -1,5 +1,6 @@
 {
   "share": {
+    "setupVisible": false, "setupMessage": "", "setupAction": "Open Settings", "setupFixable": false,
     "dialogOpen": true, "title": "Share “Book drafts”", "name": "Book drafts", "detail": "Folder · 12 notes", "icon": "folder", "badge": "",
     "folder": false, "countingVisible": false, "preparingVisible": false, "loadFailed": false, "problem": "", "retrying": false, "hasProblem": false,
     "laterDetail": "", "later": false, "controlsLocked": false, "controlReason": "",

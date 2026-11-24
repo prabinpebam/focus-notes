@@ -356,14 +356,14 @@ describe("ACT-05, ACT-08: anchors decide what's listed", () => {
     expect(bold).toMatchObject({ disabled: true, description: "Select text first", group: "This selection" });
     expect(new Set(items(app).map((i) => i.group))).toEqual(new Set(["This selection", "This note", "This project", "App"]));
   });
-  it("blocks Publish on a private note and lists Make this note public next", async () => {
+  it("offers Publish on a private note, with Publish to public notes next (D-424)", async () => {
     const app = await started();
     await app.commands.run("spotlight.open");
     await type(app, "publish");
     const list = items(app);
     const at = list.findIndex((i) => i.label === "Publish this note…");
-    expect(list[at]).toMatchObject({ disabled: true, description: "Make this note public first" });
-    expect(list[at + 1]?.label).toBe("Make this note public…");
+    expect(list[at]?.disabled).not.toBe(true);
+    expect(list.map((i) => i.label)).toContain("Publish to public notes…");
   });
   it("refuses an action on a note that changed since Actions opened, and keeps the query", async () => {
     const app = await started();

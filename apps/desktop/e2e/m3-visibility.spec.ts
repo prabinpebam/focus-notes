@@ -55,18 +55,18 @@ test("FIL-06, SHR-02: Make public asks first, then commits in both repositories,
   await expect(editor).toBeFocused();
 
   // ⋯ → Make public: the confirmation says who will read it, and nothing moves until it's confirmed.
-  await more(page, /^Make public/);
-  const confirm = page.getByRole("dialog", { name: "Make public?" });
+  await more(page, /^Publish…/);
+  const confirm = page.getByRole("dialog", { name: "Publish?" });
   await expect(confirm).toContainText("Anyone with the link will be able to read “Welcome”");
   expect(await settledAxe(page)).toEqual([]);
   await page.keyboard.press("Escape");
   await expect(confirm).toBeHidden();
   expect(existsSync(join(dirs.docs, "private", "notes", "welcome.md"))).toBe(true);
 
-  await more(page, /^Make public/);
+  await more(page, /^Publish…/);
   const from = l.log.length;
-  await tabTo(page, confirm.getByRole("button", { name: "Make public" }));
-  await expect(page.locator("#toasts").getByText("Made “Welcome” public.")).toBeVisible({ timeout: 15_000 });
+  await tabTo(page, confirm.getByRole("button", { name: "Publish" }));
+  await expect(page.locator("#toasts").getByText("Published “Welcome”.")).toBeVisible({ timeout: 15_000 });
   expect(existsSync(join(dirs.docs, "notes", "welcome.md"))).toBe(true);
   expect(existsSync(join(dirs.docs, "private", "notes", "welcome.md"))).toBe(false);
   expect(commitsSince(l, from).slice(0, 2)).toEqual(["private", "notes"]);
@@ -79,11 +79,11 @@ test("FIL-06, SHR-02: Make public asks first, then commits in both repositories,
   await page.keyboard.press("Escape");
 
   // Make private: said plainly that history keeps what was public.
-  await more(page, /^Make private/);
-  const back = page.getByRole("dialog", { name: "Make private?" });
+  await more(page, /^Unpublish/);
+  const back = page.getByRole("dialog", { name: "Unpublish?" });
   await expect(back).toContainText("history");
-  await back.getByRole("button", { name: "Make private" }).click();
-  await expect(page.locator("#toasts").getByText("Made “Welcome” private.")).toBeVisible({ timeout: 15_000 });
+  await back.getByRole("button", { name: "Unpublish" }).click();
+  await expect(page.locator("#toasts").getByText("Unpublished “Welcome”.")).toBeVisible({ timeout: 15_000 });
   await expect.poll(() => existsSync(join(dirs.docs, "private", "notes", "welcome.md"))).toBe(true);
   // Written while private: only the private repository ever has it.
   await editor.click();
@@ -123,9 +123,9 @@ test("IMG-05: Make public shows the note's images from public copies, stripped, 
     const shown = () => expect.poll(() => image.evaluateAll(nodes => nodes.length === 1 && nodes.every(node =>
       node instanceof HTMLImageElement && node.complete && node.naturalWidth > 0)), { timeout: 15_000 }).toBe(true);
     await shown();
-    await more(page, /^Make public/);
-    await page.getByRole("dialog", { name: "Make public?" }).getByRole("button", { name: "Make public" }).click();
-    await expect(page.locator("#toasts").getByText("Made “Welcome” public.")).toBeVisible({ timeout: 15_000 });
+    await more(page, /^Publish…/);
+    await page.getByRole("dialog", { name: "Publish?" }).getByRole("button", { name: "Publish" }).click();
+    await expect(page.locator("#toasts").getByText("Published “Welcome”.")).toBeVisible({ timeout: 15_000 });
     const moved = join(dirs.docs, "notes", "welcome.md");
     const text = readFileSync(moved, "utf8");
     const m = /^<!-- image: rounded original=\.\.%2Fassets%2Fimages%2F([0-9a-f-]{36})\.png -->\n!\[Pic\]\(\.\.\/assets\/images\/([0-9a-f-]{36})\.png "Cap"\)$/m.exec(text);

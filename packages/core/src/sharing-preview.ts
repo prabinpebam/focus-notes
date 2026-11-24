@@ -256,11 +256,17 @@ export function registerSharingPreview(ctx: {
     const node = findNode(store.state.workspace.tree, path)?.node;
     return { paths, title: node?.kind === "note" ? node.title || node.name.replace(/\.md$/i, "") : node?.name ?? rel };
   };
+  const inPublic = () => {
+    const path = store.state.note.path;
+    return Boolean(path) && rootOf(store.state.workspace.tree, path!)?.id === "public";
+  };
   commands.register({
     id: "note.unpublish", title: "command.note.unpublish", icon: "globe",
-    enabled: () => live() && !state.busy && Boolean(unpublishOf(store.state.note.path)),
+    // A note in public notes is published too: Unpublish moves it back to private notes (D-424).
+    enabled: () => live() && !state.busy && Boolean(unpublishOf(store.state.note.path)) || inPublic() && commands.describe("files.makePrivate").enabled,
     disabledReason: () => live() ? "sharing.unpublish.notPublished" : "sharing.unpublish.unavailable",
     run: async () => {
+      if (!(live() && unpublishOf(store.state.note.path)) && inPublic()) return void await commands.run("files.makePrivate");
       unpublishTarget = unpublishOf(store.state.note.path);
       if (unpublishTarget) await commands.run("sharing.unpublish");
     },
@@ -284,11 +290,14 @@ export function registerSharingPreview(ctx: {
     }
   });
   commands.register({
-    id: "note.publish", title: "command.note.publish", icon: "globe", enabled: () => (local() || live()) && Boolean(store.state.note.path),
-    disabledReason: "sharing.publish.localOnly", run: () => commands.run("sharing.publishOpen"),
+    id: "note.publish", title: "command.note.publish", icon: "globe",
+    // Without the paired site, Publish moves a private note to public notes, the instance's own site (D-424).
+    enabled: () => (local() || live()) && Boolean(store.state.note.path) || !inPublic() && commands.describe("files.makePublic").enabled,
+    disabledReason: "sharing.publish.localOnly",
+    run: () => (local() || live()) && store.state.note.path ? commands.run("sharing.publishOpen") : commands.run("files.makePublic"),
   });
   commands.register({
-    id: "files.publish", title: "command.note.publish", icon: "globe", enabled: () => local() || live(),
+    id: "files.publish", title: "command.note.publish", icon: "globe", enabled: () => local() || live(), disabledReason: "sharing.publish.localOnly",
     run: () => commands.run("sharing.publishOpen", { path: store.state.ui.files.selection.focus }),
   });
   reg<Record<string, never>>("sharing.preview", async () => {
@@ -419,4 +428,11 @@ export function registerSharingPreview(ctx: {
       };
     },
   });
+  return {
+    /** A private note's web address when it's on the live site (D-424: sharing it sends that address). */
+    publishedUrl(path: string): string | undefined {
+      const rel = relativeOf(path), site = store.state.ui.share.listing?.site;
+      return live() && rel && site && publishedNotes.has(rel) ? publicNoteUrl(site, rel) : undefined;
+    },
+  };
 }

@@ -78,7 +78,9 @@ test("PRJ-10: New-project notes start Private, autosave there, and never offer a
     await expect(files.getByText("Public", { exact: true })).toHaveCount(0);
     await files.getByRole("treeitem", { name: basename(savedNotes()[0]!, ".md"), exact: true }).click({ button: "right" });
     await expect(instance.page.getByRole("menuitem", { name: /^Rename file…/ })).toBeVisible();
-    await expect(instance.page.getByRole("menuitem", { name: "Share…", exact: true })).toHaveCount(0);
+    // D-424: Share… and Publish… are offered for every private note, guided until sharing is on; never Make public.
+    await expect(instance.page.getByRole("menuitem", { name: "Share…", exact: true })).toBeVisible();
+    await expect(instance.page.getByRole("menuitem", { name: "Publish…", exact: true })).toBeVisible();
     await expect(instance.page.getByRole("menuitem", { name: "Make public", exact: true })).toHaveCount(0);
   } finally { await close(instance, dirs); }
 });

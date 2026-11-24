@@ -373,7 +373,7 @@ test("SPT-03 (M4 demo 3): quick actions on a result: copy link, move, make publi
     await page.keyboard.press("ArrowRight");
     await expect(spotlight(page)).toContainText("More actions for “Focus sessions”");
     await expect(results(page).getByRole("option")).toHaveText([
-      /^Open$/, /^Open in new window/, /^Copy Markdown link/, /^Rename/, /^Move to…/, /^Make public/, /^Show in Files/, /^Delete/,
+      /^Open$/, /^Open in new window/, /^Copy Markdown link/, /^Rename/, /^Move to…/, /^Publish/, /^Show in Files/, /^Delete/,
     ]);
     // Open in new window is built (WP-8.5): offered, not disabled.
     await expect(option(page, /^Open in new window/)).not.toHaveAttribute("aria-disabled", "true");
@@ -412,10 +412,10 @@ test("SPT-03 (M4 demo 3): quick actions on a result: copy link, move, make publi
     await open(page);
     await search(page, "focus sessions", "Focus sessions");
     await page.keyboard.press(`${mod}+K`);
-    await chooseAction("Make public");
-    const confirm = page.getByRole("dialog", { name: "Make public?" });
+    await chooseAction("Publish");
+    const confirm = page.getByRole("dialog", { name: "Publish?" });
     await expect(confirm).toBeVisible();
-    await confirm.getByRole("button", { name: "Make public" }).click();
+    await confirm.getByRole("button", { name: "Publish" }).click();
     await expect.poll(() => existsSync(join(l.docs, "notes", "journal", "focus-sessions.md")), { timeout: 15_000 }).toBe(true);
     expect(readFileSync(join(l.docs, "notes", "journal", "focus-sessions.md"), "utf8")).toContain("Morning blocks.");
   } finally {

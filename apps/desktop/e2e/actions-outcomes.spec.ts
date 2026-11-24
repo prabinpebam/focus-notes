@@ -257,9 +257,9 @@ const outcomes: Record<string, Outcome> = {
   },
   "note.makePublic": {
     check: async ({ page }, docs) => {
-      const confirm = page.getByRole("dialog", { name: "Make public?", exact: true });
+      const confirm = page.getByRole("dialog", { name: "Publish?", exact: true });
       await expect(confirm).toBeVisible();
-      await confirm.getByRole("button", { name: "Make public", exact: true }).click();
+      await confirm.getByRole("button", { name: "Publish", exact: true }).click();
       await expect.poll(() => existsSync(join(docs, "notes", "welcome.md"))).toBe(true);
       await expect.poll(() => existsSync(join(docs, "private", "notes", "welcome.md"))).toBe(false);
     },
