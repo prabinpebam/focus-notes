@@ -2375,25 +2375,25 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     if (repository !== current.repository) throw new Error("invite:changed");
     await shell.openExternal(`https://github.com/${current.repository}/settings/access`);
   });
+  const deployAccess = async () => {
+    const g = await gitOpening;
+    if (!g) throw new Error("access:site.unavailable");
+    const report = await g.request("save");
+    if (report.state === "problem") throw new Error(`access:${report.problem ?? "failed"}`);
+    if (!projectLayout().legacy) await sharing.publish();
+  };
   const access = accessStore({
     dir: privateDir,
     site: pagesSite,
     configured: async () => (await sharing.pairing())?.phase === "ready",
     setupAvailable: async () => !projectLayout().legacy && Boolean(await githubRepo(privateDir())),
-    canMutate: () => projectLayout().legacy,
     write: async (file, text) => { await assertWritable(file); await atomicWrite(file, text); },
     written: (file) => withGit((g) => g.written(file)),
     writeNoteId: async (file, text, expected) => {
       const outside = await atomicWrite(file, text, expected);
       if (outside) throw new Error("access:scope.changed");
     },
-    publish: async () => {
-      const g = await gitOpening;
-      if (!g) throw new Error("access:site.unavailable");
-      const report = await g.request("save");
-      if (report.state === "problem") throw new Error(`access:${report.problem ?? "failed"}`);
-      if (!projectLayout().legacy) await sharing.publish();
-    },
+    publish: deployAccess,
     getSite: (site, signal) => async (path) => {
       const base = new URL(site);
       const url = new URL(path, base.href.endsWith("/") ? base : `${base.href}/`);
@@ -2408,9 +2408,18 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     },
   });
   handle("access:load", async () => (settingsAvailable() ? access.load() : { available: false, vault: false, grants: [] }));
+  // A withdrawal, expiry change or removal reaches readers only when the paired site is deployed again (G6.2):
+  // deploy now; if that fails, the change stays recorded and the deploy retries in the background.
+  const redeployAfter = (attempt = 0): Promise<void> => deployAccess().catch((error: unknown) => {
+    logLine(`Sharing: site deploy after an access change failed (${error instanceof Error ? error.message : "unknown"})`);
+    if (attempt < 5) setTimeout(() => void redeployAfter(attempt + 1), 30_000).unref();
+  });
   handle("access:apply", async (change) => {
     if (!settingsAvailable()) throw new Error("access:failed");
-    return access.apply(change);
+    const result = await access.apply(change);
+    const op = (change as { op?: unknown } | null)?.op;
+    if (op !== "createItem" && op !== "addItemNotes" && !projectLayout().legacy && (await sharing.pairing())?.phase === "ready") await redeployAfter();
+    return result;
   });
   // A secret goes to the window only for an open invite, and to the clipboard only from here, cleared after 90 s (review L1, L2).
   // Journeys copy into memory, so they never overwrite (or depend on) the computer's clipboard.
