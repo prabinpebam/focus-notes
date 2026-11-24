@@ -152,6 +152,7 @@ let running: Running;
   });
 }
 base.onFlushRequest(() => flushApp(running.app));
+window.addEventListener("focus", () => { void running.app.commands.run("project.deleteFocus").catch(() => {}); });
 
 /**
  * Another workspace was opened, setup finished, or the workspace was removed (D-98, D-148): the app
