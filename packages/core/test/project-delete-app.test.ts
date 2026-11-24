@@ -137,13 +137,8 @@ describe("PRJ-23, D-413: deleting a linked project on GitHub web with automatic 
     });
     expect(t.vm()).toMatchObject({ open: true, step: "consequences", kind: "linked", problem: "", repo: "ada/field-notes", siteNotes: 12, privateCount: 3 });
     expect(t.calls).not.toContain("open:ada/field-notes");
+    // No typed name for a linked project: GitHub asks for it on the web (D-413, owner 24 Nov).
     await t.run("project.deleteContinue");
-    expect(t.vm().step).toBe("confirm");
-    await t.run("project.deleteType", { value: "field notes" });
-    await t.run("project.deleteConfirm");
-    expect(t.vm().step).toBe("confirm");
-    await t.run("project.deleteType", { value: "Field notes" });
-    await t.run("project.deleteConfirm");
     expect(t.vm()).toMatchObject({ step: "github", repos: [{ id: "ada/field-notes", canOpen: false, waiting: true, deleted: false }] });
     expect(t.calls.some((c) => c.startsWith("deleteLocal"))).toBe(false);
 
@@ -176,8 +171,6 @@ describe("PRJ-23, D-413: deleting a linked project on GitHub web with automatic 
         status: [{ state: "exists", owner: "ada", admin: true, organization: false }, status],
       });
       await t.run("project.deleteContinue");
-      await t.run("project.deleteType", { value: "Field notes" });
-      await t.run("project.deleteConfirm");
       await t.run("project.deleteRetry");
       expect(t.vm()).toMatchObject({ open: true, step: "github", problem: expectedProblem });
       expect(t.calls.some((c) => c.startsWith("deleteLocal"))).toBe(false);
@@ -194,8 +187,6 @@ describe("PRJ-23, D-413: deleting a linked project on GitHub web with automatic 
       status: [{ state: "exists", owner: "ada", admin: true, organization: false }],
     });
     await t.run("project.deleteContinue");
-    await t.run("project.deleteType", { value: "Field notes" });
-    await t.run("project.deleteConfirm");
     expect(t.clock!.delays.at(-1)).toBe(DELETE_POLL_MS);
     await t.clock!.fireNext();
     const afterFirst = t.clock!.delays.at(-1)!;
@@ -224,8 +215,6 @@ describe("PRJ-23, D-413: deleting a linked project on GitHub web with automatic 
       status: (repo) => (gone.has(repo) ? { state: "gone" } : { state: "exists", owner: "ada", admin: true, organization: false }),
     });
     await t.run("project.deleteContinue");
-    await t.run("project.deleteType", { value: "Field notes" });
-    await t.run("project.deleteConfirm");
     expect(t.vm().siteRepo).toBe("ada/field-notes-site");
     expect(t.vm().repos.map((r: { id: string }) => r.id)).toEqual(["ada/field-notes", "ada/field-notes-site"]);
 
@@ -258,8 +247,6 @@ describe("PRJ-23, D-413: deleting a linked project on GitHub web with automatic 
     });
     await t.run("project.deletePrivate", { value: true });
     await t.run("project.deleteContinue");
-    await t.run("project.deleteType", { value: "Field notes" });
-    await t.run("project.deleteConfirm");
     expect(t.vm().repos.map((r: { id: string }) => r.id)).toEqual(["ada/field-notes", "ada/field-notes-private"]);
     gone.add("ada/field-notes");
     await t.run("project.deleteRetry");
@@ -273,27 +260,25 @@ describe("PRJ-23, D-413: deleting a linked project on GitHub web with automatic 
     const t = await started({ check: { ...LINKED, unsynced: ["Trips/Iceland.md", "Ideas.md"] } });
     await t.run("project.deleteContinue");
     expect(t.vm()).toMatchObject({ step: "unsynced", exported: false, unsyncedCount: 2, unsynced: [{ label: "Iceland", description: "Trips" }, { label: "Ideas", description: "" }] });
-    // Proceeding without saving is enabled immediately (D-413).
+    // Proceeding without saving is enabled immediately and goes straight to GitHub (D-413).
     await t.run("project.deleteContinue");
-    expect(t.vm().step).toBe("confirm");
+    expect(t.vm().step).toBe("github");
     await t.run("project.deleteBack");
     expect(t.vm().step).toBe("unsynced");
     // Optional Save a copy still works too.
     await t.run("project.deleteExport");
     expect(t.vm()).toMatchObject({ exported: true, exportPath: "/home/ada/Documents/Field notes (not on GitHub)" });
     await t.run("project.deleteContinue");
-    expect(t.vm().step).toBe("confirm");
+    expect(t.vm().step).toBe("github");
   });
 
-  it("Back from the GitHub step stops polling and returns to confirm when nothing is deleted yet", async () => {
+  it("Back from the GitHub step stops polling and returns to the consequences when nothing is deleted yet", async () => {
     const t = await started({ useFakeTimers: true });
     await t.run("project.deleteContinue");
-    await t.run("project.deleteType", { value: "Field notes" });
-    await t.run("project.deleteConfirm");
     expect(t.vm().step).toBe("github");
     expect(t.clock!.pendingCount()).toBe(1);
     await t.run("project.deleteBack");
-    expect(t.vm().step).toBe("confirm");
+    expect(t.vm().step).toBe("consequences");
     expect(t.clock!.pendingCount()).toBe(0);
   });
 
@@ -305,8 +290,6 @@ describe("PRJ-23, D-413: deleting a linked project on GitHub web with automatic 
       status: (repo) => (gone.has(repo) ? { state: "gone" } : { state: "exists", owner: "ada", admin: true, organization: false }),
     });
     await t.run("project.deleteContinue");
-    await t.run("project.deleteType", { value: "Field notes" });
-    await t.run("project.deleteConfirm");
     gone.add("ada/field-notes");
     await t.run("project.deleteRetry");
     await t.run("project.deleteCancel");
@@ -326,8 +309,6 @@ describe("PRJ-23: what stops a deletion, and its recovery (DD-PROJ-17)", () => {
     const t = await started({ useFakeTimers: true, status: [{ state: "exists", owner: "lab", admin: true, organization: true }] });
     expect(t.vm()).toMatchObject({ problem: "", org: "lab" });
     await t.run("project.deleteContinue");
-    await t.run("project.deleteType", { value: "Field notes" });
-    await t.run("project.deleteConfirm");
     expect(t.vm()).toMatchObject({ step: "github", problem: "policy" });
   });
   it("offline, signed out and already gone are handled cleanly", async () => {
@@ -335,8 +316,6 @@ describe("PRJ-23: what stops a deletion, and its recovery (DD-PROJ-17)", () => {
     const gone = await started({ useFakeTimers: true, status: [{ state: "gone" }] });
     expect(gone.vm().problem).toBe("gone");
     await gone.run("project.deleteContinue");
-    await gone.run("project.deleteType", { value: "Field notes" });
-    await gone.run("project.deleteConfirm");
     expect(gone.vm()).toMatchObject({ step: "github", problem: "" });
     // Fresh check confirms gone and finishes locally.
     await gone.run("project.deleteRetry");
@@ -385,8 +364,6 @@ describe("PRJ-23: what stops a deletion, and its recovery (DD-PROJ-17)", () => {
   it("names unsafe private history without claiming a file lock", async () => {
     const t = await started({ useFakeTimers: true, status: [{ state: "exists", owner: "ada", admin: true, organization: false }, { state: "gone" }], result: [{ state: "failed", reason: "privateHistory" }, { state: "deleted" }] });
     await t.run("project.deleteContinue");
-    await t.run("project.deleteType", { value: "Field notes" });
-    await t.run("project.deleteConfirm");
     await t.run("project.deleteRetry");
     expect(t.vm()).toMatchObject({ open: true, step: "progress", problem: "partialLocal", busy: false });
     expect(t.vm().localError).toContain("private Git history could not be kept safely");
@@ -408,8 +385,6 @@ describe("PRJ-23: the run's steps and a delete left unfinished (DD-PROJ-14)", ()
     });
     await t.run("project.deletePrivate", { value: true });
     await t.run("project.deleteContinue");
-    await t.run("project.deleteType", { value: "Field notes" });
-    await t.run("project.deleteConfirm");
     expect(t.saved.history).toHaveLength(0);
 
     gone.add("ada/field-notes");

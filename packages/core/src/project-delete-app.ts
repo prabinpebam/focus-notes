@@ -1,7 +1,8 @@
 /**
  * Deleting a project (PRJ-23, D-413, SC-PROJ-08 → UC-PROJ-13, DD-PROJ-09 to 17): one named project
- * at a time. The consequences come first, then any notes not on GitHub yet, then the project's name
- * typed exactly. For a GitHub-linked project, Focus Notes opens the repository's Settings page on
+ * at a time. The consequences come first, then any notes not on GitHub yet. An offline project asks for
+ * its name typed exactly; a GitHub-linked one has no typed name here, since GitHub asks for it when the
+ * person deletes the repository there. Focus Notes opens the repository's Settings page on
  * GitHub with short step-by-step instructions and checks on window focus and via lightweight
  * polling (using the existing signed-in GitHub session) until each repository is confirmed gone
  * (authenticated GET /repos/{owner}/{repo} 404 AND GET /user 200 in the same check). When all
@@ -13,7 +14,7 @@ import type { DeletionCheck, DeletionRecord, PlatformBridge, RepoStatus } from "
 import type { MessageCatalog } from "./messages.ts";
 import type { TaskTracker } from "./tasks.ts";
 
-export type DeleteStep = "consequences" | "unsynced" | "confirm" | "github" | "progress" | "done" | "stopped";
+export type DeleteStep = "consequences" | "unsynced" | "github" | "progress" | "done" | "stopped";
 export type DeleteProblem = "" | "offline" | "signin" | "notAdmin" | "policy" | "rateLimit" | "window" | "gone" | "error" | "partialLocal";
 /** One repository on GitHub's side: waiting for deletion on GitHub, or confirmed deleted. */
 type RepoPhase = "waiting" | "deleted";
@@ -99,7 +100,7 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
   const steps = (): RunStep[] => {
     const c = check;
     if (!c) return [];
-    const before = state.step === "consequences" || state.step === "unsynced" || state.step === "confirm";
+    const before = state.step === "consequences" || state.step === "unsynced";
     const out: RunStep[] = [];
     if (c.kind === "offline") {
       out.push({ id: "check", kind: "check", target: "", state: "skipped" }, { id: "repo", kind: "repo", target: "", state: "skipped" });
@@ -246,17 +247,23 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
     if (state.step === "github" && !targets().some((r) => repos.get(r) === "deleted")) {
       stopPolling();
       run++;
-      set({ step: "confirm", problem: "", retryAt: 0, checking: false });
+      set({ step: check?.unsynced.length ? "unsynced" : "consequences", problem: "", retryAt: 0, checking: false });
       return;
     }
-    if (state.step === "confirm") set({ step: check?.unsynced.length ? "unsynced" : "consequences" });
-    else if (state.step === "unsynced") set({ step: "consequences" });
+    if (state.step === "unsynced") set({ step: "consequences" });
   });
+  /** The person deletes on GitHub, which asks for the repository's name; no second typed name here (D-413, the owner 24 Nov). */
+  const toGitHub = () => {
+    for (const r of targets()) if (!repos.has(r)) repos.set(r, "waiting");
+    resetBackoff();
+    set({ step: "github", problem: state.org ? "policy" : "", retryAt: 0 });
+    schedule(DELETE_POLL_MS);
+  };
   reg("project.deleteContinue", "project.delete.continue", () => {
     // Already unavailable on GitHub goes on: the web-delete step verifies it with a fresh check before local cleanup.
-    if (!linked() || (state.problem && state.problem !== "gone")) return;
+    if (!linked() || (state.problem && state.problem !== "gone" && state.problem !== "policy")) return;
     if (state.step === "consequences" && check?.unsynced.length) set({ step: "unsynced" });
-    else set({ step: "confirm" });
+    else toGitHub();
   });
   reg("project.deleteExport", "project.delete.unsynced.export", async () => {
     if (!ws?.exportUnsynced || state.busy) return;
@@ -268,17 +275,11 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
     set({ busy: false, ...(path ? { exported: true, exportPath: path } : {}) });
   });
 
-  /** The name typed exactly; then the GitHub web-delete step for a linked project, or this computer for an offline one. */
+  /** An offline project: the name typed exactly, then this computer. A linked one retries local cleanup only. */
   reg("project.deleteConfirm", "project.delete.confirm.button", async () => {
-    if (!check || state.busy || state.typed !== name()) return;
-    if (linked() && state.step !== "progress") {
-      if (state.problem && state.problem !== "policy" && state.problem !== "gone") return;
-      for (const r of targets()) if (!repos.has(r)) repos.set(r, "waiting");
-      resetBackoff();
-      set({ step: "github", problem: state.org ? "policy" : "", retryAt: 0 });
-      schedule(DELETE_POLL_MS);
-      return;
-    }
+    if (!check || state.busy) return;
+    if (linked()) { if (state.step === "progress") await finish(); return; }
+    if (state.typed !== name()) return;
     await finish();
   });
   reg("project.deleteFinish", "project.delete.done.action", async () => {
@@ -454,7 +455,7 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
     schema: {
       type: "object",
       properties: {
-        open: bool, step: { type: "string", enum: ["consequences", "unsynced", "confirm", "github", "progress", "done", "stopped"] }, kind: { type: "string", enum: ["linked", "offline"] },
+        open: bool, step: { type: "string", enum: ["consequences", "unsynced", "github", "progress", "done", "stopped"] }, kind: { type: "string", enum: ["linked", "offline"] },
         problem: text, typed: text, private: bool, exported: bool, exportPath: text, unsyncedProceedLabel: text, busy: bool, checking: bool, canBackFromGithub: bool,
         name: text, repo: text, siteRepo: text, privateRepo: text, otherRepo: text, otherOwner: text, org: text, orgRepo: text,
         site: text, siteNotes: num, links: num, peopleCount: num, peopleNames: text, privateCount: num,

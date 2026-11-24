@@ -201,13 +201,10 @@ async function advanceToWebDelete(page: Page, l?: Launched, capturePrefix?: stri
     await captureIfRequested(l, `${capturePrefix}-consequences-dark`);
     await page.evaluate(() => { document.documentElement.dataset.theme = "paper"; document.documentElement.style.colorScheme = "light"; });
   }
+  // No typed name for a linked project: Continue goes straight to the GitHub step (D-413, owner 24 Nov).
   await dialog.getByRole("button", { name: "Continue", exact: true }).click();
-  const field = dialog.getByRole("textbox", { name: /^Type .+ to confirm$/ });
-  await expect(field).toBeVisible();
-  const name = (await dialog.getByRole("heading", { name: /^Delete .+\?$/ }).innerText()).replace(/^Delete /, "").replace(/\?$/, "");
-  await field.fill(name);
-  await dialog.getByRole("button", { name: "Delete project", exact: true }).click();
   await expect(dialog.getByRole("heading", { name: "Delete on GitHub", exact: true })).toBeVisible();
+  await expect(dialog.getByRole("textbox", { name: /^Type .+ to confirm$/ })).toHaveCount(0);
   if (l && capturePrefix) {
     await captureIfRequested(l, `${capturePrefix}-github-light`);
     await page.evaluate(() => { document.documentElement.dataset.theme = "ink"; document.documentElement.style.colorScheme = "dark"; });
@@ -382,13 +379,9 @@ test("D-413: unsynced notes warn with optional Save a copy and allow Delete with
     await expect(skipSave).toBeEnabled();
     await skipSave.click();
 
-    // Final explicit typed-name confirmation still applies.
-    const field = dialog.getByRole("textbox", { name: /^Type .+ to confirm$/ });
-    await expect(field).toBeVisible();
-    const name = (await dialog.getByRole("heading", { name: /^Delete .+\?$/ }).innerText()).replace(/^Delete /, "").replace(/\?$/, "");
-    await field.fill(name);
-    await dialog.getByRole("button", { name: "Delete project", exact: true }).click();
+    // No second typed-name step: straight to the GitHub step (D-413, owner 24 Nov).
     await expect(dialog.getByRole("heading", { name: "Delete on GitHub", exact: true })).toBeVisible();
+    await expect(dialog.getByRole("textbox", { name: /^Type .+ to confirm$/ })).toHaveCount(0);
 
     gone = true;
     await dialog.locator("[data-icon-layout-actions]").getByRole("button", { name: "Check again", exact: true }).click();

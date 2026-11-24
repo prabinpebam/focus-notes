@@ -17,6 +17,12 @@ And verbatim on review build `85df50d5` (12:28 IST):
 
 > "The spacing here is wrong. Content within a group should be closer together than the spacing between groups at a higher level. There's more gap between the list items than the spcing between the parent group and the adjacent group."
 
+And verbatim on review build `51b9a8ea` (12:56 IST), on the typed-name step "Delete {name}?" that sat between the consequences and **Delete on GitHub**:
+
+> "This step is unnecessary if we are deleting on the web. Remove it"
+
+- **No typed name for a linked project (overrides the earlier "final typed-name confirmation stays"):** **Continue** on the consequences step (or the proceed button on the notes-not-on-GitHub step) goes straight to **Delete on GitHub**; GitHub's own Danger Zone asks for the repository's name, so that's the one typed confirmation. An offline project keeps its typed name on its first step. Once every repository is confirmed gone (focus, polling or **Check again**), the folder goes to the Recycle Bin and the completion state shows, with no further step. Copy no longer says Focus Notes deletes anything on GitHub: the person deletes it there, and Focus Notes moves the folder to the Recycle Bin.
+
 Owner feedback screenshots are stored outside the repository in `focus-notes-work/review/delete-flow-feedback-24nov/` (`confirm-step.png`, `one-time-token-step.png`, `unsynced-save-blocker.png`, `consequences-spacing.png`).
 
 - **Spacing hierarchy & no duplicate Cancel (D-374):** `ItemCard` now uses `cmp.itemCard.paddingBlock` (`space.insetSm`, 8 px for `m`) separately from inline padding (`space.scale.m`, 16 px), and Delete's "What's deleted" item list uses `stackItem` (8 px) instead of `stackGroup` (16 px) inside `stackSection` (32 px) outer stacks across all steps. Before: visual content gap between sibling items was 48 px (16 + 16 + 16) vs 32 px section gap. After: title→description 4 px, heading→list 8 px (16 px visual), item→item 8 px (24 px visual), section→section 32 px. Removed the duplicate Cancel button beside the close × on the Consequences step.
