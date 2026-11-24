@@ -208,6 +208,10 @@ jobs:
         timeout-minutes: 10
         working-directory: apps/desktop
         run: node -e "console.log(require('electron'))"
+      # share-walkthrough plays the share recipient in a browser: the same Chromium install as web-windows.
+      - name: Fetch Chromium
+        timeout-minutes: 10
+        run: pnpm --filter @focus-notes/desktop exec playwright install chromium
       - run: node packages/tokens/build.mjs
       - name: Build the desktop app
         run: pnpm --filter @focus-notes/desktop run build
