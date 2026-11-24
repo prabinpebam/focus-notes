@@ -113,7 +113,7 @@ No agent creates/deletes/invites/publishes on a real account. D-379 authorizes s
 
 **IMG-12 Try it after Preview updates:** open a note with images → More → Print… → Save as PDF: images and captions in place, none split; a missing image prints its description.
 
-**Known open defects:** DEF-40 save-timing flake is quarantined until 7 November; DEF-42 rename storm takes 1067 ms against 1000 ms only under 4× CPU stress (owner allowed landing). The Preview-versus-Store launch lock was fixed on 6 November (D-366); the paused reopen candidate is not landed.
+**Known open defects:** DEF-42 rename storm takes 1067 ms against 1000 ms only under 4× CPU stress (owner allowed landing). The Preview-versus-Store launch lock was fixed on 6 November (D-366); the paused reopen candidate is not landed.
 
 **Next work is the owner's choice**, not an automatic feature queue. Read the project context in [`AGENTS.md`](../../AGENTS.md), keep partial-package scope explicit, and protect the owner's notes, privacy and computer.
 
