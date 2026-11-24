@@ -373,8 +373,8 @@ test("owner, 24 Nov: a project fully on GitHub reads backed up, and Delete shows
     await expect(dialog).toBeVisible();
     await expect(dialog).not.toContainText(/on GitHub yet|Couldn't check what's backed up/);
     await dialog.getByRole("button", { name: "Continue", exact: true }).click();
-    // Straight to the typed-name confirmation: no Not on GitHub yet step.
-    await expect(dialog.getByRole("textbox", { name: /^Type .+ to confirm$/ })).toBeVisible();
+    // Straight to the GitHub settings step (D-413, no typed-name step): no Not on GitHub yet step.
+    await expect(dialog.getByRole("button", { name: "Open GitHub settings", exact: true })).toBeVisible();
     await expect(dialog).not.toContainText(/on GitHub yet|Delete without saving|Couldn't check what's backed up/);
     expect(existsSync(fx.dirs.docs)).toBe(true);
   } finally { await fx.close(); }
