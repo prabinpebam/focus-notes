@@ -10,7 +10,7 @@ import { readdir, readFile, rm } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { applyAccessChange, audienceOf, hasHiddenText, inviteText, itemInviteText, itemTemplateProblem, parseAccessChange, parseAccessMessage, shareGrants, templateProblem, withdrawActive, type InviteValues } from "@focus-notes/seal/access";
-import { displayShareCode, isActive, noteId, randomId, shareLink, type SiteFetch } from "@focus-notes/seal";
+import { displayShareCode, isActive, newShareCode, noteId, randomId, shareLink, type SiteFetch } from "@focus-notes/seal";
 import { validateAccess, type AccessFile, type Grant } from "@focus-notes/seal/publish";
 import { hasVault } from "@focus-notes/seal/vault";
 import { generatePasscode } from "@focus-notes/seal/words";
@@ -66,7 +66,7 @@ export function accessStore(o: AccessStoreOptions) {
   let queue: Promise<unknown> = Promise.resolve();
   let mutations = 0;
   let cancellations = 0;
-  const words = new Map<string, string>();
+  const words = new Map<string, { shareCode: string; passcode: string }>();
   const ready = new Map<string, { fingerprint: string; dir: string; site: string; authorization?: string }>();
   const publishing = new Map<string, { controller: AbortController; done: Promise<void> }>();
   const read = async (dir = o.dir()): Promise<AccessFile> => {
@@ -205,12 +205,18 @@ export function accessStore(o: AccessStoreOptions) {
     if (what === "passcode" && s.passcode) return s.passcode;
     if (what === "accessCode" && s.accessCode) return s.accessCode;
     if (what === "information") {
-      const request = invite as { template?: unknown } | undefined;
-      if (!g.item || !request || typeof request.template !== "string" || Object.keys(request).some((k) => k !== "template")) throw NOT();
-      const saved = await message(dir);
-      const item = saved.value.itemTemplate;
-      if (saved.invalid || Object.hasOwn(saved.value, "itemTemplate") && typeof item !== "string") throw new Error("access:template.invalid");
-      return itemInviteText(typeof item === "string" ? item : request.template, { title: g.item.label, ...s,
+      const request = invite as { template?: unknown; useDefault?: unknown } | undefined;
+      if (!g.item || !request || typeof request.template !== "string" ||
+        (request.useDefault !== undefined && typeof request.useDefault !== "boolean") ||
+        Object.keys(request).some((k) => k !== "template" && k !== "useDefault")) throw NOT();
+      let chosen = request.template;
+      if (!request.useDefault) {
+        const saved = await message(dir);
+        const item = saved.value.itemTemplate;
+        if (saved.invalid || Object.hasOwn(saved.value, "itemTemplate") && typeof item !== "string") throw new Error("access:template.invalid");
+        if (typeof item === "string") chosen = item;
+      }
+      return itemInviteText(chosen, { title: g.item.label, ...s,
         ...(g.expiresAt ? { expires: new Intl.DateTimeFormat("en", { day: "numeric", month: "long", year: "numeric" }).format(new Date(g.expiresAt)) } : {}) });
     }
     if (what !== "invite") throw NOT();
@@ -251,7 +257,7 @@ export function accessStore(o: AccessStoreOptions) {
         if (!existsSync(dir) || o.dir() !== dir) throw new Error("access:failed");
         const change = parseAccessChange(raw);
         if (o.canMutate && !o.canMutate()) throw new Error("access:site.unavailable");
-        let prepared: string | undefined;
+        let prepared: { shareCode: string; passcode: string } | undefined;
         let resolvedItemNotes: { grantId?: string; notes: string[]; ids: string[] } | undefined;
         if (change.op === "createItem" && change.wordsId) {
           prepared = words.get(change.wordsId);
@@ -272,7 +278,11 @@ export function accessStore(o: AccessStoreOptions) {
           }
           if (JSON.stringify(await itemNotes(item, dir)) !== JSON.stringify(actual)) throw new Error("access:scope.changed");
         }
-        const { access, id } = applyAccessChange(before, change, (o.now ?? (() => new Date()))(), { generate: () => prepared ?? generatePasscode(), resolvedItemNotes });
+        const { access, id } = applyAccessChange(before, change, (o.now ?? (() => new Date()))(), {
+          generate: () => prepared?.passcode ?? generatePasscode(),
+          ...(prepared?.shareCode ? { shareCode: prepared.shareCode } : {}),
+          resolvedItemNotes,
+        });
         validateAccess(access);
         if (o.dir() !== dir) throw new Error("access:scope.changed");
         await o.write(file(dir), `${JSON.stringify(access, null, 2)}\n`);
@@ -313,11 +323,14 @@ export function accessStore(o: AccessStoreOptions) {
       queue = done.catch(() => {});
       return done;
     },
-    prepareWords: () => {
-      const id = randomId("w", 16), value = generatePasscode();
+    prepareWords: (previousId?: string) => {
+      const id = randomId("w", 16);
+      const prev = previousId ? words.get(previousId) : undefined;
+      const shareCode = prev?.shareCode ?? newShareCode();
+      const passcode = generatePasscode();
       if (words.size >= 32) words.delete(words.keys().next().value!);
-      words.set(id, value);
-      return { id, value };
+      words.set(id, { shareCode, passcode });
+      return { id, value: `${displayShareCode(shareCode)} ${passcode}` };
     },
     ready: (id: string): Promise<void> => {
       const existing = publishing.get(id);

@@ -290,13 +290,27 @@ describe("the window's view of access.json", () => {
       const sent: string[] = [];
       await expect(t.s.handoff(id, "information", { template: "{link}" }, text => { sent.push(text); })).rejects.toThrow("access:template.unknown");
       expect(sent).toEqual([]);
+      // Explicit "Use default this time" bypasses the stored template without overwriting it (SHR-19).
+      await t.s.handoff(id, "information", { template: "Open: {link}", useDefault: true }, text => { sent.push(text); });
+      expect(sent).toHaveLength(1);
+      expect(sent[0]).toMatch(/^Open: https:\/\/ada\.github\.io\/notes\/s\/#/);
+      expect((await t.s.load()).itemTemplate).toBe("{name}: {link}");
       const restored = await t.s.setItemTemplate(null);
       expect(restored.itemTemplate).toBeUndefined();
       expect(restored.itemTemplateInvalid).toBeUndefined();
       expect(restored.template).toBe("{name}: {link}");
       await t.s.handoff(id, "information", { template: "{link}" }, text => { sent.push(text); });
-      expect(sent).toHaveLength(1);
+      expect(sent).toHaveLength(2);
     } finally { rmSync(t.dir, { recursive: true, force: true }); }
+  });
+  it("prepares one combined access code and keeps the share code prefix on New words (D-409)", () => {
+    const t = store();
+    const first = t.s.prepareWords();
+    expect(first.value).toMatch(/^[A-Z0-9]{4}-[A-Z0-9]{4} [a-z]+(-[a-z]+){3}$/);
+    const next = t.s.prepareWords(first.id);
+    expect(next.value).toMatch(/^[A-Z0-9]{4}-[A-Z0-9]{4} [a-z]+(-[a-z]+){3}$/);
+    expect(next.value.split(" ")[0]).toBe(first.value.split(" ")[0]);
+    expect(next.value.split(" ")[1]).not.toBe(first.value.split(" ")[1]);
   });
   it("G6.2/G6.4: persisted create, repeated copy, extend, failed deploy and withdraw never duplicate or falsely confirm", async () => {
     let failDeploy = false;

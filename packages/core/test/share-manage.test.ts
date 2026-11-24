@@ -663,7 +663,8 @@ function shell() {
   let access: AccessFile = { version: 1, grants: [{ id: "gownergrant1", name: "You", owner: true, salt: "AAAAAAAAAAAAAAAAAAAAAA", passcodeKey: "A".repeat(43), scope: { all: true }, createdAt: "2026-10-01T00:00:00.000Z" }] };
   const copied: string[] = [];
   let template: string | undefined;
-  const listing = (): AccessListing => ({ available: true, site: SITE, ...(template ? { template } : {}), vault: true, grants: shareGrants(access).map(audienceOf) });
+  let itemTemplate: string | undefined;
+  const listing = (): AccessListing => ({ available: true, site: SITE, ...(template ? { template } : {}), ...(itemTemplate ? { itemTemplate } : {}), vault: true, grants: shareGrants(access).map(audienceOf) });
   const secrets = (id: string) => {
     const g = shareGrants(access).find((x) => x.id === id)!;
     return { ...(g.link ? { link: shareLink(SITE, g.id, g.link.secret) } : {}), ...(g.passcode ? { passcode: g.passcode.value } : {}), ...(g.shareCode && g.passcode ? { accessCode: `${displayShareCode(g.shareCode)} ${g.passcode.value}` } : {}) };
@@ -707,6 +708,7 @@ function shell() {
       prepareWords: async () => ({ id: "wprepared001", value: generatePasscode() }),
       cancelReady: async () => {},
       setTemplate: async (t) => ((template = t ?? undefined), listing()),
+      setItemTemplate: async (t) => ((itemTemplate = t ?? undefined), listing()),
       // As the main process does: the window sends the invite without secrets, and the shell fills them in.
       copy: async (id, what, invite) => {
         const s = secrets(id);
@@ -718,7 +720,7 @@ function shell() {
   const app = createApp(bridge, en);
   const vm = (id: string) => app.viewModels.select(id, app.store.state) as Record<string, any>;
   const run = (id: string, args?: Record<string, unknown>) => app.commands.run(id, args);
-  return { app, bridge, vm, run, copied, revealed, access: () => access, setAccess: (a: AccessFile) => void (access = a), template: () => template };
+  return { app, bridge, vm, run, copied, revealed, access: () => access, setAccess: (a: AccessFile) => void (access = a), template: () => template, itemTemplate: () => itemTemplate };
 }
 
 describe("Settings → Sharing (SHR-05, SHR-08)", () => {
@@ -827,55 +829,89 @@ describe("Settings → Sharing (SHR-05, SHR-08)", () => {
   });
 });
 
-describe("the invite template (SHR-09, D-143)", () => {
-  it("opens on the default, previews live with made-up values, refuses a bad placeholder, saves, and is used for Copy invite", async () => {
+describe("the share information template (SHR-19, G6.3, D-409)", () => {
+  it("opens on the recipient-voice default, previews live, rejects {name}/{passcode}/unknown, validates at copy time, and resets", async () => {
     const t = shell();
     await t.app.start();
     await settle();
     await t.run("settings.open");
     await t.run("settings.setSection", { value: "sharing" });
-    expect(t.vm("vm.shareManage").templateBadge).toBe("Default");
+    expect(t.vm("vm.sharingSettings").templateBadge).toBe("Default");
     await t.run("share.manage.templateOpen");
     let v = t.vm("vm.shareTemplate");
     expect(v).toMatchObject({ open: true, isDefault: true, hasProblem: false, canSave: true });
-    expect(v.value).toBe(inviteTemplate(catalog, true));
-    expect(v.placeholders.map((p: { label: string }) => p.label)).toEqual(["{name}", "{title}", "{link}", "{passcode}", "{expires}", "{site}"]);
-    expect(v.lines[0].text).toBe(`Hi Asha, I've shared "Trip plans" with you.`);
+    expect(v.placeholders.map((p: { label: string }) => p.label)).toEqual(["{title}", "{link}", "{site}", "{accessCode}", "{expires}"]);
+    expect(v.lines[0].text).toBe("I’ve shared “Trip plans” with you to read.");
     expect(v.lines[1].text).toBe(`Open it here: ${SITE}s/#example`);
+    expect(v.lines[2].text).toBe(`To use the access code, open ${SITE}s/ and enter: K7QM-4DRP harbor-maple-river-cloud`);
     expect(t.vm("vm.settings").open).toBe(false);
-    // A typo is named, and nothing is saved.
+    // Rejects {name}, {passcode}, typos, and missing opening methods.
+    await t.run("share.manage.setTemplate", { value: "Hi {name}, open {link}" });
+    expect(t.vm("vm.shareTemplate")).toMatchObject({ invalid: true, canSave: false, problem: "Remove {name}. Shares never ask for a name.", lines: [] });
+    await t.run("share.manage.setTemplate", { value: "Open {site} and enter {passcode}" });
+    expect(t.vm("vm.shareTemplate")).toMatchObject({ invalid: true, canSave: false, problem: "Use {accessCode} instead of {passcode}.", lines: [] });
     await t.run("share.manage.setTemplate", { value: "Hey {nmae}: {link}" });
-    v = t.vm("vm.shareTemplate");
-    expect(v).toMatchObject({ invalid: true, canSave: false, problem: "“{nmae}” isn't a placeholder. Use one from the list.", lines: [] });
+    expect(t.vm("vm.shareTemplate")).toMatchObject({ invalid: true, canSave: false, problem: "“{nmae}” isn't a placeholder.", lines: [] });
     await t.run("share.manage.templateSave");
-    expect(t.template()).toBeUndefined();
-    await t.run("share.manage.setTemplate", { value: "Hey {name}, see {site}" });
-    expect(t.vm("vm.shareTemplate").problem).toBe("Add {link} or {passcode}, so they can open it.");
-    await t.run("share.manage.setTemplate", { value: "Hey {name}!" });
-    await t.run("share.manage.insertPlaceholder", { id: "link" });
-    await t.run("share.manage.insertPlaceholder", { id: "nope" });
-    expect(t.vm("vm.shareTemplate")).toMatchObject({ value: "Hey {name}! {link}", lines: [{ id: "0", text: `Hey Asha! ${SITE}s/#example` }] });
+    expect(t.itemTemplate()).toBeUndefined();
+    await t.run("share.manage.setTemplate", { value: "Read {title} at {site}" });
+    expect(t.vm("vm.shareTemplate").problem).toBe("Add {link}, or {site} and {accessCode}, so people can open the share.");
+    // Save a code-only template (valid for code shares, unusable for link-only shares).
+    const codeOnly = "I’ve shared “{title}”.\nOpen {site} and enter: {accessCode}";
+    await t.run("share.manage.setTemplate", { value: codeOnly });
+    expect(t.vm("vm.shareTemplate")).toMatchObject({ canSave: true, hasProblem: false, lines: [
+      { id: "0", text: "I’ve shared “Trip plans”." },
+      { id: "1", text: `Open ${SITE}s/ and enter: K7QM-4DRP harbor-maple-river-cloud` },
+    ] });
     await t.run("share.manage.templateSave");
-    expect(t.template()).toBe("Hey {name}! {link}");
+    expect(t.itemTemplate()).toBe(codeOnly);
     expect(t.vm("vm.shareTemplate").open).toBe(false);
     expect(t.vm("vm.settings")).toMatchObject({ open: true, section: "sharing" });
-    expect(t.vm("vm.shareManage").templateBadge).toBe("Edited");
-    // Copy invite uses it; the shell fills the link in.
-    await t.run("share.manage.add");
-    await t.run("share.manage.setName", { value: "Asha" });
-    await t.run("share.manage.togglePasscode");
-    await t.run("share.manage.submit");
-    await t.run("share.manage.copy", { what: "invite" });
-    const g = shareGrants(t.access())[0]!;
-    expect(t.copied.at(-1)).toBe(`Hey Asha! ${SITE}s/#${g.id}.${g.link!.secret}`);
-    // Reset puts the default back, and saving it removes the file.
-    await t.run("share.manage.setInviteOpen", { open: false });
+    expect(t.vm("vm.sharingSettings")).toMatchObject({ templateBadge: "Edited", status: "Share information saved." });
+    // Copy-time validation in the item Share dialog: link-only share rejects code-only template without losing draft or copying.
+    await t.run("settings.setOpen", { open: false });
+    await t.run("share.item.open", { path: "/w/private/notes/trips/rome.md" });
+    const copiedBefore = t.copied.length;
+    await t.run("share.item.action", { what: "primary" });
+    expect(t.copied.length).toBe(copiedBefore);
+    expect(t.vm("vm.shareItem")).toMatchObject({
+      open: true, dialogOpen: true, link: true, passcode: false, templateInvalid: true,
+      problem: "Add a link, or the site address and access code, for this share.", status: "",
+    });
+    // Edit message from Share dialog opens template editor and closing returns to Share dialog with draft intact.
     await t.run("share.manage.templateOpen");
-    expect(t.vm("vm.shareTemplate").value).toBe("Hey {name}! {link}");
+    expect(t.vm("vm.shareTemplate").open).toBe(true);
+    expect(t.vm("vm.shareItem").dialogOpen).toBe(false);
+    await t.run("share.manage.setTemplateOpen", { open: false });
+    expect(t.vm("vm.shareItem")).toMatchObject({ open: true, dialogOpen: true, link: true, passcode: false });
+    // Use default this time succeeds and copies the recipient-voice default without warnings.
+    await t.run("share.item.action", { what: "primary", useDefault: true });
+    expect(t.copied.length).toBe(copiedBefore + 1);
+    expect(t.copied.at(-1)).toContain("I’ve shared “Rome” with you to read.");
+    expect(t.copied.at(-1)).toContain("Open it here: https://");
+    expect(t.copied.at(-1)).not.toContain("forward");
+    expect(t.vm("vm.shareItem").status).toBe("Share information copied with the default message.");
+    await t.run("share.item.setOpen", { open: false });
+    // Copy-time validation in Settings → Sharing All shares row.
+    await t.run("settings.open");
+    await t.run("settings.setSection", { value: "sharing" });
+    const rowId = t.vm("vm.sharingSettings").rows[0].id;
+    const beforeRowCopy = t.copied.length;
+    await t.run("sharing.copy", { id: rowId, action: "information" });
+    expect(t.copied.length).toBe(beforeRowCopy);
+    expect(t.vm("vm.sharingSettings").rows[0].hasTemplateProblem).toBe(true);
+    await t.run("sharing.copy", { id: rowId, action: "information", useDefault: true });
+    expect(t.copied.length).toBe(beforeRowCopy + 1);
+    expect(t.vm("vm.sharingSettings").rows[0].hasTemplateProblem).toBe(false);
+    expect(t.vm("vm.sharingSettings").status).toBe("Share information copied with the default message.");
+    // Reset puts the default back, and saving it removes itemTemplate.
+    await t.run("share.manage.templateOpen");
+    expect(t.vm("vm.shareTemplate").value).toBe(codeOnly);
     await t.run("share.manage.templateReset");
     expect(t.vm("vm.shareTemplate").isDefault).toBe(true);
     await t.run("share.manage.templateSave");
-    expect(t.template()).toBeUndefined();
+    expect(t.itemTemplate()).toBeUndefined();
+    expect(t.vm("vm.sharingSettings").templateBadge).toBe("Default");
   });
 });
 

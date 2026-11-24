@@ -66,6 +66,18 @@ describe("item shares (SHR-14, SHR-16, SHR-23; MP.17/18)", () => {
     }
     expect(() => itemInviteText("{link}", { ...common, accessCode: "K7QM-4DRP words" })).toThrow("access:template.noWayIn");
   });
+  it("reuses a prepared shareCode when still unique, and replaces it on collision (D-409)", () => {
+    const first = applyAccessChange({ version: 1, grants: [] }, change(), now, {
+      generate: generatePasscode, shareCode: "K7QM4DRP",
+      resolvedItemNotes: { notes: ["Confidential drafts/one.md"], ids: ["one-id"] },
+    });
+    expect(first.access.grants[0]!.shareCode).toBe("K7QM4DRP");
+    const second = applyAccessChange(first.access, change(), now, {
+      generate: generatePasscode, shareCode: "K7QM4DRP",
+      resolvedItemNotes: { notes: ["Confidential drafts/one.md"], ids: ["one-id"] },
+    });
+    expect(second.access.grants[1]!.shareCode).not.toBe("K7QM4DRP");
+  });
   it("creates opaque independent identities on each action, with a fixed snapshot by default", () => {
     const a = apply({ version: 1, grants: [] });
     const b = apply(a.access);

@@ -302,11 +302,12 @@ contextBridge.exposeInMainWorld("focusNotes", {
     load: () => ipcRenderer.invoke("access:load"),
     apply: (change: unknown) => ipcRenderer.invoke("access:apply", change),
     reveal: (id: string) => ipcRenderer.invoke("access:reveal", id),
-    prepareWords: () => ipcRenderer.invoke("access:words"),
+    prepareWords: (previousId?: string) => ipcRenderer.invoke("access:words", previousId),
     ready: (id: string) => ipcRenderer.invoke("access:ready", id),
     cancelReady: (id: string) => ipcRenderer.invoke("access:cancelReady", id),
     systemShare: (id: string, invite: unknown) => ipcRenderer.invoke("access:systemShare", id, invite),
     setTemplate: (template: string | null) => ipcRenderer.invoke("access:template", template),
+    setItemTemplate: (template: string | null) => ipcRenderer.invoke("access:itemTemplate", template),
     setup: {
       describe: () => ipcRenderer.invoke("sharing:setupPreview"),
       enable: (name: string) => ipcRenderer.invoke("sharing:setupEnable", name),

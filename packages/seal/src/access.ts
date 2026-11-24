@@ -60,6 +60,8 @@ export type PasscodeInput = { value: string } | { generate: true };
 /** How the main process makes words (seal/words.ts); the window has none, so it can't claim them. */
 export interface ApplyOptions {
   generate?: () => string;
+  /** Prepared share code from main-process preview, reused if still unique. */
+  shareCode?: string;
   /** Trusted filesystem resolution, never accepted from the renderer. */
   resolvedItemNotes?: { grantId?: string; notes: readonly string[]; ids: readonly string[] };
 }
@@ -179,7 +181,7 @@ export function applyAccessChange(access: AccessFile, change: AccessChange, now 
     if (!change.link && !change.passcode) throw new AccessEditError("waysIn.none");
     const scope = item.includeLater && item.folder ? tidyScope({ notes: [], folders: [item.path] })
       : { ids: resolvedIds(change.notes, o), notes: [], folders: [] };
-    let shareCode = newShareCode();
+    let shareCode = o.shareCode && !access.grants.some((g) => g.shareCode === o.shareCode) ? o.shareCode : newShareCode();
     while (access.grants.some((g) => g.shareCode === shareCode)) shareCode = newShareCode();
     let id = randomId("s", 16);
     while (access.grants.some((g) => g.id === id)) id = randomId("s", 16);
