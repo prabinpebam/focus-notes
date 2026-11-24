@@ -3559,5 +3559,16 @@
   "actions.workspace.openFromGitHub.keywords": "clone repository download",
   "actions.diagnostics.save": "Save diagnostic report…",
   "actions.diagnostics.save.outcome": "Saves a report about this app to a file you choose",
-  "actions.diagnostics.save.keywords": "logs support"
+  "actions.diagnostics.save.keywords": "logs support",
+  "webExport.title": "Save your browser drafts before browser writing is removed.",
+  "webExport.checking": "Checking for browser drafts…",
+  "webExport.count": "{count, plural, one {# draft in this browser} other {# drafts in this browser}}",
+  "webExport.export": "Export drafts",
+  "webExport.exporting": "Exporting drafts…",
+  "webExport.exported": "{count, plural, one {Exported # draft to your Downloads folder.} other {Exported # drafts to your Downloads folder.}}",
+  "webExport.failed": "Couldn't export your drafts. Try again.",
+  "webExport.retry": "Try again",
+  "webExport.download": "Download Focus Notes",
+  "webExport.retired.title": "Browser writing has been retired.",
+  "webExport.retired.body": "Use the Focus Notes desktop app to write and sync your notes."
 }
