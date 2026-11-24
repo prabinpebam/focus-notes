@@ -167,7 +167,7 @@ it("a refused local Publish announces no success and Retry emits one acknowledge
   expect(t.app.store.state.ui.toasts.filter(toast => toast.message === en["sharing.publish.saved"])).toHaveLength(1);
 });
 
-async function liveFixture() {
+async function liveFixture(onSite: string[] = []) {
   const published: string[][] = [], unpublished: string[][] = [], copied: string[] = [];
   let step: ((s: string) => void) | undefined;
   let next = deferred<{ commit: string; published: string[]; changed: string[] }>();
@@ -182,7 +182,7 @@ async function liveFixture() {
       writeFormat: async () => {}, renameNote: async () => {},
     },
     publishing: {
-      published: async () => [],
+      published: async () => onSite,
       publish: async selection => { published.push(selection.notes); return next.promise; },
       unpublish: async paths => { unpublished.push(paths); return next.promise; },
       onStep: listener => { step = listener; return () => { step = undefined; }; },
@@ -192,6 +192,7 @@ async function liveFixture() {
   await app.start();
   await new Promise(resolve => setTimeout(resolve, 0));
   app.store.update(s => ({ ...s, ui: { ...s.ui, share: { ...s.ui.share, listing: { available: true, configured: true, site: "https://ada.github.io/quiet-site/", vault: false, grants: [] } } } }));
+  for (let i = 0; i < 5; i++) await Promise.resolve();
   const vm = () => app.viewModels.select("vm.sharingPreview", app.store.state) as Record<string, unknown>;
   const toasts = () => app.store.state.ui.toasts;
   return { app, vm, toasts, published, unpublished, copied, step: (s: string) => step?.(s), settle: (value?: Error) => {
@@ -239,8 +240,19 @@ it("G3.4: a failed Publish with its dialog closed says what happened plainly and
   expect(t.toasts().some(n => n.message === "Published “A”")).toBe(true);
 });
 
-it("G3.2/G3.4: a leak stop never names private content; Unpublish says the note stays and history can't be withdrawn", async () => {
+it("D-419: Unpublish is offered only for a note on the site", async () => {
   const t = await liveFixture();
+  expect(t.app.commands.describe("note.unpublish")).toMatchObject({ enabled: false });
+  expect(t.app.commands.describe("files.unpublish")).toMatchObject({ enabled: false });
+  await t.app.commands.run("note.publish");
+  const task = t.app.commands.run("sharing.publish");
+  t.settle();
+  await task;
+  expect(t.app.commands.describe("note.unpublish")).toMatchObject({ enabled: true });
+});
+
+it("G3.2/G3.4: a leak stop never names private content; Unpublish says the note stays and history can't be withdrawn", async () => {
+  const t = await liveFixture(["a.md"]);
   await t.app.commands.run("note.publish");
   const task = t.app.commands.run("sharing.publish");
   t.settle(new Error("Leak check failed: private content found in 1 place(s): notes/index.json (path)"));

@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, expect, it } from "vitest";
@@ -77,6 +77,17 @@ it("G3.4 Unpublish: the current site loses the note after its deploy; the privat
   expect(await t.record()).toEqual({ version: 1, notes: [] });
   expect(await readFile(join(t.notesDir, "trip.md"), "utf8")).toBe(TRIP);
   expect(t.steps).toEqual(["saving", "publishing", "removing", "publishing"]);
+});
+
+it("D-419: a published note renamed since leaves the site at the next Publish or share instead of stopping it", async () => {
+  const t = await project({ notes: { "trip.md": TRIP, "rome.md": "# Rome\n" } });
+  await t.runtime.publishNotes({ notes: ["trip.md"] });
+  await rename(join(t.notesDir, "trip.md"), join(t.notesDir, "coast.md"));
+  await t.runtime.publish();
+  expect(t.site().has("notes/trip.md")).toBe(false);
+  await expect(t.runtime.publishNotes({ notes: ["rome.md"] })).resolves.toMatchObject({ published: ["rome.md"] });
+  expect(t.site().has("notes/rome.md")).toBe(true);
+  expect(await t.record()).toEqual({ version: 1, notes: ["rome.md"] });
 });
 
 it("G3.4: a build Pages never serves, or an offline push, is never Published or recorded, and Retry publishes", async () => {
