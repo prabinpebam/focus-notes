@@ -907,12 +907,24 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     await list();
     if (known.has(folder)) return;
     const profile = join(profiles, key(folder));
+    // A project removed earlier from this same folder comes back, as it does through Open project….
+    if (await metadata.isRemoved(profile)) {
+      const scopes = await metadata.pendingScopes();
+      if (scopes.length) throw new PrivacyCleanupError(scopes);
+      await metadata.change(profile, true);
+      await list();
+      if (known.has(folder)) return;
+    }
     await mkdir(profile, { recursive: true });
-    await writeFile(join(profile, DATA_FILES.projectFolder), folder, { flag: "wx" });
-    await writeFile(join(profile, DATA_FILES.workspace), JSON.stringify({ version: 1, folder, kind: "local" }), { flag: "wx" });
-    await writeFile(join(profile, DATA_FILES.state), JSON.stringify(local
+    // A profile left from before keeps what it has; only what's missing is written.
+    const write = (name: string, content: string) => writeFile(join(profile, name), content, { flag: "wx" }).catch((error: NodeJS.ErrnoException) => {
+      if (error.code !== "EEXIST") throw error;
+    });
+    await write(DATA_FILES.projectFolder, folder);
+    await write(DATA_FILES.workspace, JSON.stringify({ version: 1, folder, kind: "local" }));
+    await write(DATA_FILES.state, JSON.stringify(local
       ? { version: 1, firstRun: "done", localNotes: true, projectIntroSeen: true }
-      : { version: 1, firstRun: "done", ...(look ? { projectSettings: { [folder]: { ...look, watermark: "off", font: "app", theme: "app" } } } : {}) }), { flag: "wx" });
+      : { version: 1, firstRun: "done", ...(look ? { projectSettings: { [folder]: { ...look, watermark: "off", font: "app", theme: "app" } } } : {}) }));
   }
   /**
    * Open file… (owner, 4 November): a Markdown file opens in its own project's window when it's inside a

@@ -49,6 +49,9 @@ test("GitHub references independently open exact destinations across landed surf
       ipcMain.handle("projects:openGitHub", (_event, owner, name) => {
         (Reflect.get(globalThis, "githubReferenceClones") as string[]).push(`${owner}/${name}`);
       });
+      // A reference journey: no copies are offered, so a pick goes straight to the recorded open.
+      ipcMain.removeHandler("projects:githubCopies");
+      ipcMain.handle("projects:githubCopies", () => []);
       ipcMain.removeHandler("sync:repos");
       ipcMain.handle("sync:repos", () => ["private", "public"].map(repo => ({
         repo, name: repo === "private" ? "ada/notes-private" : "ada/notes", folders: 0, notes: 0, other: 0, commits: 0, remote: true,
@@ -100,14 +103,16 @@ test("GitHub references independently open exact destinations across landed surf
     expect(await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().filter(window => window.webContents.getURL().includes("index.html")).length)).toBe(1);
     await open.getByRole("button", { name: "Open from GitHub…", exact: true }).click();
     const github = page.getByRole("dialog", { name: "Open from GitHub", exact: true });
-    const githubCard = github.locator("[data-item-card]").filter({ has: page.getByRole("button", { name: "Open ada/recipes on GitHub", exact: true }) });
-    await activate(githubCard.getByRole("button", { name: "Open ada/recipes on GitHub", exact: true }), "https://github.com/ada/recipes");
+    const githubCard = github.locator("[data-item-card]").filter({ has: page.getByRole("button", { name: "Open ada/notes on GitHub", exact: true }) });
+    await activate(githubCard.getByRole("button", { name: "Open ada/notes on GitHub", exact: true }), "https://github.com/ada/notes");
+    // Only Focus Notes projects are listed (D-416): ada/notes, not ada/recipes or the private companion.
+    await expect(github.locator("[data-item-card]")).toHaveCount(1);
     await activate(githubCard.getByRole("button", { name: "Open ada on GitHub", exact: true }), "https://github.com/ada");
     expect(await l.app.evaluate(() => Reflect.get(globalThis, "githubReferenceClones"))).toEqual([]);
     await expect(github).toBeVisible();
     await githubCard.locator("button").first().click();
     await expect(github).toBeHidden();
-    expect(await l.app.evaluate(() => Reflect.get(globalThis, "githubReferenceClones"))).toEqual(["ada/recipes"]);
+    expect(await l.app.evaluate(() => Reflect.get(globalThis, "githubReferenceClones"))).toEqual(["ada/notes"]);
 
     await page.keyboard.press("Control+Alt+o");
     await open.getByRole("button", { name: "New project…", exact: true }).click();

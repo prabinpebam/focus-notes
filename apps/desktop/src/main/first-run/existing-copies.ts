@@ -54,9 +54,10 @@ const real = (p: string) => {
  * Read-only. A folder with no Git, or with another `origin`, isn't one; a folder that can't be read
  * is left out and `unreadable` is told (with no path), never guessed.
  */
-export async function findCopies(git: GitRunner, url: string, candidates: readonly string[], unreadable?: () => void): Promise<ExistingCopy[]> {
-  const want = normaliseRemote(url);
-  if (!want) return [];
+export async function findCopies(git: GitRunner, url: string | readonly string[], candidates: readonly string[], unreadable?: () => void): Promise<ExistingCopy[]> {
+  // Any of the repository's addresses (its clone address and its github.com one) is the same repository.
+  const wants = new Set((typeof url === "string" ? [url] : url).map(normaliseRemote).filter((u): u is string => Boolean(u)));
+  if (!wants.size) return [];
   const seen = new Set<string>();
   const found: ExistingCopy[] = [];
   for (const c of candidates) {
@@ -70,7 +71,7 @@ export async function findCopies(git: GitRunner, url: string, candidates: readon
       // 1: no origin, so it's a folder of its own; anything else is an error reading it.
       if (origin.code === 1) continue;
       if (origin.code !== 0) { unreadable?.(); continue; }
-      if (normaliseRemote(origin.stdout) !== want) continue;
+      if (!wants.has(normaliseRemote(origin.stdout) ?? "")) continue;
       const last = await git({ cwd: folder, args: ["log", "-1", "--format=%ct"], read: true });
       const seconds = last.code === 0 ? Number(last.stdout.trim()) : NaN;
       const updated = Number.isFinite(seconds) && seconds > 0 ? seconds * 1000 : (await stat(join(folder, ".git"))).mtimeMs;

@@ -79,11 +79,21 @@ describe("findCopies (D-415)", () => {
   it("puts the most recently updated copy first", async () => {
     const w = world();
     const old = w.clone("notes");
+    // Commit times are in seconds: the newer one must land in a later second.
+    await new Promise((r) => setTimeout(r, 1100));
     w.push("# A\nnewer\n");
     const fresh = w.clone("notes 2");
     const found = await findCopies(runner, w.remote, [old, fresh]);
     expect(found.map((f) => f.folder)).toEqual([fresh, old]);
     expect(found[0]!.updated).toBeGreaterThanOrEqual(found[1]!.updated);
+  });
+
+  it("finds a copy by any of the repository's addresses (its clone address or GitHub's)", async () => {
+    const w = world();
+    const a = w.clone("notes");
+    git(a, "remote", "set-url", "origin", "https://github.com/Ada/Notes");
+    expect(await findCopies(runner, w.remote, [a])).toEqual([]);
+    expect((await findCopies(runner, [w.remote, "https://github.com/ada/notes.git"], [a])).map((f) => f.name)).toEqual(["notes"]);
   });
 
   it("only reads: nothing in a candidate changes", async () => {
