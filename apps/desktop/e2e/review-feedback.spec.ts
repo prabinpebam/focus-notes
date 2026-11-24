@@ -492,7 +492,7 @@ test("Settings keeps navigation fixed and scrolls only content, with a short-win
   }
 });
 
-test("Agents code Copy is an accessible top-right icon overlay without a reserved text column", async () => {
+test("Agents code Copy sits inline on one row with the value, vertically centred and accessible (D-409)", async () => {
   const dirs = tempDirs();
   const text = '{\n  "mcpServers": { "focus-notes": { "command": "focus-notes", "args": ["mcp"] } }\n}';
   const l = await launch(dirs, { FOCUS_NOTES_MEMORY_CLIPBOARD: "1" });
@@ -516,15 +516,14 @@ test("Agents code Copy is an accessible top-right icon overlay without a reserve
       const code = el.querySelector("code")!;
       const box = code.parentElement!;
       const button = el.querySelector("button")!;
-      const style = getComputedStyle(box);
       const b = box.getBoundingClientRect(), c = code.getBoundingClientRect(), k = button.getBoundingClientRect();
       return {
-        fullWidth: Math.abs(c.width - (b.width - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight) - parseFloat(style.borderLeftWidth) - parseFloat(style.borderRightWidth))) < 1,
-        overlay: getComputedStyle(button.parentElement!).position,
-        topRight: k.right <= b.right && k.right > b.right - 20 && k.top < b.top + 20,
+        inlineRow: getComputedStyle(box).display === "flex" && c.right <= k.left + 0.5,
+        centred: Math.abs((k.top + k.bottom) / 2 - (b.top + b.bottom) / 2) <= 2,
+        insideRight: k.right <= b.right && k.right > b.right - 20,
       };
     });
-    expect(layout).toEqual({ fullWidth: true, overlay: "absolute", topRight: true });
+    expect(layout).toEqual({ inlineRow: true, centred: true, insideRight: true });
     await copy.focus();
     await expect(l.page.getByRole("tooltip", { name: "Copy", exact: true })).toBeVisible();
     await copy.click();

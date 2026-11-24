@@ -25,7 +25,7 @@ for (const theme of ["light", "dark"] as const) {
           await content.evaluate(el => { (el as HTMLElement).style.removeProperty("padding-bottom"); });
         } else {
           const content = l.page.locator("[data-tab-content]");
-          expect(await content.evaluate(el => getComputedStyle(el).paddingInlineStart)).toBe("24px");
+          expect(await content.evaluate(el => getComputedStyle(el).paddingInlineStart)).toBe("32px");
           await content.evaluate(el => { (el as HTMLElement).style.paddingInlineStart = "16px"; });
           expect(await visualProblems(l.page)).toEqual(expect.arrayContaining([expect.stringMatching(/uniform padding:.*left 16/)]));
           await content.evaluate(el => { (el as HTMLElement).style.removeProperty("padding-inline-start"); });

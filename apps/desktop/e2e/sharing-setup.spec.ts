@@ -66,7 +66,7 @@ test("G2.1-G2.3: confirmed setup creates one paired public site, Cancel and fail
     const settings = page.getByRole("dialog", { name: "Settings", exact: true });
     await settings.getByRole("tab", { name: "Sharing", exact: true }).click();
     const turnOn = settings.getByRole("button", { name: "Turn on sharing…", exact: true });
-    const confirmation = page.getByRole("dialog", { name: "Sharing", exact: true });
+    const confirmation = page.getByRole("dialog", { name: /^Turn on sharing for/ });
 
     // Cancel: the named public site is shown, and leaving writes nothing anywhere.
     await turnOn.click();
@@ -210,7 +210,7 @@ test("G2.3: no earlier share opens after Turn off -> Turn on -> Share (UC-SHARE-
     expect(await opens()).toEqual(["rejected", "rejected"]);
 
     await settings.getByRole("button", { name: "Turn on sharing…", exact: true }).click();
-    const confirmation = page.getByRole("dialog", { name: "Sharing", exact: true });
+    const confirmation = page.getByRole("dialog", { name: /^Turn on sharing for/ });
     await confirmation.getByRole("button", { name: "Turn on sharing", exact: true }).click();
     await expect(confirmation).toHaveCount(0);
     await expect(settings.getByRole("button", { name: "Turn off sharing…", exact: true })).toBeVisible();

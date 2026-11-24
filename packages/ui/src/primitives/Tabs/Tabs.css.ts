@@ -59,9 +59,12 @@ const footerBase = style({
   backgroundImage: `linear-gradient(${t.border}, ${t.border})`, backgroundSize: `100% ${t.borderWidth}`, backgroundRepeat: "no-repeat", backgroundPosition: "top",
   "@media": { "(forced-colors: active)": { backgroundImage: "none", paddingBlockStart: t.footerGap, borderBlockStartStyle: "solid", borderBlockStartWidth: t.borderWidth, borderColor: t.border } },
 });
-export const footer = { horizontal: footerBase, vertical: footerBase };
+export const footer = {
+  horizontal: style([footerBase, { paddingBlockStart: t.gap }]),
+  vertical: footerBase,
+};
 export const fixedFooter = style({
-  flexShrink: 0, paddingInline: t.contentInset, paddingBlockEnd: t.focusRoom,
+  flexShrink: 0, paddingInline: t.contentInset,
 });
 const tabBase = style({
   display: "inline-flex",
@@ -99,7 +102,7 @@ export const panel = {
 };
 
 export const navigation = {
-  horizontal: style({ paddingInlineStart: t.contentInset, paddingInlineEnd: `max(${t.focusRoom}, calc(${t.contentInset} - ${t.scrollbarSize}))`, paddingBlock: t.contentInset }),
+  horizontal: style({ paddingInlineStart: t.contentInset, paddingInlineEnd: `max(${t.focusRoom}, calc(${t.contentInset} - ${t.scrollbarSize}))`, paddingBlock: t.focusRoom }),
   vertical: style({ boxSizing: "border-box", flexBasis: `calc(${t.listWidth} + ${t.contentInset})`, paddingInlineStart: t.contentInset, paddingInlineEnd: t.panelInset, paddingBlock: t.contentInset }),
 };
 export const content = style({

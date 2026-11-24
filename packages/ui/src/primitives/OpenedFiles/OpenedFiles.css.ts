@@ -43,7 +43,7 @@ export const tab = style({
 
 /** The whole tab but its ×: one click activates. */
 export const activate = style({
-  display: "flex", alignItems: "center", gap: t.inlineGap, flexGrow: 1, minWidth: 0, alignSelf: "stretch",
+  display: "flex", alignItems: "center", gap: t.inlineGap, flexGrow: 1, minWidth: 0, minHeight: t.tabHeight, alignSelf: "stretch",
   paddingInlineStart: t.paddingInline, margin: 0, borderStyle: "none", borderRadius: t.radius,
   backgroundColor: t.background, color: "inherit", font: "inherit", fontWeight: t.weight, textAlign: "start", cursor: "default", outline: "none",
 });

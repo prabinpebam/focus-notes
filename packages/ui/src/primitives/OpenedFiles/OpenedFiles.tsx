@@ -36,7 +36,7 @@ export function OpenedFiles({ label, items, menu = [], menuLabel = "", closeLabe
   if (items.length === 0) return null;
   const headerId = `${id}-header`;
   return (
-    <section className={s.root} aria-labelledby={headerId} id={id}>
+    <section className={s.root} aria-labelledby={headerId} id={id} data-opened-files="">
       <div className={s.header}>
         <span className={s.headerLabel} id={headerId}>{label}</span>
         {menu.length > 0 ? <MenuButton icon="more" label={menuLabel || label} sections={menu} {...(onMenuAction ? { onAction: onMenuAction } : {})} /> : null}

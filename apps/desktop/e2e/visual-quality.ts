@@ -706,8 +706,9 @@ function audit({ skip, v }: { skip: string[]; v: typeof VISUAL }): string[] {
 
   if (on("selection")) {
     // Selected and active items show a background, never a side bar or a border (D-111).
+    // Exception: Opened files vertical tab buttons are explicitly bordered by owner direction (D-410).
     const SELECTED = '[aria-selected="true"], [data-selected], [data-current], [aria-current]:not([aria-current="false"])';
-    for (const el of [...document.querySelectorAll(SELECTED)].filter((e) => shown(e) && !e.closest("[data-editor]"))) {
+    for (const el of [...document.querySelectorAll(SELECTED)].filter((e) => shown(e) && !e.closest("[data-editor]") && !e.closest("[data-opened-files]"))) {
       const cs = getComputedStyle(el);
       const seen = (c: string) => c !== "transparent" && !/rgba\([^)]*,\s*0\)$/.test(c);
       const sides = (["Top", "Right", "Bottom", "Left"] as const).map((k) => parseFloat(cs[`border${k}Width`]) > 0 && cs[`border${k}Style`] !== "none" && seen(cs[`border${k}Color`]));

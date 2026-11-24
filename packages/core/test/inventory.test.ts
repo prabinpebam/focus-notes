@@ -74,7 +74,7 @@ describe("PRV-02: the browser's storage", () => {
     expect(WEB_DATABASE).toBe("focus-notes");
     expect(Object.values(WEB_STORES).sort()).toEqual(["meta", "notes"]);
     expect(Object.values(WEB_META).sort()).toEqual(["appState", "folders", "vaultUnlockKey", "workspaceFormat"]);
-    const web = read("apps/web/src/bridge.ts") + read("apps/web/src/idb.ts");
+    const web = read("apps/web/src/export-drafts.ts");
     expect(web).toMatch(/from "@focus-notes\/core\/inventory"/);
     // Every key the inventory names is in the docs' rows about the browser.
     const browserRows = docRows().filter((r) => /IndexedDB/.test(r[1] ?? "")).map((r) => r[1]!).join("\n");

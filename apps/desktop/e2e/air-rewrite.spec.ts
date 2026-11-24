@@ -371,7 +371,7 @@ test("UI-09, D-111: a dialog's scrolling body runs to the dialog's bottom edge, 
     expect(edges.last).toBe(true);
     expect(Math.abs(edges.gap)).toBeLessThanOrEqual(1);
     expect(edges.framePadding).toBe(0);
-    expect(edges.padding).toBe(24);
+    expect(edges.padding).toBe(32);
     expect(edges.endInset).toBeCloseTo(edges.padding, 0);
     expect(edges.scrolls).toBe(true);
   } finally {
