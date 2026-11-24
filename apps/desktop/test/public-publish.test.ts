@@ -39,15 +39,17 @@ async function project(o: { reader?: boolean; notes?: Record<string, string>; le
   const api = new GitHubApi(github.token, git.fetch);
   const layout: SharingLayout = { legacy: false, privateDir: root, privateNotes: notesDir, roots: [] };
   const steps: string[] = [];
+  const live: { build: string; live: boolean }[] = [];
   const runtime = sharingRuntime({
     root: () => root, layout: () => layout, api: async () => api, repository: async () => "ada/book",
     write: (file, text) => writeFile(file, text), written: () => {}, temporary: await temp(),
     publisher: pagesArtifactPublisher({ api: async () => api, target: async () => pairing, get: git.get, timeoutMs: 30, delayMs: 1 }),
     reader: () => reader, publishStep: step => steps.push(step),
+    get: git.get, pagesWatch: { delayMs: 5, ceilingMs: 300 }, publishLive: event => live.push(event),
   });
   const site = () => git.site("ada/quiet-site");
   const record = async () => JSON.parse(await readFile(join(root, ".focus-notes", "published.json"), "utf8")) as { notes: string[] };
-  return { root, notesDir, github, git, runtime, steps, site, record };
+  return { root, notesDir, github, git, runtime, steps, site, record, live };
 }
 
 it("G3.1 Publish: exactly the selected note goes public with its page, Published only once Pages serves the build; private bytes kept", async () => {
@@ -90,17 +92,32 @@ it("D-419: a published note renamed since leaves the site at the next Publish or
   expect(await t.record()).toEqual({ version: 1, notes: ["rome.md"] });
 });
 
-it("G3.4: a build Pages never serves, or an offline push, is never Published or recorded, and Retry publishes", async () => {
+it("G3.4: an offline push is never Published or recorded, and Retry publishes", async () => {
   const t = await project({ notes: { "trip.md": TRIP } });
-  t.git.setStale(true);
-  await expect(t.runtime.publishNotes({ notes: ["trip.md"] })).rejects.toThrow("sharing:unacknowledged");
-  await expect(t.record()).rejects.toThrow();
-  t.git.setStale(false);
   t.github.offline = true;
   await expect(t.runtime.publishNotes({ notes: ["trip.md"] })).rejects.toThrow("sharing:offline");
   await expect(t.record()).rejects.toThrow();
   t.github.offline = false;
   await expect(t.runtime.publishNotes({ notes: ["trip.md"] })).resolves.toMatchObject({ published: ["trip.md"] });
+});
+
+it("O4: Pages slower than the wait is Still publishing, not an error; background checks say when it's live, or fail at the ceiling", async () => {
+  const t = await project({ notes: { "trip.md": TRIP, "rome.md": "# Rome\n" } });
+  t.git.setStale(true);
+  const result = await t.runtime.publishNotes({ notes: ["trip.md"] });
+  expect(result).toMatchObject({ published: ["trip.md"], changed: ["trip.md"] });
+  expect(result.pending).toMatch(/\S/);
+  // The commit is on the site's branch, so the record says what Pages will serve.
+  expect(await t.record()).toEqual({ version: 1, notes: ["trip.md"] });
+  expect(t.site().get("notes/trip.md")).toBe(TRIP);
+  await new Promise(r => setTimeout(r, 20));
+  expect(t.live).toEqual([]);
+  t.git.setStale(false);
+  await expect.poll(() => t.live).toEqual([{ build: result.pending, live: true }]);
+  // A later Publish isn't blocked by a pending one; one never served fails at the ceiling instead of waiting forever.
+  t.git.setStale(true);
+  const second = await t.runtime.publishNotes({ notes: ["rome.md"] });
+  await expect.poll(() => t.live, { timeout: 5000 }).toContainEqual({ build: second.pending, live: false });
 });
 
 it("G3.1/G3.2: no page renderer, or a published note quoting a private one, stops before any push", async () => {

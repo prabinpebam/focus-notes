@@ -15,7 +15,7 @@ function harness(fail?: () => Error | undefined) {
       const error = fail?.();
       if (error) throw error;
       deployed.push(paths);
-      return "c".repeat(40);
+      return { commit: "c".repeat(40) };
     },
     step: s => steps.push(s),
   });

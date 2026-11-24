@@ -163,6 +163,8 @@ export const MEASURE_NAMES: readonly string[] = [
   "focus-notes:sharing.setup.describe", "focus-notes:sharing.setup.enable",
   // Publish and Unpublish to the paired site (G3.5): SHARING_WAITS in sharing-preview.ts.
   "fn:sharing.publishSite", "fn:sharing.unpublishSite", "focus-notes:sharing.publishSite", "focus-notes:sharing.unpublishSite",
+  // A Publish or Unpublish still waiting for Pages after its push (O4): background checks until it's live.
+  "fn:sharing.publishLive", "focus-notes:sharing.publishLive",
   "fn:project.firstNote", "focus-notes:project.firstNote",
   "focus-notes:files.move", "focus-notes:files.rename",
   "focus-notes:image.caption.open", "focus-notes:image.caption.generate",

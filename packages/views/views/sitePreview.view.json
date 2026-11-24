@@ -777,7 +777,7 @@
                       },
                       "variant": "primary",
                       "busy": {
-                        "get": "vm.sharingPreview.busy"
+                        "get": "vm.sharingPreview.publishBusy"
                       }
                     },
                     "on": {

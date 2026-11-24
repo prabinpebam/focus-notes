@@ -321,6 +321,14 @@ contextBridge.exposeInMainWorld("focusNotes", {
       ipcRenderer.on("sharing:publishStep", handler);
       return () => ipcRenderer.removeListener("sharing:publishStep", handler);
     },
+    onLive: (listener: (event: { build: string; live: boolean }) => void) => {
+      const handler = (_event: unknown, value: unknown) => {
+        const v = value as { build?: unknown; live?: unknown } | null;
+        if (v && typeof v.build === "string" && typeof v.live === "boolean") listener({ build: v.build, live: v.live });
+      };
+      ipcRenderer.on("sharing:publishLive", handler);
+      return () => ipcRenderer.removeListener("sharing:publishLive", handler);
+    },
   },
   // Local diagnostics (QLT-04, D-140): the main process builds and redacts the report; the window sends only its timings.
   diagnostics: {

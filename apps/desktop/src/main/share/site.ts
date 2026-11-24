@@ -17,11 +17,12 @@ export type SealedArtifactPublisher = (project: string, artifact: SealedArtifact
 /** G3 supplies the live artifact publisher. An absent implementation must never look like a successful push. */
 export const publishSealedArtifact: SealedArtifactPublisher = async () => ({ status: "unavailable" });
 
-export function requirePublishedArtifact(result: ArtifactPublication, pairing: SitePairing, artifact: SealedArtifact): void {
+export function requirePublishedArtifact(result: ArtifactPublication, pairing: SitePairing, artifact: SealedArtifact, allowPending = false): "built" | "building" {
   if (result.status === "unavailable") throw new Error("sharing:unavailable");
-  if (!/^[a-f0-9]{40}$/i.test(result.commit) || result.pages.status !== "built" ||
+  if (!/^[a-f0-9]{40}$/i.test(result.commit) || !(result.pages.status === "built" || allowPending && result.pages.status === "building") ||
     result.pages.repository.toLowerCase() !== `${pairing.owner}/${pairing.name}`.toLowerCase() ||
     result.pages.build !== artifact.build) throw new Error("sharing:unacknowledged");
+  return result.pages.status;
 }
 
 export function publicSiteWorkflow(branch = "main"): string {
