@@ -110,7 +110,7 @@ export const NOT_IN_MENU_BAR: readonly { why: string; ids: RegExp }[] = [
   { why: "renderer failure and panel reload events", ids: /^app\.(reportFailure|reloadPanel)$/ },
   { why: "notification layout and note position events", ids: /^(toast\.wrapped|note\.position)$/ },
   { why: "Actions and a file result's Copy Markdown link", ids: /^note\.copyLink$/ },
-  { why: "Files row pins and shortcuts", ids: /^files\.(publish|selectShortcut|activateShortcut|saveItemPin|pinItem)$/ },
+  { why: "Files row pins and shortcuts", ids: /^files\.(publish|unpublish|selectShortcut|activateShortcut|saveItemPin|pinItem)$/ },
   { why: "Opened files vertical tab buttons and header menu (D-410)", ids: /^files\.(activateOpened|closeOpened|closeAllOpened)$/ },
   { why: "In-writing account and sync recovery alert card actions (D-408, G5.4)", ids: /^recoveryAlert\.(notNow|primary|secondary)$/ },
   { why: "panel retry, reading preview and local-note reveal controls", ids: /^(files\.retryDeleted|history\.retry|reading\.preview|note\.revealLocal)$/ },
