@@ -25,6 +25,7 @@
     "vm.unlock",
     "vm.about",
     "vm.files",
+    "vm.opened",
     "vm.findAll",
     "vm.move",
     "vm.confirm",
@@ -4693,6 +4694,23 @@
           ]
         },
         "children": [
+          {
+            "type": "OpenedFiles",
+            "id": "filesOpened",
+            "when": { "get": "vm.deleted.closed" },
+            "props": {
+              "label": { "t": "files.opened.heading" },
+              "items": { "get": "vm.opened.items" },
+              "menu": { "get": "vm.opened.menu" },
+              "menuLabel": { "t": "files.opened.menu" },
+              "closeLabel": { "t": "files.opened.close" }
+            },
+            "on": {
+              "activate": { "run": "files.activateOpened", "args": { "id": { "get": "event.id" } } },
+              "close": { "run": "files.closeOpened", "args": { "id": { "get": "event.id" } } },
+              "menuAction": { "run": "command.run", "args": { "id": { "get": "event.id" } } }
+            }
+          },
           {
             "type": "FileTree",
             "id": "filesShortcuts",

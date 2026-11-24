@@ -68,7 +68,7 @@ const headingLed = (n: Component): boolean => {
  */
 const GROUPING_EXCEPTIONS: Record<string, string> = {
   // The Files sheet's deleted notes: each note's restore buttons sit stackPair under it, the notes stackItem apart.
-  "canvas /root/children/0/children/25/children/5/children/3/render/children/1": "writing window (Files sheet, deleted notes)",
+  "canvas /root/children/0/children/25/children/6/children/3/render/children/1": "writing window (Files sheet, deleted notes)",
   // First run's "Trouble?" disclosure: the help it reveals sits stackItem under the button, its groups stackGroup apart.
   "canvas /root/children/0/children/28/children/0/children/0/children/0/children/1/cases/connect/children/1/children/1": "approved first-run step (connect, trouble help)",
 };

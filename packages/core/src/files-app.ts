@@ -42,6 +42,8 @@ export interface FilesState {
   sort: FilesSort;
   pins: readonly string[];
   visits: readonly string[];
+  /** Notes currently open as tabs in this window (D-410, FIL-20). */
+  opened: readonly string[];
   /** Bumped to move focus into the tree, to the focused row. */
   focusRequest: number;
   /** The inline name field: renaming a row, or naming a new folder in `parent`. */
@@ -72,7 +74,7 @@ export interface FilesState {
   newNote: { open: boolean; query: string; activeId: string; expanded: readonly string[]; focus: number; busy: boolean; error: string };
 }
 export const FILES_CLOSED: FilesState = {
-  open: false, pinned: false, fits: true, expanded: [], collapsed: [], selection: NO_SELECTION, filter: "", sort: "name", pins: [], visits: [], focusRequest: 0, pending: [], unsaved: [],
+  open: false, pinned: false, fits: true, expanded: [], collapsed: [], selection: NO_SELECTION, filter: "", sort: "name", pins: [], visits: [], opened: [], focusRequest: 0, pending: [], unsaved: [],
   move: { open: false, query: "", activeId: "", paths: [], focus: 0 },
   recent: { open: false, loading: false, focus: 0 },
   recovered: { open: false, loading: false },
@@ -158,9 +160,13 @@ export function registerFiles(ctx: Ctx) {
     const path = store.state.note.path;
     if (!path || path === lastVisited || store.state.note.status !== "ready") return;
     lastVisited = path;
-    if (!cacheEnabled || filteredRoots.some(root => atOrUnder(path, root))) return;
+    const opened = files().opened.includes(path) ? files().opened : [...files().opened, path];
+    if (!cacheEnabled || filteredRoots.some(root => atOrUnder(path, root))) {
+      if (opened !== files().opened) setFiles(() => ({ opened }));
+      return;
+    }
     const visits = [path, ...files().visits.filter((p) => p !== path)].slice(0, 20);
-    setFiles(() => ({ visits }));
+    setFiles(() => ({ visits, opened }));
     void ctx.persistAppState({ filesRecent: visits.filter(p => sourceOf(p) !== "private") });
   });
 
@@ -329,9 +335,51 @@ export function registerFiles(ctx: Ctx) {
     if (row.kind !== "note") return setExpanded(row.id, !row.expanded);
     // Opening a note closes the panel (DD-FILES-01), unless it's pinned (D-161).
     dismiss();
+    if (!files().opened.includes(row.path)) setFiles((f) => ({ opened: [...f.opened, row.path] }));
     if (store.state.note.path !== row.path) await ctx.load(row.path);
   };
   commands.register<{ id: string }>({ id: "files.activate", title: "command.files.openItem", run: ({ id }) => activate(String(id)) });
+  commands.register<{ id: string }>({
+    id: "files.activateOpened", title: "command.files.openItem", group: "files",
+    run: async ({ id }) => {
+      const path = String(id);
+      if (!path) return;
+      dismiss();
+      if (!files().opened.includes(path)) setFiles((f) => ({ opened: [...f.opened, path] }));
+      if (store.state.note.path !== path) await ctx.load(path);
+    },
+  });
+  commands.register<{ id: string }>({
+    id: "files.closeOpened", title: "files.opened.close", group: "files",
+    run: async ({ id }) => {
+      const path = String(id);
+      const current = files().opened;
+      const idx = current.indexOf(path);
+      if (idx < 0) return;
+      const remaining = current.filter((p) => p !== path);
+      if (store.state.note.path === path) {
+        if (remaining.length > 0) {
+          const next = remaining[Math.min(idx, remaining.length - 1)]!;
+          await ctx.load(next);
+          if (store.state.note.path !== next) return;
+        } else {
+          await ctx.exclusive(async () => {});
+          if (store.state.note.saveState !== "saved" && store.state.note.path === path) return;
+        }
+      }
+      setFiles((f) => ({ opened: f.opened.filter((p) => p !== path) }));
+    },
+  });
+  commands.register({
+    id: "files.closeAllOpened", title: "files.opened.closeAll", group: "files",
+    enabled: (s) => s.ui.files.opened.length > 0,
+    run: async () => {
+      if (files().opened.length === 0) return;
+      await ctx.exclusive(async () => {});
+      if (store.state.note.path && store.state.note.saveState !== "saved") return;
+      setFiles(() => ({ opened: [] }));
+    },
+  });
   commands.register<{ id: string }>({
     id: "files.selectShortcut", title: "command.files.select",
     run: ({ id }) => { if (!id.startsWith("root:")) reveal(id, false); },
@@ -355,14 +403,14 @@ export function registerFiles(ctx: Ctx) {
   bridge.onPrivacyCleared?.(() => {
     cacheEnabled = false;
     pinEpoch++;
-    setFiles(() => ({ pins: [], visits: [] }));
+    setFiles(() => ({ pins: [], visits: [], opened: [] }));
   });
   bridge.onPrivacyResumed?.(() => { cacheEnabled = true; });
   bridge.onPrivacyFiltered?.(roots => {
     filteredRoots = roots;
     pinEpoch++;
     const keep = (path: string) => !roots.some(root => atOrUnder(path, root));
-    setFiles(() => ({ pins: files().pins.filter(keep), visits: files().visits.filter(keep) }));
+    setFiles(() => ({ pins: files().pins.filter(keep), visits: files().visits.filter(keep), opened: files().opened.filter(keep) }));
   });
   let pinWrites: Promise<void> = Promise.resolve();
   commands.register<{ value: PinIntent }>({
@@ -496,6 +544,7 @@ export function registerFiles(ctx: Ctx) {
     setFiles((f) => ({
       pending: [...f.pending, ...o.touched],
       expanded: [...new Set([...f.expanded.map((e) => rebase(e, moves)), ...(o.open ?? [])])],
+      ...(moves.length ? { opened: [...new Set(f.opened.map((x) => rebase(x, moves)))] } : {}),
       selection: o.select?.length ? { selected: o.select, anchor: o.select[0]!, focus: o.select[0]! }
         : moves.length ? { selected: moves.map((m) => m.to), anchor: moves[0]!.to, focus: moves[0]!.to } : f.selection,
     }));
@@ -534,7 +583,10 @@ export function registerFiles(ctx: Ctx) {
       toast(withLinks(o.done, writes), o.undo ? { action: undoAction(o.undo) } : {});
       announce(withLinks(o.done, writes));
       // Recently deleted is listed again the next time it opens.
-      if (o.deletes?.length) setFiles((f) => ({ recent: { ...f.recent, notes: undefined } }));
+      if (o.deletes?.length) {
+        const isDeleted = (x: string) => o.deletes!.some((d) => x === d || x.startsWith(d + "/") || x.startsWith(d + "\\"));
+        setFiles((f) => ({ opened: f.opened.filter((x) => !isDeleted(x)), recent: { ...f.recent, notes: undefined } }));
+      }
       return true;
     } catch (e) {
       // The screen as it is now: anything else that changed meanwhile is read again.
@@ -543,6 +595,7 @@ export function registerFiles(ctx: Ctx) {
       if (!untouched || opErrorCode(e) === "recovery") void rescan();
       setFiles((f) => ({
         pending: f.pending.filter((x) => !o.touched.includes(x)),
+        ...(moves.length ? { opened: beforeFiles.opened } : {}),
         selection: keepShowing(beforeFiles.selection, rowsOf(store.state)),
         focusRequest: f.focusRequest + 1,
       }));
@@ -1370,7 +1423,10 @@ export function registerFiles(ctx: Ctx) {
         renamed = moves[0];
         if (moves.length) ctx.notesMoved?.(moves);
         if (plan?.kind === "renamed") setTree(plan.tree);
-        setFiles((f) => ({ selection: { selected: [to], anchor: to, focus: to } }));
+        setFiles((f) => ({
+          selection: { selected: [to], anchor: to, focus: to },
+          ...(moves.length ? { opened: [...new Set(f.opened.map((o) => rebase(o, moves)))] } : {}),
+        }));
         if (isOpen) {
           ctx.setNote({ path: to, key: `${to}#${Date.now()}`, initialMarkdown: own, markdown: own, saveState: "saved" });
           ctx.sawOnDisk?.(to, own);
@@ -1540,7 +1596,8 @@ export function registerFiles(ctx: Ctx) {
         pinCommit: s.commits.find(item => item.target === `vm.files.itemPin:${path}`)?.phase ?? "rest",
       });
       const shortcuts: Record<string, unknown>[] = [];
-      for (const [section, paths] of [["pinned", f.pins], ["recent", f.visits.filter((p) => !f.pins.includes(p))]] as const) {
+      const openedSet = new Set(f.opened);
+      for (const [section, paths] of [["pinned", f.pins], ["recent", f.visits.filter((p) => !f.pins.includes(p) && !openedSet.has(p))]] as const) {
         const id = `root:${section}`;
         const expanded = !f.collapsed.includes(id);
         const entries = paths.flatMap((path) => {
@@ -1606,6 +1663,41 @@ export function registerFiles(ctx: Ctx) {
         sortLabel: catalog.format("files.sortLabel", { order: catalog.format(`files.sort.${f.sort}`) }),
         sortMenu: [{ id: "sort", items: (["name", "changed"] as const).map((o) => ({ ...ctx.describeItem(`files.sort.${o}`), label: catalog.format(`files.sort.${o}`) })) }],
       };
+    },
+  });
+  viewModels.register({
+    id: "vm.opened",
+    schema: {
+      type: "object",
+      properties: {
+        items: { type: "array", items: TREE_ITEM },
+        menu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, items: { type: "array", items: ctx.itemSchema } } } },
+      },
+    },
+    reads: ["ui.files.open", "ui.files.opened", "ui.files.filter", "workspace.tree", "note.path"],
+    select: (s) => {
+      const f = s.ui.files;
+      if (!f.open || f.opened.length === 0) return { items: [], menu: [] };
+      const query = f.filter.trim().toLocaleLowerCase();
+      const hasTree = s.workspace.tree.roots.length > 0;
+      const items = f.opened.flatMap((path) => {
+        const found = findNode(s.workspace.tree, path);
+        if (found && found.node.kind !== "note") return [];
+        if (!found && hasTree && path !== s.note.path) return [];
+        const label = found ? titleOfNode(found.node) : stemOf(path.split(/[\\/:]/).at(-1) ?? path);
+        if (query && !label.toLocaleLowerCase().includes(query)) return [];
+        return [{
+          id: path, kind: "note", level: 1, label, title: path,
+          current: path === s.note.path,
+          description: "", detail: "", parent: "",
+          expanded: false, hasChildren: false, selected: false,
+          pending: false, readOnly: false, draggable: false, droppable: false, editing: false, pinned: false,
+        }];
+      });
+      const menu = items.length > 0
+        ? [{ id: "opened", items: [{ ...ctx.describeItem("files.closeAllOpened"), label: catalog.format("files.opened.closeAll") }] }]
+        : [];
+      return { items, menu };
     },
   });
   viewModels.register({
