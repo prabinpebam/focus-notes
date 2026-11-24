@@ -42,7 +42,7 @@ test("UI-12: an outlined icon replaces the desktop name; its hover card does not
     expect(await card.evaluate((el) => {
       const s = getComputedStyle(el.closest("[data-surface=popover]")!);
       return [s.paddingTop, s.paddingRight, s.paddingBottom, s.paddingLeft];
-    })).toEqual(["16px", "16px", "16px", "16px"]);
+    })).toEqual(["24px", "24px", "24px", "24px"]);
     // At the window edge, the popover may shift inward to preserve its boundary padding.
     await expect.poll(async () => {
       const left = await card.evaluate((el) => el.closest("[data-surface=popover]")!.getBoundingClientRect().left);
