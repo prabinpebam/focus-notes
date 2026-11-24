@@ -139,7 +139,9 @@ for (const reduced of [false, true]) test(`DSK-09: dark${reduced ? ", with reduc
     const open = card(page).getByRole("button", { name: "Open", exact: true });
     await expect(open).toBeFocused({ timeout: 15_000 });
     await press(page, "Enter");
-    // D-155: setup made Documents/notes, so opening the notes again goes in the first free folder beside it, "notes 2".
+    // D-415: setup made Documents/notes, a copy of the same repository, so Open offers it first; a new copy keeps this journey's clone frames.
+    await card(page).getByRole("button", { name: "Create a new copy" }).click({ timeout: 20_000 });
+    // D-155: a new copy goes in the first free folder beside it, "notes 2".
     const folderNow = () => (existsSync(join(w.dirs.userData, DATA_FILES.workspace)) ? resolve((JSON.parse(readFileSync(join(w.dirs.userData, DATA_FILES.workspace), "utf8")) as { folder: string }).folder) : "");
     await expect.poll(folderNow, { timeout: 30_000 }).toBe(resolve(join(dirname(w.dirs.docs), "notes 2")));
     await expect(page.getByRole("textbox", { name: "Note" })).toBeVisible({ timeout: 20_000 });

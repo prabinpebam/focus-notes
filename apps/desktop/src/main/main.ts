@@ -688,16 +688,20 @@ async function switchWorkspace(folder: string, keep?: Pick<WorkspaceRecord, "kin
     workspaceIdentity = undefined;
     await saveFirstRun();
   }
-  const missingFolder = folderState !== "ok" ? record?.folder ?? notesHome() : undefined;
+  const from = record?.folder ?? notesHome();
+  const missingFolder = folderState !== "ok" ? from : undefined;
   // Read before anything changes: only a pointer that doesn't exist counts as absent; another failure stops the switch.
-  const named = missingFolder ? await readFile(dataFile(DATA_FILES.projectFolder), "utf8").catch((error: NodeJS.ErrnoException) => {
+  const named = await readFile(dataFile(DATA_FILES.projectFolder), "utf8").catch((error: NodeJS.ErrnoException) => {
     if (error.code === "ENOENT") return undefined;
     throw error;
-  }) : undefined;
+  });
+  const canonical = (p: string) => realpath(p).catch(() => resolve(p));
+  const namesFrom = named !== undefined && (samePath(named.trim(), from) || samePath(await canonical(named.trim()), await canonical(from)));
   await saveRecord(recordFor(folder, await folderFacts(folder), record, keep));
   recoveredFolder = missingFolder ? { from: missingFolder, to: resolve(folder) } : undefined;
-  // The project's own folder follows the notes, so writing is admitted there (D-397); another project's is never touched.
-  if (missingFolder && named && samePath(named.trim(), missingFolder)) {
+  // This window's own project pointer follows the notes, recovered or switched (setup, Open other notes, D-415's
+  // copies), so writing is admitted there (D-397); a pointer naming another project's folder is never touched.
+  if (namesFrom) {
     const to = dataFile(DATA_FILES.projectFolder), temp = `${to}.${process.pid}.tmp`;
     await writeFile(temp, resolve(folder), "utf8");
     await rename(temp, to);
