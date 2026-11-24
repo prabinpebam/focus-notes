@@ -23,7 +23,6 @@ const TYPES: Record<string, string> = {
 const web = join(import.meta.dirname, "..");
 const repo = join(web, "..", "..");
 const PAGES = ["", "demo/", "privacy/"];
-const PASSPHRASE = "correct horse battery staple";
 let site = "";
 let server: Server;
 let origin = "";
@@ -147,21 +146,12 @@ test("PRF-12: the landing page's LCP, INP and CLS on a throttled profile", async
   expect(m.cls).toBeLessThanOrEqual(0.1);
 });
 
-test("D-167: the owner's app works at /app/, reading the public notes and the vault from the site's root", async ({ page }) => {
+test("D-167, D-292: /app/ has no browser editor or owner vault; with no drafts it goes to /#download", async ({ page }) => {
   const others = watch(page);
   await page.goto(`${origin}/app/`);
-  const editor = page.getByRole("textbox", { name: "Note" });
-  await expect(editor).toContainText(/Garden log|Reading list/);
-  await expect(editor).toHaveAttribute("aria-readonly", "true");
-  const corner = page.getByRole("region", { name: "Account" });
-  await corner.getByRole("button", { name: "Unlock" }).click();
-  const dialog = page.getByRole("dialog", { name: "Unlock private notes" });
-  await dialog.getByLabel("Passphrase").fill(PASSPHRASE);
-  await dialog.getByRole("button", { name: "Unlock", exact: true }).click();
-  await expect(dialog).toBeHidden({ timeout: 15_000 });
-  await page.keyboard.press("Control+p");
-  const open = page.getByRole("dialog", { name: "Actions", exact: true });
-  await expect(open.getByRole("option", { name: /Launch plan/ })).toBeVisible();
+  await expect(page).toHaveURL(`${origin}/#download`);
+  await expect(page.locator("[contenteditable]")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Unlock" })).toHaveCount(0);
   expect(others).toEqual([]);
 });
 

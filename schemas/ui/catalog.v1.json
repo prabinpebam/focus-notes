@@ -7461,6 +7461,13 @@
         "vm.themeManager",
         "vm.app"
       ]
+    },
+    {
+      "id": "webExport",
+      "ia": "IA-VIEW-PUBLIC",
+      "viewModels": [
+        "vm.webExport"
+      ]
     }
   ],
   "fragments": []

@@ -1,39 +1,83 @@
-/** The web app's entry (D-80, D-90): the same app as every shell, on IndexedDB and its own site's files. */
-import { createApp } from "@focus-notes/core";
-import { mountApp, flushApp } from "@focus-notes/ui-runtime";
-import { views, messages } from "@focus-notes/views";
-import { createSearchWorker, startSearch } from "@focus-notes/core/search";
-import searchWorkerUrl from "@focus-notes/core/search-worker?worker&url";
-import { createWebBridge } from "./bridge.ts";
+/**
+ * One-time browser draft export and browser-writing retirement entry (WEB-01, D-292, D-412).
+ * When this browser holds drafts from the retired web app or demo, offers one-click local export
+ * without deleting or mutating any IndexedDB store. When no drafts exist, sends visitors straight
+ * to the clean website's downloads (at /app/) or published notes (at /), never to an editor.
+ */
+import type { AppState } from "@focus-notes/core";
+import { MessageCatalog } from "@focus-notes/core/messages";
+import { SITE_RELEASES } from "@focus-notes/core/site";
+import { createWebExportController, WEB_EXPORT_COMMANDS, WEB_EXPORT_VIEW_MODEL } from "@focus-notes/core/web-export";
+import { saveTextFile } from "@focus-notes/ui/files";
+import { webExportContracts, webExportRegistry } from "@focus-notes/ui/web-export";
+import { mountPage, type RuntimeApp } from "@focus-notes/ui-runtime/page";
+import { messages, pages } from "@focus-notes/views/pages";
+import { readBrowserDrafts } from "./export-drafts.ts";
+
+if (window.top !== window.self) {
+  document.documentElement.textContent = "";
+  throw new Error("framed");
+}
+
+const SITE_ROOT: string = import.meta.env.FOCUS_NOTES_SITE_ROOT ?? "./";
+const isProductAppPath = SITE_ROOT === "../";
+
+const catalog = new MessageCatalog("en", messages.en!);
+const controller = createWebExportController({
+  readDrafts: () => readBrowserDrafts(),
+  saveBundle: (fileName, content) => saveTextFile(fileName, content),
+  exportingLabel: catalog.format("webExport.exporting"),
+  onDownload: () => {
+    const target = isProductAppPath ? new URL("../#download", document.baseURI).href : SITE_RELEASES;
+    location.assign(target);
+  },
+  onEmpty: async () => {
+    if (isProductAppPath) {
+      location.replace(new URL("../#download", document.baseURI).href);
+      return;
+    }
+    try {
+      const res = await fetch(new URL("./n/index.html", document.baseURI), { method: "HEAD", cache: "no-cache", credentials: "omit", redirect: "error" });
+      if (res.ok) location.replace(new URL("./n/", document.baseURI).href);
+    } catch {
+      // No published notes at ./n/; stay on the retired message with the Download button.
+    }
+  },
+});
+
+let seen = controller.state;
+let state = { appearance: { mode: "system", system: "light" }, webExport: seen } as unknown as AppState;
+const app: RuntimeApp = {
+  store: {
+    get state() {
+      if (controller.state !== seen) {
+        seen = controller.state;
+        state = { ...state, webExport: seen } as AppState;
+      }
+      return state;
+    },
+    subscribe: (l) => controller.subscribe(l),
+  },
+  viewModels: {
+    select: (id) => {
+      if (id !== WEB_EXPORT_VIEW_MODEL.id) throw new Error(`Unknown view model ${id}`);
+      return controller.state;
+    },
+    get: () => undefined,
+  },
+  messages: catalog,
+  commands: {
+    has: (id) => (WEB_EXPORT_COMMANDS as readonly string[]).includes(id),
+    describe: (id) => { throw new Error(`The draft export page's commands have no description (${id})`); },
+    run: async (id) => {
+      if (id === "webExport.export") await controller.exportDrafts();
+      else if (id === "webExport.download") controller.download();
+    },
+  },
+  bridge: { platform: "web" },
+};
 
 const root = document.getElementById("root");
 if (!root) throw new Error("Missing #root in the entry document");
-// The demo build (`--mode demo`, D-177) runs on its own sample notes.
-const bridge = await createWebBridge({ demo: import.meta.env.FOCUS_NOTES_DEMO === true });
-const app = createApp(bridge, messages.en!);
-// The theme manager is a view document of its own, hosted beside the canvas (IA-VIEW-THEME).
-mountApp(root, { app, views, overlays: ["theme", "feedback"] });
-// Hand over pending text whenever the page might go away (QLT-03).
-document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") void flushApp(app); });
-addEventListener("pagehide", () => void flushApp(app));
-// The search index (WP-4.1) builds in its worker once the first note is open, never before; Spotlight
-// (WP-4.2) and Find in all notes (WP-4.3) ask it.
-void app.start().then(() => {
-  app.useSearch(startSearch(app, createSearchWorker(searchWorkerUrl)));
-  if (bridge.demoFirstVisit) void demoAtTop();
-});
-
-/**
- * The demo's first visit opens the welcome note at its top, the caret at the start of its title, so
- * focus mode shows its first lines at full contrast (D-177). Waits for the editor to take focus.
- */
-async function demoAtTop(): Promise<void> {
-  for (let i = 0; i < 120; i++) {
-    await new Promise((r) => requestAnimationFrame(r));
-    const a = document.activeElement;
-    if (a instanceof HTMLElement && a.isContentEditable) {
-      await app.commands.run("edit.docStart");
-      return;
-    }
-  }
-}
+mountPage(root, "webExport", { app, registry: webExportRegistry, contracts: webExportContracts, views: pages });
+void controller.start();

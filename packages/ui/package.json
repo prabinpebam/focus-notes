@@ -10,6 +10,7 @@
     "./reader": "./src/reader.ts",
     "./site": "./src/site.ts",
     "./share": "./src/share.ts",
+    "./web-export": "./src/web-export.ts",
     "./files": "./src/host/files.ts"
   },
   "scripts": {
