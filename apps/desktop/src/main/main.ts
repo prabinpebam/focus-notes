@@ -2363,12 +2363,16 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   // Journeys copy into memory, so they never overwrite (or depend on) the computer's clipboard.
   const secretCopy = secretClipboard(appClipboard());
   handle("access:reveal", async (id) => access.reveal(id));
-  handle("access:words", () => access.prepareWords());
+  handle("access:words", (previousId) => access.prepareWords(typeof previousId === "string" ? previousId : undefined));
   handle("access:ready", (id) => access.ready(id));
   handle("access:cancelReady", (id) => access.cancelReady(id));
   handle("access:template", async (template) => {
     if (!settingsAvailable()) throw new Error("access:failed");
     return access.setTemplate(template);
+  });
+  handle("access:itemTemplate", async (template) => {
+    if (!settingsAvailable()) throw new Error("access:failed");
+    return access.setItemTemplate(template);
   });
   handle("access:copy", async (id, what, invite) => access.handoff(id, what, invite, (text) => secretCopy.write(text)));
   handleFrom("access:systemShare", async (e, id, invite) => {
