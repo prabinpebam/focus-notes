@@ -1,0 +1,382 @@
+{
+  "$schema": "https://prabinpebam.github.io/focus-notes/schemas/ui/view.v1.json",
+  "id": "webExport",
+  "ia": "IA-VIEW-PUBLIC",
+  "viewModels": [
+    "vm.webExport"
+  ],
+  "focus": "web-retirement-export",
+  "root": {
+    "type": "ReaderPage",
+    "id": "page",
+    "props": {
+      "skipLabel": {
+        "t": "reader.skip"
+      }
+    },
+    "children": [
+      {
+        "type": "Stack",
+        "id": "web-retirement-export",
+        "props": {
+          "gap": "stackGroup"
+        },
+        "children": [
+              {
+                "switch": {
+                  "get": "vm.webExport.phase"
+                },
+                "cases": {
+                  "checking": {
+                    "type": "Spinner",
+                    "props": {
+                      "label": {
+                        "t": "webExport.checking"
+                      }
+                    }
+                  },
+                  "empty": {
+                    "type": "Stack",
+                    "props": {
+                      "gap": "stackGroup"
+                    },
+                    "children": [
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "stackPair"
+                        },
+                        "children": [
+                          {
+                            "type": "Heading",
+                            "props": {
+                              "level": "1",
+                              "value": {
+                                "t": "webExport.retired.title"
+                              }
+                            }
+                          },
+                          {
+                            "type": "Text",
+                            "props": {
+                              "value": {
+                                "t": "webExport.retired.body"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Inline",
+                        "props": {
+                          "gap": "inlineItem"
+                        },
+                        "children": [
+                          {
+                            "type": "Button",
+                            "props": {
+                              "label": {
+                                "t": "webExport.download"
+                              },
+                              "variant": "primary",
+                              "autoFocus": true
+                            },
+                            "on": {
+                              "press": {
+                                "run": "webExport.download"
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  "ready": {
+                    "type": "Stack",
+                    "props": {
+                      "gap": "stackGroup"
+                    },
+                    "children": [
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "stackPair"
+                        },
+                        "children": [
+                          {
+                            "type": "Heading",
+                            "props": {
+                              "level": "1",
+                              "value": {
+                                "t": "webExport.title"
+                              }
+                            }
+                          },
+                          {
+                            "type": "Text",
+                            "props": {
+                              "value": {
+                                "t": "webExport.count",
+                                "args": {
+                                  "count": {
+                                    "get": "vm.webExport.count"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Inline",
+                        "props": {
+                          "gap": "inlineItem"
+                        },
+                        "children": [
+                          {
+                            "type": "Button",
+                            "props": {
+                              "label": {
+                                "t": "webExport.export"
+                              },
+                              "variant": "primary",
+                              "icon": "download",
+                              "autoFocus": true
+                            },
+                            "on": {
+                              "press": {
+                                "run": "webExport.export"
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  "exporting": {
+                    "type": "Stack",
+                    "props": {
+                      "gap": "stackGroup"
+                    },
+                    "children": [
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "stackPair"
+                        },
+                        "children": [
+                          {
+                            "type": "Heading",
+                            "props": {
+                              "level": "1",
+                              "value": {
+                                "t": "webExport.title"
+                              }
+                            }
+                          },
+                          {
+                            "type": "Text",
+                            "props": {
+                              "value": {
+                                "t": "webExport.count",
+                                "args": {
+                                  "count": {
+                                    "get": "vm.webExport.count"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Inline",
+                        "props": {
+                          "gap": "inlineItem"
+                        },
+                        "children": [
+                          {
+                            "type": "Button",
+                            "props": {
+                              "label": {
+                                "t": "webExport.export"
+                              },
+                              "variant": "primary",
+                              "icon": "download",
+                              "busy": true,
+                              "busyLabel": {
+                                "get": "vm.webExport.exportingLabel"
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  "done": {
+                    "type": "Stack",
+                    "props": {
+                      "gap": "stackGroup"
+                    },
+                    "children": [
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "stackPair"
+                        },
+                        "children": [
+                          {
+                            "type": "Heading",
+                            "props": {
+                              "level": "1",
+                              "value": {
+                                "t": "webExport.title"
+                              }
+                            }
+                          },
+                          {
+                            "type": "Text",
+                            "props": {
+                              "value": {
+                                "t": "webExport.count",
+                                "args": {
+                                  "count": {
+                                    "get": "vm.webExport.count"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "stackPair"
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "value": {
+                                "t": "webExport.exported",
+                                "args": {
+                                  "count": {
+                                    "get": "vm.webExport.count"
+                                  }
+                                }
+                              },
+                              "announce": true
+                            }
+                          },
+                          {
+                            "type": "Inline",
+                            "props": {
+                              "gap": "inlineItem"
+                            },
+                            "children": [
+                              {
+                                "type": "Button",
+                                "props": {
+                                  "label": {
+                                    "t": "webExport.download"
+                                  },
+                                  "variant": "primary"
+                                },
+                                "on": {
+                                  "press": {
+                                    "run": "webExport.download"
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  "failed": {
+                    "type": "Stack",
+                    "props": {
+                      "gap": "stackGroup"
+                    },
+                    "children": [
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "stackPair"
+                        },
+                        "children": [
+                          {
+                            "type": "Heading",
+                            "props": {
+                              "level": "1",
+                              "value": {
+                                "t": "webExport.title"
+                              }
+                            }
+                          },
+                          {
+                            "type": "Text",
+                            "props": {
+                              "value": {
+                                "t": "webExport.count",
+                                "args": {
+                                  "count": {
+                                    "get": "vm.webExport.count"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "stackPair"
+                        },
+                        "children": [
+                          {
+                            "type": "Text",
+                            "props": {
+                              "value": {
+                                "t": "webExport.failed"
+                              },
+                              "announce": true
+                            }
+                          },
+                          {
+                            "type": "Inline",
+                            "props": {
+                              "gap": "inlineItem"
+                            },
+                            "children": [
+                              {
+                                "type": "Button",
+                                "props": {
+                                  "label": {
+                                    "t": "webExport.retry"
+                                  },
+                                  "variant": "primary",
+                                  "autoFocus": true
+                                },
+                                "on": {
+                                  "press": {
+                                    "run": "webExport.export"
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }

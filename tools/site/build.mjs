@@ -4,7 +4,7 @@
  * renderer (apps/web/site/render.ts, built to apps/web/dist-site/), and assembles the site:
  *
  *   /            the landing page            /help/…     redirects to Help in the docs (D-181)
- *   /demo/       the demo (WP-10.6)          /privacy/; /download/ redirects to /#download (D-184)
+ *   /privacy/    the privacy statement       /download/ and the retired /demo/ redirect to /#download (D-184, D-292)
  *   /app/        the owner's Focus Notes, which / served before D-167
  *   /s/          the share reader, where share links have always pointed
  *
@@ -12,9 +12,7 @@
  * share reader and /app/ read them (the web app's dist-app/, built with `--mode app`).
  *
  *   node tools/site/build.mjs --out _site [--content site] [--renderer apps/web/dist-site]
- *     [--app apps/web/dist-app] [--demo apps/web/dist-demo] [--site-url https://…/] [--assume documentations/ …]
- *
- * With --demo, the demo build of the web app (`--mode demo`, D-177) replaces site/demo.md's page at /demo/.
+ *     [--app apps/web/dist-app] [--site-url https://…/] [--assume documentations/ …]
  *
  * It fails when a page links to an address the site doesn't have, or loads anything from another origin.
  */
@@ -23,7 +21,7 @@ import { dirname, join, relative, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 
 /** Plain pages: site/<name>.md at /<name>/. */
-export const SITE_PAGES = ["privacy", "demo"];
+export const SITE_PAGES = ["privacy"];
 /** The only other origin a site page may link to (help-writing.md → Links); nothing may be loaded from one. */
 export const LINK_ORIGINS = ["https://github.com"];
 
@@ -51,7 +49,7 @@ export async function readContent(dir, docs = join(dir, "..", "documentations"))
  * Builds the site into `out`. `renderer` is the built module's folder (render.mjs and assets/), or,
  * in tests, `{ renderSite }` itself with no assets.
  */
-export async function buildSite({ content = "site", out, renderer = "apps/web/dist-site", app, demo, siteUrl, log = () => {} }) {
+export async function buildSite({ content = "site", out, renderer = "apps/web/dist-site", app, siteUrl, log = () => {} }) {
   const built = typeof renderer === "string";
   const render = built ? await import(pathToFileURL(resolve(renderer, "render.mjs")).href) : renderer;
   const assetFiles = built ? await readdir(join(renderer, "assets")) : [];
@@ -67,8 +65,7 @@ export async function buildSite({ content = "site", out, renderer = "apps/web/di
   }
   if (await isDir(join(content, "media"))) await cp(join(content, "media"), join(out, "media"), { recursive: true, filter: (p) => !p.endsWith(".gitkeep") && relative(join(content, "media"), p).split(sep)[0] !== "source" });
   if (app) await placeApp(app, out);
-  if (demo) await placeDemo(demo, out);
-  log(`Built ${files.length} site pages${app ? ", with the app at app/" : ""}${demo ? ", with the demo at demo/" : ""}.`);
+  log(`Built ${files.length} site pages${app ? ", with the app at app/" : ""}.`);
   return files;
 }
 
@@ -84,15 +81,6 @@ export async function placeApp(app, out) {
   if (/["'(]\.\.\/(?!app\/)/.test(page)) throw new Error(`${app}: s/index.html still has a "../" reference outside app/ after the move`);
   await mkdir(join(out, "s"), { recursive: true });
   await writeFile(join(out, "s", "index.html"), page);
-}
-
-/**
- * The demo at /demo/ (WP-10.6, D-177): the web app built with `--mode demo`, on sample notes kept in
- * the visitor's browser, in place of the placeholder page. Its share reader isn't needed there.
- */
-export async function placeDemo(demo, out) {
-  await rm(join(out, "demo"), { recursive: true, force: true });
-  await cp(demo, join(out, "demo"), { recursive: true, filter: (p) => relative(demo, p).split(sep)[0] !== "s" });
 }
 
 const HTML_REF = /\s(href|src|srcset)="([^"]*)"/gi;
@@ -118,7 +106,7 @@ export function visibleText(html) {
 }
 const CSS_REF = /url\(\s*["']?([^"')]+)["']?\s*\)/g;
 const ANY_URL = /(?:https?:)?\/\/[a-z0-9-]+(?:\.[a-z0-9-]+)+[^\s"'<>)]*/gi;
-const ROOT_PAGES = new Set(["index.html", "download/index.html", ...SITE_PAGES.map((p) => `${p}/index.html`)]);
+const ROOT_PAGES = new Set(["index.html", "download/index.html", "demo/index.html", ...SITE_PAGES.map((p) => `${p}/index.html`)]);
 
 async function* walk(dir) {
   for (const e of await readdir(dir, { withFileTypes: true })) {
@@ -216,7 +204,7 @@ function parseArgs(argv) {
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   const o = parseArgs(process.argv.slice(2));
   if (!o.out) {
-    console.error("Usage: node tools/site/build.mjs --out <folder> [--clean] [--content site] [--renderer apps/web/dist-site] [--app apps/web/dist-app] [--demo apps/web/dist-demo] [--site-url <url>] [--assume <path>]…");
+    console.error("Usage: node tools/site/build.mjs --out <folder> [--clean] [--content site] [--renderer apps/web/dist-site] [--app apps/web/dist-app] [--site-url <url>] [--assume <path>]…");
     process.exit(2);
   }
   if (o.clean) await rm(o.out, { recursive: true, force: true });

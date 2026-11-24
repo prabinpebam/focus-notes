@@ -9,12 +9,13 @@ import en from "../../../packages/views/messages/en.json" with { type: "json" };
 // frame-ancestors is ignored in a meta CSP, so it's dropped rather than implied.
 const csp = DEFAULT_CSP.replace("; frame-ancestors 'none'", "");
 const dir = join(import.meta.dirname, "..", "src");
-// The share reader (WP-5.4, D-125) renders no HTML from text, so no Trusted Types policy exists at all.
+// The retired web app's export page and the share reader (WP-5.4, D-125, D-292) render no HTML from
+// text and use no search worker, so no Trusted Types policy exists at all.
 // Images are only the share's own, decrypted in the page and shown from data: URLs (WP-9.6; was review I9).
-const shareCsp = csp.replace(/trusted-types [^;]+/, "trusted-types 'none'");
+const pageCsp = csp.replace(/trusted-types [^;]+/, "trusted-types 'none'");
 const files = {
-  "index.html": renderEntryHtml({ title: "Focus Notes", script: "./main.ts", csp, icon: "./favicon.svg" }),
-  "s/index.html": renderEntryHtml({ title: en["share.reader.documentTitle"], script: "../share/main.ts", csp: shareCsp, icon: "../favicon.svg", page: "reader" }),
+  "index.html": renderEntryHtml({ title: "Focus Notes", script: "./main.ts", csp: pageCsp, icon: "./favicon.svg", page: "reader" }),
+  "s/index.html": renderEntryHtml({ title: en["share.reader.documentTitle"], script: "../share/main.ts", csp: pageCsp, icon: "../favicon.svg", page: "reader" }),
 };
 
 if (process.argv.includes("--check")) {

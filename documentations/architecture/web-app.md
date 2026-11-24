@@ -32,6 +32,8 @@ Keep published note URLs and `/s/` share links working. New access-code grants a
 2. If export fails/cancels, keep the drafts and offer **“Couldn't export your drafts. Try again.”** Do not remove the owner’s draft access on that failure. No drafts means no export step.
 3. Then remove the retired editing surfaces/caches; do not clear note stores or share-reader remembered keys as a side effect. Keep only the small one-time export route if needed for the owner's remaining drafts, not an indefinite support/migration system.
 
+**Status, 24 November (D-412, WP-P.13):** implemented and verified. `/app/` (and `/` on a fork) checks `focus-notes` and `focus-notes-demo` read-only for existing non-deleted drafts; when drafts exist, it shows the approved one-time export screen (`webExport.view.json`) and downloads a standard Focus Notes JSON bundle without deleting or mutating any IndexedDB store (failed export keeps all drafts intact and offers Try again). When no drafts exist, `/app/` goes straight to `/#download` (or `/n/` on a fork with published notes). Browser writing, the owner vault and `/demo/` are removed (`/demo/` redirects to `/#download`), while `/n/` public pages and `/s/` share reader remain intact.
+
 The scope is the owner's own data, not a hypothetical user population. An export download/open check and failed-export preservation are sufficient planned evidence; no byte-equivalence corpus or fixed recovery-retention period.
 
 ## Three kinds of note

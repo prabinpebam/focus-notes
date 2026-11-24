@@ -199,10 +199,10 @@
     },
     {
       "id": "WP-P.13", "stage": "MP", "title": "Retire browser writing safely",
-      "summary": "Owner-approved website-only retirement plan: one-click local export of owner's drafts if any, then remove editor/demo/vault/ease-in. No heavy inventory, byte-equivalence or 30-day recovery gates; failed export preserves draft access and share keys remain untouched. 23 November: the web export screen awaits the owner's design approval; apps/web, its demo and IndexedDB store still exist.",
+      "summary": "Owner-approved website-only retirement plan (D-292, D-412): one-click local export of owner's drafts from focus-notes and focus-notes-demo if any, then remove editor/demo/vault/ease-in. No heavy inventory, byte-equivalence or 30-day recovery gates; failed export preserves draft access and share keys remain untouched. 24 November: wired and verified (webExport.view.json, apps/web/src/export-drafts.ts, /demo/ redirect to /#download, unit and Playwright journeys green).",
       "requirements": ["WEB-01"], "dependsOn": ["WP-5.1"],
       "touches": ["web", "site", "help", "spec"], "reviews": ["code", "security", "accessibility"],
-      "specs": ["architecture/web-app.md", "plan/distribution.md", "product/site-and-help.md"], "lookahead": true, "status": "planned"
+      "specs": ["architecture/web-app.md", "plan/distribution.md", "product/site-and-help.md"], "lookahead": true, "status": "verifying"
     },
     {
       "id": "WP-P.14", "stage": "MP", "title": "Public home, sections and reading",
