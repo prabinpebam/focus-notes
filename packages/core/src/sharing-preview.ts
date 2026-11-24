@@ -480,7 +480,7 @@ export function registerSharingPreview(ctx: {
     /** A private note's web address when it's on the live site (D-424: sharing it sends that address). */
     publishedUrl(path: string): string | undefined {
       const rel = relativeOf(path), site = store.state.ui.share.listing?.site;
-      return live() && rel && site && publishedNotes.has(rel) ? publicNoteUrl(site, rel) : undefined;
+      return live() && rel && site && publication().published.includes(rel) ? publicNoteUrl(site, rel) : undefined;
     },
   };
 }
