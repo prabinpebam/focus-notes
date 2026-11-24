@@ -13,7 +13,7 @@ The promises Focus Notes makes. Every scenario, capability, screen, and decision
 | `CP-FOCUS-01` | Your eye stays on the paragraph you're writing | Seed: focus mode; paragraph unit amended by the owner (D-232) | SC-WRITE-02 |
 | `CP-FLOW-01` | Shaping words, images and tables feels fluid | Seed: Notion/Loop editing; owner: tables, contextual toolbar, inline images | SC-WRITE-03 to SC-WRITE-07, SC-TABLE-01 to SC-TABLE-04, SC-IMG-01, SC-IMG-02 |
 | `CP-REACH-01` | Anything is a few keystrokes away | Owner: Spotlight, find, keyboard; Actions note, 5 November (D-361) | SC-FIND-01 to SC-FIND-06, SC-ACT-01 to SC-ACT-07 |
-| `CP-ORDER-01` | Organized your way, safely reorganized | Seed: file and folder CRUD with moves | SC-FILE-01 to SC-FILE-04, SC-FILE-07 |
+| `CP-ORDER-01` | Organized your way, safely reorganized | Seed: file and folder CRUD with moves | SC-FILE-01 to SC-FILE-04, SC-FILE-07, SC-FILE-08 |
 | `CP-SAFE-01` | Never lose, never leak | Seed: public/private; derived from Git storage | SC-FILE-05, SC-SAFE-01 to SC-SAFE-07, SC-IMG-03 |
 | `CP-OWN-01` | Yours to keep | Seed: Markdown in a GitHub repo; owner: no hosting, no registration | SC-TABLE-05, SC-OWN-01, SC-OWN-02, SC-SETUP-04 |
 | `CP-SHARE-01` | Sharing is deliberate | Seed: public links, private content; owner: encrypted images | SC-FILE-06, SC-SHARE-01 to SC-SHARE-08, SC-IMG-04 |
@@ -94,7 +94,7 @@ The promises Focus Notes makes. Every scenario, capability, screen, and decision
 | Why it matters | People capture first and organize later. Fear of breaking links or losing files stops them from tidying. |
 | Breaks when | Creating a note forces a decision about where it goes, or a rename or move breaks a link or loses history. |
 | Signals | Notes left in the root against notes filed. Moves and renames that are undone. |
-| Scenarios | SC-FILE-01, SC-FILE-02, SC-FILE-03, SC-FILE-04, SC-FILE-07 |
+| Scenarios | SC-FILE-01, SC-FILE-02, SC-FILE-03, SC-FILE-04, SC-FILE-07, SC-FILE-08 |
 
 ### CP-SAFE-01 — Never lose, never leak
 

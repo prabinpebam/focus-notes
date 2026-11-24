@@ -9,7 +9,7 @@
 The design system's components: what each one is for, its variants and key props, the accessibility pattern it implements, and which views and IA components use it. Every row says whether the component is **implemented** (a registered contract a view can name), **composed** (built from implemented parts in a view document, or drawn inside another implemented component), or **planned** (no contract yet, so no view can use it). Views are assembled only from implemented components.
 
 > [!NOTE]
-> **TL;DR.** **87 registered contracts**: **57 primitives** (Text, Icon, Button, TextField, SearchField, Slider, FileTree, WindowControls, and so on), **5 host components** that wrap imperative DOM (EditorSurface, TableControls, BlockHandle, WindowFrame, TextMenu), **20 layouts** (AppRoot, Stack, Section, IconLayout, Inline, Columns, Surface, Layer, Positioner, Sheet, and so on), **1 block component** (NoteContent, which renders a note's blocks on published pages and on paper), and **4 compound components** (Trigger, Toolbar, Dialog, SecureKeyField). The [implemented inventory](#inventory) is generated from those contracts and checked by `pnpm check`, so its names and counts can't drift (D-200). The guidance tables below also keep composed entries (Spotlight, the find bar, the formatting toolbar and other surfaces built in the canvas view document) and planned entries (Checkbox, Select, VirtualList, and others), each marked. The view schema is generated from the contracts (DSY-05).
+> **TL;DR.** **88 registered contracts**: **58 primitives** (Text, Icon, Button, TextField, SearchField, Slider, FileTree, WindowControls, and so on), **5 host components** that wrap imperative DOM (EditorSurface, TableControls, BlockHandle, WindowFrame, TextMenu), **20 layouts** (AppRoot, Stack, Section, IconLayout, Inline, Columns, Surface, Layer, Positioner, Sheet, and so on), **1 block component** (NoteContent, which renders a note's blocks on published pages and on paper), and **4 compound components** (Trigger, Toolbar, Dialog, SecureKeyField). The [implemented inventory](#inventory) is generated from those contracts and checked by `pnpm check`, so its names and counts can't drift (D-200). The guidance tables below also keep composed entries (Spotlight, the find bar, the formatting toolbar and other surfaces built in the canvas view document) and planned entries (Checkbox, Select, VirtualList, and others), each marked. The view schema is generated from the contracts (DSY-05).
 
 <h2 id="button-geometry" data-reader-personas="design engineering">Button geometry</h2>
 
@@ -58,7 +58,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 
 <!-- generated:component-inventory: node tools/component-inventory.mjs; do not edit by hand -->
 
-**87 registered contracts:** 57 primitives, 5 host components, 20 layouts, 1 block component, 4 compound components.
+**88 registered contracts:** 58 primitives, 5 host components, 20 layouts, 1 block component, 4 compound components.
 
 | Component | Tier | Declared states | Fixtures | States listed as gaps |
 | --- | --- | --- | ---: | --- |
@@ -115,6 +115,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | ProjectPill | primitive | `rest` | 27 | None |
 | PickerButton | primitive | `rest`, `selected`, `pending`, `confirmed`, `failed` | 26 | None |
 | ScanRadar | primitive | `rest` | 4 | None |
+| OpenedFiles | primitive | `rest`, `current`, `truncated`, `hover`, `pressed`, `focusVisible`, `menuOpen`, `empty` | 2 | `hover`, `pressed`, `focusVisible`, `menuOpen` |
 | SiteLink | primitive | `rest`, `hover`, `focus` | 6 | `hover`, `focus` |
 | SiteText | primitive | `rest` | 10 | None |
 | SiteFigure | primitive | `rest` | 3 | None |
@@ -369,6 +370,7 @@ Compounds compose primitives, layouts, and other compounds. They hold behavior (
 | **ResultItem** | Composed | Inline, Icon, Text, Shortcut | Spotlight, Move to, slash menu, Find in all notes | Each of ResultList's `items`, drawn by ResultList. |
 | **FindAllSheet** | Composed | Sheet (`side` end, `width` find, `keyScope` findAll), Heading, IconButton, SearchField (`keyScope` findAllField, driving the list), Text, ResultList (`height` fill) | IA-VIEW-CANVAS | Find in all notes (FND-04). Composed in the canvas view document from catalog parts, like the find bar (D-76, D-110). The summary is a live region. |
 | **FileTree** | Implemented as a primitive | Draws its rows (D-94): Icon, Spinner, and its own name field | IA-VIEW-FILES | Tree pattern on a flat list of rows with `aria-level` and `aria-multiselectable`, with type-ahead, multiple selection, drag and drop, and inline naming. `items` (tree items from a view model), `focusId`, `focusRequest`, `editValue` (bindable), `editLabel`, `editError`; events `select`, `expand`, `action`, `drop`, `editChange`, `editBlur`. Its keys are commands scoped to `filesTree` and `filesEdit`. Tokens `cmp.fileTree.*`; its code loads when first shown. Paging through VirtualList comes with long trees. |
+| **OpenedFiles** | Implemented as a primitive | Icon, MenuButton, Tooltip | IA-CMP-OPENEDFILES (IA-VIEW-FILES) | In design (D-410, WP-P.24): the open notes as bordered tab buttons above Pinned, each a file icon, the name (ellipsis) and a close × on hover or keyboard focus; one click activates; the header's ⋯ holds Close all; renders nothing with no items. A labelled list of buttons, the active one `aria-current="page"`. `label`, `items` (tree items), `menu`, `menuLabel`, `closeLabel`; events `activate`, `close`, `menuAction`. Tokens `cmp.openedFiles.*`. |
 | **Tabs** | Implemented as a primitive | Inline, Text, Stack | Theme manager, Settings' categories | Tabs pattern. `label`, `items`, `value` bindable; `orientation` vertical puts the list on the inline start, `cmp.tabs.listWidth` wide, with the up and down arrows (Settings, D-103); `autoFocus` focuses the selected tab when the tabs appear (Settings opens on its category). |
 | **NavList** | Planned | Stack, Icon, Text | Settings categories | Navigation list with the current item marked. Settings' categories use vertical Tabs today (D-103). |
 | **Field** | Implemented as a layout | Stack, Text | Every form | Label, control, description, and error in one consistent arrangement; the group is named by the label. |

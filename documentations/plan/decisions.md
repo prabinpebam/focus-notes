@@ -1,7 +1,23 @@
 # Decisions
 
 > [!NOTE]
-> **TL;DR.** D-411 lets the leak gate pass exactly one thing it refused before: a line that's only an image reference to an image published on purpose. D-409 makes Share information a message to the recipient in the sharer's voice; the sharer's warnings move beside it. D-408 puts every dialog, alert card and popover card on one two-column layout, IconLayout: icon first, content second, actions at the trailing edge with the primary last. D-407 archives every worker chat once its result is logged and nothing is queued, to save memory; a follow-up is a fresh chat with the handoff. D-406 removes the worker cap: one worker per independent ready item until the owner asks for fewer. D-405 is a narrow 1.1.0 closure-sprint exception for one rolling batch gate; its four-worker cap is superseded by D-406. D-404 runs every coordinator, worker and subagent on Claude Opus 5.5, passed explicitly. D-398 settles the 1.1.0 Autopilot scope and publishing defaults, authorizing production wiring of the prepared candidates. D-399 exempts query-input search and command surfaces from a decorative visual anchor. Owner corrections D-393–D-395 still govern GitHub references, in-app deletion and Find. D-400/D-401 keep Delete authorization isolated and retained private history self-contained and reversible. Earlier decisions remain historical where explicitly superseded.
+> **TL;DR.** D-412 records the owner's 24 November approval of all pending designs (D-408 two-column dialogs, D-409 Share information message, G6.3/SHR-19 share-information template mock, D-410 Opened files vertical tabs, and the Web export mock) for end-to-end integration and review, plus the 24 November worker-model override (workers on `gemini-4-neon`, coordinators on `claude-opus-5.5`). D-411 lets the leak gate pass a private line that is only an image reference to a published image. D-410 (approved) adds Opened files vertical tabs above Pinned in Files. D-409 (approved) makes Share information a message to the recipient in the sharer's voice. D-408 (approved) puts every dialog, alert card and popover card on IconLayout. Earlier decisions D-407–D-393 govern chat archiving, worker caps, 1.1.0 batch gating, Autopilot scope, GitHub links, Delete and Find.
+
+## D-412: all pending designs approved for integration; worker model override
+
+**Decided (owner, 24 November 2026, 11:43 IST; ID assigned by coordinator).** The owner, verbatim:
+
+> "Consider all Designs approved. I want to test end to end flows, integrate and give me a proper review version where everything is working."
+
+- **Designs approved for production wiring and end-to-end verification:**
+  - **D-408** two-column dialogs and alert/popover cards (`vq-g5-recovery-alert-23nov` `0f072100`, including `IconLayout` `2f5835a5`, offline hard-drive-with-tick corner, and all area A/C/F dialog migrations).
+  - **D-409** Share information written to the recipient and single combined Access code in `CodeBlock` (`vq-share-message-23nov` `54d4263a`).
+  - **Share information template mock** (G6.3 / SHR-19, `vq-g6-template-23nov` `7e21b3d4`, carried in `vq-g5-recovery-alert-23nov` and `vq-share-message-23nov`).
+  - **D-410** Opened files vertical tabs above Pinned in Files (`vq-opened-files-23nov` `34cd088e`, FIL-20 / WP-P.24).
+  - **Web export / retirement mock** (`01d0bc46` on `fix-web-retirement-23nov`, WP-P.13).
+- **Worker-model override (24 November 2026):** workers and any subagents or chats they start pass `model: "gemini-4-neon"` explicitly; coordinators remain on `model: "claude-opus-5.5"` (partially superseding D-404's single-model rule until the owner says otherwise).
+
+**Affects:** [Roadmap](roadmap.md), [Definition of Done](definition-of-done.md), [Components](../design/system/components.md), [Sharing](../design/views/sharing.md#share-information-template), [Files panel](../design/views/files.html#opened-files), [AGENTS.md working modes](../../AGENTS.md#working-modes-and-throughput-d-113).
 
 ## D-411: a published image's reference line isn't a leak
 
@@ -14,9 +30,32 @@
 
 **Affects:** [Definition of Done → G3](definition-of-done.md#g3-publish-and-unpublish-for-real), [Repository and publishing](../architecture/repository-and-publishing.html). SEC-06 is otherwise unchanged.
 
+## D-410: Opened files as vertical tabs above Pinned
+
+**Approved (owner, 24 November 2026, 11:43 IST — D-412: "Consider all Designs approved. I want to test end to end flows, integrate and give me a proper review version where everything is working."; originally proposed 23 November 2026, 19:38; ID assigned by coordinator).** The owner, verbatim:
+
+> We want to introduce a "currently opened" tabbing fucntionality.
+> - The currently opened files will be shown as vertical tabs above the pinned section in the files left panel
+> - This should look like tab-btns with borders and hover state with file icon, name and "close-icon on hover"
+> - This should get activated on single click
+> - There should be a header "Opened files" with a three dots menu at the right side giving menu to close all opened files. While using this option, since it's hidden under menu and it's non destructive, no need to confirm again.
+> - If a file is currently opened, it's not shown in the recent section.
+
+- **Where:** a section above Pinned in Files, headed **Opened files** in the section label style, with a ⋯ menu at its right holding **Close all**.
+- **Tabs:** one bordered tab button per open note, with a file icon, the name (truncated with an ellipsis) and a close ×. The border is the owner's explicit request and overrides the visual-noise default of no resting border inside a group. Rest, hover, pressed, focus and active share one box (D-354): only the fill, the active name's weight and the focus ring change.
+- **Single click activates.** The active tab has the open note's quiet fill and semibold name, as the tree marks the open note (D-111).
+- **The × shows on hover and on keyboard focus**, its place always kept so the name never moves; on touch screens (no hover) it's always shown.
+- **Close all needs no confirmation** (the owner: it's under a menu and non-destructive). Closing never deletes or discards anything.
+- **Section hidden when no files are open.**
+- **Opened files are excluded from Recent**, so a note never appears twice.
+- **Built as** the `OpenedFiles` primitive (tokens `cmp.openedFiles.*`), shown in the gallery under *Mocks: Opened files* over the app's own Files panel document. Requirement FIL-20, user can UC-FILE-13, scenario SC-FILE-08, component IA-CMP-OPENEDFILES, work package WP-P.24.
+- **Not a 1.1.0 blocker.** It joins 1.1.0 only if the owner approves the design and its landing doesn't delay the release gate; otherwise it follows 1.1.0.
+
+**Affects:** [Files panel](../design/views/files.html#opened-files), [requirements](../product/requirements.md) (FIL-20), [user can](../product/spec/user-can.md) (UC-FILE-13), [scenarios](../product/spec/scenarios.md) (SC-FILE-08), [information architecture](../design/information-architecture.html), [work graph](work-graph.json) (WP-P.24), [roadmap](roadmap.md#waiting-on-the-owner).
+
 ## D-409: Share information is written to the recipient
 
-**Decided (owner, 23 November 2026, 18:14; ID assigned by coordinator).** "Share info is for me as a user to copy and paste and share it with someone. Right now you have written it as an instruction and information for me, the user who is sharing. So wrong framing here. If it's like this I'll have to remove the extra part."
+**Approved (owner, 24 November 2026, 11:43 IST — D-412: "Consider all Designs approved. I want to test end to end flows, integrate and give me a proper review version where everything is working."; decided 23 November 2026, 18:14; ID assigned by coordinator).** "Share info is for me as a user to copy and paste and share it with someone. Right now you have written it as an instruction and information for me, the user who is sharing. So wrong framing here. If it's like this I'll have to remove the extra part."
 
 - The default Share information is a message to the person who receives it, in the sharer's voice, ready to paste with no editing: *I’ve shared “{title}” with you to read.* / *Open it here: {link}* / *To use the access code, open {site} and enter: {accessCode}* / *You can read it until {expires}.*
 - Lines for a method the share doesn't have are still left out; each line stands on its own, so the access code line reads right for link-and-code and code-only shares, replacing the old *Or open…* line that was wrong when the link line was dropped.
@@ -30,7 +69,7 @@
 
 ## D-408: dialogs and cards, two columns, icon first, actions trailing
 
-**Decided (owner, 23 November 2026, 17:04 and 17:08; ID assigned by coordinator).** On the recovery alert cards: "This alignment and layout feels off. Reserve the first column for the icon and visual. Put all the rest of the content on the 2nd column and the CTA buttons should align right of the dialog." Then, on the alert's popover: "All dialogs should be updated to the 2 column layout I mentioned earlier including this one."
+**Approved (owner, 24 November 2026, 11:43 IST — D-412: "Consider all Designs approved. I want to test end to end flows, integrate and give me a proper review version where everything is working."; decided 23 November 2026, 17:04 and 17:08; ID assigned by coordinator).** On the recovery alert cards: "This alignment and layout feels off. Reserve the first column for the icon and visual. Put all the rest of the content on the 2nd column and the CTA buttons should align right of the dialog." Then, on the alert's popover: "All dialogs should be updated to the 2 column layout I mentioned earlier including this one."
 
 - Every dialog, alert card and popover card with a leading icon or visual uses the shared layout [IconLayout](../design/system/components.md): column 1 holds only the icon or visual; column 2 holds the title and its line, then body, details, progress and fields. Nothing in column 2 wraps under the icon.
 - Actions sit at the trailing edge, below the content, secondary first and primary last (D-374). A dialog with no icon keeps one column and the same trailing actions.

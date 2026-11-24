@@ -446,6 +446,7 @@ AI.11 to AI.14 use lookahead, as AI.1 did, so an unrelated earlier gate doesn't 
 | WP-P.20 | The Open view | PRJ-15, PRJ-16, PRJ-17 | WP-P.6, WP-P.8 | code, design-system, accessibility |
 | WP-P.21 | Project card link/size; D-393 audits all GitHub repository/account references as accessible external links | PRJ-20, PRJ-21, PRJ-22 | WP-P.20 | code, security, design-system, accessibility |
 | WP-P.23 | **F4.1 built; F4.2 design pending:** D-394 in-app deletion, one-time step-up, reasoned GitHub fallback and safe local cleanup. First real deletion remains the owner's. | PRJ-23 | WP-P.17, WP-P.20 | code, security, design-system, accessibility |
+| WP-P.24 | **Design (D-410):** Opened files as bordered vertical tabs above Pinned; Close all in the header's ⋯; open notes leave Recent. Not a 1.1.0 blocker; joins it only if approved without delaying the gate. | FIL-20 | WP-P.6 | code, design-system, accessibility |
 
 **Deletion acceptance, 6 November.** [Deleting a project](../experience/project-model.md#deleting-a-project) holds the flow and safeguards. WP-P.23 is now built and tested with fakes, including progress, status-check and resume screens. The first real deletion is reserved for the owner by D-343; MP.34 is not accepted by fake-account coverage.
 
