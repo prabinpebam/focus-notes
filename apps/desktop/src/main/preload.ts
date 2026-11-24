@@ -466,6 +466,8 @@ contextBridge.exposeInMainWorld("focusNotes", {
     folder: (instance?: string) => ipcRenderer.invoke("firstRun:folder", instance),
     chooseFolder: () => ipcRenderer.invoke("firstRun:chooseFolder"),
     clone: (owner: string, name: string, where?: string) => ipcRenderer.invoke("firstRun:clone", owner, name, where),
+    copies: (owner: string, name: string) => ipcRenderer.invoke("firstRun:copies", owner, name),
+    useCopy: (folder: string) => ipcRenderer.invoke("firstRun:useCopy", folder),
     cancelClone: () => ipcRenderer.invoke("firstRun:cancelClone"),
     resumeClone: () => ipcRenderer.invoke("firstRun:resumeClone"),
     openFolder: () => ipcRenderer.invoke("firstRun:openFolder"),
