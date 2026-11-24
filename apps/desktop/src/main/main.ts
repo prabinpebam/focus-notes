@@ -79,6 +79,7 @@ import { backupToRecord, checkFolder, configUrl, driveOf, envSyncRoots, folderNa
 import { createSyncAlertController } from "./workspace/sync-alert.ts";
 import type { RecoverAccount, RecoverPlace, RecoverProgress, RecoverResult, RecoverStatus } from "@focus-notes/core/recover";
 import { GitHubError } from "@focus-notes/github";
+import { projectRepos, type ProjectChecks } from "./github-projects.ts";
 import { AppWindowFrame, frameKindFor } from "./window/frame.ts";
 import { CrashRecovery, coverBounds } from "./window/crash-cover.ts";
 import { COPY_PATHS_MAX, copyFilesToClipboard, defaultRun } from "./copy-files.ts";
@@ -1835,10 +1836,15 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     if (reviewGitHub && !reviewRemotes) return [];
     return copiesOf([githubUrl(owner, name), `https://github.com/${owner}/${name}.git`], name);
   });
+  // Only Focus Notes projects are listed (D-416); answers are kept for this run, per repository and push.
+  const projectChecks: ProjectChecks = new Map();
   handle("projects:githubRepos", async () => {
     const api = await projectGitHub();
     if (!api) throw new Error("signedOut");
-    return (await api.ownRepos()).filter((r) => !r.template).map((r) => ({ owner: r.owner, name: r.name, private: r.private }));
+    let unreadable = 0;
+    const repos = await projectRepos(api, await api.ownRepos(), projectChecks, () => unreadable++);
+    if (unreadable) logLine(`projects.githubRepos: ${unreadable} repositor${unreadable === 1 ? "y" : "ies"} couldn't be checked, so ${unreadable === 1 ? "it isn't" : "they aren't"} listed`);
+    return repos.map((r) => ({ owner: r.owner, name: r.name, private: r.private }));
   });
   handle("projects:openGitHub", async (owner: unknown, name: unknown, use: unknown) => {
     if (typeof owner !== "string" || !/^[A-Za-z0-9-]{1,39}$/.test(owner) || typeof name !== "string" || !isRepoName(name)) throw new Error("Not a repository");
