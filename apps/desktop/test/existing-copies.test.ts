@@ -29,7 +29,9 @@ function world() {
   const clone = (name: string) => (git(root, "clone", remote, join(root, name)), join(root, name));
   const push = (text: string) => {
     writeFileSync(join(seed, "a.md"), text);
-    git(seed, "commit", "-am", text.trim());
+    // A minute later than the first commit, so "newest" never ties within one second.
+    const later = new Date(Date.now() + 60_000).toISOString();
+    execFileSync("git", ["commit", "-am", text.trim()], { cwd: seed, env: { ...env, GIT_AUTHOR_DATE: later, GIT_COMMITTER_DATE: later }, stdio: ["ignore", "pipe", "pipe"] });
     git(seed, "push", "origin", "HEAD:main");
   };
   return { root, remote, seed, clone, push };

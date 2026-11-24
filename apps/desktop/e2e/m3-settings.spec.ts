@@ -606,6 +606,8 @@ test("FRE-06: Settings → Open another workspace from GitHub shows the notes th
     await openFromGitHub(page);
     await expect(open).toBeFocused({ timeout: 15_000 });
     await press(page, "Enter");
+    // D-415: the open workspace is a copy of the same repository, so it's offered first; a new copy downloads as before.
+    await card(page).getByRole("button", { name: "Create a new copy" }).click({ timeout: 20_000 });
     // D-155: the notes go in a folder named after their repository, Documents/notes, beside the open workspace, and writing starts there.
     const second = join(dirname(w.dirs.docs), "notes");
     const folderNow = () => (existsSync(join(w.dirs.userData, DATA_FILES.workspace)) ? resolve((JSON.parse(readFileSync(join(w.dirs.userData, DATA_FILES.workspace), "utf8")) as { folder: string }).folder) : "");

@@ -104,6 +104,8 @@ test("FIL-12: a sync conflict offers Resolve; Take the other version by keyboard
   await page.keyboard.press(`${mod}+O`);
   const sheet = page.getByRole("complementary", { name: "Files" });
   const footer = sheet.getByRole("button", { name: /^Recently deleted/ });
+  // Tab only once Files is open, so no press goes to the page behind it.
+  await expect(footer).toBeVisible({ timeout: 15_000 });
   await tabTo(page, footer, 20);
   await page.keyboard.press("Enter");
   // Showing the list, the footer leads back to the tree (D-189).
