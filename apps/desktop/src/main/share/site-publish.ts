@@ -10,6 +10,7 @@ import type { SitePairing } from "./setup.ts";
 export type DeployedSiteGet = (url: string) => Promise<string | undefined>;
 
 const SITE_DIR = "site";
+const FAILED_RUN = new Set(["failure", "timed_out", "cancelled", "startup_failure"]);
 const fail = (code: string) => new Error(`sharing:${code}`);
 const gitBlobSha = (bytes: Buffer) => createHash("sha1").update(`blob ${bytes.length}\0`).update(bytes).digest("hex");
 
@@ -72,6 +73,8 @@ export function pagesArtifactPublisher(deps: {
   get?: DeployedSiteGet;
   timeoutMs?: number;
   delayMs?: number;
+  /** The commit is on the site's branch; what's left is GitHub Pages deploying it. */
+  pushed?(): void;
 }): SealedArtifactPublisher {
   return async (project, artifact) => {
     const target = await deps.target(project);
@@ -107,13 +110,23 @@ export function pagesArtifactPublisher(deps: {
     const tree = await api.createTree(owner, name, base, entries);
     const commit = await api.createCommit(owner, name, "Publish site", tree, [head]);
     await api.updateRef(owner, name, repo.defaultBranch, commit);
+    deps.pushed?.();
     const get = deps.get ?? fetchDeployedSite;
     const until = Date.now() + (deps.timeoutMs ?? 600_000);
     let status: "built" | "building" = "building";
+    let rerunOf = 0;
     while (true) {
       // An earlier or partial deployment: keep waiting for this build.
       if (await servedBuild(get, target.site) === artifact.build) { status = "built"; break; }
       if (Date.now() >= until) break;
+      // The commit's Pages run failed: no amount of waiting will serve it. A brand-new site's first deploy can lose
+      // its artifact on GitHub's side (24 Nov), so its failed jobs run once more; a second failure is the answer.
+      const run = (await api.workflowRuns(owner, name, commit).catch(() => []))[0];
+      if (run?.status === "completed" && run.conclusion && FAILED_RUN.has(run.conclusion) && run.attempt > rerunOf) {
+        if (rerunOf) throw fail("pages");
+        try { await api.rerunFailedJobs(owner, name, run.id); } catch { throw fail("pages"); }
+        rerunOf = run.attempt;
+      }
       await delay(Math.min(deps.delayMs ?? 5000, Math.max(1, until - Date.now())));
     }
     return { status: "published", commit, pages: { status, repository: `${owner}/${name}`, build: artifact.build } };

@@ -80,7 +80,7 @@ it("retries failed initialization with the same persisted site and keeps the cho
   expect(creates(t.github)).toHaveLength(1);
 });
 
-it("never adopts an unrelated public repository, even when it is empty", async () => {
+it("never adopts an unrelated public repository, even when it is empty, unless it has the default site name", async () => {
   const t = fixture();
   t.github.add({ owner: "ada", name: "quiet-site" });
   await expect(t.service.enable("quiet-site")).rejects.toThrow("sharing:taken");

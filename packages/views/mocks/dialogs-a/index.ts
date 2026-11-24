@@ -81,7 +81,7 @@ export const dialogsAMocks = {
       instruction: "Describe the image in one sentence.", disclosure: "The image goes to Ollama on this computer.", error: "",
     },
     sharingSettings: {
-      firstOpen: true, repo: "prabin/notes-shared", setupSite: "prabin.github.io/notes", more: false, busy: false,
+      firstOpen: true, repo: "prabin/notes-shared", setupSite: "prabin.github.io/notes", more: false, moreIcon: "chevronRight", busy: false,
       setupStatus: "", setupProblem: false, problem: "", firstAcceptLabel: "Turn on sharing",
     },
     project: { name: "Field notes" },

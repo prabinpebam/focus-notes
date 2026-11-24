@@ -36,7 +36,7 @@ export interface PublishingBridge {
   /** Deploys the recorded notes at their current paths again, after a rename's deploy failed. */
   followRetry?(): Promise<void>;
 }
-const PUBLISH_PROBLEMS = ["offline", "signedout", "refused", "media", "scope", "unavailable", "busy", "unacknowledged", "notlive"];
+const PUBLISH_PROBLEMS = ["offline", "signedout", "refused", "media", "scope", "unavailable", "busy", "unacknowledged", "notlive", "pages"];
 /** The plain problem for a failed Publish or Unpublish: never the note's text, a path or a secret (G3.2). */
 function publishProblem(error: unknown): string {
   const text = error instanceof Error ? error.message : "";

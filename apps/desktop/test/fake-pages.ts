@@ -12,6 +12,12 @@ export function gitData(github: FakeGitHub) {
   const trees = new Map<string, Map<string, string>>();
   const heads = new Map<string, string>();
   const pushes: string[] = [];
+  /** GitHub Actions runs per repository; the next `failRuns` runs (or re-runs) fail, as GitHub's first deploy did on 24 Nov. */
+  const runs = new Map<string, { id: number; head_sha: string; status: string; conclusion: string | null; run_attempt: number }[]>();
+  let failRuns = 0, nextRun = 1;
+  /** The commit Pages serves when a failed run left it behind the branch head. */
+  const served = new Map<string, string>();
+  const conclude = () => failRuns > 0 ? (failRuns--, "failure") : "success";
   const seed = (key: string) => {
     if (heads.has(key)) return heads.get(key)!;
     const repo = github.repos.get(key);
@@ -28,6 +34,21 @@ export function gitData(github: FakeGitHub) {
   const json = (status: number, body?: unknown) => new Response(body === undefined ? null : JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
   const fetch = async (input: string, init?: RequestInit): Promise<Response> => {
     const url = new URL(input);
+    const actions = /^\/repos\/([^/]+)\/([^/]+)\/actions\/runs(?:\/(\d+)\/rerun-failed-jobs)?$/.exec(url.pathname);
+    if (!github.offline && actions) {
+      const key = `${actions[1]}/${actions[2]}`, method = init?.method ?? "GET";
+      github.calls.push({ method, path: url.pathname });
+      const planned = github.failures.get(`${method} ${url.pathname}`)?.shift();
+      if (planned) return json(planned.status, { message: planned.message });
+      const list = runs.get(key) ?? [];
+      if (method === "GET" && !actions[3]) return json(200, { workflow_runs: list.filter(r => r.head_sha === (url.searchParams.get("head_sha") ?? r.head_sha)).reverse() });
+      const run = list.find(r => r.id === Number(actions[3]));
+      if (method !== "POST" || !run || run.conclusion === "success") return json(403, { message: "This workflow run cannot be rerun" });
+      run.run_attempt++;
+      run.conclusion = conclude();
+      if (run.conclusion === "success" && run.head_sha === heads.get(key)) served.delete(key);
+      return json(201, {});
+    }
     const m = /^\/repos\/([^/]+)\/([^/]+)\/git\/(.+)$/.exec(url.pathname);
     if (github.offline || !m) return github.fetch(input, init);
     const key = `${m[1]}/${m[2]}`, rest = m[3]!, method = init?.method ?? "GET";
@@ -53,15 +74,19 @@ export function gitData(github: FakeGitHub) {
     if (method === "PATCH" && rest === "refs/heads/main") {
       const commit = String(body!.sha);
       if (body!.force !== false || !commits.get(commit)?.parents.includes(seed(key)!)) return json(422, { message: "Update is not a fast forward" });
+      const before = served.has(key) ? served.get(key)! : heads.get(key) ?? "";
       heads.set(key, commit);
       pushes.push(key);
+      const conclusion = conclude();
+      runs.set(key, [...runs.get(key) ?? [], { id: nextRun++, head_sha: commit, status: "completed", conclusion, run_attempt: 1 }]);
+      if (conclusion === "success") served.delete(key); else served.set(key, before);
       return json(200, { object: { sha: commit } });
     }
     return json(404, { message: "Not Found" });
   };
   /** The site/ folder of the branch head, as exact bytes. */
   const siteBytes = (key: string) => {
-    const head = heads.get(key);
+    const head = served.has(key) ? served.get(key) : heads.get(key);
     const files = head ? trees.get(commits.get(head)!.tree)! : new Map<string, string>();
     return new Map([...files].filter(([path]) => path.startsWith("site/")).map(([path, sha]) => [path.slice(5), blobs.get(sha)!]));
   };
@@ -73,7 +98,7 @@ export function gitData(github: FakeGitHub) {
     if (!at || stale) return undefined;
     return site(`${at[1]}/${at[2]}`).get(at[3]!);
   };
-  return { fetch, get, site, siteBytes, pushes, setStale: (value: boolean) => { stale = value; } };
+  return { fetch, get, site, siteBytes, pushes, runs, setStale: (value: boolean) => { stale = value; }, failPagesRuns: (times: number) => { failRuns = times; } };
 }
 
 /**

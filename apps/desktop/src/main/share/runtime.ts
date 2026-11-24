@@ -90,6 +90,7 @@ export function sharingRuntime(deps: {
     api: deps.api,
     target: async project => { const saved = await bound().read(); return saved?.project === project ? saved : undefined; },
     get, ...(deps.pagesWaitMs === undefined ? {} : { timeoutMs: deps.pagesWaitMs }),
+    pushed: () => deps.step?.("deploy"),
   });
   /** Builds pushed to the site this session, oldest first: a newer one being served means an older one's notes are live too. */
   const pushed: string[] = [];
