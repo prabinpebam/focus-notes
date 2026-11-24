@@ -24,6 +24,8 @@ import { registerSync, NO_SYNC, SyncFailed, saveStateOf, syncProblemAction, type
 import { registerSetup, NO_SETUP, type SetupState } from "./setup-app.ts";
 import { registerFirstRun, FIRST_RUN_INACTIVE, NO_ACCOUNT, type FirstRunState, type AccountState } from "./first-run-app.ts";
 import { registerRecover, RECOVER_CLOSED, type RecoverState } from "./recover-app.ts";
+import { registerRecoveryAlert, RECOVERY_ALERT_INITIAL, type RecoveryAlertAppState } from "./recovery-alert-app.ts";
+import { recoveryAlertView } from "./recovery-alert.ts";
 import { registerConflicts, CONFLICT_CLOSED, type ConflictState } from "./conflict-app.ts";
 import { registerDrafts } from "./drafts-app.ts";
 import { registerNoteHistory, HISTORY_CLOSED, type HistoryState } from "./note-history-app.ts";
@@ -155,6 +157,8 @@ export interface AppState {
   account: AccountState;
   /** The notes folder is missing at start: the recovery view and the way back under way (FRE-11, FRE-12, D-212). */
   recover: RecoverState;
+  /** Account and sync recovery alert while writing carries on (FRE-13, G5.4, D-213). */
+  recoveryAlert: RecoveryAlertAppState;
   /** The app-built window on Windows and Linux, as the shell reports it (DSK-03, D-14). Native elsewhere. */
   window: WindowState;
   /** The right-click menu in text the app draws on Windows and Linux (D-204, EDT-14). */
@@ -342,6 +346,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     firstRun: FIRST_RUN_INACTIVE,
     account: NO_ACCOUNT,
     recover: RECOVER_CLOSED,
+    recoveryAlert: RECOVERY_ALERT_INITIAL,
     window: initialWindow(bridge),
     textMenu: TEXT_MENU_CLOSED,
     tasks: [],
@@ -481,6 +486,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     },
   });
   const recover = registerRecover({ store, bridge, catalog, commands, viewModels, tracker, clock, now: () => Date.now(), again: (scope) => firstRun.again(scope) });
+  const recoveryAlert = registerRecoveryAlert({ store, bridge, catalog, commands, viewModels, tracker, toast, again: (scope) => firstRun.again(scope) });
   registerSettings({ store, bridge, catalog, commands, viewModels, toast, persistAppState, appState: () => appState, flush, again: (scope, o) => firstRun.again(scope, o), tracker, prefetchRepos: () => firstRun.prefetchRepos() });
   const project = registerProject({ store, commands, viewModels, catalog, bridge, appState: () => appState, persistAppState });
   registerProjectIntro({ store, commands, viewModels, catalog });
@@ -1749,19 +1755,29 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         backupVisible: { type: "boolean" }, local: { type: "boolean" }, location: { type: "string" }, locationLabel: { type: "string" },
         interactive: { type: "boolean" },
         state: { type: "string", enum: ["savedLocal", "pending", "syncing", "synced", "offline", "error"] },
-        label: { type: "string" }, text: { type: "string" },
+        label: { type: "string" }, text: { type: "string" }, cardLabel: { type: "string" },
         backingUp: { type: "boolean" }, canBackUp: { type: "boolean" },
         backupTime: { type: "string" }, waitingText: { type: "string" }, backupReason: { type: "string" },
-        icon: { type: "string" }, tone: { type: "string", enum: ["neutral", "accent", "danger", "success"] },
+        icon: { type: "string" }, tone: { type: "string", enum: ["neutral", "accent", "warning", "danger", "success"] },
       },
     },
-    reads: ["sync", "note.saveState", "note.path", "note.status", "workspace"],
+    reads: ["sync", "recoveryAlert", "note.saveState", "note.path", "note.status", "workspace"],
     select: (s) => {
-      const state = saveStateOf(s.sync, s.note.saveState === "unsaved" || s.note.saveState === "saving");
-      const label = !catalog.has("save.state.savedLocal") ? ""
-        : state === "synced" ? (s.sync.backedUpAt !== undefined ? catalog.format("save.state.synced", { time: when(s.sync.backedUpAt) }) : catalog.format("save.state.syncedNow"))
-          : catalog.format(`save.state.${state}`);
-      const text = !s.sync.asked || !catalog.has("save.label.done") ? "" : catalog.format(s.sync.asked === "done" ? "save.label.done" : "save.label.syncing");
+      const alert = recoveryAlertView({
+        report: s.recoveryAlert.report,
+        sync: s.sync,
+        folder: s.workspace.folder,
+        repository: s.workspace.repo,
+        cornerOpen: s.recoveryAlert.cornerOpen,
+        headerOpen: s.recoveryAlert.headerOpen,
+      }, catalog);
+      const state = alert.active ? alert.cornerState : saveStateOf(s.sync, s.note.saveState === "unsaved" || s.note.saveState === "saving");
+      const label = alert.active ? alert.alertLabel
+        : !catalog.has("save.state.savedLocal") ? ""
+          : state === "synced" ? (s.sync.backedUpAt !== undefined ? catalog.format("save.state.synced", { time: when(s.sync.backedUpAt) }) : catalog.format("save.state.syncedNow"))
+            : catalog.format(`save.state.${state}`);
+      const text = alert.active ? alert.cornerText
+        : !s.sync.asked || !catalog.has("save.label.done") ? "" : catalog.format(s.sync.asked === "done" ? "save.label.done" : "save.label.syncing");
       // The card opens even for local-only notes; its backup action explains when Git is unavailable.
       const backingUp = state === "syncing";
       const local = localLocation(s);
@@ -1774,6 +1790,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         visible: local || backupVisible, backupVisible, local, location,
         locationLabel: catalog.format("local.location.label", { location, action: catalog.format(`command.files.showItem.${bridge.platform === "macos" ? "macos" : bridge.platform === "linux" ? "linux" : "windows"}`) }),
         interactive: Boolean(bridge.sync), state, label, text,
+        cardLabel: alert.active ? catalog.format("recoveryAlert.cardLabel") : catalog.format("save.backup.title"),
         backingUp, canBackUp: s.sync.git && !noRemote && !backingUp,
         backupTime: noRemote ? catalog.format("save.backup.none")
           : s.sync.backedUpAt === undefined ? catalog.format("save.backup.unknown")
@@ -1781,8 +1798,8 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         waitingText: noRemote ? catalog.format("save.backup.local")
           : catalog.format(backingUp ? "save.backup.progress" : s.sync.waiting ? "save.backup.waiting" : "save.backup.current", { count: s.sync.waiting ?? 0 }),
         backupReason: catalog.format(backingUp ? "save.backup.progress" : "save.backup.local"),
-        icon: state === "error" ? "warning" : noRemote ? "hardDrive" : state === "offline" ? "cloudOff" : backingUp ? "cloudUp" : state === "synced" ? "cloudCheck" : "cloud",
-        tone: state === "error" || state === "offline" ? "danger" : backingUp ? "accent" : state === "synced" ? "success" : "neutral",
+        icon: alert.active ? alert.icon : state === "error" ? "warning" : noRemote ? "hardDrive" : state === "offline" ? "cloudOff" : backingUp ? "cloudUp" : state === "synced" ? "cloudCheck" : "cloud",
+        tone: alert.active ? alert.tone : state === "error" || state === "offline" ? "danger" : backingUp ? "accent" : state === "synced" ? "success" : "neutral",
       };
     },
   });
@@ -1949,6 +1966,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         await recovering;
         workspace.start();
         sync.start();
+        recoveryAlert.start();
         repoBackup.start();
         setup.start();
       }

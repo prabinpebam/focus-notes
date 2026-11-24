@@ -29,6 +29,8 @@ export * from "./repo-backup.ts";
 export * from "./setup-app.ts";
 export * from "./first-run-app.ts";
 export * from "./recover-app.ts";
+export * from "./recovery-alert.ts";
+export * from "./recovery-alert-app.ts";
 export * from "./settings.ts";
 export * from "./import-app.ts";
 export * from "./history.ts";
