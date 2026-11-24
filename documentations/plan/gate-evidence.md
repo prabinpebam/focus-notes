@@ -261,6 +261,14 @@ Each local app run used invisible E2E windows and recorded main PIDs, followed b
 
 ## Summary
 
+### Owner acceptance: Delete project (D-413, MP.34), 24 November
+
+**Accepted by the owner, 24 November 2026, 16:53 IST**, after their own end-to-end run of the D-413 Delete flow on the 24 November review builds. The owner, verbatim:
+
+> "Integrate everything, I've tested the delete workflow, I want to test full share workflow next. Get that end to end share workflow ready. And launch the review app."
+
+This is the owner's real-account run, which agents never do (D-343). It closes F4.2.5 and MP.34's owner acceptance for the D-413 flow: step-by-step deletion on GitHub's web, automatic detection, and optional Save a copy with Delete without saving. Next up is the owner's end-to-end share workflow run.
+
 ### Batch 3 and batch 4 landings, 24 November
 
 **Landed on `main`, exact-head Windows CI seven of seven green.** Each head was fast-forwarded under the landing lock after its own run passed. All runtime evidence uses fakes; no real repository, invitation, Pages deployment, share or deletion was made.
