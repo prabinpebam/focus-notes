@@ -1796,7 +1796,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
           : s.sync.backedUpAt === undefined ? catalog.format("save.backup.unknown")
             : catalog.format("save.backup.last", { time: backupDate.format(s.sync.backedUpAt) }),
         waitingText: noRemote ? catalog.format("save.backup.local")
-          : catalog.format(backingUp ? "save.backup.progress" : s.sync.waiting ? "save.backup.waiting" : "save.backup.current", { count: s.sync.waiting ?? 0 }),
+          : catalog.format(backingUp ? "save.backup.progress" : s.sync.waiting ? "save.backup.waiting" : s.sync.unknown ? "repoBackup.unknown" : "save.backup.current", { count: s.sync.waiting ?? 0 }),
         backupReason: catalog.format(backingUp ? "save.backup.progress" : "save.backup.local"),
         icon: alert.active ? alert.icon : state === "error" ? "warning" : noRemote ? "hardDrive" : state === "offline" ? "cloudOff" : backingUp ? "cloudUp" : state === "synced" ? "cloudCheck" : "cloud",
         tone: alert.active ? alert.tone : state === "error" || state === "offline" ? "danger" : backingUp ? "accent" : state === "synced" ? "success" : "neutral",

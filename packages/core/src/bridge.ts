@@ -429,6 +429,8 @@ export interface SyncReport {
    * its commits are history here, never a backup, so nothing may say "Backed up". Absent: not known.
    */
   remote?: boolean;
+  /** Git couldn't read a repository's status: whether it's backed up isn't known, never "Backed up" (D-414). */
+  unknown?: boolean;
 }
 /**
  * Save and sync (Desktop and Git → Save and sync, D-23). The shell commits on its own after 60 s
@@ -477,6 +479,8 @@ export interface RepoBackupReport {
   commits: number;
   /** False when the repository's branch tracks no remote: nothing here can be backed up (D-pending). */
   remote?: boolean;
+  /** Git couldn't read this repository's status: what waits isn't known (D-414). */
+  unknown?: boolean;
 }
 
 /** A note changed both on this computer and elsewhere since they last synced (FIL-12). */

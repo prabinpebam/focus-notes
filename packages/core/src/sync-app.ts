@@ -28,6 +28,8 @@ export interface SyncState {
    * history here, never a backup, so nothing may say "Backed up" (D-pending). Absent means unknown.
    */
   remote?: boolean;
+  /** Git couldn't read a repository's status: saved here is all that's known, never "Backed up" (D-414). */
+  unknown?: boolean;
 }
 export const NO_SYNC: SyncState = { git: false };
 
@@ -45,7 +47,7 @@ export function saveStateOf(sync: SyncState, noteSaving: boolean): SaveStateKind
   if (sync.problem === "offline") return "offline";
   if (sync.problem) return "error";
   if (sync.waiting) return "pending";
-  if (noteSaving) return "savedLocal";
+  if (noteSaving || sync.unknown) return "savedLocal";
   return sync.edited ? "pending" : "synced";
 }
 
@@ -86,11 +88,12 @@ export function registerSync<S extends { sync: SyncState }>({ store, bridge, cat
     const keep = r.state === "syncing" && before;
     const syncing = r.state === "syncing" && waiting > 0;
     const remote = r.remote;
-    const backedUp = r.state === "idle" && waiting === 0 && r.git && remote !== false && (was.syncing || Boolean(was.waiting) || Boolean(before));
+    const unknown = r.unknown === true || undefined;
+    const backedUp = r.state === "idle" && waiting === 0 && r.git && remote !== false && !unknown && (was.syncing || Boolean(was.waiting) || Boolean(before));
     const nextProblem = keep ? before : problem;
-    if (was.git === r.git && before === nextProblem && (was.waiting ?? 0) === waiting && Boolean(was.syncing) === syncing && was.remote === remote && !backedUp) return;
+    if (was.git === r.git && before === nextProblem && (was.waiting ?? 0) === waiting && Boolean(was.syncing) === syncing && was.remote === remote && was.unknown === unknown && !backedUp) return;
     set({
-      git: r.git, problem: nextProblem, waiting, syncing: syncing || undefined, remote,
+      git: r.git, problem: nextProblem, waiting, syncing: syncing || undefined, remote, unknown,
       ...(backedUp ? { backedUpAt: now(), edited: undefined } : {}),
       // A time recorded before the remote went away isn't a backup of what's here now.
       ...(remote === false ? { backedUpAt: undefined } : {}),

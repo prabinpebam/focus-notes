@@ -235,7 +235,8 @@ export class GitSync {
   /** What changed, from the cache (PRF-07): never makes a view wait for a commit. */
   async status(): Promise<SyncReport> {
     const all = await Promise.all([this.notes, this.privateRepo].filter((r): r is Repo => !!r).map((r) => r.cache.get().catch(() => undefined)));
-    this.#emit({ waiting: this.#waiting(all) });
+    // A repository whose status Git couldn't read is unknown: never "Backed up", never "waiting" (D-414).
+    this.#emit({ waiting: this.#waiting(all), unknown: all.some((s) => s === undefined) ? true : undefined });
     return this.#report;
   }
 
@@ -255,7 +256,11 @@ export class GitSync {
     for (const [id, repo] of [["private", this.privateRepo], ["public", this.notes]] as const) {
       if (!repo) continue;
       const st = await repo.cache.get().catch(() => undefined);
-      if (!st) continue;
+      // Git couldn't say what waits here: unknown, shown as such, never "nothing waiting" (D-414).
+      if (!st) {
+        out.push({ repo: id, ...(await this.#nameOf(repo)), folders: 0, notes: 0, other: 0, commits: 0, unknown: true });
+        continue;
+      }
       const folders = new Set<string>();
       const notes = new Set<string>();
       const other = new Set<string>();
@@ -722,7 +727,8 @@ export class GitSync {
     // A branch that tracks no remote never pushes: its commits aren't a backup (D-pending).
     const tracked = this.notes.last;
     if (tracked) next.remote = Boolean(tracked.upstream);
-    const same = next.state === this.#report.state && next.problem === this.#report.problem && next.waiting === this.#report.waiting && next.remote === this.#report.remote;
+    if (!next.unknown) delete next.unknown;
+    const same = next.state === this.#report.state && next.problem === this.#report.problem && next.waiting === this.#report.waiting && next.remote === this.#report.remote && next.unknown === this.#report.unknown;
     this.#report = next;
     if (same) return;
     try {
