@@ -91,3 +91,12 @@ it("G2/D7: shows accepted, expired and revoked rows with their actions, and Retr
   expect(t.people.dismiss).toHaveBeenCalledWith("ada/book", "linus");
   expect(t.vm()).toMatchObject({ status: en["sharing.invite.dismissed"] });
 });
+it("an unlinked project shows why people can't be invited, without an error or Retry; signed out still retries", async () => {
+  const t = await fixture();
+  t.people.load.mockRejectedValueOnce(new Error("Error invoking remote method 'sharing:people': Error: invite:unlinked"));
+  await t.run("sharing.peopleLoad");
+  expect(t.vm()).toMatchObject({ ready: false, canOpen: false, canRetry: false, problem: "", detail: en["sharing.invite.unlinked"] });
+  t.people.load.mockRejectedValueOnce(new Error("invite:signedout"));
+  await t.run("sharing.peopleLoad");
+  expect(t.vm()).toMatchObject({ ready: false, canRetry: true, unlinked: "", problem: en["sharing.invite.signedout"] });
+});

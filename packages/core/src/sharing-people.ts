@@ -17,7 +17,8 @@ export function registerSharingPeople(ctx: {
   access?: AccessBridge;
 }) {
   const { store, commands, viewModels, catalog, tracker } = ctx;
-  const state = { open: false, user: "", role: "read", busy: false, loading: false, problem: "", status: "", step: "" };
+  // unlinked: the project can't have people (no private GitHub repository): a reason, never an error with Retry.
+  const state = { open: false, user: "", role: "read", busy: false, loading: false, problem: "", status: "", step: "", unlinked: "" };
   let project: ProjectPeople | undefined;
   // The row action that last failed, run again by Retry in Settings.
   let retry: (() => Promise<void>) | undefined;
@@ -35,11 +36,15 @@ export function registerSharingPeople(ctx: {
   reg<Record<string, never>>("sharing.peopleLoad", async () => {
     if (!people || state.loading || state.busy) return;
     retry = undefined;
-    set({ loading: true, problem: "" });
+    set({ loading: true, problem: "", unlinked: "" });
     try {
       project = await tracker.section("sharing.people", "sharing.invite.checking", () => people.load(), "fn:sharing.people", "success");
       if (project.owner === "personal") state.role = "write";
-    } catch (error) { project = undefined; set({ problem: problem(error) }); }
+    } catch (error) {
+      project = undefined;
+      if (error instanceof Error && /invite:unlinked\b/.test(error.message)) set({ unlinked: catalog.format("sharing.invite.unlinked") });
+      else set({ problem: problem(error) });
+    }
     finally { set({ loading: false }); }
   });
   reg<Record<string, never>>("sharing.inviteOpen", () => {
@@ -105,7 +110,7 @@ export function registerSharingPeople(ctx: {
     id: "vm.sharingPeople", reads: "*",
     setters: { user: "sharing.inviteUser", role: "sharing.inviteRole" },
     schema: { type: "object", properties: {
-      available: bool, ready: bool, open: bool, user: str, role: str, owner: str, org: bool, personal: bool, busy: bool, problem: str, canSend: bool, canOpen: bool, canRetry: bool, detail: str, status: str, stepLabel: str, repository: str, feedback: str, feedbackTone: str, sendLabel: str, target: str,
+      available: bool, ready: bool, open: bool, user: str, role: str, owner: str, org: bool, personal: bool, busy: bool, problem: str, unlinked: str, canSend: bool, canOpen: bool, canRetry: bool, detail: str, status: str, stepLabel: str, repository: str, feedback: str, feedbackTone: str, sendLabel: str, target: str,
       roles: { type: "array", items: { type: "object", properties: { id: str, label: str } } },
       people: { type: "array", items: { type: "object", properties: { id: str, key: str, login: str, role: str, initials: str, detail: str, badge: str, pending: bool, again: bool, revoked: bool } } },
     } },
@@ -114,7 +119,7 @@ export function registerSharingPeople(ctx: {
       repository: project?.repository ?? "", org: project?.owner === "org", personal: project?.owner !== "org",
       canSend: Boolean(project && state.user.trim()) && !state.busy, canOpen: Boolean(project) && !state.loading && !state.busy,
       canRetry: (!project || Boolean(retry)) && Boolean(state.problem) && !state.open && !state.loading && !state.busy,
-      detail: state.loading ? catalog.format("sharing.invite.checking") : state.problem && !state.open ? state.problem : state.busy ? catalog.format(`sharing.invite.step.${state.step}`) : state.status || catalog.format("share.invite.notShare"),
+      detail: state.loading ? catalog.format("sharing.invite.checking") : state.problem && !state.open ? state.problem : state.busy ? catalog.format(`sharing.invite.step.${state.step}`) : state.status || state.unlinked || catalog.format("share.invite.notShare"),
       stepLabel: state.busy ? catalog.format(`sharing.invite.step.${state.step}`) : "",
       feedback: state.problem || (state.busy ? catalog.format(`sharing.invite.step.${state.step}`) : ""),
       feedbackTone: state.problem ? "danger" : "muted",
