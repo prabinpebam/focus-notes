@@ -638,7 +638,7 @@
                {
                 "type": "Text",
                 "props": {
-                 "value": { "t": "share.dialog.passcode" },
+                 "value": { "t": "share.dialog.accessCode" },
                  "tone": "muted",
                  "role": "secondary"
                 }
@@ -650,8 +650,8 @@
                  {
                   "type": "CodeBlock",
                   "props": {
-                   "value": { "get": "vm.mockShare.generated" },
-                   "copyLabel": { "t": "share.dialog.copyPasscode" }
+                   "value": { "get": "vm.mockShare.accessCode" },
+                   "copyLabel": { "t": "share.dialog.copyCode" }
                   }
                  },
                  {
@@ -1545,29 +1545,35 @@
                   }
                  },
                  {
-                  "type": "Text",
+                  "type": "Inline",
                   "when": {
                    "get": "local.passcode"
                   },
                   "props": {
-                   "value": {
-                    "t": "share.info.code",
-                    "args": {
-                     "both": {
-                      "expr": {
-                       "if": [
-                        {
-                         "get": "local.link"
-                        },
-                        "yes",
-                        "no"
-                       ]
-                      }
-                     }
+                   "gap": "inlinePair",
+                   "wrap": true,
+                   "wrapGap": "stackPair"
+                  },
+                  "children": [
+                   {
+                    "type": "Text",
+                    "props": {
+                     "value": {
+                      "t": "share.info.codeLead"
+                     },
+                     "role": "secondary"
                     }
                    },
-                   "role": "secondary"
-                  }
+                   {
+                    "type": "Text",
+                    "props": {
+                     "value": {
+                      "t": "share.info.codeValue"
+                     },
+                     "role": "secondary"
+                    }
+                   }
+                  ]
                  },
                  {
                   "type": "Text",
@@ -1577,28 +1583,20 @@
                    },
                    "role": "secondary"
                   }
-                 },
-                 {
-                  "type": "Text",
-                  "props": {
-                   "value": {
-                    "t": "share.info.forward"
-                   },
-                   "role": "secondary"
-                  }
-                 },
-                 {
-                  "type": "Text",
-                  "props": {
-                   "value": {
-                    "t": "share.info.copies"
-                   },
-                   "role": "secondary"
-                  }
                  }
                 ]
                }
               ]
+             },
+             {
+              "type": "Text",
+              "props": {
+               "value": {
+                "t": "share.info.note"
+               },
+               "role": "caption",
+               "tone": "muted"
+              }
              }
             ]
            }

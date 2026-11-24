@@ -30,6 +30,7 @@ export const shareInformationTemplateMocks = {
     { id: "shareTemplate.settings", label: "1. Settings → Sharing: Share information (default)", view: "template", local: state(t.default, t.default) },
     { id: "shareTemplate.editor", label: "2. Edit: the default message and its preview", view: "template", local: state(t.default, t.default, { dialog: "edit" }) },
     { id: "shareTemplate.linkOnly", label: "3. Edit: preview for a link-only share (access code lines left out)", view: "template", local: state(t.default, t.default, { dialog: "edit", sample: "link" }) },
+    { id: "shareTemplate.codeOnly", label: "3b. Edit: preview for an access-code-only share (link line left out)", view: "template", local: state(t.default, t.default, { dialog: "edit", sample: "code" }) },
     { id: "shareTemplate.edited", label: "4. Edit: link line removed, still valid (site and access code)", view: "template", local: state(t.noLink, t.default, { dialog: "edit", sample: "code" }) },
     { id: "shareTemplate.name", label: "5. Edit: {name} added (error, draft kept, Save off)", view: "template", local: state(t.withName, t.default, { dialog: "edit" }) },
     { id: "shareTemplate.noMethod", label: "6. Edit: no link and no access code (error, draft kept)", view: "template", local: state(t.noMethod, t.default, { dialog: "edit" }) },

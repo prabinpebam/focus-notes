@@ -10,7 +10,7 @@
   "copyInfo": "Copy share information",
   "dialogTitle": "Share information",
   "field": "Message",
-  "fieldHelp": "Use {title}, {link}, {accessCode}, {expires} and {site}. Lines for a method a share doesn't have are left out.",
+  "fieldHelp": "Write it to the person you share with. Use {title}, {link}, {accessCode}, {expires} and {site}. Lines for a method a share doesn't have are left out.",
   "previewHeading": "Preview",
   "previewFor": {
    "both": "For a share with a link and access code",
@@ -34,20 +34,16 @@
   "sharesEmpty": "No shares yet."
  },
  "templates": {
-  "default": "“{title}” is shared read-only.\nOpen: {link}\nOr open {site} and enter this access code: {accessCode}\nWorks until {expires}.\nAnyone with the link or access code can read it and forward it.\nExpiry or withdrawal cannot remove copies already downloaded.",
-  "noLink": "“{title}” is shared read-only.\nOpen {site} and enter this access code: {accessCode}\nWorks until {expires}.\nAnyone with the access code can read it and forward it.\nExpiry or withdrawal cannot remove copies already downloaded.",
-  "withName": "Hi {name},\n“{title}” is shared read-only.\nOpen: {link}\nOr open {site} and enter this access code: {accessCode}\nWorks until {expires}.",
-  "noMethod": "“{title}” is shared read-only.\nWorks until {expires}.\nAnyone with the link or access code can read it and forward it."
+  "default": "I’ve shared “{title}” with you to read.\nOpen it here: {link}\nTo use the access code, open {site} and enter: {accessCode}\nYou can read it until {expires}.",
+  "noLink": "I’ve shared “{title}” with you to read.\nTo use the access code, open {site} and enter: {accessCode}\nYou can read it until {expires}.",
+  "withName": "Hi {name},\nI’ve shared “{title}” with you to read.\nOpen it here: {link}\nTo use the access code, open {site} and enter: {accessCode}\nYou can read it until {expires}.",
+  "noMethod": "I’ve shared “{title}” with you to read.\nYou can read it until {expires}."
  },
  "previewLines": [
-  { "id": "title", "samples": ["both", "link", "code"], "source": "“{title}” is shared read-only.", "text": "“Trip plans” is shared read-only." },
-  { "id": "link", "samples": ["both", "link"], "source": "Open: {link}", "text": "Open: https://you.github.io/notes/s/#k7Qm2xPa" },
-  { "id": "code", "samples": ["both", "code"], "source": "Or open {site} and enter this access code: {accessCode}", "text": "Or open https://you.github.io/notes/s/ and enter this access code: R4TN8WQZ" },
-  { "id": "codeOnly", "samples": ["both", "code"], "source": "Open {site} and enter this access code: {accessCode}", "text": "Open https://you.github.io/notes/s/ and enter this access code: R4TN8WQZ" },
-  { "id": "until", "samples": ["both", "link", "code"], "source": "Works until {expires}.", "text": "Works until 30 November 2026." },
-  { "id": "forward", "samples": ["both", "link", "code"], "source": "Anyone with the link or access code can read it and forward it.", "text": "Anyone with the link or access code can read it and forward it." },
-  { "id": "forwardCode", "samples": ["both", "link", "code"], "source": "Anyone with the access code can read it and forward it.", "text": "Anyone with the access code can read it and forward it." },
-  { "id": "copies", "samples": ["both", "link", "code"], "source": "Expiry or withdrawal cannot remove copies already downloaded.", "text": "Expiry or withdrawal cannot remove copies already downloaded." }
+  { "id": "title", "samples": ["both", "link", "code"], "source": "I’ve shared “{title}” with you to read.", "text": "I’ve shared “Trip plans” with you to read." },
+  { "id": "link", "samples": ["both", "link"], "source": "Open it here: {link}", "text": "Open it here: https://you.github.io/notes/s/#k7Qm2xPa" },
+  { "id": "code", "samples": ["both", "code"], "source": "To use the access code, open {site} and enter: {accessCode}", "text": "To use the access code, open https://you.github.io/notes/s/ and enter: R4TN8WQZ" },
+  { "id": "until", "samples": ["both", "link", "code"], "source": "You can read it until {expires}.", "text": "You can read it until 30 November 2026." }
  ],
  "shares": [
   { "id": "trip", "title": "Trip plans", "detail": "Link · Expires 30 Nov", "badge": "Active", "icon": "document", "canLink": true, "canCode": false },

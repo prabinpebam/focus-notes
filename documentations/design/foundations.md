@@ -219,6 +219,7 @@ The first-run sign-in card ("Continue as" with the @handle) is outside OB-f.1's 
 - **Name the thing.** "Delete “On focus”?" says which note. Dialogs never ask "Are you sure?" on their own.
 - **Show, don't say.** Don't write a sentence for what an element can show: an account is a profile card, not "connected as @login"; progress is a stepper, not "Step 2 of 4" (see the [visual vs verbose score](visual-score.html#right-element)).
 - **Plain and short.** No "please", no exclamation marks, no blame ("Couldn't reach GitHub", not "You are offline").
+- **Text people send is in the sender's voice (D-409).** Share information is copied and pasted to someone else, so it speaks to the recipient as the sharer ("I’ve shared “Trip plans” with you to read."), with no product words and no instructions or warnings for the sharer. Each line reads correctly when a line for a method the share doesn't have is left out. What the sharer needs to know goes beside the message in the app, once, never inside it.
 - **Numbers as digits** ("3 notes"), with correct plurals.
 - **Setup speaks to anyone** (D-124). The first run and the account and project parts of Settings are written for someone who has never heard of GitHub:
   - The main path never says *repository*, *Git*, *commit*, *token*, *credential*, *CLI*, *instance*, or *Pages*. It says *your GitHub account*, *your notes*, *connect*, *save*, and *back up*.

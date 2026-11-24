@@ -232,7 +232,8 @@
                 "type": "Stack", "when": { "get": "vm.shareItem.ready" }, "props": { "gap": "stackItem" },
                 "children": [
                   { "type": "Heading", "props": { "value": { "t": "share.dialog.preview" }, "level": "3" } },
-                  { "each": { "get": "vm.shareItem.lines" }, "as": "line", "key": "line.id", "render": { "type": "Text", "props": { "value": { "get": "line.text" } } }, "empty": { "type": "Text", "props": { "value": { "t": "share.item.preparing" } } } }
+                  { "each": { "get": "vm.shareItem.lines" }, "as": "line", "key": "line.id", "render": { "type": "Text", "props": { "value": { "get": "line.text" } } }, "empty": { "type": "Text", "props": { "value": { "t": "share.item.preparing" } } } },
+                  { "type": "Text", "props": { "value": { "t": "share.item.information.note" }, "role": "caption", "tone": "muted" } }
                 ]
               },
               {
