@@ -280,27 +280,31 @@ test("D-413: Check again verifies status; 401, 403, 429 and 404-with-invalid-ses
     repoMode = "401";
     await checkAgain.click();
     await expect(dialog).toContainText("GitHub needs you to sign in again.");
+    await expect(checkAgain).toBeEnabled();
     expect(existsSync(fx.dirs.docs)).toBe(true);
 
     repoMode = "403";
     await checkAgain.click();
     await expect(dialog).toContainText("Couldn't check GitHub right now.");
+    await expect(checkAgain).toBeEnabled();
     expect(existsSync(fx.dirs.docs)).toBe(true);
 
     repoMode = "429";
     await checkAgain.click();
     await expect(dialog).toContainText("GitHub asked Focus Notes to wait.");
+    await expect(checkAgain).toBeEnabled();
     expect(existsSync(fx.dirs.docs)).toBe(true);
 
     // 404 on repo + 401 on /user MUST NOT be treated as deleted!
     repoMode = "404-invalid-user";
     await checkAgain.click();
     await expect(dialog).toContainText("GitHub needs you to sign in again.");
+    await expect(checkAgain).toBeEnabled();
     expect(existsSync(fx.dirs.docs)).toBe(true);
 
-    // Now 404 on repo + 200 on /user -> Check again finishes cleanly.
+    // Now 404 on repo + 200 on /user -> Check again (or an in-flight background poll) finishes cleanly.
     repoMode = "gone";
-    await checkAgain.click();
+    if (await checkAgain.isVisible()) await checkAgain.click({ timeout: 2_000 }).catch(() => {});
     await expect(dialog.getByRole("heading", { name: "Project deleted", exact: true })).toBeVisible({ timeout: 15_000 });
     expect(existsSync(fx.dirs.docs)).toBe(false);
     expect(existsSync(join(fx.recycle, "Welcome.md"))).toBe(true);
