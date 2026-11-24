@@ -40,6 +40,7 @@ What could make Focus Notes fail, how likely and how bad each risk is, and what 
 | R-29 | **Note prompt injection or generated active content leaks data.** | High | Severe | The selection and prompt go in one user message under a fixed instruction; no tools; the answer is inserted as text (Markdown parsed into the editor's own nodes, never HTML); nothing in the answer triggers a fetch. Security review still to do (SEC-09). | MAI, WP-AI.9 |
 | R-31 | **Store capabilities and public privacy claims no longer describe optional AI traffic.** | Medium | High | Before Rewrite ships in a release: the privacy page and Store listing say that Rewrite sends selected text to the service the person sets up, and nowhere else. Not before; the review build isn't a release. | MAI gate |
 | R-32 | **Desktop-only rewrite is mistaken for browser support.** | High | Medium | The web build has no AI bridge, so Rewrite is absent there (RWR-71); Help says desktop only. | MAI, WP-AI.11 |
+| R-62 | **Start-up got about twice as slow in October, after 1.1.0, unexplained** (PRF-02 cold 214 → about 480 ms, warm 201 → about 425 ms). Still far inside the 2,500/1,500 ms budgets. | Certain (measured) | Low | Low priority, doesn't block the release. D-426 re-recorded the baseline so the bench catches the next regression; investigate by bisecting `pnpm bench --only "start times"` across October's commits. | After 1.1.0 |
 
 ## Image risks and assumptions
 
