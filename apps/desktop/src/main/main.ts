@@ -1821,7 +1821,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   // Copies already here (D-415): Documents' "<name>" and "<name> N" folders, the known projects and the open
   // one, kept only when their origin is this repository. Use existing folder takes only a folder offered here.
   let offeredCopies: string[] = [];
-  const copiesOf = async (url: string, name: string): Promise<ExistingCopy[]> => {
+  const copiesOf = async (url: string | readonly string[], name: string): Promise<ExistingCopy[]> => {
     const known = await projects.list().then((l) => l.map((p) => p.folder), () => [] as string[]);
     const candidates = [...homesFor(documentsDir(), name).filter((f) => existsSync(f)), ...known, ...(isWorkspace() ? [notesHome()] : [])];
     const found = await findCopies(setupRunner, url, candidates, () => logLine("copies: a folder couldn't be read, so it isn't offered"));
@@ -1833,7 +1833,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   handle("projects:githubCopies", async (owner: unknown, name: unknown): Promise<ExistingCopy[]> => {
     if (typeof owner !== "string" || !/^[A-Za-z0-9-]{1,39}$/.test(owner) || typeof name !== "string" || !isRepoName(name)) throw new Error("Not a repository");
     if (reviewGitHub && !reviewRemotes) return [];
-    return copiesOf(githubUrl(owner, name), name);
+    return copiesOf([githubUrl(owner, name), `https://github.com/${owner}/${name}.git`], name);
   });
   handle("projects:githubRepos", async () => {
     const api = await projectGitHub();
@@ -2700,7 +2700,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   handle("firstRun:cancelClone", () => { if (activeFirstClone) activeFirstClone.requested = true; });
   handle("firstRun:copies", async (owner, name): Promise<ExistingCopy[]> => {
     if (typeof owner !== "string" || !/^[A-Za-z0-9-]{1,39}$/.test(owner) || typeof name !== "string" || !isRepoName(name)) throw new Error("Not a repository");
-    return copiesOf(remoteUrl(owner, name), name);
+    return copiesOf([remoteUrl(owner, name), `https://github.com/${owner}/${name}.git`], name);
   });
   handle("firstRun:useCopy", async (folder): Promise<WorkspaceResult> => {
     if (typeof folder !== "string" || !offeredCopies.includes(folder)) throw new Error("Not a copy that was offered");
