@@ -374,8 +374,13 @@
       {
         "detail": "Owner",
         "id": "u1",
+        "key": "u1",
         "badge": "Owner",
         "login": "prabin",
+        "role": "admin",
+        "pending": false,
+        "again": false,
+        "revoked": false,
         "initials": "PP"
       }
     ]

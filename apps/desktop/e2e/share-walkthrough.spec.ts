@@ -86,10 +86,10 @@ test("Share walk-through: turn on, share a folder with link and access code, rec
       await settings.getByRole("tab", { name: tab, exact: true }).click();
     };
 
-    // 1. Not set up: no Share… in Files; Settings → Sharing offers Turn on sharing….
+    // 1. Not set up: Share… is already in Files (it starts with turning sharing on, D-418); Settings → Sharing offers Turn on sharing….
     await files();
     await page.getByRole("treeitem", { name: "trips", exact: true }).click({ button: "right" });
-    await expect(page.getByRole("menuitem", { name: "Share…", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("menuitem", { name: "Share…", exact: true })).toBeVisible();
     await page.keyboard.press("Escape");
     await openSettings("Sharing");
 

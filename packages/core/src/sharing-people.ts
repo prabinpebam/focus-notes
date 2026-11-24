@@ -19,6 +19,8 @@ export function registerSharingPeople(ctx: {
   const { store, commands, viewModels, catalog, tracker } = ctx;
   const state = { open: false, user: "", role: "read", busy: false, loading: false, problem: "", status: "", step: "" };
   let project: ProjectPeople | undefined;
+  // The row action that last failed, run again by Retry in Settings.
+  let retry: (() => Promise<void>) | undefined;
   const people = ctx.access?.people;
   const changed = () => store.update(s => ({ ...s }));
   const set = (patch: Partial<typeof state>) => { Object.assign(state, patch); changed(); };
@@ -32,6 +34,7 @@ export function registerSharingPeople(ctx: {
     commands.register<A>({ id, title: "share.invite.people", run });
   reg<Record<string, never>>("sharing.peopleLoad", async () => {
     if (!people || state.loading || state.busy) return;
+    retry = undefined;
     set({ loading: true, problem: "" });
     try {
       project = await tracker.section("sharing.people", "sharing.invite.checking", () => people.load(), "fn:sharing.people", "success");
@@ -54,15 +57,21 @@ export function registerSharingPeople(ctx: {
   const work = async (action: () => Promise<ProjectPeople>, message: string, done = "sharing.invite.accepted") => {
     if (!people || !project || state.busy) return;
     set({ busy: true, problem: "", status: "", step: "check" });
+    retry = undefined;
     try {
       project = await tracker.run("sharing.invite", message, action, done, "fn:sharing.invite", "success");
       const restoreSettings = state.open;
       set({ status: catalog.format(done), open: false, step: "accepted", user: "" });
       if (restoreSettings) settings(true);
     } catch (error) {
+      retry = () => work(action, message, done);
       set({ problem: problem(error) });
     } finally { set({ busy: false }); }
   };
+  reg<Record<string, never>>("sharing.peopleRetry", async () => {
+    if (state.busy || state.loading) return;
+    if (project && retry) await retry(); else await commands.run("sharing.peopleLoad");
+  });
   people?.onStep?.(step => { if (state.busy && ["check", "send", "accepted"].includes(step)) set({ step }); });
   reg<Record<string, never>>("sharing.inviteSend", async () => {
     if (state.busy || !project || !people) return;
@@ -77,6 +86,16 @@ export function registerSharingPeople(ctx: {
     const repository = project.repository;
     await work(() => people.cancel(repository, Number(id)), "sharing.invite.cancelling", "sharing.invite.cancelled");
   });
+  reg<{ login: string; role: string }>("sharing.inviteAgain", async ({ login, role }) => {
+    if (!project || !people || typeof login !== "string") return;
+    const repository = project.repository, as = project.owner === "personal" ? "write" : role;
+    await work(() => people.invite(repository, login, as), "sharing.invite.saving");
+  });
+  reg<{ login: string }>("sharing.inviteDismiss", async ({ login }) => {
+    if (!project || !people?.dismiss || typeof login !== "string") return;
+    const repository = project.repository, dismiss = people.dismiss;
+    await work(() => dismiss(repository, login), "sharing.invite.dismissing", "sharing.invite.dismissed");
+  });
   reg<Record<string, never>>("sharing.inviteManage", async () => {
     if (!project || !people) return;
     try { await people.manage(project.repository); } catch (error) { set({ problem: problem(error) }); }
@@ -88,13 +107,13 @@ export function registerSharingPeople(ctx: {
     schema: { type: "object", properties: {
       available: bool, ready: bool, open: bool, user: str, role: str, owner: str, org: bool, personal: bool, busy: bool, problem: str, canSend: bool, canOpen: bool, canRetry: bool, detail: str, status: str, stepLabel: str, repository: str, feedback: str, feedbackTone: str, sendLabel: str, target: str,
       roles: { type: "array", items: { type: "object", properties: { id: str, label: str } } },
-      people: { type: "array", items: { type: "object", properties: { id: str, login: str, initials: str, detail: str, badge: str } } },
+      people: { type: "array", items: { type: "object", properties: { id: str, key: str, login: str, role: str, initials: str, detail: str, badge: str, pending: bool, again: bool, revoked: bool } } },
     } },
     select: () => ({
       ...state, available: Boolean(people), ready: Boolean(project), owner: project?.owner ?? "personal",
       repository: project?.repository ?? "", org: project?.owner === "org", personal: project?.owner !== "org",
       canSend: Boolean(project && state.user.trim()) && !state.busy, canOpen: Boolean(project) && !state.loading && !state.busy,
-      canRetry: !project && Boolean(state.problem) && !state.loading && !state.busy,
+      canRetry: (!project || Boolean(retry)) && Boolean(state.problem) && !state.open && !state.loading && !state.busy,
       detail: state.loading ? catalog.format("sharing.invite.checking") : state.problem && !state.open ? state.problem : state.busy ? catalog.format(`sharing.invite.step.${state.step}`) : state.status || catalog.format("share.invite.notShare"),
       stepLabel: state.busy ? catalog.format(`sharing.invite.step.${state.step}`) : "",
       feedback: state.problem || (state.busy ? catalog.format(`sharing.invite.step.${state.step}`) : ""),
@@ -102,10 +121,14 @@ export function registerSharingPeople(ctx: {
       sendLabel: catalog.format(state.problem ? "sharing.invite.retry" : "share.invite.send"),
       target: catalog.format("sharing.invite.target", { repository: project?.repository ?? "", role: catalog.format(project?.owner === "org" ? `sharing.role.${state.role}` : "share.invite.collaborator") }),
       roles: (project?.roles ?? roles).map(id => ({ id, label: catalog.format(`sharing.role.${id}`) })),
-      people: (project?.people ?? []).map(p => ({
-        id: String(p.id), login: p.login, initials: initials(p.login),
-        detail: catalog.format("share.invite.pendingDetail", { owner: project?.owner ?? "personal", role: p.role }), badge: catalog.format("share.invite.pending"),
-      })),
+      people: (project?.people ?? []).map(p => {
+        const s = p.state ?? "pending";
+        return {
+          id: String(p.id), key: `${s}:${p.id}`, login: p.login, role: p.role, initials: initials(p.login),
+          detail: catalog.format(`share.invite.${s}Detail`, { owner: project?.owner ?? "personal", role: p.role }), badge: catalog.format(`share.invite.${s}`),
+          pending: s === "pending", again: s === "expired" || s === "revoked", revoked: s === "revoked",
+        };
+      }),
     }),
   });
 }

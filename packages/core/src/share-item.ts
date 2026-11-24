@@ -5,7 +5,7 @@ import type { MessageCatalog } from "./messages.ts";
 import type { Store } from "./store.ts";
 import type { TaskTracker } from "./tasks.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
-import type { AccessBridge } from "./share-manage.ts";
+import { sharingAvailable, type AccessBridge } from "./share-manage.ts";
 import { findNode, joinPath, rootOf, stemOf, type TreeNode } from "./workspace.ts";
 import { audienceState, expiryFrom, expiryUntil, itemInviteText, passcodeProblem, type Audience, type ExpiryChoice } from "@focus-notes/seal/access";
 
@@ -102,7 +102,8 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
   };
   const row = (id: string) => store.state.ui.share.listing?.grants.find((g) => g.id === id && matchesItem(store.state, g));
   const fail = (error: unknown) => {
-    const code = /access:([A-Za-z.]+)/.exec(error instanceof Error ? error.message : "")?.[1];
+    // The last match: Electron prefixes the channel ("Error invoking remote method 'access:ready': …").
+    const code = [...(error instanceof Error ? error.message : "").matchAll(/access:([A-Za-z.]+)/g)].at(-1)?.[1];
     const signedOut = code === "signedOut" || code === "auth";
     const message = code === "offline" ? "share.item.offline" : signedOut ? "share.item.signedOut"
       : code === "scope.changed" ? "share.item.contentsChanged" : code === "notReady" ? "share.item.notReady"
@@ -119,7 +120,9 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
       if (current !== generation) return;
       store.update(s => ({ ...s, ui: { ...s.ui, share: { ...s.ui.share, listing } } }));
       set({ loadFailed: false, problem: "" });
-      if (listing.localReview && (store.state.ui.share.settings.off || !listing.site)) await commands.run("sharing.firstOpen", { resume: true });
+      // Sharing off in a project that can turn it on: the first-share confirmation, then this item's dialog (D-418).
+      const firstShare = listing.localReview ? store.state.ui.share.settings.off || !listing.site : !sharingAvailable(store.state) && Boolean(listing.available && listing.setupAvailable);
+      if (firstShare) await commands.run("sharing.firstOpen", { resume: true });
     } catch (error) {
       if (current === generation) {
         console.error("Sharing preparation failed", opErrorCode(error));

@@ -4,7 +4,7 @@ import en from "../../views/messages/en.json" with { type: "json" };
 
 async function fixture(owner: "org" | "personal" = "personal") {
   const listed: ProjectPeople = { repository: "ada/book", owner, roles: owner === "personal" ? ["write"] : ["read", "triage", "write", "maintain", "admin"], people: [] };
-  const people = { load: vi.fn(async () => listed), invite: vi.fn(async () => ({ ...listed, people: [{ id: 1, login: "octocat", role: "write" }] })), cancel: vi.fn(async () => listed), manage: vi.fn(async () => {}) };
+  const people = { load: vi.fn(async () => listed), invite: vi.fn(async () => ({ ...listed, people: [{ id: 1, login: "octocat", role: "write" }] })), cancel: vi.fn(async () => listed), dismiss: vi.fn(async () => listed), manage: vi.fn(async () => {}) };
   const save = vi.fn(async () => {});
   const bridge: PlatformBridge = {
     platform: "windows", readNote: async () => "# A\n", writeNote: async () => {}, chooseNote: async () => undefined,
@@ -64,4 +64,30 @@ it("does not expose a stale invitations list after reload loses project access",
   t.people.load.mockRejectedValueOnce(new Error("invite:unlinked"));
   await t.run("sharing.peopleLoad");
   expect(t.vm()).toMatchObject({ ready: false, canOpen: false, people: [], detail: en["sharing.invite.unlinked"] });
+});
+
+it("G2/D7: shows accepted, expired and revoked rows with their actions, and Retry repeats a failed row action", async () => {
+  const t = await fixture();
+  const states: ProjectPeople = { repository: "ada/book", owner: "personal", roles: ["write"], people: [
+    { id: 1, login: "grace", role: "write", state: "expired" }, { id: 2, login: "linus", role: "write", state: "revoked" },
+    { id: 3, login: "octocat", role: "write", state: "accepted" }, { id: 4, login: "ada2", role: "write" },
+  ] };
+  t.people.load.mockResolvedValueOnce(states);
+  await t.run("sharing.peopleLoad");
+  expect(t.vm().people).toEqual([
+    expect.objectContaining({ login: "grace", badge: en["share.invite.expired"], again: true, pending: false, revoked: false, detail: en["share.invite.expiredDetail"] }),
+    expect.objectContaining({ login: "linus", badge: en["share.invite.revoked"], again: true, revoked: true, detail: en["share.invite.revokedDetail"] }),
+    expect.objectContaining({ login: "octocat", badge: en["share.invite.accepted"], again: false, pending: false, detail: "Accepted as a collaborator · can open the whole project on GitHub" }),
+    expect.objectContaining({ login: "ada2", badge: en["share.invite.pending"], pending: true }),
+  ]);
+  t.people.invite.mockRejectedValueOnce(new Error("invite:offline"));
+  await t.run("sharing.inviteAgain", { login: "grace", role: "read" });
+  expect(t.people.invite).toHaveBeenLastCalledWith("ada/book", "grace", "write");
+  expect(t.vm()).toMatchObject({ canRetry: true, problem: en["sharing.invite.offline"], ready: true });
+  await t.run("sharing.peopleRetry");
+  expect(t.people.invite).toHaveBeenCalledTimes(2);
+  expect(t.vm()).toMatchObject({ canRetry: false, problem: "", status: en["sharing.invite.accepted"] });
+  await t.run("sharing.inviteDismiss", { login: "linus" });
+  expect(t.people.dismiss).toHaveBeenCalledWith("ada/book", "linus");
+  expect(t.vm()).toMatchObject({ status: en["sharing.invite.dismissed"] });
 });

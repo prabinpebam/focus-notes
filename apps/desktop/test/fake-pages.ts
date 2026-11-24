@@ -82,6 +82,8 @@ export function gitData(github: FakeGitHub) {
  */
 export async function serveFakeGitHub(github: FakeGitHub, git = gitData(github)): Promise<{ origin: string; server: Server; git: ReturnType<typeof gitData>; close(): Promise<void> }> {
   const server = createServer(async (req, res) => {
+    // Offline: the connection drops, as a real network failure does.
+    if (github.offline) { req.socket.destroy(); return; }
     try {
       const chunks: Buffer[] = [];
       for await (const chunk of req) chunks.push(chunk as Buffer);

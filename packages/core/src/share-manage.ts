@@ -44,12 +44,18 @@ export interface ProjectPeople {
   repository: string;
   owner: "org" | "personal";
   roles: ("read" | "triage" | "write" | "maintain" | "admin")[];
-  people: { id: number; login: string; role: string }[];
+  /** `state` missing means pending (an older main process). */
+  people: { id: number; login: string; role: string; state?: "pending" | "expired" | "accepted" | "revoked" }[];
 }
 
 export function sharingAvailable(state: { ui: { share: ShareManageState } }): boolean {
   const share = state.ui.share;
   return Boolean(share.listing?.available && (share.listing.localReview || share.listing.site && (share.listing.configured || share.listing.vault)) && !share.settings.off);
+}
+/** Share… is offered when sharing is on, or when this project can turn it on from the first share (D-418). */
+export function shareEntryAvailable(state: { ui: { share: ShareManageState } }): boolean {
+  const listing = state.ui.share.listing;
+  return sharingAvailable(state) || Boolean(listing?.available && (listing.setupAvailable || listing.localReview));
 }
 /** The desktop's access.json (D-134). Absent in the browser. */
 export interface AccessBridge {
@@ -63,6 +69,7 @@ export interface AccessBridge {
     load(): Promise<ProjectPeople>;
     invite(repository: string, login: string, role: string): Promise<ProjectPeople>;
     cancel(repository: string, id: number): Promise<ProjectPeople>;
+    dismiss?(repository: string, login: string): Promise<ProjectPeople>;
     manage(repository: string): Promise<void>;
     onStep?(listener: (step: string) => void): () => void;
   };

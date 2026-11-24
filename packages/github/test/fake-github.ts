@@ -26,8 +26,10 @@ export interface FakeRepo {
   pages?: { build_type: "workflow" | "legacy"; html_url: string };
   canPush: boolean;
   ownerType: "User" | "Organization";
-  invitations: { id: number; invitee: { login: string }; permissions: string }[];
+  invitations: { id: number; invitee: { login: string }; permissions: string; expired?: boolean }[];
   collaborators: Set<string>;
+  /** A collaborator's GitHub role name ("write" when not set). */
+  collaboratorRoles: Map<string, string>;
   /** Git Data blobs by object ID, as exact bytes. */
   blobs: Map<string, Uint8Array>;
   /** When it was last pushed to (ISO 8601), if known. */
@@ -52,6 +54,8 @@ export class FakeGitHub {
   /** Every request as sent, headers included, for checking where the token went. */
   readonly raw: { url: string; init?: RequestInit }[] = [];
   offline = false;
+  /** The token stops working, as after it is revoked: every request answers 401. */
+  revoked = false;
   beforeRequest?: (method: string, path: string) => Promise<void>;
   /** Other accounts, by token: they can only ask who they are (`GET /user`), for switching account. */
   readonly others = new Map<string, { login: string; id: number; name: string }>();
@@ -84,7 +88,7 @@ export class FakeGitHub {
       owner: r.owner, name: r.name, private: r.private ?? false, isTemplate: r.isTemplate ?? false,
       ...(r.template ? { template: r.template } : {}),
       files: new Set(r.files ?? []), fileContents: new Map(), keys: [], secrets: new Map(), actionsKey: nacl.box.keyPair(), canPush: r.canPush ?? true,
-      ownerType: r.ownerType ?? "User", invitations: [], collaborators: new Set(), blobs: new Map(),
+      ownerType: r.ownerType ?? "User", invitations: [], collaborators: new Set(), collaboratorRoles: new Map(), blobs: new Map(),
     };
     this.repos.set(`${r.owner}/${r.name}`, repo);
     return repo;
@@ -122,7 +126,7 @@ export class FakeGitHub {
     this.calls.push({ method, path, ...(body !== undefined ? { body } : {}) });
     const auth = new Headers(init?.headers).get("Authorization") ?? "";
     const other = this.others.get(auth.replace(/^Bearer /, ""));
-    if (auth !== "Bearer " + this.token && !(auth.startsWith("Bearer ") && other)) return json(401, { message: "Bad credentials" });
+    if (this.revoked || auth !== "Bearer " + this.token && !(auth.startsWith("Bearer ") && other)) return json(401, { message: "Bad credentials" });
     if (other) return method === "GET" && path === "/user" ? json(200, other) : json(403, { message: "Resource not accessible" });
     const planned = this.failures.get(`${method} ${path}`)?.shift();
     if (planned) return json(planned.status, { message: planned.message });
@@ -205,6 +209,11 @@ export class FakeGitHub {
     if (rest === "/invitations" && method === "GET") {
       const page = Number(query.get("page") ?? 1), size = Number(query.get("per_page") ?? 100);
       return json(200, repo.invitations.slice((page - 1) * size, page * size));
+    }
+    if (rest === "/collaborators" && method === "GET") {
+      const page = Number(query.get("page") ?? 1), size = Number(query.get("per_page") ?? 100);
+      const people = [...repo.collaborators].map((login, index) => ({ id: 9000 + index, login, role_name: repo.collaboratorRoles.get(login) ?? "write" }));
+      return json(200, people.slice((page - 1) * size, page * size));
     }
     const collaborator = /^\/collaborators\/([^/]+)$/.exec(rest);
     if (collaborator && method === "GET") return repo.collaborators.has(collaborator[1]!) ? json(204) : json(404, { message: "Not Found" });

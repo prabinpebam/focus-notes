@@ -283,6 +283,7 @@ contextBridge.exposeInMainWorld("focusNotes", {
       load: () => ipcRenderer.invoke("sharing:people"),
       invite: (repository: string, login: string, role: string) => ipcRenderer.invoke("sharing:invite", repository, login, role),
       cancel: (repository: string, id: number) => ipcRenderer.invoke("sharing:cancelInvite", repository, id),
+      dismiss: (repository: string, login: string) => ipcRenderer.invoke("sharing:dismissInvite", repository, login),
       manage: (repository: string) => ipcRenderer.invoke("sharing:managePeople", repository),
       onStep: (listener: (step: string) => void) => {
         const handler = (_event: unknown, step: unknown) => { if (typeof step === "string") listener(step); };
