@@ -19,7 +19,7 @@ export interface SiteAssets {
 export interface SiteSource {
   /** site/landing.json: the landing page (D-174). */
   landing: LandingContent;
-  /** Plain pages by their address (`privacy/`, `demo/`), from site/<name>.md. */
+  /** Plain pages by their address (`privacy/`), from site/<name>.md. */
   pages: readonly { path: string; markdown: string }[];
   /**
    * The help pages in the Slate docs (documentations/help/*.md, D-181): their old addresses on the site,
@@ -72,5 +72,7 @@ export function renderSite(src: SiteSource, o: SiteOptions): SiteFile[] {
   for (const page of src.helpPages) redirect(`help/${page}/`, `documentations/#help/${page}.md`);
   // Downloads are the landing page's last section (D-184): the old page's address goes there.
   redirect("download/", SITE_PATHS.download, en.format("site.nav.download"), en.format("site.download.redirect"));
+  // The browser demo is retired (D-292): its old address goes to the downloads, never to an editor.
+  redirect("demo/", SITE_PATHS.download, en.format("site.nav.download"), en.format("site.download.redirect"));
   return out;
 }

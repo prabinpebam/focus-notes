@@ -196,7 +196,7 @@ describe("D-167: the owner's app moves to /app/, and share links keep working at
 
   it("the content's folders: the landing page and plain pages; the help pages come from the docs", async () => {
     const c = await readContent(content);
-    expect(c.pages.map((p) => p.path)).toEqual(["privacy/", "demo/"]);
+    expect(c.pages.map((p) => p.path)).toEqual(["privacy/"]);
     expect(c.helpPages).toHaveLength(10);
   });
 });

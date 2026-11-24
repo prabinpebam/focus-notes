@@ -22,7 +22,7 @@ const TYPES: Record<string, string> = {
 };
 const web = join(import.meta.dirname, "..");
 const repo = join(web, "..", "..");
-const PAGES = ["", "demo/", "privacy/"];
+const PAGES = ["", "privacy/"];
 let site = "";
 let server: Server;
 let origin = "";
@@ -105,6 +105,10 @@ test("the site's navigation reaches each address, the skip link goes to the cont
   await expect(page.getByRole("link", { name: "Download from GitHub" })).toHaveAttribute("href", "https://github.com/prabinpebam/focus-notes/releases/latest");
   await page.goto(`${origin}/download/`);
   await expect(page).toHaveURL(`${origin}/#download`);
+  // The browser demo is retired (D-292): its old address reaches the downloads, with no editor.
+  await page.goto(`${origin}/demo/`);
+  await expect(page).toHaveURL(`${origin}/#download`);
+  await expect(page.locator("[contenteditable]")).toHaveCount(0);
   await page.getByRole("link", { name: "Privacy" }).click();
   await expect(page).toHaveURL(`${origin}/privacy/`);
   await page.getByRole("link", { name: "Focus Notes", exact: true }).click();
