@@ -7421,6 +7421,7 @@
         "vm.unlock",
         "vm.about",
         "vm.files",
+        "vm.opened",
         "vm.findAll",
         "vm.move",
         "vm.confirm",

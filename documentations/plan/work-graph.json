@@ -269,10 +269,10 @@
     },
     {
       "id": "WP-P.24", "stage": "Later", "title": "Opened files in Files",
-      "summary": "D-410 (owner, 23 November 19:38): the notes open now as bordered vertical tab buttons above Pinned, with a file icon, the name and a close × on hover and keyboard focus; one click activates; the Opened files header's ⋯ holds Close all with no confirmation; the section is absent with nothing open; open notes leave Recent. Design: OpenedFiles primitive and the gallery mock (Mocks: Opened files) on vq-opened-files-23nov. Not a 1.1.0 blocker: joins 1.1.0 only if the owner approves and its landing doesn't delay the gate.",
+      "summary": "D-410 (owner, 23 November 19:38; approved 24 November 11:43): the notes open now as bordered vertical tab buttons above Pinned, with a file icon, the name and a close × on hover and keyboard focus; one click activates; the Opened files header's ⋯ holds Close all with no confirmation; the section is absent with nothing open; open notes leave Recent. Wired into canvas.view.json over vm.opened with files.activateOpened, files.closeOpened and files.closeAllOpened; unit tests in packages/core/test/opened-files.test.ts and built journey in apps/desktop/e2e/opened-files.spec.ts.",
       "requirements": ["FIL-20"], "dependsOn": ["WP-P.6"],
       "touches": ["core", "views", "ui", "tokens"], "reviews": ["code", "design-system", "accessibility"],
-      "specs": ["design/views/files.html#opened-files"], "lookahead": false, "status": "design"
+      "specs": ["design/views/files.html#opened-files"], "lookahead": false, "status": "verifying"
     },
     {
       "id": "WP-AI.15", "stage": "MAI", "title": "Single-list AI default choice",
