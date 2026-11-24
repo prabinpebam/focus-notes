@@ -1866,6 +1866,7 @@
   "repoBackup.waiting": "{what} waiting for backup",
   "repoBackup.task": "Backing up…",
   "repoBackup.done": "{name} backed up",
+  "repoBackup.unknown": "Couldn't check what waits for backup",
   "repoBackup.action": "Back up to GitHub",
   "command.repoBackup.backUp": "Back up to GitHub",
   "toast.signedOut": "Signed out of GitHub on this computer, in the app and in the terminal.",

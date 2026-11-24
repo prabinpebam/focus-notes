@@ -48,6 +48,8 @@ export function repoStateOf(entry: RepoBackupEntry | undefined, sync: SyncState)
   if (!sync.git || !entry?.report) return "savedLocal";
   // No remote: its commits stay here, so it's never backed up, only saved (D-pending).
   if (entry.report.remote === false) return entry.problem ? "error" : "savedLocal";
+  // Git couldn't say what waits: saved here is all that's known (D-414).
+  if (entry.report.unknown) return entry.backingUp ? "syncing" : entry.problem ? "error" : "savedLocal";
   const waiting = waitingOf(entry.report);
   if (entry.backingUp || (sync.syncing && waiting > 0)) return "syncing";
   const problem = entry.problem ?? (waiting > 0 ? sync.problem : undefined);
@@ -80,7 +82,7 @@ export function repoBackupView(repo: RepoId, entry: RepoBackupEntry | undefined,
     canBackUp: sync.git && !noRemote && !backingUp && Boolean(entry?.report),
     backupTime: noRemote ? catalog.format("save.backup.none")
       : at === undefined ? catalog.format("save.backup.unknown") : catalog.format("save.backup.last", { time: backupDate.format(at) }),
-    waitingText: noRemote ? catalog.format("save.backup.local") : backingUp ? catalog.format("save.backup.progress") : waitingText(entry?.report, catalog),
+    waitingText: noRemote ? catalog.format("save.backup.local") : backingUp ? catalog.format("save.backup.progress") : entry?.report?.unknown ? catalog.format("repoBackup.unknown") : waitingText(entry?.report, catalog),
     backupReason: catalog.format(backingUp ? "save.backup.progress" : "save.backup.local"),
     icon: state === "error" ? "warning" : noRemote ? "hardDrive" : state === "offline" ? "cloudOff" : backingUp ? "cloudUp" : state === "synced" ? "cloudCheck" : "cloud",
     tone: state === "error" || state === "offline" ? "danger" : backingUp ? "accent" : state === "synced" ? "success" : "neutral",
@@ -123,7 +125,7 @@ export function registerRepoBackup<S extends { sync: SyncState; repoBackup: Repo
       const same = was?.report && JSON.stringify(was.report) === JSON.stringify(r);
       if (same) continue;
       // Something waited and now nothing does: it's backed up.
-      const done = waitingOf(was?.report) > 0 && waitingOf(r) === 0;
+      const done = waitingOf(was?.report) > 0 && waitingOf(r) === 0 && !r.unknown;
       set(repo, { report: r, ...(done ? { backedUpAt: now(), problem: undefined } : {}) });
     }
   };

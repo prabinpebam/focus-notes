@@ -19,7 +19,7 @@ const catalog = new MessageCatalog("en", {
   "repoBackup.what.files": "{count, plural, one {# file} other {# files}}",
   "repoBackup.what.commits": "{count, plural, one {# saved change} other {# saved changes}}",
   "repoBackup.waiting": "{what} waiting for backup",
-  "repoBackup.task": "Backing up…", "repoBackup.done": "{name} backed up",
+  "repoBackup.task": "Backing up…", "repoBackup.done": "{name} backed up", "repoBackup.unknown": "Couldn't check what waits for backup",
   "save.state.savedLocal": "Saved on this computer", "save.state.pending": "Saved here · not backed up yet", "save.state.syncing": "Backing up…",
   "save.state.synced": "Backed up at {time}", "save.state.syncedNow": "Backed up", "save.state.offline": "Offline · will back up when you're back", "save.state.error": "Couldn't back up · Try again",
   "save.backup.unknown": "No backup recorded in this session", "save.backup.last": "Last backup: {time}",
@@ -65,6 +65,10 @@ describe("a repository's backup state", () => {
     expect(repoStateOf({ report: report("public") }, GIT)).toBe("synced");
     expect(repoStateOf({ report: report("public", { commits: 1 }) }, { git: true, problem: "offline" })).toBe("offline");
     expect(repoStateOf({ report: report("public"), problem: "failed" }, GIT)).toBe("error");
+    // D-414: Git couldn't read its status: saved here is all that's known.
+    const unknown = { report: report("public", { unknown: true }) };
+    expect(repoStateOf(unknown, GIT)).toBe("savedLocal");
+    expect(repoBackupView("public", unknown, GIT, catalog)).toMatchObject({ visible: true, waitingText: "Couldn't check what waits for backup", stateText: "Saved on this computer" });
   });
   it("names the button with its section and state", () => {
     const at = new Date(2026, 9, 18, 10, 36).getTime();

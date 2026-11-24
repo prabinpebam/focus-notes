@@ -79,6 +79,16 @@ describe("FIL-14: what waits in each repository", () => {
     expect((await deletionCheck(createRunner(), ws, repos)).unsynced).toEqual(["private/notes/Untitled.md"]);
   });
 
+  it("D-414: when Git can't read a repository's status, it's unknown in the save state and the card, never nothing waiting", async () => {
+    const { ws } = instance();
+    const s = await open(ws);
+    expect((await s.status()).unknown).toBeUndefined();
+    writeFileSync(join(ws, ".git", "index"), "not an index");
+    s.changed();
+    expect(await s.status()).toMatchObject({ unknown: true });
+    expect((await s.repos()).find((r) => r.repo === "public")).toMatchObject({ unknown: true, notes: 0, commits: 0 });
+  });
+
   it("a rename from outside the notes folder is left alone: never a delete there in Back up's name", async () => {
     const { ws, notesRemote } = instance();
     const s = await open(ws);

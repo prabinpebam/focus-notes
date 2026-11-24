@@ -83,6 +83,21 @@ describe("EDT-11: save and sync", () => {
     expect(t.save()).toMatchObject({ state: "savedLocal", backupTime: "No backup recorded in this session" });
   });
 
+  it("D-414: Git failing to read the status shows Saved on this computer, never Backed up or waiting, and records no backup", async () => {
+    const t = setup();
+    await t.app.start();
+    await settle();
+    t.report({ git: true, state: "idle", waiting: 2, remote: true });
+    t.report({ git: true, state: "idle", waiting: 0, remote: true, unknown: true });
+    expect(t.app.store.state.sync.backedUpAt).toBeUndefined();
+    const card = t.save();
+    expect(card).toMatchObject({ state: "savedLocal", label: "Saved on this computer", waitingText: en["repoBackup.unknown"] });
+    expect(JSON.stringify(card)).not.toMatch(/Backed up|No changes waiting/);
+    // Read again: the true state returns.
+    t.report({ git: true, state: "idle", waiting: 0, remote: true });
+    expect(t.save()).toMatchObject({ state: "synced" });
+  });
+
   it("D-pending: a project with Git but no remote shows Saved on this computer, never Backed up or the cloud check", async () => {
     const t = setup();
     await t.app.start();
