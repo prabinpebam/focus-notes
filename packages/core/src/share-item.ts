@@ -128,7 +128,7 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
   reg("share.item.reload", async () => {
     if (state().open && !state().busy && !state().preparing) await loadListing(generation);
   });
-  const template = () => ["title", "link", "code", "until", "forward", "copies"].map((key) =>
+  const template = () => ["title", "link", "code", "until"].map((key) =>
     catalog.format(`share.item.information.${key}`, { title: "{title}", link: "{link}", site: "{site}", accessCode: "{accessCode}", expires: "{expires}" })).join("\n");
   const prepareWords = async () => {
     if (!editable()) return;

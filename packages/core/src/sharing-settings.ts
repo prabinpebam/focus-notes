@@ -109,7 +109,7 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
     const what = action === "link" ? "link" : action === "accessCode" ? "accessCode" : "information";
     await work(async () => {
       if (access.ready) await access.ready(id);
-      const template = ["title", "link", "code", "until", "forward", "copies"].map(key =>
+      const template = ["title", "link", "code", "until"].map(key =>
         catalog.format(`share.item.information.${key}`, { title: "{title}", link: "{link}", site: "{site}", accessCode: "{accessCode}", expires: "{expires}" })).join("\n");
       await access.copy(id, what, { template });
     }, "copied");

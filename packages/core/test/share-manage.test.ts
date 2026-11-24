@@ -530,7 +530,7 @@ describe("item-first sharing (SHR-13 to SHR-16, SHR-24)", () => {
     expect(t.vm("vm.shareItem")).toMatchObject({ busy: true, ready: false });
     finish();
     await action;
-    expect(t.copied.at(-1)).toContain("Open: https://ada.github.io/notes/s/#");
+    expect(t.copied.at(-1)).toContain("Open it here: https://ada.github.io/notes/s/#");
     expect(t.vm("vm.shareItem")).toMatchObject({ busy: false, ready: true });
     t.bridge.access!.ready = async () => {};
     await t.run("share.item.action", { what: "link" });
