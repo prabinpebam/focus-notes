@@ -26,6 +26,22 @@ it("G3.1/G3.3: stages exactly the confirmed notes, byte for byte, and nothing el
   expect(await readFile(join(root, "trips", "trip.md"), "utf8")).toBe(text);
 });
 
+it("D-419: a link to a note that isn't on the site becomes its text; links to published notes, the web and code stay", async () => {
+  const text = [
+    "# Trip", "", "See [my journal](../diary.md \"Private\") and [Rome](rome.md#day-1), [web](https://example.com), [top](#trip).",
+    "Also [secret][d] and [plan] and <a href=\"../diary.md\">old notes</a>.", "", "```", "[kept](../diary.md)", "```", "",
+    "[d]: ../diary.md", "[plan]: <../plans/2026.md>", "",
+  ].join("\n");
+  const { root, staging } = await notes({ "trips/trip.md": text, "trips/rome.md": "# Rome", "diary.md": "# Diary", "plans/2026.md": "# Plan" });
+  await stagePublicSelection({ notesRoot: root, selection: { notes: ["trips/trip.md", "trips/rome.md"] }, staging });
+  const out = await readFile(join(staging, "trips", "trip.md"), "utf8");
+  expect(out).toContain("See my journal and [Rome](rome.md#day-1), [web](https://example.com), [top](#trip).");
+  expect(out).toContain("Also secret and plan and old notes.");
+  expect(out).toContain("```\n[kept](../diary.md)\n```");
+  expect(out.replace(/```[\s\S]*?```/, "")).not.toMatch(/diary|plans/);
+  expect(await readFile(join(root, "trips", "trip.md"), "utf8")).toBe(text);
+});
+
 it("G3.3: a note added to a confirmed folder stops for reconfirmation instead of widening, staging nothing", async () => {
   const { root, staging } = await notes({ "trips/a.md": "# A", "trips/b.md": "# B" });
   const selection = { notes: ["trips/a.md"], folders: ["trips"] };

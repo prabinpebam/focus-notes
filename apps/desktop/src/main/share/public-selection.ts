@@ -14,6 +14,37 @@ const NOTE = /\.(md|markdown)$/i;
 /** Markdown images (`![alt](src "title")`) and HTML images (`<img src>`). */
 const IMAGE_REFS = /!\[[^\]]*\]\(\s*<?([^)\s>]+)>?(?:\s+["'][^"']*["'])?\s*\)|<img\b[^>]*\bsrc\s*=\s*["']?([^"'\s>]+)/gi;
 
+/** Inline links (`[text](target "title")`, never images) and reference definitions (`[id]: target`). */
+const INLINE_LINK = /(?<!!)\[((?:[^[\]\\]|\\.|\[[^\]]*\])*)\]\(\s*<?([^)\s>]*)>?(?:\s+["'][^"']*["'])?\s*\)/g;
+const REFERENCE = /^ {0,3}\[([^\]]+)\]:\s*<?(\S+?)>?(?:\s+["'(].*)?$/gm;
+const HTML_LINK = /<a\b[^>]*\bhref\s*=\s*["']?([^"'\s>]+)[^>]*>([\s\S]*?)<\/a>/gi;
+
+/**
+ * A public note never links to a private one (AGENTS.md, D-419): a local link whose target isn't a note
+ * on the site becomes its plain text, so neither the private note's name nor its path is published.
+ * Web, mail and in-page links stay. Fenced code is left as written.
+ */
+export function unlinkPrivate(text: string, note: string, published: ReadonlySet<string>): string {
+  const keep = (target: string) => {
+    if (!target || target.startsWith("#") || /^[a-z][a-z0-9+.-]*:/i.test(target)) return true;
+    let decoded: string;
+    try { decoded = decodeURI(target.split(/[?#]/)[0]!); } catch { return false; }
+    if (decoded.startsWith("/")) return false;
+    return published.has(posix.normalize(posix.join(posix.dirname(note), decoded)));
+  };
+  const parts = text.split(/(^ {0,3}(?:```|~~~)[\s\S]*?(?:^ {0,3}(?:```|~~~)[^\n]*$|(?![\s\S])))/m);
+  const dropped = new Set<string>();
+  for (let i = 0; i < parts.length; i += 2) parts[i] = parts[i]!.replace(REFERENCE, (line, id: string, target: string) => keep(target) ? line : (dropped.add(id.toLowerCase()), ""));
+  return parts.map((part, i) => {
+    if (i % 2) return part;
+    let out = part.replace(INLINE_LINK, (link, label: string, target: string) => keep(target) ? link : label);
+    out = out.replace(HTML_LINK, (link, target: string, label: string) => keep(target) ? link : label);
+    if (dropped.size) out = out.replace(/(?<!!)\[([^\]]+)\](?:\[([^\]]*)\])?/g, (ref, label: string, id?: string) =>
+      dropped.has((id || label).toLowerCase()) ? label : ref);
+    return out;
+  }).join("");
+}
+
 async function notesIn(root: string, folder: string): Promise<string[]> {
   const out: string[] = [];
   const walk = async (rel: string) => {
@@ -47,7 +78,8 @@ function localImage(notesPrefix: string, note: string, src: string): string | un
 
 /**
  * Copies exactly the confirmed notes, as they are on disk now, into `staging` for sealing as public
- * notes (G3.1, G3.3). Never widens: a note added to a confirmed folder since confirmation stops with
+ * notes (G3.1, G3.3), with links to notes that aren't on the site reduced to their text (`unlinkPrivate`).
+ * Never widens: a note added to a confirmed folder since confirmation stops with
  * `sharing:scope` (reconfirm), as does a missing or linked note. Each local JPEG or PNG a note shows is
  * staged in `staging/.media/<site path>` with its location, camera and other metadata removed (WP-9.9);
  * its site path mirrors its project path (notes at `notes/`), so the published note's links resolve.
@@ -71,7 +103,10 @@ export async function stagePublicSelection(o: { notesRoot: string; projectRoot?:
     const file = join(o.notesRoot, ...path.split("/"));
     const info = await lstat(file).catch(() => undefined);
     if (!info?.isFile()) throw fail("scope");
-    const bytes = await readFile(file);
+    const original = await readFile(file);
+    const text = original.toString("utf8");
+    const scrubbed = unlinkPrivate(text, path, confirmed);
+    const bytes = scrubbed === text ? original : Buffer.from(scrubbed, "utf8");
     staged.set(path, bytes);
     for (const match of bytes.toString("utf8").matchAll(IMAGE_REFS)) {
       const image = localImage(notesPrefix, path, (match[1] ?? match[2])!);

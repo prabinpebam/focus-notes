@@ -1,4 +1,4 @@
-import { cp, mkdtemp, readFile, realpath, rm, stat } from "node:fs/promises";
+import { cp, mkdtemp, readFile, realpath, rm, stat, writeFile } from "node:fs/promises";
 import { join, relative, sep } from "node:path";
 import { GitHubError, type GitHubApi } from "@focus-notes/github";
 import { publish } from "@focus-notes/seal/publish";
@@ -10,6 +10,9 @@ import { pagesArtifactPublisher, type DeployedSiteGet } from "./site-publish.ts"
 import { sharedImageDestinations } from "./media.ts";
 import { sharingSetup, sitePairingStore, type SharingSetupStep, type SitePairing } from "./setup.ts";
 
+const exists = (path: string) => stat(path).then(() => true, () => false);
+/** Static, script-free: the site's root sends readers to the published index at `n/`. */
+const HOME_REDIRECT = '<!doctype html>\n<meta charset="utf-8">\n<meta http-equiv="refresh" content="0; url=n/">\n<link rel="canonical" href="n/">\n<title>Published notes</title>\n<a href="n/">Published notes</a>\n';
 /** Notes on the current public site, by notes-root-relative path (G3). Recorded only after their deploy. */
 function parsePublished(text: string): string[] {
   const value = JSON.parse(text) as { version?: unknown; notes?: unknown };
@@ -91,6 +94,17 @@ export function sharingRuntime(deps: {
       guard();
       return parsePublished(text);
     };
+    /**
+     * The recorded notes that are still there: one renamed, moved or deleted since leaves the site at the
+     * next deploy instead of stopping every later Publish or share (D-419); nothing private is added.
+     */
+    const presentPublished = async (): Promise<string[]> => {
+      const notes = await readPublished(), root = layout.privateNotes;
+      if (!root) return notes;
+      const here = await Promise.all(notes.map(p => stat(join(root, ...p.split("/"))).then(s => s.isFile(), () => false)));
+      guard();
+      return notes.filter((_, i) => here[i]);
+    };
     const writePublished = async (notes: readonly string[]) => {
       guard();
       await deps.write(publishedFile, `${JSON.stringify({ version: 1, notes }, null, 2)}\n`);
@@ -100,7 +114,7 @@ export function sharingRuntime(deps: {
     /** Seals and deploys the site with the recorded published notes, or `selection` for a Publish or Unpublish (G3). */
     const build = async (pairing: SitePairing, empty = false, selection?: ConfirmedSelection): Promise<string> => {
       guard();
-      const notes = empty || layout.legacy ? [] : selection?.notes ?? await readPublished();
+      const notes = empty || layout.legacy ? [] : selection?.notes ?? await presentPublished();
       const reader = notes.length ? deps.reader?.() : undefined;
       if (notes.length && (!reader || !layout.privateNotes)) throw new Error("sharing:unavailable");
       const directory = await mkdtemp(join(deps.temporary, "sealed-site-"));
@@ -123,6 +137,8 @@ export function sharingRuntime(deps: {
           await cp(join(page, "site"), directory, { recursive: true, force: false, errorOnExist: false });
           guard();
         }
+        // The paired site is this project's alone: its own address opens the published notes' index (D-419).
+        if (await exists(join(directory, "n", "index.html")) && !await exists(join(directory, "index.html"))) await writeFile(join(directory, "index.html"), HOME_REDIRECT);
         deps.step?.("push");
         if (selection) deps.publishStep?.("publishing");
         const sealed = { directory, build: artifact.build };
@@ -135,7 +151,7 @@ export function sharingRuntime(deps: {
         if (staging) await rm(staging, { recursive: true, force: true });
       }
     };
-    return { root, layout, privateDir, guard, store, read, build, readPublished, writePublished };
+    return { root, layout, privateDir, guard, store, read, build, readPublished, presentPublished, writePublished };
   };
   const service = () => {
     const ctx = bound();
@@ -218,7 +234,7 @@ export function sharingRuntime(deps: {
     if (tasks && tasksRoot === ctx.root) return tasks;
     tasksRoot = ctx.root;
     return tasks = publicPublishing({
-      current: ctx.readPublished,
+      current: ctx.presentPublished,
       record: ctx.writePublished,
       // In the same lane as setup, removal and sharing pushes, so they never interleave on the site.
       deploy: (paths, selection) => serial(async () => {
