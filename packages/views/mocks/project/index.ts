@@ -131,7 +131,6 @@ export const projectMocks = {
     { id: "pnw.deleteConsequences", label: "6. Delete: what's deleted (site, share links, people, private notes, this computer)", view: "delete" },
     { id: "pnw.deleteUnsynced", label: "7. Delete: notes not on GitHub yet, save a copy first", view: "delete", local: { step: "unsynced" } },
     { id: "pnw.deleteUnsyncedSaved", label: "8. Delete: copy saved, continue", view: "delete", local: { step: "unsynced", exported: true } },
-    { id: "pnw.deleteConfirm", label: "9. Delete: type the project's name", view: "delete", local: { step: "confirm" } },
     { id: "pnw.deleteGithub", label: "10. Delete: delete it on GitHub (hand-off), the app notices", view: "delete", local: { step: "github" } },
     { id: "pnw.deleteProgress", label: "11. Delete: progress with named steps", view: "delete", local: { step: "progress" } },
     { id: "pnw.deleteDone", label: "12. Delete: done, Open with one notification pill", view: "deleted" },
