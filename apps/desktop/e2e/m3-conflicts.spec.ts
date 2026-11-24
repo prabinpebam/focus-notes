@@ -106,7 +106,8 @@ test("FIL-12: a sync conflict offers Resolve; Take the other version by keyboard
   const footer = sheet.getByRole("button", { name: /^Recently deleted/ });
   // Tab only once Files is open, so no press goes to the page behind it.
   await expect(footer).toBeVisible({ timeout: 15_000 });
-  await tabTo(page, footer, 20);
+  // Opened files (D-410) adds tab stops before the footer; allow a full cycle of the panel.
+  await tabTo(page, footer, 40);
   await page.keyboard.press("Enter");
   // Showing the list, the footer leads back to the tree (D-189).
   await expect(sheet.getByRole("button", { name: "Browse files" })).toBeVisible();
