@@ -44,7 +44,8 @@ export interface ProjectPeople {
   repository: string;
   owner: "org" | "personal";
   roles: ("read" | "triage" | "write" | "maintain" | "admin")[];
-  people: { id: number; login: string; role: string }[];
+  /** `state` missing means pending (an older main process). */
+  people: { id: number; login: string; role: string; state?: "pending" | "expired" | "accepted" | "revoked" }[];
 }
 
 export function sharingAvailable(state: { ui: { share: ShareManageState } }): boolean {
@@ -63,6 +64,7 @@ export interface AccessBridge {
     load(): Promise<ProjectPeople>;
     invite(repository: string, login: string, role: string): Promise<ProjectPeople>;
     cancel(repository: string, id: number): Promise<ProjectPeople>;
+    dismiss?(repository: string, login: string): Promise<ProjectPeople>;
     manage(repository: string): Promise<void>;
     onStep?(listener: (step: string) => void): () => void;
   };

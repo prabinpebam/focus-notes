@@ -57,7 +57,18 @@ export interface RepositoryInvitation {
   id: number;
   login: string;
   role: string;
+  /** GitHub keeps an invitation nobody accepted within 7 days, marked expired. */
+  expired?: boolean;
 }
+
+/** Someone with direct access to a repository: an invitation they accepted, or an owner's addition. */
+export interface RepositoryCollaborator {
+  id: number;
+  login: string;
+  role: string;
+}
+
+const roleOf = (permission: string) => (permission === "pull" ? "read" : permission === "push" ? "write" : permission);
 
 /** A repository's deploy key, as GitHub lists it. */
 export interface DeployKey {
@@ -170,11 +181,21 @@ export class GitHubApi {
   async invitations(owner: string, repo: string): Promise<RepositoryInvitation[]> {
     const result: RepositoryInvitation[] = [];
     for (let page = 1; ; page++) {
-      const batch = await this.request<{ id: number; invitee: { login: string }; permissions: string }[]>("GET", `/repos/${owner}/${repo}/invitations?per_page=100&page=${page}`);
+      const batch = await this.request<{ id: number; invitee: { login: string }; permissions: string; expired?: boolean }[]>("GET", `/repos/${owner}/${repo}/invitations?per_page=100&page=${page}`);
       for (const invitation of batch) result.push({
-        id: invitation.id, login: invitation.invitee.login,
-        role: invitation.permissions === "pull" ? "read" : invitation.permissions === "push" ? "write" : invitation.permissions,
+        id: invitation.id, login: invitation.invitee.login, role: roleOf(invitation.permissions),
+        ...(invitation.expired === true ? { expired: true } : {}),
       });
+      if (batch.length < 100) return result;
+    }
+  }
+
+  /** People added to the repository directly (not through an organization's teams). */
+  async collaborators(owner: string, repo: string): Promise<RepositoryCollaborator[]> {
+    const result: RepositoryCollaborator[] = [];
+    for (let page = 1; ; page++) {
+      const batch = await this.request<{ id: number; login: string; role_name?: string }[]>("GET", `/repos/${owner}/${repo}/collaborators?affiliation=direct&per_page=100&page=${page}`);
+      for (const person of batch) result.push({ id: person.id, login: person.login, role: roleOf(person.role_name ?? "write") });
       if (batch.length < 100) return result;
     }
   }

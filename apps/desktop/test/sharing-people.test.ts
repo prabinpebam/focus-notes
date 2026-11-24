@@ -1,7 +1,7 @@
 import { expect, it } from "vitest";
 import { GitHubApi } from "@focus-notes/github";
 import { FakeGitHub } from "../../../packages/github/test/fake-github.ts";
-import { projectPeople } from "../src/main/share/people.ts";
+import { memoryInvitations, projectPeople } from "../src/main/share/people.ts";
 
 function fixture(ownerType: "User" | "Organization" = "User") {
   const github = new FakeGitHub();
@@ -103,6 +103,29 @@ it("cancels only a pending invitation in the current private project", async () 
   const id = invited.people[0]!.id;
   await expect(t.service.cancel("ada/another", id)).rejects.toThrow("invite:changed");
   await expect(t.service.cancel(t.repository, 0)).rejects.toThrow("invite:invalid");
-  expect((await t.service.cancel(t.repository, id)).people).toEqual([]);
+  expect((await t.service.cancel(t.repository, id)).people).toEqual([{ id, login: "octocat", role: "write", state: "revoked" }]);
   expect(t.github.calls.filter(call => call.method === "DELETE")).toHaveLength(1);
+});
+
+it("G2/D7: shows expired, accepted and revoked invitations from GitHub and remembers revoked ones across restarts", async () => {
+  const t = fixture();
+  const known = memoryInvitations();
+  const service = projectPeople({ api: async () => t.api, repository: async () => t.repository, known });
+  await service.invite(t.repository, "octocat", "write");
+  t.github.users.add("grace"); t.github.users.add("linus");
+  await service.invite(t.repository, "grace", "write");
+  await service.invite(t.repository, "linus", "write");
+  // octocat accepts, grace's invitation expires, linus's is cancelled on GitHub (or declined).
+  t.repo.invitations = t.repo.invitations.filter(i => i.invitee.login !== "octocat" && i.invitee.login !== "linus");
+  t.repo.collaborators.add("octocat");
+  t.repo.invitations[0]!.expired = true;
+  const restarted = projectPeople({ api: async () => t.api, repository: async () => t.repository, known });
+  const listed = await restarted.load();
+  expect(listed.people.map(p => [p.login, p.state])).toEqual([["grace", "expired"], ["linus", "revoked"], ["octocat", "accepted"]]);
+  expect(Object.values(await known.read())[0]!.map(k => k.login).sort()).toEqual(["grace", "linus"]);
+  const renewed = await restarted.invite(t.repository, "grace", "write");
+  expect(renewed.people.find(p => p.login === "grace")).toMatchObject({ state: "pending" });
+  expect(t.repo.invitations.filter(i => i.invitee.login === "grace")).toEqual([expect.not.objectContaining({ expired: true })]);
+  expect((await restarted.dismiss(t.repository, "linus")).people.map(p => p.login)).toEqual(["grace", "octocat"]);
+  expect((await restarted.load()).people.some(p => p.login === "linus")).toBe(false);
 });

@@ -840,7 +840,7 @@
                             "type": "StatusRow",
                             "when": { "get": "vm.sharingPeople.canRetry" },
                             "props": { "message": { "get": "vm.sharingPeople.problem" }, "tone": "danger", "actionLabel": { "t": "commit.retry" } },
-                            "on": { "action": { "run": "sharing.peopleLoad" } }
+                            "on": { "action": { "run": "sharing.peopleRetry" } }
                           },
                           {
                             "type": "Stack",
@@ -854,7 +854,7 @@
                                   "get": "vm.sharingPeople.people"
                                 },
                                 "as": "p",
-                                "key": "p.id",
+                                "key": "p.key",
                                 "render": {
                                   "type": "ItemCard",
                                   "props": {
@@ -881,28 +881,9 @@
                                     }
                                   },
                                   "children": [
-                                    {
-                                      "type": "Button",
-                                      "props": {
-                                        "label": {
-                                          "t": "share.invite.cancelInvite"
-                                        },
-                                        "size": "s",
-                                        "busy": {
-                                          "get": "vm.sharingPeople.busy"
-                                        }
-                                      },
-                                      "on": {
-                                        "press": {
-                                          "run": "sharing.inviteCancel",
-                                          "args": {
-                                            "id": {
-                                              "get": "p.id"
-                                            }
-                                          }
-                                        }
-                                      }
-                                    }
+                                    { "type": "Button", "when": { "get": "p.pending" }, "props": { "label": { "t": "share.invite.cancelInvite" }, "size": "s", "busy": { "get": "vm.sharingPeople.busy" } }, "on": { "press": { "run": "sharing.inviteCancel", "args": { "id": { "get": "p.id" } } } } },
+                                    { "type": "Button", "when": { "get": "p.again" }, "props": { "label": { "t": "share.invite.again" }, "size": "s", "busy": { "get": "vm.sharingPeople.busy" } }, "on": { "press": { "run": "sharing.inviteAgain", "args": { "login": { "get": "p.login" }, "role": { "get": "p.role" } } } } },
+                                    { "type": "Button", "when": { "get": "p.revoked" }, "props": { "label": { "t": "share.invite.dismiss" }, "variant": "subtle", "size": "s", "busy": { "get": "vm.sharingPeople.busy" } }, "on": { "press": { "run": "sharing.inviteDismiss", "args": { "login": { "get": "p.login" } } } } }
                                   ],
                                   "on": {
                                     "titlePress": {

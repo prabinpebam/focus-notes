@@ -109,3 +109,55 @@ test("G2.4: organization invitation offers only supported roles and sends the co
     w.server.close();
   }
 });
+
+test("G2/D7: Settings → Project shows accepted, expired and revoked invitations, with Invite again, Retry and Dismiss", async () => {
+  test.setTimeout(90_000);
+  const w = await world({ gcm: true });
+  const { notes } = existingInstance(w);
+  w.fakes.store(w.gh.token);
+  w.git(w.root, "clone", "--quiet", "--recurse-submodules", notes, w.dirs.docs);
+  const privateDir = join(w.dirs.docs, "private");
+  w.git(privateDir, "checkout", "--quiet", "main");
+  w.git(privateDir, "remote", "add", "github", "https://github.com/ada/notes-private.git");
+  for (const login of ["grace", "linus"]) w.gh.users.add(login);
+  const repo = w.gh.repo("notes-private")!;
+  repo.invitations.push(
+    { id: 701, invitee: { login: "octocat" }, permissions: "push" },
+    { id: 702, invitee: { login: "grace" }, permissions: "push", expired: true },
+    { id: 703, invitee: { login: "linus" }, permissions: "push" },
+  );
+  const l = await start(w, false);
+  try {
+    const settings = await openAccountSettings(l.page);
+    const card = (login: string) => settings.locator("[data-item-card]").filter({ hasText: login });
+    await settings.getByRole("tab", { name: "Project", exact: true }).click();
+    await expect(card("octocat").getByText("Pending", { exact: true })).toBeVisible();
+    await expect(card("grace").getByText("Expired", { exact: true })).toBeVisible();
+    await expect(card("grace").getByText("The invitation expired before they accepted it. Invite them again to send a new one.", { exact: true })).toBeVisible();
+    // On GitHub: octocat accepts; linus's invitation is cancelled (or declined).
+    repo.invitations = repo.invitations.filter(i => i.id === 702);
+    repo.collaborators.add("octocat");
+    await settings.getByRole("tab", { name: "Account", exact: true }).click();
+    await settings.getByRole("tab", { name: "Project", exact: true }).click();
+    await expect(card("octocat").getByText("Accepted", { exact: true })).toBeVisible();
+    await expect(card("octocat").getByText("Accepted as a collaborator · can open the whole project on GitHub", { exact: true })).toBeVisible();
+    for (const action of ["Cancel invite", "Invite again", "Dismiss"]) await expect(card("octocat").getByRole("button", { name: action, exact: true })).toHaveCount(0);
+    await expect(card("linus").getByText("Revoked", { exact: true })).toBeVisible();
+    await expect(card("linus").getByText("The invitation was cancelled or declined. They can’t join with it.", { exact: true })).toBeVisible();
+    // Invite again fails once, says why, and Retry sends it.
+    w.gh.fail("PUT /repos/ada/notes-private/collaborators/grace", 502, "Bad gateway");
+    await card("grace").getByRole("button", { name: "Invite again", exact: true }).click();
+    await expect(settings.getByText("GitHub hasn’t confirmed the invitation. Retry to check whether it arrived before sending again.", { exact: true })).toBeVisible();
+    await expect(card("grace").getByText("Expired", { exact: true })).toBeVisible();
+    await settings.getByRole("button", { name: "Retry", exact: true }).click();
+    await expect(card("grace").getByText("Pending", { exact: true })).toBeVisible();
+    await expect(settings.getByText("GitHub accepted the access request.", { exact: true })).toBeVisible();
+    expect(repo.invitations.filter(i => i.invitee.login === "grace")).toEqual([expect.not.objectContaining({ expired: true })]);
+    await card("linus").getByRole("button", { name: "Dismiss", exact: true }).click();
+    await expect(card("linus")).toHaveCount(0);
+    expect(w.gh.calls.filter(call => call.method === "PUT").map(call => call.path)).toEqual(["/repos/ada/notes-private/collaborators/grace", "/repos/ada/notes-private/collaborators/grace"]);
+  } finally {
+    await close(l);
+    w.server.close();
+  }
+});

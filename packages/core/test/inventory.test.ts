@@ -24,7 +24,7 @@ const ticks = (s: string) => [...s.matchAll(/`([^`]+)`/g)].map((m) => m[1]!);
 
 describe("PRV-02: the desktop's data folder", () => {
   it("names every file and folder the app keeps there, each with what removes it", () => {
-    expect(Object.values(DATA_FILES).sort()).toEqual(["account.json", "agent-limits.json", "agent-limits.lock", "agents.json", "ai.json", "avatar.json", "first-run.json", "keybindings.json", "last-project-note.dat", "last-project.json", "preview-carry-over.json", "project-folder.txt", "project-metadata-notify.json", "project-metadata.sqlite", "project-metadata.sqlite-shm", "project-metadata.sqlite-wal", "project-recent.dat", "recovery-journal.jsonl", "setup.json", "state.json", "tray.json", "window.json", "workspace.json"]);
+    expect(Object.values(DATA_FILES).sort()).toEqual(["account.json", "agent-limits.json", "agent-limits.lock", "agents.json", "ai.json", "avatar.json", "first-run.json", "invitations.json", "keybindings.json", "last-project-note.dat", "last-project.json", "preview-carry-over.json", "project-folder.txt", "project-metadata-notify.json", "project-metadata.sqlite", "project-metadata.sqlite-shm", "project-metadata.sqlite-wal", "project-recent.dat", "recovery-journal.jsonl", "setup.json", "state.json", "tray.json", "window.json", "workspace.json"]);
     const paths = DESKTOP_DATA.map((i) => i.path.split("#")[0]);
     expect(Object.values(DATA_FOLDERS)).toEqual(["recovery", "project-profiles"]);
     for (const f of [...Object.values(DATA_FILES), ...[...Object.values(DATA_FOLDERS), ...Object.values(CHROMIUM_FOLDERS)].map((c) => `${c}/`)]) expect(paths).toContain(f);
@@ -33,10 +33,10 @@ describe("PRV-02: the desktop's data folder", () => {
   });
   it("signing out and removing the workspace delete the recent items, setup progress, agent permissions, and the first run's choices; only removing forgets the folder", () => {
     // QLT-06: unsaved text in the drafts is the person's writing, so it goes with the workspace (the folder once it's empty), and an old journal left over with it.
-    expect(filesRemovedBy("signOut").sort()).toEqual(["agent-limits.json", "agent-limits.lock", "agents.json", "first-run.json", "last-project-note.dat", "last-project.json", "project-recent.dat", "recovery", "recovery-journal.jsonl", "setup.json"]);
-    expect(filesRemovedBy("removeWorkspace").sort()).toEqual(["agent-limits.json", "agent-limits.lock", "agents.json", "first-run.json", "last-project-note.dat", "last-project.json", "project-recent.dat", "recovery", "recovery-journal.jsonl", "setup.json", "workspace.json"]);
+    expect(filesRemovedBy("signOut").sort()).toEqual(["agent-limits.json", "agent-limits.lock", "agents.json", "first-run.json", "invitations.json", "last-project-note.dat", "last-project.json", "project-recent.dat", "recovery", "recovery-journal.jsonl", "setup.json"]);
+    expect(filesRemovedBy("removeWorkspace").sort()).toEqual(["agent-limits.json", "agent-limits.lock", "agents.json", "first-run.json", "invitations.json", "last-project-note.dat", "last-project.json", "project-recent.dat", "recovery", "recovery-journal.jsonl", "setup.json", "workspace.json"]);
     // Deleting the project (PRJ-23) forgets the same, and its recent notes too; the folder record stays for the other windows' lists, which skip a missing folder.
-    expect(filesRemovedBy("deleteProject").sort()).toEqual(["agent-limits.json", "agent-limits.lock", "agents.json", "first-run.json", "last-project-note.dat", "last-project.json", "project-recent.dat", "recovery", "recovery-journal.jsonl", "setup.json", "workspace.json"]);
+    expect(filesRemovedBy("deleteProject").sort()).toEqual(["agent-limits.json", "agent-limits.lock", "agents.json", "first-run.json", "invitations.json", "last-project-note.dat", "last-project.json", "project-recent.dat", "recovery", "recovery-journal.jsonl", "setup.json", "workspace.json"]);
     // Quitting deletes nothing: drafts are kept by the draft store itself, which deletes each once its note is saved.
     expect(filesRemovedBy("quit")).toEqual([]);
     expect(filesRemovedBy("runSetupAgain")).toEqual(["setup.json"]);

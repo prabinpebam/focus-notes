@@ -50,7 +50,7 @@ import { createRunner, whenGitIdle, type GitRunner } from "./git/run.ts";
 import { bundleEnv, gitBundle } from "./git/bundle.ts";
 import { passphraseStrength } from "@focus-notes/seal";
 import { accessStore, siteFromGitConfig } from "./share/access.ts";
-import { projectPeople } from "./share/people.ts";
+import { invitationsFile, projectPeople } from "./share/people.ts";
 import { projectSharingLayout } from "./share/layout.ts";
 import { sharingRuntime } from "./share/runtime.ts";
 import { githubRepo } from "./project-card.ts";
@@ -2357,6 +2357,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   const people = projectPeople({
     api: async () => (await account.api())?.api,
     repository: () => githubRepo(hasPrivate() ? privateDir() : notesHome()),
+    known: invitationsFile(dataFile(DATA_FILES.invitations)),
     step: step => {
       if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send("sharing:inviteStep", step);
     },
@@ -2369,6 +2370,10 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   handle("sharing:cancelInvite", (repository: unknown, id: unknown) => {
     if (typeof repository !== "string" || typeof id !== "number") throw new Error("invite:invalid");
     return people.cancel(repository, id);
+  });
+  handle("sharing:dismissInvite", (repository: unknown, login: unknown) => {
+    if (typeof repository !== "string" || typeof login !== "string") throw new Error("invite:invalid");
+    return people.dismiss(repository, login);
   });
   handle("sharing:managePeople", async (repository: unknown) => {
     const current = await people.load();
