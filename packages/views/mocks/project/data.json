@@ -399,6 +399,7 @@
       { "id": "prabin/garden-notes-site", "label": "prabin/garden-notes-site", "detail": "Waiting for deletion on GitHub…", "icon": "github", "waiting": true, "deleted": false, "canOpen": true }
     ],
     "unsyncedCount": 3,
+    "backupUnknown": false,
     "unsynced": [
       {
         "id": "u1",

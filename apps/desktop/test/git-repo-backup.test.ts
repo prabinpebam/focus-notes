@@ -9,6 +9,8 @@ import { mkdirSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { GitSync } from "../src/main/git/sync.ts";
 import { backupMessage } from "../src/main/git/message.ts";
+import { createRunner } from "../src/main/git/run.ts";
+import { deletionCheck } from "../src/main/workspace/delete.ts";
 import { FakeClock, SETUP_TIMEOUT_MS, git, instance, prepareTemplate } from "./git-fixture.ts";
 
 beforeAll(prepareTemplate, SETUP_TIMEOUT_MS);
@@ -59,6 +61,22 @@ describe("FIL-14: what waits in each repository", () => {
     expect((await s.repos())[1]).toMatchObject({ folders: 0, notes: 0, other: 0, commits: 0 });
     // The private repository wasn't asked about.
     expect(git(privateRemote, "log", "-1", "--format=%s", "main")).toBe("Start");
+  });
+
+  it("owner, 24 Nov: the blank Untitled a project opens on waits nowhere, and the backup card and Delete agree", async () => {
+    const { ws } = instance();
+    const s = await open(ws);
+    writeFileSync(join(ws, "notes", "Untitled.md"), "");
+    writeFileSync(join(ws, "private", "notes", "Untitled.md"), "\n");
+    s.changed();
+    const repos = { repo: "ada/notes", privateRepo: "ada/notes-private" };
+    expect((await s.repos()).map((r) => r.notes + r.commits)).toEqual([0, 0]);
+    expect(await deletionCheck(createRunner(), ws, repos)).toMatchObject({ unsynced: [] });
+    expect((await deletionCheck(createRunner(), ws, repos)).backupUnknown).toBeUndefined();
+    writeFileSync(join(ws, "private", "notes", "Untitled.md"), "# Plans\n");
+    s.changed();
+    expect((await s.repos())[0]).toMatchObject({ repo: "private", notes: 1 });
+    expect((await deletionCheck(createRunner(), ws, repos)).unsynced).toEqual(["private/notes/Untitled.md"]);
   });
 
   it("a rename from outside the notes folder is left alone: never a delete there in Back up's name", async () => {

@@ -11,6 +11,8 @@ import { basename, dirname, isAbsolute, join, parse, relative, resolve } from "n
 import type { DeletionCheck, DeletionResult, RepoStatus } from "@focus-notes/core";
 import { GitHubError } from "@focus-notes/github";
 import { createRunner, type GitRunner } from "../git/run.ts";
+import { unpushedPaths, waitsForBackup } from "../git/backup-state.ts";
+import { parseStatus, STATUS_ARGS } from "../git/status.ts";
 
 const real = (p: string) => {
   try {
@@ -57,30 +59,30 @@ export async function countNotes(dir: string): Promise<number> {
 }
 
 /**
- * Files in a repository its remote doesn't have yet, relative to the project: changed, new or in a
- * commit not pushed. Deleted files are left out, since there's nothing to keep a copy of.
+ * Files in a repository its remote doesn't have yet, relative to the project, by the backup card's
+ * own rule (git/backup-state.ts): changed, new or in a commit not pushed. Deleted files are left
+ * out, since there's nothing to keep a copy of. `unknown` when Git can't fully say: never "all saved".
  */
-async function notOnRemote(git: GitRunner, dir: string, prefix: string): Promise<string[]> {
-  const out = new Set<string>();
-  const status = await git({ cwd: dir, args: ["status", "--porcelain=v1", "-z", "--untracked-files=all", "--ignore-submodules=all"], read: true });
-  if (status.code === 0) {
-    const parts = status.stdout.split("\0");
-    for (let i = 0; i < parts.length; i++) {
-      const e = parts[i]!;
-      if (e.length < 4) continue;
-      const code = e.slice(0, 2);
-      if (code[0] === "R" || code[0] === "C") i++;
-      if (code.includes("D")) continue;
-      out.add(e.slice(3));
-    }
+async function notOnRemote(git: GitRunner, dir: string, prefix: string): Promise<{ paths: string[]; unknown: boolean }> {
+  const run = (args: string[]) => git({ cwd: dir, args, read: true });
+  const status = await run([...STATUS_ARGS.filter((a) => !a.startsWith("--ignore-submodules")), "--ignore-submodules=all"]);
+  let st: ReturnType<typeof parseStatus> | undefined;
+  try {
+    if (status.code === 0) st = parseStatus(status.stdout);
+  } catch {
+    st = undefined;
   }
-  const log = await git({ cwd: dir, args: ["log", "--branches", "--not", "--remotes", "--name-only", "--format=", "-z"], read: true });
-  if (log.code === 0) for (const p of log.stdout.split(/[\0\r\n]+/)) if (p) out.add(p);
-  return [...out]
+  if (!st) return { paths: [], unknown: true };
+  const out = new Set<string>();
+  for (const e of st.entries) if (!e.xy.includes("D") && (await waitsForBackup(dir, e))) out.add(e.path);
+  const commits = await unpushedPaths(run, st);
+  for (const p of commits ?? []) out.add(p);
+  const paths = [...out]
     .map((p) => p.replace(/\\/g, "/"))
     .filter((p) => !p.startsWith(".") && !p.includes("/.") && p !== "private" && existsSync(join(dir, p)))
     .map((p) => `${prefix}${p}`)
     .sort();
+  return { paths, unknown: commits === undefined };
 }
 
 /**
@@ -99,10 +101,10 @@ export async function deletionCheck(git: GitRunner, folder: string, repos: { rep
   const privateCount = existsSync(join(priv, "notes")) ? await countNotes(join(priv, "notes")) : 0;
   const siteNotes = repo ? await countNotes(join(folder, "notes")) : 0;
   // Offline, nothing is on GitHub: the whole folder goes, so there's no list of what isn't there yet.
-  const unsynced = repo
-    ? [...(await notOnRemote(git, folder, "")), ...(existsSync(join(priv, ".git")) ? await notOnRemote(git, priv, "private/") : [])]
-    : [];
-  return { ...base, kind: repo ? "linked" : "offline", repo, siteRepo, privateRepo, privateCount, siteNotes, unsynced };
+  const parts = repo ? [await notOnRemote(git, folder, ""), ...(existsSync(join(priv, ".git")) ? [await notOnRemote(git, priv, "private/")] : [])] : [];
+  const unknown = parts.some((p) => p.unknown);
+  const unsynced = parts.flatMap((p) => p.paths);
+  return { ...base, kind: repo ? "linked" : "offline", repo, siteRepo, privateRepo, privateCount, siteNotes, unsynced, ...(unknown ? { backupUnknown: true } : {}) };
 }
 
 interface ReadsGitHub {

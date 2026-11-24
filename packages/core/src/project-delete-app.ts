@@ -459,7 +459,7 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
         problem: text, typed: text, private: bool, exported: bool, exportPath: text, unsyncedProceedLabel: text, busy: bool, checking: bool, canBackFromGithub: bool,
         name: text, repo: text, siteRepo: text, privateRepo: text, otherRepo: text, otherOwner: text, org: text, orgRepo: text,
         site: text, siteNotes: num, links: num, peopleCount: num, peopleNames: text, privateCount: num,
-        unsyncedCount: num, unsynced: { type: "array", items: { type: "object", properties: { id: text, label: text, description: text } } },
+        unsyncedCount: num, backupUnknown: bool, unsynced: { type: "array", items: { type: "object", properties: { id: text, label: text, description: text } } },
         lockedFile: text, localError: text, retryAt: text,
         repos: { type: "array", items: { type: "object", properties: { id: text, label: text, detail: text, icon: text, waiting: bool, deleted: bool, canOpen: bool } } },
       },
@@ -481,6 +481,7 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
         // Who else can open the repository isn't read before GitHub's own page shows it.
         peopleCount: 0, peopleNames: "", privateCount: c?.privateCount ?? 0,
         unsyncedCount: c?.unsynced.length ?? 0,
+        backupUnknown: c?.backupUnknown === true,
         unsynced: (c?.unsynced ?? []).map((path) => {
           const parts = path.split(/[\\/]/).filter(Boolean);
           const label = (parts.pop() ?? path).replace(/\.(md|markdown)$/i, "");
