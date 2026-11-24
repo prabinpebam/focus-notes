@@ -16,9 +16,9 @@ The owner's Documents had `prabins-notes` and `prabins-notes 2` to `7`: every se
 - **Use existing never overwrites:** `fetch --no-recurse-submodules`, then `merge --ff-only` only when clean, with an upstream, and not ahead. Uncommitted, unpushed, diverged or unreachable copies open as they are, and sync and backup status take over. `private/` is fast-forwarded on its own, never recursively. Never reset, force or delete. Then the folder is checked like Open folder and the project enters writing (D-397).
 - **No match:** behaviour as before (a new folder, D-155).
 - **Waits:** `firstRun.copies` and `firstRun.useCopy` through the tracker, with `fn:` measures and allow-listed `focus-notes:` aliases.
-- **Scope, stage 1:** *We found your notes* → *Open* (and *More options → Open from GitHub* inside setup, the same command). Stage 2: the Open project dialog's *Open from GitHub…* and the setup engine's clone step.
+- **Scope:** every clone that could duplicate. *We found your notes* → *Open* (and *More options → Open from GitHub* inside setup, the same command); the Open project dialog's *Open from GitHub…* (`projects.githubCopies`, `openGitHub(owner, name, use)`, waits `project.copies`/`project.useCopy`); and Create my notes' own clone step, which already resumed a folder that is this clone, now matches its origin in any spelling. *New project…* with GitHub never clones (exclusive `mkdir`, a taken repository name refused), so it can't duplicate.
 
-**Affects:** [First run](../experience/first-run.md#your-notes), [FRE-06](../product/requirements.md), [Perceived performance](../architecture/perceived-performance.md).
+**Affects:** [First run](../experience/first-run.md#your-notes), [Projects](../experience/projects.md), [FRE-06](../product/requirements.md), [Perceived performance](../architecture/perceived-performance.md).
 
 ## D-413: delete linked projects on GitHub web with automatic detection, and optional unsynced save
 
