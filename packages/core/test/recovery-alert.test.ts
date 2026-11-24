@@ -50,7 +50,7 @@ function setup() {
     emitSync: (r: SyncReport) => syncListener?.(r),
     emitAlert: (r: SyncAlertReport) => { currentAlert = r; alertListener?.(r); },
     willActReturn: (r: SyncAlertReport) => { actResult = r; },
-    alert: () => app.viewModels.select("vm.syncAlert", app.store.state) as RecoveryAlertView,
+    alert: () => app.viewModels.select("vm.syncAlert", app.store.state) as unknown as RecoveryAlertView,
     save: () => app.viewModels.select("vm.saveState", app.store.state) as { state: string; label: string; text: string; cardLabel: string; icon: string; tone: string },
     toasts: () => app.store.state.ui.toasts,
   };

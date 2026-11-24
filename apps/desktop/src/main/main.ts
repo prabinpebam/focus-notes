@@ -76,6 +76,7 @@ import { atOrUnder } from "@focus-notes/core/journal";
 import { deletionCheck, deletionFolderIdentity, deletionGate, isRepoSlug, optionalPlace, recycleProject, recycleRefusal, repoStatus, RemoteProjectDeletion, sameDeletionFolder } from "./workspace/delete.ts";
 import { deletionAuthorizationMethod, DeletionAuthorizationError, withDeletionAuthorization } from "./workspace/delete-authorization.ts";
 import { backupToRecord, checkFolder, configUrl, driveOf, envSyncRoots, folderNameOk, movedDocuments, nextFree, parseRecord, realInside, recordFor, recoveredNote, samePath, serializeRecord, shortPath, startDecision, syncService, type FolderCheck, type FolderFacts, type WorkspaceRecord } from "./workspace/record.ts";
+import { createSyncAlertController } from "./workspace/sync-alert.ts";
 import type { RecoverAccount, RecoverPlace, RecoverProgress, RecoverResult, RecoverStatus } from "@focus-notes/core/recover";
 import { GitHubError } from "@focus-notes/github";
 import { AppWindowFrame, frameKindFor } from "./window/frame.ts";
@@ -370,10 +371,12 @@ const armGit = () => (gitSync = undefined, gitOpened = false, gitWaiting = [], l
       ...(pointerGapMs !== undefined ? { pointerGapMs } : {}),
       // Never pushed to a template repository (D-157).
       checkRemote: (url) => templateGuard.checkRemote(url),
+      beforeSync: () => syncAlert.checkBeforeSync(),
       // After the window closes, the final sync on quit still runs; there's just no one to tell.
       onReport: (r) => {
         if (r.git && r.state === "idle" && r.waiting === 0 && lastWaiting > 0) backedUp();
         lastWaiting = r.waiting;
+        syncAlert.onGitReport(r);
         sendAll("sync:status", r);
       },
       // Counts and problems only: note names are private.
@@ -399,6 +402,17 @@ armGit();
 // kept only in the engine; progress (names and step states, nothing secret) is in setup.json.
 let setupEngine: Promise<SetupEngine> | undefined;
 const setupRunner = createRunner(onSpawn ? { onSpawn: (args) => onSpawn("git", args) } : {});
+const syncAlert = createSyncAlertController({
+  folder: () => notesHome(),
+  home: app.getPath("home"),
+  record: () => record,
+  runGit: setupRunner,
+  syncNow: async () => {
+    const g = await gitOpening;
+    return g ? g.request("save") : NO_GIT;
+  },
+  onReport: (r) => sendAll("syncAlert:status", r),
+});
 /** Setup's commits carry the identity chosen for only this workspace (FRE-05) until it's in the workspace's own settings. */
 const setupGit: GitRunner = (call) => {
   const id = workspaceIdentity;
@@ -2462,6 +2476,14 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   handle("sync:status", async () => {
     const g = await gitOpening;
     return g ? g.status() : NO_GIT;
+  });
+  handle("syncAlert:status", async () => {
+    await syncAlert.checkBeforeSync().catch(() => true);
+    return syncAlert.status();
+  });
+  handle("syncAlert:act", async (action) => {
+    if (action !== "sync" && action !== "restore" && action !== "removeRemote" && action !== "retry") throw new Error("Unknown sync alert action");
+    return syncAlert.act(action);
   });
   // Backup by repository (FIL-14, D-191): what waits in each section's repository, and Back up for one.
   handle("sync:repos", async () => (await gitOpening)?.repos() ?? []);

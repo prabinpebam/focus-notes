@@ -166,14 +166,16 @@ export function registerRecoveryAlert<S extends State>({ store, bridge, catalog,
       },
     },
     reads: ["recoveryAlert", "sync", "workspace"],
-    select: (s) => recoveryAlertView({
-      report: s.recoveryAlert.report,
-      sync: s.sync,
-      folder: s.workspace.folder,
-      repository: s.workspace.repo,
-      cornerOpen: s.recoveryAlert.cornerOpen,
-      headerOpen: s.recoveryAlert.headerOpen,
-    }, catalog, now()),
+    select: (s) => ({
+      ...recoveryAlertView({
+        report: s.recoveryAlert.report,
+        sync: s.sync,
+        folder: s.workspace.folder,
+        repository: s.workspace.repo,
+        cornerOpen: s.recoveryAlert.cornerOpen,
+        headerOpen: s.recoveryAlert.headerOpen,
+      }, catalog, now()),
+    }),
   });
 
   return {
