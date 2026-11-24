@@ -654,6 +654,8 @@ export interface DeletionCheck {
   siteNotes: number;
   /** Notes changed since the last save to GitHub, relative to the folder. */
   unsynced: string[];
+  /** Git couldn't say what's on GitHub for at least one repository: `unsynced` may be incomplete, never "all saved". */
+  backupUnknown?: boolean;
 }
 
 /** A repository on GitHub, as the person deletes it on GitHub's web page (D-413). `gone` requires 404 + valid session. */

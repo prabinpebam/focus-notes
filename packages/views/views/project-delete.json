@@ -71,6 +71,19 @@
               "type": "StatusRow",
               "props": {
                 "message": {
+                  "t": "project.delete.backupUnknown"
+                },
+                "tone": "warning",
+                "icon": "cloudOff"
+              },
+              "when": {
+                "get": "vm.projectDelete.backupUnknown"
+              }
+            },
+            {
+              "type": "StatusRow",
+              "props": {
+                "message": {
                   "t": "project.delete.problem.offline"
                 },
                 "tone": "warning",

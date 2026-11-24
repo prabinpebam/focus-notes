@@ -129,6 +129,7 @@ export const projectMocks = {
     { id: "pnw.fileTxt", label: "4. Standalone .txt file: Insert image… unavailable, with the reason", view: "file", local: { kind: "txt" } },
     { id: "pnw.deleteEntry", label: "5. Delete: Settings → Project → Delete project…", view: "linked" },
     { id: "pnw.deleteConsequences", label: "6. Delete: what's deleted (site, share links, people, private notes, this computer)", view: "delete" },
+    { id: "pnw.deleteBackupUnknown", label: "6b. Delete: couldn't check what's backed up, deleting still works", view: "delete", local: { backupUnknown: true } },
     { id: "pnw.deleteUnsynced", label: "7. Delete: notes not on GitHub yet, save a copy first", view: "delete", local: { step: "unsynced" } },
     { id: "pnw.deleteUnsyncedSaved", label: "8. Delete: copy saved, continue", view: "delete", local: { step: "unsynced", exported: true } },
     { id: "pnw.deleteConfirm", label: "9. Delete: type the project's name", view: "delete", local: { step: "confirm" } },

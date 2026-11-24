@@ -11,6 +11,7 @@ import { basename, dirname, isAbsolute, join, parse, relative, resolve } from "n
 import type { DeletionCheck, DeletionResult, RepoStatus } from "@focus-notes/core";
 import { GitHubError } from "@focus-notes/github";
 import { createRunner, type GitRunner } from "../git/run.ts";
+import { parseStatus, STATUS_ARGS } from "../git/status.ts";
 
 const real = (p: string) => {
   try {
@@ -56,31 +57,53 @@ export async function countNotes(dir: string): Promise<number> {
   return n;
 }
 
+/** A new note with nothing in it (the blank Untitled a project opens on, D-397): nothing to lose. */
+async function blankNote(path: string): Promise<boolean> {
+  if (!/\.(md|markdown)$/i.test(path)) return false;
+  const info = await stat(path).catch(() => undefined);
+  if (!info?.isFile() || info.size > 4096) return false;
+  return (await readFile(path, "utf8").catch(() => "x")).trim() === "";
+}
+
 /**
  * Files in a repository its remote doesn't have yet, relative to the project: changed, new or in a
- * commit not pushed. Deleted files are left out, since there's nothing to keep a copy of.
+ * commit not pushed to the branch's upstream (the save state's own measure, D-132). Deleted files
+ * and blank new notes are left out, since there's nothing to keep a copy of. `unknown` when Git
+ * can't fully say (it fails, or nothing on a remote is known to compare with): never "all saved".
  */
-async function notOnRemote(git: GitRunner, dir: string, prefix: string): Promise<string[]> {
+async function notOnRemote(git: GitRunner, dir: string, prefix: string): Promise<{ paths: string[]; unknown: boolean }> {
   const out = new Set<string>();
-  const status = await git({ cwd: dir, args: ["status", "--porcelain=v1", "-z", "--untracked-files=all", "--ignore-submodules=all"], read: true });
-  if (status.code === 0) {
-    const parts = status.stdout.split("\0");
-    for (let i = 0; i < parts.length; i++) {
-      const e = parts[i]!;
-      if (e.length < 4) continue;
-      const code = e.slice(0, 2);
-      if (code[0] === "R" || code[0] === "C") i++;
-      if (code.includes("D")) continue;
-      out.add(e.slice(3));
+  const status = await git({ cwd: dir, args: [...STATUS_ARGS.filter((a) => !a.startsWith("--ignore-submodules")), "--ignore-submodules=all"], read: true });
+  let st: ReturnType<typeof parseStatus> | undefined;
+  try {
+    if (status.code === 0) st = parseStatus(status.stdout);
+  } catch {
+    st = undefined;
+  }
+  if (!st) return { paths: [], unknown: true };
+  let unknown = false;
+  for (const e of st.entries) {
+    if (e.kind === "ignored" || e.xy.includes("D")) continue;
+    if (e.kind === "untracked" && (await blankNote(join(dir, e.path)))) continue;
+    out.add(e.path);
+  }
+  if (st.oid) {
+    // With an upstream, what it doesn't have; detached (a submodule) or without one, what no fetched remote branch has.
+    const remotes = st.upstream ? undefined : await git({ cwd: dir, args: ["for-each-ref", "--count=1", "--format=%(refname)", "refs/remotes"], read: true });
+    if (remotes && (remotes.code !== 0 || !remotes.stdout.trim())) unknown = true;
+    else {
+      const range = st.upstream ? ["diff", "--name-only", "--no-renames", "-z", "@{upstream}...HEAD"] : ["log", "HEAD", "--not", "--remotes", "--name-only", "--format=", "-z"];
+      const commits = await git({ cwd: dir, args: range, read: true });
+      if (commits.code !== 0) unknown = true;
+      else for (const p of commits.stdout.split(/[\0\r\n]+/)) if (p) out.add(p);
     }
   }
-  const log = await git({ cwd: dir, args: ["log", "--branches", "--not", "--remotes", "--name-only", "--format=", "-z"], read: true });
-  if (log.code === 0) for (const p of log.stdout.split(/[\0\r\n]+/)) if (p) out.add(p);
-  return [...out]
+  const paths = [...out]
     .map((p) => p.replace(/\\/g, "/"))
     .filter((p) => !p.startsWith(".") && !p.includes("/.") && p !== "private" && existsSync(join(dir, p)))
     .map((p) => `${prefix}${p}`)
     .sort();
+  return { paths, unknown };
 }
 
 /**
@@ -99,10 +122,10 @@ export async function deletionCheck(git: GitRunner, folder: string, repos: { rep
   const privateCount = existsSync(join(priv, "notes")) ? await countNotes(join(priv, "notes")) : 0;
   const siteNotes = repo ? await countNotes(join(folder, "notes")) : 0;
   // Offline, nothing is on GitHub: the whole folder goes, so there's no list of what isn't there yet.
-  const unsynced = repo
-    ? [...(await notOnRemote(git, folder, "")), ...(existsSync(join(priv, ".git")) ? await notOnRemote(git, priv, "private/") : [])]
-    : [];
-  return { ...base, kind: repo ? "linked" : "offline", repo, siteRepo, privateRepo, privateCount, siteNotes, unsynced };
+  const parts = repo ? [await notOnRemote(git, folder, ""), ...(existsSync(join(priv, ".git")) ? [await notOnRemote(git, priv, "private/")] : [])] : [];
+  const unknown = parts.some((p) => p.unknown);
+  const unsynced = parts.flatMap((p) => p.paths);
+  return { ...base, kind: repo ? "linked" : "offline", repo, siteRepo, privateRepo, privateCount, siteNotes, unsynced, ...(unknown ? { backupUnknown: true } : {}) };
 }
 
 interface ReadsGitHub {
