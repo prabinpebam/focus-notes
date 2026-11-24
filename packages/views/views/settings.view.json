@@ -2554,6 +2554,39 @@
                               }
                             ]
                           },
+                          {
+                            "type": "ItemCard",
+                            "when": {
+                              "get": "vm.sharingSettings.on"
+                            },
+                            "props": {
+                              "title": {
+                                "t": "share.template.cardTitle"
+                              },
+                              "detail": {
+                                "t": "share.template.cardDetail"
+                              },
+                              "icon": "mail",
+                              "badge": {
+                                "get": "vm.sharingSettings.templateBadge"
+                              }
+                            },
+                            "children": [
+                              {
+                                "type": "Button",
+                                "props": {
+                                  "label": {
+                                    "t": "share.template.edit"
+                                  }
+                                },
+                                "on": {
+                                  "press": {
+                                    "run": "share.manage.templateOpen"
+                                  }
+                                }
+                              }
+                            ]
+                          },
                           { "use": "sharing.progress" },
                           {
                             "type": "ItemCard",
@@ -2715,7 +2748,7 @@
                           {
                             "type": "Stack",
                             "props": {
-                              "gap": "stackItem"
+                              "gap": "stackGroup"
                             },
                             "children": [
                               {
@@ -2725,116 +2758,151 @@
                                 "as": "row",
                                 "key": "row.id",
                                 "render": {
-                                  "type": "ItemCard",
+                                  "type": "Stack",
                                   "props": {
-                                    "title": {
-                                      "get": "row.item"
-                                    },
-                                    "detail": {
-                                      "get": "row.detail"
-                                    },
-                                    "badge": {
-                                      "get": "row.badge"
-                                    },
-                                    "icon": {
-                                      "get": "row.icon"
-                                    }
+                                    "gap": "stackPair"
                                   },
                                   "children": [
                                     {
-                                      "type": "Inline",
-                                      "when": {
-                                        "get": "row.live"
-                                      },
+                                      "type": "ItemCard",
                                       "props": {
-                                        "gap": "inlinePair",
-                                        "wrap": true
+                                        "title": {
+                                          "get": "row.item"
+                                        },
+                                        "detail": {
+                                          "get": "row.detail"
+                                        },
+                                        "badge": {
+                                          "get": "row.badge"
+                                        },
+                                        "icon": {
+                                          "get": "row.icon"
+                                        }
                                       },
                                       "children": [
                                         {
-                                          "type": "MenuButton",
-                                          "props": {
-                                            "variant": "text",
-                                            "label": {
-                                              "t": "share.settings.copyAgain"
-                                            },
-                                            "text": {
-                                              "get": "vm.sharingSettings.copyLabel"
-                                            },
-                                            "sections": {
-                                              "get": "row.copyMenu"
-                                            },
-                                            "placement": "bottom end",
-                                            "busy": {
-                                              "get": "vm.sharingSettings.busy"
-                                            }
+                                          "type": "Inline",
+                                          "when": {
+                                            "get": "row.live"
                                           },
-                                          "on": {
-                                            "action": {
-                                              "run": "sharing.copy",
-                                              "args": {
-                                                "id": {
-                                                  "get": "row.id"
+                                          "props": {
+                                            "gap": "inlinePair",
+                                            "wrap": true
+                                          },
+                                          "children": [
+                                            {
+                                              "type": "MenuButton",
+                                              "props": {
+                                                "variant": "text",
+                                                "label": {
+                                                  "t": "share.settings.copyAgain"
                                                 },
+                                                "text": {
+                                                  "get": "vm.sharingSettings.copyLabel"
+                                                },
+                                                "sections": {
+                                                  "get": "row.copyMenu"
+                                                },
+                                                "placement": "bottom end",
+                                                "busy": {
+                                                  "get": "vm.sharingSettings.busy"
+                                                }
+                                              },
+                                              "on": {
                                                 "action": {
-                                                  "get": "event.id"
+                                                  "run": "sharing.copy",
+                                                  "args": {
+                                                    "id": {
+                                                      "get": "row.id"
+                                                    },
+                                                    "action": {
+                                                      "get": "event.id"
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            },
+                                            {
+                                              "type": "MenuButton",
+                                              "props": {
+                                                "variant": "text",
+                                                "label": {
+                                                  "t": "share.settings.extend"
+                                                },
+                                                "text": {
+                                                  "get": "vm.sharingSettings.extendLabel"
+                                                },
+                                                "sections": {
+                                                  "get": "row.extendMenu"
+                                                },
+                                                "placement": "bottom end",
+                                                "busy": {
+                                                  "get": "vm.sharingSettings.busy"
+                                                }
+                                              },
+                                              "on": {
+                                                "action": {
+                                                  "run": "sharing.extend",
+                                                  "args": {
+                                                    "id": {
+                                                      "get": "row.id"
+                                                    },
+                                                    "action": {
+                                                      "get": "event.id"
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            },
+                                            {
+                                              "type": "Button",
+                                              "props": {
+                                                "label": {
+                                                  "t": "share.row.withdraw"
+                                                },
+                                                "size": "s",
+                                                "busy": {
+                                                  "get": "vm.sharingSettings.busy"
+                                                },
+                                                "feedback": "border"
+                                              },
+                                              "on": {
+                                                "press": {
+                                                  "run": "sharing.confirmOpen",
+                                                  "args": {
+                                                    "kind": "withdraw",
+                                                    "id": {
+                                                      "get": "row.id"
+                                                    }
+                                                  }
                                                 }
                                               }
                                             }
-                                          }
-                                        },
-                                        {
-                                          "type": "MenuButton",
-                                          "props": {
-                                            "variant": "text",
-                                            "label": {
-                                              "t": "share.settings.extend"
-                                            },
-                                            "text": {
-                                              "get": "vm.sharingSettings.extendLabel"
-                                            },
-                                            "sections": {
-                                              "get": "row.extendMenu"
-                                            },
-                                            "placement": "bottom end",
-                                            "busy": {
-                                              "get": "vm.sharingSettings.busy"
-                                            }
-                                          },
-                                          "on": {
-                                            "action": {
-                                              "run": "sharing.extend",
-                                              "args": {
-                                                "id": {
-                                                  "get": "row.id"
-                                                },
-                                                "action": {
-                                                  "get": "event.id"
-                                                }
-                                              }
-                                            }
-                                          }
+                                          ]
                                         },
                                         {
                                           "type": "Button",
                                           "props": {
                                             "label": {
-                                              "t": "share.row.withdraw"
+                                              "t": "share.settings.deleteRecord"
                                             },
-                                            "size": "s",
-                                            "busy": {
-                                              "get": "vm.sharingSettings.busy"
-                                            },
-                                            "feedback": "border"
+                                            "size": "s"
                                           },
                                           "on": {
                                             "press": {
                                               "run": "sharing.confirmOpen",
                                               "args": {
-                                                "kind": "withdraw",
+                                                "kind": "delete",
                                                 "id": {
                                                   "get": "row.id"
                                                 }
+                                              }
+                                            }
+                                          },
+                                          "when": {
+                                            "expr": {
+                                              "!": {
+                                                "get": "row.live"
                                               }
                                             }
                                           }
@@ -2842,31 +2910,63 @@
                                       ]
                                     },
                                     {
-                                      "type": "Button",
-                                      "props": {
-                                        "label": {
-                                          "t": "share.settings.deleteRecord"
-                                        },
-                                        "size": "s"
+                                      "type": "Inline",
+                                      "when": {
+                                        "get": "row.hasTemplateProblem"
                                       },
-                                      "on": {
-                                        "press": {
-                                          "run": "sharing.confirmOpen",
-                                          "args": {
-                                            "kind": "delete",
-                                            "id": {
-                                              "get": "row.id"
+                                      "props": {
+                                        "gap": "inlineItem",
+                                        "wrap": true
+                                      },
+                                      "children": [
+                                        {
+                                          "type": "Text",
+                                          "props": {
+                                            "value": {
+                                              "t": "share.template.copyProblem"
+                                            },
+                                            "tone": "danger",
+                                            "announce": true
+                                          }
+                                        },
+                                        {
+                                          "type": "Button",
+                                          "props": {
+                                            "label": {
+                                              "t": "share.template.editTemplate"
+                                            },
+                                            "variant": "secondary",
+                                            "size": "s"
+                                          },
+                                          "on": {
+                                            "press": {
+                                              "run": "share.manage.templateOpen"
+                                            }
+                                          }
+                                        },
+                                        {
+                                          "type": "Button",
+                                          "props": {
+                                            "label": {
+                                              "t": "share.template.useDefault"
+                                            },
+                                            "variant": "secondary",
+                                            "size": "s"
+                                          },
+                                          "on": {
+                                            "press": {
+                                              "run": "sharing.copy",
+                                              "args": {
+                                                "id": {
+                                                  "get": "row.id"
+                                                },
+                                                "action": "information",
+                                                "useDefault": true
+                                              }
                                             }
                                           }
                                         }
-                                      },
-                                      "when": {
-                                        "expr": {
-                                          "!": {
-                                            "get": "row.live"
-                                          }
-                                        }
-                                      }
+                                      ]
                                     }
                                   ]
                                 },
@@ -4884,7 +4984,7 @@
         },
         "props": {
           "title": {
-            "t": "share.manage.template.title"
+            "t": "share.template.cardTitle"
           },
           "closeLabel": {
             "t": "dialog.close"
@@ -4892,7 +4992,8 @@
           "open": {
             "get": "vm.shareTemplate.open"
           },
-          "size": "s"
+          "size": "m",
+          "height": "content"
         },
         "on": {
           "openChange": {
@@ -4903,6 +5004,67 @@
               }
             }
           }
+        },
+        "slots": {
+          "footer": [
+            {
+              "type": "Inline",
+              "props": {
+                "gap": "inlineItem",
+                "justify": "end",
+                "wrap": true
+              },
+              "children": [
+                {
+                  "type": "Button",
+                  "props": {
+                    "label": {
+                      "t": "share.manage.template.reset"
+                    },
+                    "variant": "secondary",
+                    "disabled": {
+                      "get": "vm.shareTemplate.isDefault"
+                    },
+                    "disabledReason": {
+                      "t": "share.template.resetDisabled"
+                    }
+                  },
+                  "on": {
+                    "press": {
+                      "run": "share.manage.templateReset"
+                    }
+                  }
+                },
+                {
+                  "type": "Button",
+                  "props": {
+                    "label": {
+                      "t": "share.manage.template.save"
+                    },
+                    "variant": "primary",
+                    "busy": {
+                      "get": "vm.shareTemplate.busy"
+                    },
+                    "disabled": {
+                      "expr": {
+                        "!": {
+                          "get": "vm.shareTemplate.canSave"
+                        }
+                      }
+                    },
+                    "disabledReason": {
+                      "t": "share.template.saveDisabled"
+                    }
+                  },
+                  "on": {
+                    "press": {
+                      "run": "share.manage.templateSave"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
         },
         "children": [
           {
@@ -4915,110 +5077,58 @@
                 "type": "TextField",
                 "props": {
                   "label": {
-                    "t": "share.manage.template.field"
+                    "t": "share.template.field"
                   },
                   "value": {
                     "bind": "vm.shareTemplate.value"
                   },
                   "multiline": true,
+                  "autoFocus": true,
+                  "description": {
+                    "t": "share.template.fieldHelp"
+                  },
                   "invalid": {
                     "get": "vm.shareTemplate.hasProblem"
                   },
                   "error": {
                     "get": "vm.shareTemplate.problem"
-                  },
-                  "autoFocus": true
+                  }
                 }
               },
               {
                 "type": "Stack",
+                "when": {
+                  "expr": {
+                    "!": {
+                      "get": "vm.shareTemplate.hasProblem"
+                    }
+                  }
+                },
                 "props": {
-                  "gap": "stackItem"
+                  "gap": "stackPair"
                 },
                 "children": [
                   {
                     "type": "Text",
                     "props": {
                       "value": {
-                        "t": "share.manage.template.placeholders"
+                        "t": "share.template.previewHeading"
                       },
                       "role": "label"
                     }
                   },
                   {
-                    "type": "Inline",
+                    "type": "Text",
                     "props": {
-                      "gap": "inlineItem",
-                      "wrap": true
-                    },
-                    "children": [
-                      {
-                        "each": {
-                          "get": "vm.shareTemplate.placeholders"
-                        },
-                        "as": "p",
-                        "key": "p.id",
-                        "render": {
-                          "type": "Button",
-                          "props": {
-                            "label": {
-                              "get": "p.label"
-                            },
-                            "size": "s",
-                            "icon": "add"
-                          },
-                          "on": {
-                            "press": {
-                              "run": "share.manage.insertPlaceholder",
-                              "args": {
-                                "id": {
-                                  "get": "p.id"
-                                }
-                              }
-                            }
-                          }
-                        },
-                        "empty": {
-                          "type": "Text",
-                          "props": {
-                            "value": {
-                              "t": "share.manage.template.placeholders"
-                            },
-                            "tone": "muted"
-                          }
-                        }
-                      }
-                    ]
-                  }
-                ]
-              },
-              {
-                "type": "Stack",
-                "props": {
-                  "gap": "stackPair"
-                },
-                "children": [
-                  {
-                    "type": "ItemCard",
-                    "props": {
-                      "title": {
-                        "t": "share.manage.template.sample.name"
+                      "value": {
+                        "t": "share.template.previewFor"
                       },
-                      "detail": {
-                        "t": "share.manage.template.preview"
-                      },
-                      "icon": "mail"
+                      "role": "caption",
+                      "tone": "muted"
                     }
                   },
                   {
                     "type": "Surface",
-                    "when": {
-                      "expr": {
-                        "!": {
-                          "get": "vm.shareTemplate.hasProblem"
-                        }
-                      }
-                    },
                     "props": {
                       "variant": "sunken",
                       "shape": "control",
@@ -5051,87 +5161,13 @@
                               "type": "Text",
                               "props": {
                                 "value": {
-                                  "t": "share.manage.template.preview"
+                                  "t": "share.template.previewEmpty"
                                 },
                                 "tone": "muted"
                               }
                             }
                           }
                         ]
-                      }
-                    ]
-                  }
-                ]
-              },
-              {
-                "type": "Inline",
-                "props": {
-                  "justify": "between",
-                  "gap": "inlineItem",
-                  "wrap": true
-                },
-                "children": [
-                  {
-                    "type": "Button",
-                    "props": {
-                      "label": {
-                        "t": "share.manage.template.reset"
-                      },
-                      "variant": "subtle",
-                      "icon": "history",
-                      "disabled": {
-                        "get": "vm.shareTemplate.isDefault"
-                      },
-                      "disabledReason": {
-                        "t": "share.manage.template.default"
-                      }
-                    },
-                    "on": {
-                      "press": {
-                        "run": "share.manage.templateReset"
-                      }
-                    }
-                  },
-                  {
-                    "type": "Inline",
-                    "props": {
-                      "justify": "end",
-                      "gap": "inlineItem"
-                    },
-                    "children": [
-                      {
-                        "type": "Button",
-                        "props": {
-                          "label": {
-                            "t": "share.manage.cancel"
-                          },
-                          "variant": "secondary"
-                        },
-                        "on": {
-                          "press": {
-                            "run": "share.manage.setTemplateOpen",
-                            "args": {
-                              "open": false
-                            }
-                          }
-                        }
-                      },
-                      {
-                        "type": "Button",
-                        "props": {
-                          "label": {
-                            "t": "share.manage.template.save"
-                          },
-                          "variant": "primary",
-                          "busy": {
-                            "get": "vm.shareTemplate.busy"
-                          }
-                        },
-                        "on": {
-                          "press": {
-                            "run": "share.manage.templateSave"
-                          }
-                        }
                       }
                     ]
                   }

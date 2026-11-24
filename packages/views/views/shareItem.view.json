@@ -60,7 +60,16 @@
               {
                 "type": "Text",
                 "when": { "expr": { "and": [{ "get": "vm.shareItem.hasProblem" }, { "!": [{ "get": "vm.shareItem.loadFailed" }] }] } },
-                "props": { "value": { "get": "vm.shareItem.problem" }, "tone": "danger" }
+                "props": { "value": { "get": "vm.shareItem.problem" }, "tone": "danger", "announce": true }
+              },
+              {
+                "type": "Inline",
+                "when": { "get": "vm.shareItem.templateInvalid" },
+                "props": { "gap": "inlineItem", "wrap": true, "justify": "end" },
+                "children": [
+                  { "type": "Button", "props": { "label": { "t": "share.template.editTemplate" }, "variant": "secondary", "size": "s" }, "on": { "press": { "run": "share.manage.templateOpen" } } },
+                  { "type": "Button", "props": { "label": { "t": "share.template.useDefault" }, "variant": "secondary", "size": "s" }, "on": { "press": { "run": "share.item.action", "args": { "what": "primary", "useDefault": true } } } }
+                ]
               },
               {
                 "type": "Switch",
@@ -157,17 +166,14 @@
                     "when": { "expr": { "!": { "get": "vm.shareItem.ownMode" } } },
                     "props": { "gap": "stackPair" },
                     "children": [
-                      { "type": "Text", "props": { "value": { "t": "share.dialog.passcode" }, "tone": "muted", "role": "secondary" } },
+                      { "type": "Text", "props": { "value": { "t": "share.dialog.accessCode" }, "tone": "muted", "role": "secondary" } },
                       { "type": "Inline", "props": { "gap": "inlineItem", "align": "stretch" }, "children": [
                         { "type": "Stack", "props": { "grow": true }, "children": [
-                          { "type": "TextField", "props": { "label": { "t": "share.dialog.passcode" }, "labelHidden": true, "value": { "get": "vm.shareItem.generated" }, "readOnly": true } }
+                          { "type": "CodeBlock", "props": { "value": { "get": "vm.shareItem.generated" }, "copyLabel": { "t": "share.dialog.copyCode" } },
+                            "on": { "copy": { "run": "share.item.action", "args": { "what": "accessCode" } } } }
                         ] },
                         { "type": "IconButton", "props": { "icon": "sync", "label": { "t": "share.dialog.newWords" }, "size": "stretch", "commit": { "expr": { "if": [{ "get": "vm.shareItem.wordsBusy" }, "pending", "rest"] } }, "disabled": { "get": "vm.shareItem.controlsLocked" }, "disabledReason": { "get": "vm.shareItem.controlReason" } },
                           "on": { "press": { "run": "share.item.newWords" } } }
-                      ] },
-                      { "type": "Inline", "children": [
-                        { "type": "Button", "props": { "label": { "t": "share.dialog.copyPasscode" }, "disabled": { "get": "vm.shareItem.actionsDisabled" }, "disabledReason": { "get": "vm.shareItem.actionReason" } },
-                          "on": { "press": { "run": "share.item.action", "args": { "what": "passcode" } } } }
                       ] }
                     ]
                   },
@@ -215,13 +221,18 @@
                 "type": "Inline",
                 "props": { "gap": "inlineItem", "wrap": true, "justify": "end" },
                 "children": [
-                  { "type": "Text", "props": { "value": { "t": "share.dialog.copyGroup" }, "tone": "muted", "role": "secondary" } },
-                  { "type": "Button", "when": { "get": "vm.shareItem.link" }, "props": { "label": { "t": "share.dialog.copyLink" }, "disabled": { "get": "vm.shareItem.actionsDisabled" }, "disabledReason": { "get": "vm.shareItem.actionReason" } },
-                    "on": { "press": { "run": "share.item.action", "args": { "what": "link" } } } },
-                  { "type": "Button", "when": { "get": "vm.shareItem.passcode" }, "props": { "label": { "t": "share.dialog.copyCode" }, "disabled": { "get": "vm.shareItem.actionsDisabled" }, "disabledReason": { "get": "vm.shareItem.actionReason" } },
-                    "on": { "press": { "run": "share.item.action", "args": { "what": "accessCode" } } } },
-                  { "type": "Button", "when": { "get": "vm.shareItem.macos" }, "props": { "label": { "t": "share.dialog.copyInfo" }, "disabled": { "get": "vm.shareItem.actionsDisabled" }, "disabledReason": { "get": "vm.shareItem.actionReason" } },
-                    "on": { "press": { "run": "share.item.action", "args": { "what": "information" } } } },
+                  {
+                    "type": "Inline",
+                    "props": { "related": true, "justify": "end", "label": { "t": "share.dialog.copyGroup" } },
+                    "children": [
+                      { "type": "Button", "when": { "get": "vm.shareItem.link" }, "props": { "label": { "t": "share.dialog.copyLink" }, "icon": "link", "disabled": { "get": "vm.shareItem.actionsDisabled" }, "disabledReason": { "get": "vm.shareItem.actionReason" } },
+                        "on": { "press": { "run": "share.item.action", "args": { "what": "link" } } } },
+                      { "type": "Button", "when": { "get": "vm.shareItem.passcode" }, "props": { "label": { "t": "share.dialog.copyCode" }, "icon": "lock", "disabled": { "get": "vm.shareItem.actionsDisabled" }, "disabledReason": { "get": "vm.shareItem.actionReason" } },
+                        "on": { "press": { "run": "share.item.action", "args": { "what": "accessCode" } } } },
+                      { "type": "Button", "when": { "get": "vm.shareItem.macos" }, "props": { "label": { "t": "share.dialog.copyInfo" }, "icon": "copy", "disabled": { "get": "vm.shareItem.actionsDisabled" }, "disabledReason": { "get": "vm.shareItem.actionReason" } },
+                        "on": { "press": { "run": "share.item.action", "args": { "what": "information" } } } }
+                    ]
+                  },
                   { "type": "Button", "props": { "label": { "get": "vm.shareItem.primaryLabel" }, "variant": "primary", "busy": { "get": "vm.shareItem.busy" }, "disabled": { "get": "vm.shareItem.actionsDisabled" }, "disabledReason": { "get": "vm.shareItem.actionReason" } },
                     "on": { "press": { "run": "share.item.action", "args": { "what": "primary" } } } }
                 ]
@@ -232,7 +243,43 @@
                 "type": "Stack", "when": { "get": "vm.shareItem.ready" }, "props": { "gap": "stackItem" },
                 "children": [
                   { "type": "Heading", "props": { "value": { "t": "share.dialog.preview" }, "level": "3" } },
-                  { "each": { "get": "vm.shareItem.lines" }, "as": "line", "key": "line.id", "render": { "type": "Text", "props": { "value": { "get": "line.text" } } }, "empty": { "type": "Text", "props": { "value": { "t": "share.item.preparing" } } } },
+                  {
+                    "type": "Surface",
+                    "props": { "variant": "sunken", "shape": "control", "padding": "insetMd" },
+                    "children": [
+                      {
+                        "type": "Stack",
+                        "props": { "gap": "stackPair" },
+                        "children": [
+                          {
+                            "each": { "get": "vm.shareItem.lines" },
+                            "as": "line",
+                            "key": "line.id",
+                            "render": {
+                              "type": "Stack",
+                              "children": [
+                                {
+                                  "type": "Inline",
+                                  "when": { "get": "line.hasCode" },
+                                  "props": { "gap": "inlinePair", "wrap": true, "wrapGap": "stackPair" },
+                                  "children": [
+                                    { "type": "Text", "props": { "value": { "get": "line.lead" }, "role": "secondary", "personal": true } },
+                                    { "type": "Text", "props": { "value": { "get": "line.code" }, "role": "secondary", "personal": true } }
+                                  ]
+                                },
+                                {
+                                  "type": "Text",
+                                  "when": { "expr": { "!": { "get": "line.hasCode" } } },
+                                  "props": { "value": { "get": "line.text" }, "role": "secondary", "personal": true }
+                                }
+                              ]
+                            },
+                            "empty": { "type": "Text", "props": { "value": { "t": "share.item.preparing" } } }
+                          }
+                        ]
+                      }
+                    ]
+                  },
                   { "type": "Text", "props": { "value": { "t": "share.item.information.note" }, "role": "caption", "tone": "muted" } }
                 ]
               },
