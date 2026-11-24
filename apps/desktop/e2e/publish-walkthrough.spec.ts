@@ -208,9 +208,18 @@ test("Publish walk-through: not set up, turn on, publish a folder, read the site
     fake.git.setStale(true);
     await more();
     await page.getByRole("menuitem", { name: "Publish…", exact: true }).click();
-    await dialog.getByRole("button", { name: "Publish", exact: true }).click();
+    const publishButton = dialog.getByRole("button", { name: "Publish", exact: true });
+    const size = () => publishButton.evaluate(el => ({ width: (el as HTMLElement).offsetWidth, height: (el as HTMLElement).offsetHeight }));
+    const restSize = await size();
+    await expect(publishButton.locator("[data-border-progress]")).toHaveCount(0);
+    await publishButton.click();
     await expect(dialog.getByText(/^Still publishing\./)).toBeVisible({ timeout: 60_000 });
     await expect(dialog.locator("[data-status-row=danger]")).toHaveCount(0);
+    // D-356: while Still publishing, Publish shows its own-border pending arc, stays inert and keeps its size.
+    await expect(publishButton).toHaveAttribute("aria-busy", "true");
+    await expect(publishButton).toHaveAttribute("aria-disabled", "true");
+    await expect(publishButton.locator("[data-border-progress=pending]")).toHaveCount(1);
+    expect(await size()).toEqual(restSize);
     await capture("still-publishing");
     // Recorded now: the commit is on the site's branch, so Pages will serve it.
     expect(published()).toEqual(["trips/lisbon.md", "trips/rome.md"]);

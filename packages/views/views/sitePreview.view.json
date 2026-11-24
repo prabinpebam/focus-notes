@@ -776,6 +776,7 @@
                         "t": "publish.confirm"
                       },
                       "variant": "primary",
+                      "feedback": "border",
                       "busy": {
                         "get": "vm.sharingPreview.publishBusy"
                       }
