@@ -575,7 +575,7 @@ test("menu explanations are accessible descriptions and hover or focus tooltips 
       return { inline: popover.style.zIndex, computed: getComputedStyle(popover).zIndex, token: getComputedStyle(document.documentElement).getPropertyValue("--fn-layer-popover").trim() };
     })).toEqual({ inline: "", computed: "8", token: "8" });
     const item = l.page.getByRole("menuitem", { name: "Publish…", exact: true });
-    const reason = "Publishing to GitHub isn’t available yet. Nothing will be published.";
+    const reason = "To publish, turn on sharing in Settings → Sharing.";
     const tip = l.page.getByRole("tooltip", { name: reason, exact: true });
     await expect(item).toHaveAccessibleDescription(reason);
     await expect(item).toHaveAttribute("aria-disabled", "true");
