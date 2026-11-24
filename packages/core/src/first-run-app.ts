@@ -19,7 +19,7 @@ import { isRepoName, DEFAULT_SETUP, setupFailureActions, type SetupFailureAction
 import type { SetupState } from "./setup-app.ts";
 import {
   canContinue, FIRST_RUN_STEPS, looksLikeToken, nextStep, notesIdentity, pageAllowed, prevStep, resumeStep,
-  type AccountStatus, type FirstRunPage, type FirstRunStep, type GitCheck, type RepoChoice, type WorkspaceResult,
+  type AccountStatus, type ExistingCopy, type FirstRunPage, type FirstRunStep, type GitCheck, type RepoChoice, type WorkspaceResult,
 } from "./first-run.ts";
 
 export * from "./first-run.ts";
@@ -29,9 +29,9 @@ export type SignInPhase = "idle" | "code" | "window" | "waiting" | "token";
  * The first run's waits (PRF-13, D-149), each with its words (`firstRun.wait.<op>`) unless it's
  * silent: checking Git and the folder on arrival are responsive and show nothing (the inventory).
  */
-export type FirstRunWaitOp = "" | "git" | "prepare" | "account" | "signIn" | "identity" | "findNotes" | "folder" | "chooseFolder" | "clone" | "create" | "open" | "strength";
+export type FirstRunWaitOp = "" | "git" | "prepare" | "account" | "signIn" | "identity" | "findNotes" | "folder" | "chooseFolder" | "clone" | "create" | "open" | "strength" | "copies" | "useCopy";
 /** The waits that name themselves under the step's title; signing in has its own place, the code card. */
-const SAID: readonly FirstRunWaitOp[] = ["account", "identity", "findNotes", "folder", "clone", "open"];
+const SAID: readonly FirstRunWaitOp[] = ["account", "identity", "findNotes", "folder", "clone", "open", "copies", "useCopy"];
 /** Waits that only read, which Back and Esc may leave (PRF-13): never a download, a creation, or a sign-in (those have Cancel). */
 const LEAVABLE: readonly FirstRunWaitOp[] = ["git", "prepare", "account", "findNotes"];
 const NO_PROGRESS = { op: "", done: 0, total: 0, part: "", percent: -1 };
@@ -39,6 +39,7 @@ const NO_PROGRESS = { op: "", done: 0, total: 0, part: "", percent: -1 };
 export const FIRST_RUN_WAITS = {
   git: "firstRun.git", prepare: "firstRun.prepare", account: "firstRun.account", signIn: "firstRun.signIn", identity: "firstRun.identity", findNotes: "firstRun.findNotes",
   folder: "firstRun.folder", chooseFolder: "firstRun.chooseFolder", clone: "firstRun.clone", create: "firstRun.create", open: "firstRun.open", strength: "firstRun.strength",
+  copies: "firstRun.copies", useCopy: "firstRun.useCopy",
 } as const satisfies Record<Exclude<FirstRunWaitOp, "">, string>;
 /**
  * Why the card shows: a new install's first run; Run setup again (from Connect, FRE-07); signing in
@@ -46,8 +47,8 @@ export const FIRST_RUN_WAITS = {
  * GitHub (the Your notes step alone, D-124).
  */
 export type FirstRunScope = "install" | "setup" | "account" | "workspace";
-/** Your notes: the workspaces found, Create my notes, any repository from GitHub, or a folder here. */
-export type WorkspaceMode = "found" | "create" | "clone" | "local";
+/** Your notes: the workspaces found, Create my notes, any repository from GitHub, a folder here, or copies already here (D-415). */
+export type WorkspaceMode = "found" | "create" | "clone" | "local" | "copies";
 
 export interface FirstRunState {
   active: boolean;
@@ -98,6 +99,8 @@ export interface FirstRunState {
     activeId: string;
     /** The repository Open was last pressed on, for its folder actions (D-154), or "". */
     cloneId: string;
+    /** Copies of the repository Open was pressed on that are already on this computer (D-415). */
+    copies: ExistingCopy[];
     result?: WorkspaceResult;
   };
   /** Bumped to move focus to the step's field. */
@@ -109,7 +112,7 @@ export const FIRST_RUN_INACTIVE: FirstRunState = {
   signIn: { phase: "idle", code: "", helper: "" }, token: "", tokenError: false,
   workspace: {
     mode: "create", more: false, details: false, instance: DEFAULT_SETUP.instance, private: DEFAULT_SETUP.private, publish: DEFAULT_SETUP.publish,
-    passphrase: "", confirm: "", error: "", field: "", strength: 0, folder: "", repos: [], reposLoaded: false, query: "", activeId: "", cloneId: "",
+    passphrase: "", confirm: "", error: "", field: "", strength: 0, folder: "", repos: [], reposLoaded: false, query: "", activeId: "", cloneId: "", copies: [],
   },
   focus: 0,
 };
@@ -147,6 +150,15 @@ const GIT_NEEDED = "2.31";
 export const workspaceMade = (r?: SetupReport) => Boolean(r && !r.running && ["clone", "link"].every((id) => r.steps.find((x) => x.id === id)?.state === "done"));
 
 const DAY = 86_400_000;
+/** "Updated 3 days ago", from a time in milliseconds; "" when there's none. Also Open from GitHub's copies (D-415). */
+export function updatedLabel(catalog: MessageCatalog, now: number, t: number): string {
+  if (!Number.isFinite(t)) return "";
+  const days = Math.max(0, Math.floor((now - t) / DAY));
+  if (days < 1) return catalog.format("firstRun.notes.updated.today");
+  if (days < 60) return catalog.format("firstRun.notes.updated.days", { count: days });
+  if (days < 730) return catalog.format("firstRun.notes.updated.months", { count: Math.floor(days / 30) });
+  return catalog.format("firstRun.notes.updated.years", { count: Math.floor(days / 365) });
+}
 
 /** The commands that still work while setup owns the window (D-126); every other one is held. */
 /** An image the renderer may show: a data URL the shell made, never an address to fetch. */
@@ -187,7 +199,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
     set({ busy: true, wait: op, ...(op === "clone" ? { progress: { ...NO_PROGRESS, op }, cloneStopping: false } : {}) });
     try {
       // These receipts may resolve with stopped or failed work; their result cards announce the outcome.
-      return await (tracker ? tracker.run(FIRST_RUN_WAITS[op], `firstRun.wait.${op}`, fn, undefined, undefined, op === "clone" || op === "create" ? "none" : "all") : fn());
+      return await (tracker ? tracker.run(FIRST_RUN_WAITS[op], `firstRun.wait.${op}`, fn, undefined, op === "copies" || op === "useCopy" ? `fn:firstRun.${op}` : undefined, op === "clone" || op === "create" ? "none" : "all") : fn());
     } catch {
       return undefined;
     } finally {
@@ -532,8 +544,26 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
     const repo = state().workspace.repos.find((r) => `${r.owner}/${r.name}` === target);
     if (!repo || state().busy) return;
     if (state().workspace.cloneId === target && state().workspace.result?.folder) return commands.run("firstRun.resumeClone");
-    setWs({ cloneId: `${repo.owner}/${repo.name}`, result: undefined, error: "" });
+    setWs({ cloneId: `${repo.owner}/${repo.name}`, result: undefined, error: "", copies: [] });
+    // A copy already here is offered before another download (D-415); none found, or the look failed: as before.
+    const copies = fr?.copies ? await busy("copies", () => fr.copies!(repo.owner, repo.name)) : undefined;
+    if (copies?.length && state().workspace.cloneId === `${repo.owner}/${repo.name}`) return (setWs({ mode: "copies", copies }), bump());
     await opened(await busy("clone", () => fr!.clone(repo.owner, repo.name)) ?? { ok: false, problem: "failed" });
+  });
+  // Use existing folder (D-415): only a folder the look found; fetched and fast-forwarded only, then opened.
+  reg<{ id: string }>("firstRun.useCopy", async ({ id }) => {
+    const w = state().workspace;
+    const copy = w.copies.find((c) => c.folder === id) ?? (id ? undefined : w.copies[0]);
+    if (!copy || state().busy || w.mode !== "copies" || !fr?.useCopy) return;
+    setWs({ result: undefined, error: "" });
+    await opened(await busy("useCopy", () => fr.useCopy!(copy.folder)) ?? { ok: false, problem: "failed" });
+  });
+  // Create a new copy (D-415): the download as before, into the next free "<name> N" folder.
+  reg("firstRun.newCopy", async () => {
+    const [owner, name] = state().workspace.cloneId.split("/");
+    if (!owner || !name || state().busy || state().workspace.mode !== "copies") return;
+    setWs({ mode: baseMode(), copies: [], error: "" });
+    await opened(await busy("clone", () => fr!.clone(owner, name, "new")) ?? { ok: false, problem: "failed" });
   });
   reg("firstRun.cancelClone", async () => {
     if (state().wait !== "clone" || !fr?.cancelClone || state().cloneStopping) return;
@@ -600,15 +630,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
   // The account pill's Save to cloud is `sync.now` (app.ts, D-132); Sign out is Settings' (settings-app.ts).
 
   /** "Updated 3 days ago", from a repository's last push. */
-  const updated = (iso: string | undefined) => {
-    const t = iso ? Date.parse(iso) : NaN;
-    if (!Number.isFinite(t)) return "";
-    const days = Math.max(0, Math.floor((now() - t) / DAY));
-    if (days < 1) return catalog.format("firstRun.notes.updated.today");
-    if (days < 60) return catalog.format("firstRun.notes.updated.days", { count: days });
-    if (days < 730) return catalog.format("firstRun.notes.updated.months", { count: Math.floor(days / 30) });
-    return catalog.format("firstRun.notes.updated.years", { count: Math.floor(days / 365) });
-  };
+  const updated = (iso: string | undefined) => updatedLabel(catalog, now(), iso ? Date.parse(iso) : NaN);
 
   const STEP_ENUM = [...FIRST_RUN_STEPS];
   const OPTION = { type: "object" as const, properties: { id: { type: "string" as const }, label: { type: "string" as const } } };
@@ -629,7 +651,9 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
         login: { type: "string" }, handle: { type: "string" }, accountName: { type: "string" }, avatar: { type: "string" }, initials: { type: "string" }, foundText: { type: "string" }, continueAs: { type: "string" }, code: { type: "string" },
         canHelper: { type: "boolean" }, noHelper: { type: "boolean" }, problem: { type: "string" }, hasProblem: { type: "boolean" }, offline: { type: "boolean" }, canOther: { type: "boolean" },
         token: { type: "string" }, tokenError: { type: "boolean" },
-        panel: { type: "string", enum: ["checking", "found", "create", "clone", "local", "progress"] }, more: { type: "boolean" }, details: { type: "boolean" }, canCreate: { type: "boolean" },
+        panel: { type: "string", enum: ["checking", "found", "create", "clone", "local", "progress", "copies"] },
+        copies: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, detail: { type: "string" }, badge: { type: "string" }, variant: { type: "string" }, first: { type: "boolean" } } } },
+        copiesWhy: { type: "string" }, more: { type: "boolean" }, details: { type: "boolean" }, canCreate: { type: "boolean" },
         isCreate: { type: "boolean" }, showMore: { type: "boolean" }, working: { type: "boolean" },
         found: { type: "array", items: { type: "object", properties: { variant: { type: "string" }, id: { type: "string" }, label: { type: "string" }, detail: { type: "string" }, badge: { type: "string" }, icon: { type: "string" }, first: { type: "boolean" } } } },
         instance: { type: "string" }, private: { type: "string" }, publish: { type: "string" }, publishOptions: { type: "array", items: OPTION },
@@ -757,7 +781,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
         : f.step === "notes"
           ? panel === "checking" ? ["search", "neutral", true]
           : panel === "clone" ? ["github", "neutral", false]
-          : panel === "local" ? ["folder", "neutral", false]
+          : panel === "local" || panel === "copies" ? ["folder", "neutral", false]
           : panel === "create" && lookupFailed ? ["cloudOff", "danger", false]
           : panel === "progress" ? (made ? ["cloudCheck", "success", false] : failed || err ? ["warning", "danger", false] : ["cloudUp", "accent", true])
           : ["cloud", w.error ? "danger" : "neutral", false]
@@ -813,6 +837,8 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
           id: `${r.owner}/${r.name}`, first: n === 0, variant: n === 0 ? "primary" : "secondary", label: !s.account.login || r.owner === s.account.login ? r.name : `${r.owner}/${r.name}`,
           icon: r.private ? "lock" : "folder", detail: updated(r.pushedAt), badge: catalog.format(r.private ? "firstRun.notes.private" : "firstRun.notes.public"),
         })),
+        copies: w.copies.map((c, n) => ({ id: c.folder, label: c.name, detail: c.folder, badge: updatedLabel(catalog, now(), c.updated), first: n === 0, variant: n === 0 ? "primary" : "secondary" })),
+        copiesWhy: catalog.format("firstRun.copies.why", { count: w.copies.length }),
         instance: w.instance, private: w.private, publish: w.publish ? "on" : "off", publishOptions: options("firstRun.workspace.publish", ["on", "off"]),
         passphrase: w.passphrase, confirm: w.confirm, folder: w.folder, folderText: catalog.format("firstRun.workspace.folder", { folder: w.folder }),
         error: err && catalog.has(err) ? catalog.format(err) : "", hasError: Boolean(err),

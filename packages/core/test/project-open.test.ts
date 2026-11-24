@@ -820,3 +820,40 @@ describe("Open", () => {
     expect(vm(app).error).toBe("");
   });
 });
+
+describe("Open from GitHub with a copy already here (D-415)", () => {
+  const copy = { folder: "C:\\Docs\\notes 2", name: "notes 2", updated: Date.now() };
+  const setup = (copies = [copy]) => {
+    const openGitHub = vi.fn(async (_o: string, _n: string, _use?: string) => {});
+    const app = appWith({ list: async () => [], githubRepos: async () => [{ owner: "ada", name: "notes", private: true }], githubCopies: async () => copies, openGitHub });
+    const view = () => app.viewModels.select("vm.projects", app.store.state) as Record<string, unknown>;
+    return { app, openGitHub, view };
+  };
+  it("offers Use existing folder before downloading and opens only an offered folder", async () => {
+    const { app, openGitHub, view } = setup();
+    await app.commands.run("projects.github");
+    await app.commands.run("projects.githubOpen", { id: "ada/notes" });
+    expect(openGitHub).not.toHaveBeenCalled();
+    expect(view()).toMatchObject({ githubChoosing: true, githubCopies: [{ id: copy.folder, label: "notes 2", detail: copy.folder, variant: "primary", first: true }] });
+    await app.commands.run("projects.githubUseCopy", { id: "C:\\Elsewhere" });
+    expect(openGitHub).not.toHaveBeenCalled();
+    await app.commands.run("projects.githubUseCopy", { id: copy.folder });
+    expect(openGitHub).toHaveBeenCalledWith("ada", "notes", copy.folder);
+  });
+  it("Create a new copy downloads as before, and Back returns to the list", async () => {
+    const { app, openGitHub, view } = setup();
+    await app.commands.run("projects.github");
+    await app.commands.run("projects.githubOpen", { id: "ada/notes" });
+    await app.commands.run("projects.githubBack");
+    expect(view()).toMatchObject({ githubOpen: true, githubChoosing: false });
+    await app.commands.run("projects.githubOpen", { id: "ada/notes" });
+    await app.commands.run("projects.githubNewCopy");
+    expect(openGitHub).toHaveBeenCalledWith("ada", "notes");
+  });
+  it("no copy here: Open downloads straight away", async () => {
+    const { app, openGitHub } = setup([]);
+    await app.commands.run("projects.github");
+    await app.commands.run("projects.githubOpen", { id: "ada/notes" });
+    expect(openGitHub).toHaveBeenCalledWith("ada", "notes");
+  });
+});

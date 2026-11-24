@@ -2,7 +2,7 @@ import type { Platform } from "./commands.ts";
 import { lastWord } from "./scan.ts";
 import type { WorkspaceChange, WorkspaceScan } from "./workspace.ts";
 import type { SetupBridge } from "./setup.ts";
-import type { FirstRunBridge, FirstRunStep } from "./first-run.ts";
+import type { ExistingCopy, FirstRunBridge, FirstRunStep } from "./first-run.ts";
 
 import type { RecoverBridge } from "./recover.ts";
 import type { SyncAlertBridge } from "./recovery-alert.ts";
@@ -182,8 +182,10 @@ export interface PlatformBridge {
     onFileError?(listener: () => void): () => void;
     /** Open from GitHub…: the account's own repositories (never templates). */
     githubRepos?(): Promise<{ owner: string; name: string; private: boolean }[]>;
-    /** Clones a repository into a new project and opens its window. */
-    openGitHub?(owner: string, name: string): Promise<void>;
+    /** Clones a repository into a new project and opens its window; `use`: a folder `githubCopies` offered, fast-forwarded only and opened instead (D-415). */
+    openGitHub?(owner: string, name: string, use?: string): Promise<void>;
+    /** Copies of that repository already on this computer, newest first (D-415). Read-only. */
+    githubCopies?(owner: string, name: string): Promise<ExistingCopy[]>;
     lastNote(): Promise<string | undefined>;
     /**
      * Exclusively creates an ordinary first note only in a positively verified empty project. `"history"`:

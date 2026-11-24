@@ -19,6 +19,7 @@ import { isRepoName, SETUP_PROBLEMS, SETUP_STEPS, type SetupOptions, type SetupP
 import { commitProblem, networkProblem, Queue, type GitResult, type GitRunner } from "../git/run.ts";
 import { pointerMessage } from "../git/message.ts";
 import { clonePercent } from "../first-run/workspace.ts";
+import { normaliseRemote } from "../first-run/existing-copies.ts";
 import { knownTemplate, KNOWN_TEMPLATES, TEMPLATE } from "../git/template-guard.ts";
 import { DEPLOY_KEY_TITLE, deployKeyPair, type DeployKeyPair } from "./deploy-key.ts";
 import { writeTemplate, type BundledTemplate } from "./bundled-template.ts";
@@ -506,11 +507,11 @@ export class SetupEngine {
       let { folder } = this.#o;
       await this.#notTemplate(instance);
       const url = this.#url(instance);
-      // Already this clone: resumed. Missing or empty: cloned into. Anything else is taken.
+      // Already this clone (its origin in any spelling, D-415): resumed. Missing or empty: cloned into. Anything else is taken.
       const holds = async (f: string): Promise<"clone" | "free" | "taken"> => {
         if (existsSync(join(f, ".git"))) {
           const origin = await this.#git(f, ["remote", "get-url", "origin"]);
-          return origin.code === 0 && origin.stdout.trim() === url ? "clone" : "taken";
+          return origin.code === 0 && normaliseRemote(origin.stdout) === normaliseRemote(url) ? "clone" : "taken";
         }
         return existsSync(f) && (await readdir(f)).length > 0 ? "taken" : "free";
       };

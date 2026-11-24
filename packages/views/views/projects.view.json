@@ -200,6 +200,137 @@
            }
           }
          }
+        ],
+        "when": {
+         "expr": {
+          "!": [
+           {
+            "get": "vm.projects.githubChoosing"
+           }
+          ]
+         }
+        }
+       },
+       {
+        "type": "Stack",
+        "when": {
+         "get": "vm.projects.githubChoosing"
+        },
+        "props": {
+         "gap": "stackGroup"
+        },
+        "children": [
+         {
+          "type": "Text",
+          "props": {
+           "value": {
+            "get": "vm.projects.githubCopiesWhy"
+           },
+           "role": "lead"
+          }
+         },
+         {
+          "type": "Stack",
+          "props": {
+           "gap": "stackItem"
+          },
+          "children": [
+           {
+            "each": {
+             "get": "vm.projects.githubCopies"
+            },
+            "as": "copy",
+            "key": "copy.id",
+            "empty": {
+             "type": "Text",
+             "props": {
+              "value": {
+               "t": "project.github.empty"
+              },
+              "tone": "muted"
+             }
+            },
+            "render": {
+             "type": "ItemCard",
+             "props": {
+              "title": {
+               "get": "copy.label"
+              },
+              "detail": {
+               "get": "copy.detail"
+              },
+              "badge": {
+               "get": "copy.badge"
+              },
+              "icon": "folder",
+              "personal": "title"
+             },
+             "children": [
+              {
+               "type": "Button",
+               "props": {
+                "label": {
+                 "t": "project.github.useCopy"
+                },
+                "variant": {
+                 "get": "copy.variant"
+                },
+                "autoFocus": {
+                 "get": "copy.first"
+                },
+                "busy": {
+                 "get": "vm.projects.githubPending"
+                },
+                "size": "l"
+               },
+               "on": {
+                "press": {
+                 "run": "projects.githubUseCopy",
+                 "args": {
+                  "id": {
+                   "get": "copy.id"
+                  }
+                 }
+                }
+               }
+              }
+             ]
+            }
+           },
+           {
+            "type": "ItemCard",
+            "props": {
+             "title": {
+              "t": "project.github.newCopy"
+             },
+             "detail": {
+              "t": "firstRun.copies.newDetail"
+             },
+             "icon": "download"
+            },
+            "children": [
+             {
+              "type": "Button",
+              "props": {
+               "label": {
+                "t": "project.github.newCopy"
+               },
+               "variant": "secondary",
+               "busy": {
+                "get": "vm.projects.githubPending"
+               },
+               "size": "l"
+              },
+              "on": {
+               "press": {
+                "run": "projects.githubNewCopy"
+               }
+              }
+             }
+            ]
+           }
+          ]
+         }
         ]
        },
        {

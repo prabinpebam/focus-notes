@@ -12,7 +12,7 @@ import { describe, expect, it } from "vitest";
 import {
   canContinue, createApp, deviceCode, FIRST_RUN_PAGES, FIRST_RUN_STEPS, gitIsNewEnough, identityProblem, INSTALL_PAGES, looksLikeToken, pageAllowed, nextStep, noreplyEmail, notesIdentity, parseGitVersion, prevStep,
   resumeStep, signInProblem, suggestIdentity, SETUP_PROBLEMS, SETUP_STEPS, TOKEN_PAGE,
-  type AccountStatus, type AppStateFile, type FirstRunBridge, type FirstRunProgress, type GitCheck, type PlatformBridge, type RepoChoice, type SetupReport, type SignInProgress, type SyncReport, type WorkspaceResult,
+  type AccountStatus, type AppStateFile, type ExistingCopy, type FirstRunBridge, type FirstRunProgress, type GitCheck, type PlatformBridge, type RepoChoice, type SetupReport, type SignInProgress, type SyncReport, type WorkspaceResult,
 } from "../src/index.ts";
 import en from "../../views/messages/en.json" with { type: "json" };
 
@@ -133,7 +133,7 @@ const report = (states: Partial<Record<string, SetupReport["steps"][number]["sta
   steps: SETUP_STEPS.map((id) => ({ id, state: states[id] ?? "pending" })),
 });
 
-function shell(opts: { state?: AppStateFile; git?: GitCheck; account?: AccountStatus; signIn?: () => Promise<AccountStatus>; useToken?: () => AccountStatus; repos?: RepoChoice[]; reposOffline?: boolean; clone?: (owner: string, name: string, where?: "new") => WorkspaceResult; platform?: PlatformBridge["platform"]; clock?: ManualClock; slowRepos?: Promise<void>; slowAccount?: Promise<void> } = {}) {
+function shell(opts: { state?: AppStateFile; git?: GitCheck; account?: AccountStatus; signIn?: () => Promise<AccountStatus>; useToken?: () => AccountStatus; repos?: RepoChoice[]; reposOffline?: boolean; clone?: (owner: string, name: string, where?: "new") => WorkspaceResult; copies?: ExistingCopy[]; useCopy?: (folder: string) => WorkspaceResult; platform?: PlatformBridge["platform"]; clock?: ManualClock; slowRepos?: Promise<void>; slowAccount?: Promise<void> } = {}) {
   const saved: AppStateFile[] = [];
   const calls: string[] = [];
   const tokens: string[] = [];
@@ -162,6 +162,8 @@ function shell(opts: { state?: AppStateFile; git?: GitCheck; account?: AccountSt
     folder: async (instance) => `/home/ada/Documents/${instance ?? "Focus Notes"}`,
     chooseFolder: async () => (calls.push("chooseFolder"), "/home/ada/Elsewhere"),
     clone: async (owner, name, where) => (calls.push(`clone:${owner}/${name}${where ? `:${where}` : ""}`), opts.clone ? opts.clone(owner, name, where) : { ok: true, folder: "/x", privateNotes: false }),
+    ...(opts.copies ? { copies: async (owner: string, name: string) => (calls.push(`copies:${owner}/${name}`), opts.copies!) } : {}),
+    useCopy: async (folder) => (calls.push(`useCopy:${folder}`), opts.useCopy ? opts.useCopy(folder) : { ok: true, folder, privateNotes: true }),
     openFolder: async () => (calls.push("openFolder"), { ok: false, problem: "notWorkspace" }),
     openWorkspace: async () => (calls.push("openWorkspace"), { ok: true }),
     openPage: (p) => void calls.push(`page:${p}`),
@@ -590,6 +592,46 @@ describe("FRE-06, FRE-08: Your notes", () => {
     await u.run("firstRun.errorAction", { id: "back" });
     expect(u.vm()).toMatchObject({ hasError: false, errorActions: [] });
     taken = false;
+  });
+  // D-415: a copy already on this computer is offered before another download.
+  it("D-415: Open with copies already here offers Use existing folder (newest first) and Create a new copy", async () => {
+    const copies = [
+      { folder: "/home/ada/Documents/notes 2", name: "notes 2", updated: Date.parse("2026-10-14T09:00:00Z") },
+      { folder: "/home/ada/Documents/notes", name: "notes", updated: Date.parse("2026-10-01T09:00:00Z") },
+    ];
+    const t = await atNotes({ copies });
+    await t.run("firstRun.clone", { id: "ada/notes" });
+    expect(t.calls).toContain("copies:ada/notes");
+    expect(t.calls.some((c) => c.startsWith("clone:"))).toBe(false);
+    expect(t.vm()).toMatchObject({ panel: "copies", title: "These notes are already here", mark: "folder" });
+    expect(t.vm().copies).toMatchObject([
+      { id: "/home/ada/Documents/notes 2", label: "notes 2", detail: "/home/ada/Documents/notes 2", variant: "primary", first: true },
+      { id: "/home/ada/Documents/notes", label: "notes", variant: "secondary", first: false },
+    ]);
+    // Only a folder that was offered is used; then it opens like any Open.
+    await t.run("firstRun.useCopy", { id: "/elsewhere" });
+    expect(t.calls.some((c) => c.startsWith("useCopy:"))).toBe(false);
+    await t.run("firstRun.useCopy", { id: "/home/ada/Documents/notes 2" });
+    expect(t.calls).toContain("useCopy:/home/ada/Documents/notes 2");
+    expect(t.calls).toContain("openWorkspace");
+    expect(t.calls.some((c) => c.startsWith("clone:"))).toBe(false);
+    // Create a new copy: the download as before, into a new folder.
+    const u = await atNotes({ copies });
+    await u.run("firstRun.clone", { id: "ada/notes" });
+    await u.run("firstRun.newCopy");
+    expect(u.calls).toContain("clone:ada/notes:new");
+    expect(u.calls).toContain("openWorkspace");
+    // Back: to the notes found, with nothing downloaded.
+    const v = await atNotes({ copies });
+    await v.run("firstRun.clone", { id: "ada/notes" });
+    await v.run("firstRun.back");
+    expect(v.vm()).toMatchObject({ panel: "found" });
+    expect(v.calls.some((c) => c.startsWith("clone:"))).toBe(false);
+  });
+  it("D-415: no copy here: Open downloads as before", async () => {
+    const t = await atNotes({ copies: [] });
+    await t.run("firstRun.clone", { id: "ada/notes" });
+    expect(t.calls).toContain("clone:ada/notes");
   });
   // D-155: the folder is named after the notes' repository, and follows the name as it's typed.
   it("D-155: Saved on this computer in Documents/<the name typed>", async () => {

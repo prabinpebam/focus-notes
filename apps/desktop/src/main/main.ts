@@ -59,7 +59,7 @@ import { ProblemLog, type RedactOptions } from "@focus-notes/core/diagnostics";
 import { feedbackMain } from "./feedback.ts";
 import { diagnostics, knownStrings, reportFileName, reportPathAllowed } from "./diagnostics.ts";
 import { DEFAULT_SETUP, isRepoName, SETUP_STEPS, type SetupStepId } from "@focus-notes/core/setup";
-import { FIRST_RUN_PAGES, identityProblem, pageAllowed, type FirstRunProgress, type RepoChoice, type WorkspaceResult } from "@focus-notes/core/first-run";
+import { FIRST_RUN_PAGES, identityProblem, pageAllowed, type FirstRunProgress, type ExistingCopy, type RepoChoice, type WorkspaceResult } from "@focus-notes/core/first-run";
 import { checkOptions, notesRepos, SetupEngine } from "./setup/engine.ts";
 import { githubFetch } from "./setup/credential.ts";
 import { readTemplate, TEMPLATE_RESOURCE } from "./setup/bundled-template.ts";
@@ -68,6 +68,7 @@ import type { BatchOp } from "./git/message.ts";
 import { Account } from "./first-run/account.ts";
 import { createToolRunner } from "./first-run/tools.ts";
 import { applyLocalIdentity, checkWorkspace, cloneWorkspace, folderFree, homesFor, mapLimit, savedToGitHub, setupTarget } from "./first-run/workspace.ts";
+import { findCopies, reuseCopy } from "./first-run/existing-copies.ts";
 import type { ConflictChoice, DeletionResult, NoteRewrite, RemovalCheck } from "@focus-notes/core";
 import { CHROMIUM_FOLDERS, DATA_FILES, type DataFile } from "@focus-notes/core/inventory";
 import { forgetLocalData, removalCheck, removeWorkspace } from "./workspace/remove.ts";
@@ -1817,15 +1818,44 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     if (!api) return undefined;
     return Boolean(await api.findRepo((await api.user()).login, name));
   });
+  // Copies already here (D-415): Documents' "<name>" and "<name> N" folders, the known projects and the open
+  // one, kept only when their origin is this repository. Use existing folder takes only a folder offered here.
+  let offeredCopies: string[] = [];
+  const copiesOf = async (url: string, name: string): Promise<ExistingCopy[]> => {
+    const known = await projects.list().then((l) => l.map((p) => p.folder), () => [] as string[]);
+    const candidates = [...homesFor(documentsDir(), name).filter((f) => existsSync(f)), ...known, ...(isWorkspace() ? [notesHome()] : [])];
+    const found = await findCopies(setupRunner, url, candidates, () => logLine("copies: a folder couldn't be read, so it isn't offered"));
+    offeredCopies = found.map((c) => c.folder);
+    return found;
+  };
+  /** The address Open from GitHub clones from: a review build's local remotes, or GitHub. */
+  const githubUrl = (owner: string, name: string) => (reviewRemotes ? `${reviewRemotes.replace(/\\/g, "/")}/${owner}/${name}.git` : remoteUrl(owner, name));
+  handle("projects:githubCopies", async (owner: unknown, name: unknown): Promise<ExistingCopy[]> => {
+    if (typeof owner !== "string" || !/^[A-Za-z0-9-]{1,39}$/.test(owner) || typeof name !== "string" || !isRepoName(name)) throw new Error("Not a repository");
+    if (reviewGitHub && !reviewRemotes) return [];
+    return copiesOf(githubUrl(owner, name), name);
+  });
   handle("projects:githubRepos", async () => {
     const api = await projectGitHub();
     if (!api) throw new Error("signedOut");
     return (await api.ownRepos()).filter((r) => !r.template).map((r) => ({ owner: r.owner, name: r.name, private: r.private }));
   });
-  handle("projects:openGitHub", async (owner: unknown, name: unknown) => {
+  handle("projects:openGitHub", async (owner: unknown, name: unknown, use: unknown) => {
     if (typeof owner !== "string" || !/^[A-Za-z0-9-]{1,39}$/.test(owner) || typeof name !== "string" || !isRepoName(name)) throw new Error("Not a repository");
     if (reviewGitHub && !reviewRemotes) throw new Error("This review build has no local remotes.");
-    const url = reviewRemotes ? `${reviewRemotes.replace(/\\/g, "/")}/${owner}/${name}.git` : remoteUrl(owner, name);
+    // Use existing folder (D-415): only a folder offered for this repository; fast-forwarded only, never overwritten.
+    if (use !== undefined) {
+      if (typeof use !== "string" || !offeredCopies.includes(use)) throw new Error("Not a copy that was offered");
+      const reused = await reuseCopy(setupRunner, use);
+      logLine(`projects.useCopy: ${reused.project}${reused.private ? `, private ${reused.private}` : ""}`);
+      const checked = await checkWorkspace(setupRunner, use, reviewGitHub ? undefined : isTemplateRemote);
+      if (!checked.ok) throw new Error(checked.problem);
+      const canonical = await realpath(use);
+      await projects.adopt(canonical, { name, accent: "teal", logo: "book" });
+      await projects.open(canonical);
+      return;
+    }
+    const url = githubUrl(owner, name);
     let folder = reviewGitHub ? join(dirname(notesHome()), name) : await freeFor(name);
     for (let i = 2; reviewGitHub && existsSync(folder); i++) folder = join(dirname(notesHome()), `${name} ${i}`);
     const r = await cloneWorkspace(setupRunner, url, folder, reviewGitHub ? undefined : isTemplateRemote);
@@ -2668,6 +2698,20 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     } finally { activeFirstClone = undefined; }
   });
   handle("firstRun:cancelClone", () => { if (activeFirstClone) activeFirstClone.requested = true; });
+  handle("firstRun:copies", async (owner, name): Promise<ExistingCopy[]> => {
+    if (typeof owner !== "string" || !/^[A-Za-z0-9-]{1,39}$/.test(owner) || typeof name !== "string" || !isRepoName(name)) throw new Error("Not a repository");
+    return copiesOf(remoteUrl(owner, name), name);
+  });
+  handle("firstRun:useCopy", async (folder): Promise<WorkspaceResult> => {
+    if (typeof folder !== "string" || !offeredCopies.includes(folder)) throw new Error("Not a copy that was offered");
+    if (activeFirstClone) throw new Error("A workspace download is already running");
+    pendingWorkspace = undefined;
+    const reused = await reuseCopy(setupRunner, folder);
+    logLine(`firstRun.useCopy: ${reused.project}${reused.private ? `, private ${reused.private}` : ""}`);
+    const r = await checkWorkspace(setupRunner, folder, isTemplateRemote);
+    if (r.ok) pendingWorkspace = folder;
+    return r;
+  });
   handle("firstRun:resumeClone", async (): Promise<WorkspaceResult> => {
     if (activeFirstClone || !firstCloneReceipt) throw new Error("No stopped workspace download to resume");
     const folder = firstCloneReceipt;
