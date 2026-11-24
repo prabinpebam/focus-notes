@@ -16,8 +16,8 @@ test.describe.configure({ mode: "serial" });
 
 /** prabins-notes (a project with prabins-notes-private linked), and repositories that aren't projects. */
 function ownerShaped(w: World) {
-  const seed = (name: string, fill: (dir: string) => void, isPrivate = false) => {
-    w.gh.add({ owner: "ada", name, private: isPrivate, files: [] });
+  const seed = (name: string, fill: (dir: string) => void, isPrivate = false, files: string[] = []) => {
+    w.gh.add({ owner: "ada", name, private: isPrivate, files });
     const bare = join(w.remotes, "ada", `${name}.git`);
     mkdirSync(bare, { recursive: true });
     w.git(bare, "init", "--quiet", "--bare", "--initial-branch=main");
@@ -37,16 +37,18 @@ function ownerShaped(w: World) {
     cpSync(join(repoRoot, "templates", "workspace"), d, { recursive: true });
     writeFileSync(join(d, "notes", "hello.md"), "# Hello\n\nA public note.\n");
     w.git(d, "submodule", "add", "--quiet", "-b", "main", priv.replace(/\\/g, "/"), "private");
-  });
+  }, false, [".focus-notes/workspace.json", "notes/hello.md"]);
+  // This app's own repository is the owner's instance too: a project. Listed only, never opened here.
+  w.gh.add({ owner: "ada", name: "focus-notes", files: [".focus-notes/workspace.json", "README.md"] });
   for (const name of ["atiya", "pose-n-composition", "designup-site"]) seed(name, (d) => writeFileSync(join(d, "README.md"), `# ${name}\n`));
   return { notes, priv };
 }
 
 /** A project already open (a different one), signed in, with the Open dialog's Open from GitHub list showing. */
-async function atList(prepare?: (w: World, docs: string, notes: string) => string) {
+async function atList(prepare?: (w: World, docs: string, notes: string) => string, shape: (w: World) => { notes: string } = ownerShaped) {
   const w = await world({ gcm: true });
   w.fakes.store(w.gh.token);
-  const { notes } = ownerShaped(w);
+  const { notes } = shape(w);
   const docs = dirname(w.dirs.docs);
   mkdirSync(docs, { recursive: true });
   const current = prepare?.(w, docs, notes) ?? join(w.root, "Current");
@@ -110,6 +112,9 @@ test("Open from GitHub: picking a project opens it in its own window, writing; a
     });
     const card = repoCard(github, "prabins-notes");
     await expect(card).toBeVisible({ timeout: 20_000 });
+    // Only Focus Notes projects (D-416): not the private companion, nor atiya, pose-n-composition or designup-site.
+    await expect(github.locator("[data-item-card]")).toHaveCount(2);
+    await expect(repoCard(github, "focus-notes")).toBeVisible();
     await card.locator("button").first().click();
     await expect(github.getByText("Copies of prabins-notes on this computer couldn’t be checked, so nothing was downloaded. Try again.")).toBeVisible({ timeout: 15_000 });
     expect(existsSync(join(docs, "prabins-notes"))).toBe(false);
@@ -175,6 +180,26 @@ test("Open from GitHub: a project deleted earlier from the same folder opens aga
     await writing(child.page);
   } finally {
     if (child) await closeProject(child);
+    await quit(l);
+    w.server.close();
+  }
+});
+test("Open from GitHub: an account with no Focus Notes projects says why and offers Create a new project", async () => {
+  test.setTimeout(150_000);
+  const { w, l, page, github } = await atList(undefined, (w) => {
+    const { notes } = ownerShaped(w);
+    for (const name of ["prabins-notes", "focus-notes"]) w.gh.repo(name)!.files.clear();
+    return { notes };
+  });
+  try {
+    const empty = github.getByText("No Focus Notes projects on GitHub yet", { exact: true });
+    await expect(empty).toBeVisible({ timeout: 20_000 });
+    await expect(github.getByText("Only repositories that are Focus Notes projects can be opened here, and none of yours is one.", { exact: true })).toBeVisible();
+    await expect(github.locator("[data-item-card]")).toHaveCount(0);
+    await github.getByRole("button", { name: "Create a new project", exact: true }).click();
+    await expect(page.getByRole("dialog", { name: "New project", exact: true })).toBeVisible();
+    await expect(github).toHaveCount(0);
+  } finally {
     await quit(l);
     w.server.close();
   }
