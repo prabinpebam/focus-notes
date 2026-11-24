@@ -150,6 +150,15 @@ const GIT_NEEDED = "2.31";
 export const workspaceMade = (r?: SetupReport) => Boolean(r && !r.running && ["clone", "link"].every((id) => r.steps.find((x) => x.id === id)?.state === "done"));
 
 const DAY = 86_400_000;
+/** "Updated 3 days ago", from a time in milliseconds; "" when there's none. Also Open from GitHub's copies (D-415). */
+export function updatedLabel(catalog: MessageCatalog, now: number, t: number): string {
+  if (!Number.isFinite(t)) return "";
+  const days = Math.max(0, Math.floor((now - t) / DAY));
+  if (days < 1) return catalog.format("firstRun.notes.updated.today");
+  if (days < 60) return catalog.format("firstRun.notes.updated.days", { count: days });
+  if (days < 730) return catalog.format("firstRun.notes.updated.months", { count: Math.floor(days / 30) });
+  return catalog.format("firstRun.notes.updated.years", { count: Math.floor(days / 365) });
+}
 
 /** The commands that still work while setup owns the window (D-126); every other one is held. */
 /** An image the renderer may show: a data URL the shell made, never an address to fetch. */
@@ -621,15 +630,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
   // The account pill's Save to cloud is `sync.now` (app.ts, D-132); Sign out is Settings' (settings-app.ts).
 
   /** "Updated 3 days ago", from a repository's last push. */
-  const updated = (iso: string | undefined) => {
-    const t = iso ? Date.parse(iso) : NaN;
-    if (!Number.isFinite(t)) return "";
-    const days = Math.max(0, Math.floor((now() - t) / DAY));
-    if (days < 1) return catalog.format("firstRun.notes.updated.today");
-    if (days < 60) return catalog.format("firstRun.notes.updated.days", { count: days });
-    if (days < 730) return catalog.format("firstRun.notes.updated.months", { count: Math.floor(days / 30) });
-    return catalog.format("firstRun.notes.updated.years", { count: Math.floor(days / 365) });
-  };
+  const updated = (iso: string | undefined) => updatedLabel(catalog, now(), iso ? Date.parse(iso) : NaN);
 
   const STEP_ENUM = [...FIRST_RUN_STEPS];
   const OPTION = { type: "object" as const, properties: { id: { type: "string" as const }, label: { type: "string" as const } } };
@@ -836,7 +837,7 @@ export function registerFirstRun<St extends S>({ store, bridge, catalog, command
           id: `${r.owner}/${r.name}`, first: n === 0, variant: n === 0 ? "primary" : "secondary", label: !s.account.login || r.owner === s.account.login ? r.name : `${r.owner}/${r.name}`,
           icon: r.private ? "lock" : "folder", detail: updated(r.pushedAt), badge: catalog.format(r.private ? "firstRun.notes.private" : "firstRun.notes.public"),
         })),
-        copies: w.copies.map((c, n) => ({ id: c.folder, label: c.name, detail: c.folder, badge: updated(new Date(c.updated).toISOString()), first: n === 0, variant: n === 0 ? "primary" : "secondary" })),
+        copies: w.copies.map((c, n) => ({ id: c.folder, label: c.name, detail: c.folder, badge: updatedLabel(catalog, now(), c.updated), first: n === 0, variant: n === 0 ? "primary" : "secondary" })),
         copiesWhy: catalog.format("firstRun.copies.why", { count: w.copies.length }),
         instance: w.instance, private: w.private, publish: w.publish ? "on" : "off", publishOptions: options("firstRun.workspace.publish", ["on", "off"]),
         passphrase: w.passphrase, confirm: w.confirm, folder: w.folder, folderText: catalog.format("firstRun.workspace.folder", { folder: w.folder }),

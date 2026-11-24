@@ -179,7 +179,7 @@ export const MEASURE_NAMES: readonly string[] = [
   // The first run's waits (PRF-13, D-149): FIRST_RUN_WAITS in first-run-app.ts.
   ...["git", "prepare", "account", "signIn", "identity", "findNotes", "folder", "chooseFolder", "clone", "create", "open", "strength", "copies", "useCopy"].map((t) => `focus-notes:firstRun.${t}`),
   // Copies already on this computer (D-415): finding them and using one.
-  "fn:firstRun.copies", "fn:firstRun.useCopy",
+  "fn:firstRun.copies", "fn:firstRun.useCopy", "fn:project.copies", "fn:project.useCopy", "focus-notes:project.copies", "focus-notes:project.useCopy",
   // The recovery view's waits (D-212): RECOVER_WAITS in recover-app.ts.
   ...["account", "download", "open", "find", "place", "create"].map((t) => `fn:recover.${t}`),
   ...["account", "download", "open", "find", "place", "create"].map((t) => `focus-notes:recover.${t}`),
