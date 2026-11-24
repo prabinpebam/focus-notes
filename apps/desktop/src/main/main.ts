@@ -2143,6 +2143,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     },
     publishStep: step => sendSharing("sharing:publishStep", step),
     publishLive: event => sendSharing("sharing:publishLive", event),
+    renameFollowed: event => sendSharing("sharing:renameFollowed", event),
     // Journeys only: a short Pages wait, so Still publishing can be walked without waiting 10 minutes.
     ...(devEnv("FOCUS_NOTES_PAGES_WAIT_MS") ? { pagesWaitMs: Number(devEnv("FOCUS_NOTES_PAGES_WAIT_MS")), pagesWatch: { delayMs: 500 } } : {}),
     withdrawShares: () => access.withdrawAll(),
@@ -2173,6 +2174,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     return sharing.publishNotes({ notes: notePaths(s.notes), ...(s.folders === undefined ? {} : { folders: notePaths(s.folders) }) });
   });
   handle("sharing:unpublish", (paths: unknown) => sharing.unpublishNotes(notePaths(paths)));
+  handle("sharing:followRetry", () => sharing.followRetry());
   // Custom themes (THM-04, D-173): the workspace's theme files, private when it has a private
   // repository. Read only, small files only, never followed out of the folder.
   handle("themes:list", async () => {
@@ -2311,12 +2313,18 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     parsed.move(a, b);
     void drafts?.moved(a, b);
     withGit((g) => g.renamed(a, b));
+    // A published note follows its new name on the site (D-423); its outcome comes as a notification.
+    void sharing.followRename(a, b).catch(() => {});
   });
   // Each batch is one commit (FIL-05, D-94): resolved after the commit, so "saved" means saved (PRF-09).
   // A commit that fails leaves the files as the batch made them and is reported as a sync problem.
   handle("workspace:apply", async (ops) => {
     const { done, rewrites } = await applyOps(ops);
     await (await gitOpening)?.commitBatch(done);
+    // Published notes moved or renamed in Files follow on the site (D-423).
+    for (const op of ops as { op?: unknown; from?: unknown; to?: unknown }[]) {
+      if (op?.op === "move" && typeof op.from === "string" && typeof op.to === "string") void sharing.followRename(op.from, op.to).catch(() => {});
+    }
     // The shell's own reference changes, so the open note follows them instead of saving old ones back.
     return rewrites.length ? { rewrites } : undefined;
   });

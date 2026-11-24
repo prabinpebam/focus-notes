@@ -330,6 +330,16 @@ contextBridge.exposeInMainWorld("focusNotes", {
       ipcRenderer.on("sharing:publishLive", handler);
       return () => ipcRenderer.removeListener("sharing:publishLive", handler);
     },
+    followRetry: () => ipcRenderer.invoke("sharing:followRetry"),
+    onRenameFollowed: (listener: (event: { paths: string[]; status: string; build?: string; problem?: string }) => void) => {
+      const handler = (_event: unknown, value: unknown) => {
+        const v = value as { paths?: unknown; status?: unknown; build?: unknown; problem?: unknown } | null;
+        if (!v || !Array.isArray(v.paths) || v.paths.some(p => typeof p !== "string") || typeof v.status !== "string") return;
+        listener({ paths: v.paths as string[], status: v.status, ...(typeof v.build === "string" ? { build: v.build } : {}), ...(typeof v.problem === "string" ? { problem: v.problem } : {}) });
+      };
+      ipcRenderer.on("sharing:renameFollowed", handler);
+      return () => ipcRenderer.removeListener("sharing:renameFollowed", handler);
+    },
   },
   // Local diagnostics (QLT-04, D-140): the main process builds and redacts the report; the window sends only its timings.
   diagnostics: {

@@ -20,7 +20,7 @@
     "children": [
       { "type": "Stack", "props": { "gap": "stackItem" }, "children": [
         { "type": "NoteContent", "props": { "blocks": { "get": "vm.publicIndex.title" } } },
-        { "type": "Text", "props": { "value": { "t": "publicIndex.count", "args": { "count": { "get": "vm.publicIndex.count" } } }, "role": "secondary", "tone": "muted" } }
+        { "type": "Text", "when": { "expr": { "!=": [{ "get": "vm.publicIndex.count" }, 0] } }, "props": { "value": { "t": "publicIndex.count", "args": { "count": { "get": "vm.publicIndex.count" } } }, "role": "secondary", "tone": "muted" } }
       ] },
       { "type": "Stack", "props": { "gap": "stackSection" }, "children": [
         {

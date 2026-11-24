@@ -171,6 +171,8 @@ async function liveFixture(onSite: string[] = []) {
   const published: string[][] = [], unpublished: string[][] = [], copied: string[] = [];
   let step: ((s: string) => void) | undefined;
   let live: ((event: { build: string; live: boolean }) => void) | undefined;
+  let followed: ((event: { paths: string[]; status: string; build?: string; problem?: string }) => void) | undefined;
+  let retried = 0;
   let next = deferred<{ commit: string; published: string[]; changed: string[]; pending?: string }>();
   const bridge: PlatformBridge = {
     platform: "windows", readNote: async () => "# A\n",
@@ -188,6 +190,8 @@ async function liveFixture(onSite: string[] = []) {
       unpublish: async paths => { unpublished.push(paths); return next.promise; },
       onStep: listener => { step = listener; return () => { step = undefined; }; },
       onLive: listener => { live = listener; return () => { live = undefined; }; },
+      onRenameFollowed: listener => { followed = listener; return () => { followed = undefined; }; },
+      followRetry: async () => { retried++; },
     },
   };
   const app = createApp(bridge, en);
@@ -197,11 +201,27 @@ async function liveFixture(onSite: string[] = []) {
   for (let i = 0; i < 5; i++) await Promise.resolve();
   const vm = () => app.viewModels.select("vm.sharingPreview", app.store.state) as Record<string, unknown>;
   const toasts = () => app.store.state.ui.toasts;
-  return { app, vm, toasts, published, unpublished, copied, step: (s: string) => step?.(s), live: (build: string, ok: boolean) => live?.({ build, live: ok }), settle: (value?: Error, pending?: string) => {
+  return { app, vm, toasts, published, unpublished, copied, step: (s: string) => step?.(s), live: (build: string, ok: boolean) => live?.({ build, live: ok }),
+    followed: (event: { paths: string[]; status: string; build?: string; problem?: string }) => followed?.(event), retried: () => retried, settle: (value?: Error, pending?: string) => {
     const current = next; next = deferred();
     if (value) current.reject(value); else current.resolve({ commit: "c".repeat(40), published: ["a.md"], changed: ["a.md"], ...(pending ? { pending } : {}) });
   } };
 }
+
+it("D-423: a published note's rename ends in one notification: Published at the new address with Copy link, or the old page kept with Retry", async () => {
+  const t = await liveFixture(["coast.md"]);
+  t.followed({ paths: ["coast.md"], status: "live" });
+  const done = t.toasts().filter(n => n.message === "Published at the new address");
+  expect(done).toHaveLength(1);
+  expect(done[0]!.tone).toBe("success");
+  await t.app.commands.run(done[0]!.action!.command, done[0]!.action!.args);
+  expect(t.copied).toEqual(["https://ada.github.io/quiet-site/n/coast/"]);
+  t.followed({ paths: ["coast.md"], status: "failed", problem: "sharing:refused" });
+  const failed = t.toasts().find(n => n.tone === "error")!;
+  expect(failed.message).toBe("Couldn’t move your published note to its new address. Its old page is still live. Try again.");
+  await t.app.commands.run(failed.action!.command);
+  expect(t.retried()).toBe(1);
+});
 
 it("O4: Pages slower than the wait is Still publishing in the dialog, which can close; Published with Copy link once live; never served is an error with Retry", async () => {
   const t = await liveFixture();

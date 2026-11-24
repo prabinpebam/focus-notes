@@ -6,7 +6,7 @@ import { GitHubApi } from "@focus-notes/github";
 import { FakeGitHub } from "../../../packages/github/test/fake-github.ts";
 import { gitData } from "./fake-pages.ts";
 import { pagesArtifactPublisher } from "../src/main/share/site-publish.ts";
-import { sharingRuntime } from "../src/main/share/runtime.ts";
+import { sharingRuntime, type RenameFollowed } from "../src/main/share/runtime.ts";
 import type { SharingLayout } from "../src/main/share/layout.ts";
 import type { SitePairing } from "../src/main/share/setup.ts";
 
@@ -30,7 +30,8 @@ async function project(o: { reader?: boolean; notes?: Record<string, string>; le
   if (o.reader !== false) {
     reader = await temp();
     await mkdir(join(reader, "assets"));
-    await writeFile(join(reader, "render.mjs"), "export function renderNotePage({ path }) { const stem = path.replace(/\\.md$/, ''); return { file: `n/${stem}/index.html`, html: `<p>${stem}</p>`, title: stem }; }\n");
+    await writeFile(join(reader, "render.mjs"), "export function renderNotePage({ path }) { const stem = path.replace(/\\.md$/, ''); return { file: `n/${stem}/index.html`, html: `<p>${stem}</p>`, title: stem }; }\n" +
+      "export function renderEmptyHome() { return { file: 'index.html', html: '<h1>Nothing published here yet</h1>' }; }\n");
   }
   const github = new FakeGitHub();
   github.add({ owner: "ada", name: "quiet-site", files: [".github/workflows/pages.yml"] });
@@ -40,16 +41,18 @@ async function project(o: { reader?: boolean; notes?: Record<string, string>; le
   const layout: SharingLayout = { legacy: false, privateDir: root, privateNotes: notesDir, roots: [] };
   const steps: string[] = [];
   const live: { build: string; live: boolean }[] = [];
+  const followed: RenameFollowed[] = [];
   const runtime = sharingRuntime({
     root: () => root, layout: () => layout, api: async () => api, repository: async () => "ada/book",
     write: (file, text) => writeFile(file, text), written: () => {}, temporary: await temp(),
     publisher: pagesArtifactPublisher({ api: async () => api, target: async () => pairing, get: git.get, timeoutMs: 30, delayMs: 1 }),
     reader: () => reader, publishStep: step => steps.push(step),
     get: git.get, pagesWatch: { delayMs: 5, ceilingMs: 300 }, publishLive: event => live.push(event),
+    renameFollowed: event => followed.push(event),
   });
   const site = () => git.site("ada/quiet-site");
   const record = async () => JSON.parse(await readFile(join(root, ".focus-notes", "published.json"), "utf8")) as { notes: string[] };
-  return { root, notesDir, github, git, runtime, steps, site, record, live };
+  return { root, notesDir, github, git, runtime, steps, site, record, live, followed };
 }
 
 it("G3.1 Publish: exactly the selected note goes public with its page, Published only once Pages serves the build; private bytes kept", async () => {
@@ -68,6 +71,39 @@ it("G3.1 Publish: exactly the selected note goes public with its page, Published
   // A later sharing push keeps the published note on the site.
   await t.runtime.publish();
   expect(t.site().get("notes/journeys/trip.md")).toBe(TRIP);
+});
+
+it("D-423: renaming a published note follows the rename in one deploy; a failed deploy keeps the old page live and Retry moves it", async () => {
+  const t = await project({ notes: { "trip.md": TRIP, "trips/rome.md": "# Rome\n", "diary2.md": `# Other\n\n${SECRET}\n` } });
+  await t.runtime.publishNotes({ notes: ["trip.md", "trips/rome.md"] });
+  const pushes = t.git.pushes.length;
+  await rename(join(t.notesDir, "trip.md"), join(t.notesDir, "coast.md"));
+  await t.runtime.followRename(join(t.notesDir, "trip.md"), join(t.notesDir, "coast.md"));
+  expect(t.followed).toEqual([{ paths: ["coast.md"], status: "live" }]);
+  expect(t.git.pushes.length).toBe(pushes + 1);
+  const site = t.site();
+  expect(site.get("notes/coast.md")).toBe(TRIP);
+  expect(site.has("n/coast/index.html")).toBe(true);
+  expect(site.has("notes/trip.md") || site.has("n/trip/index.html")).toBe(false);
+  expect([...site.values()].some(text => text.includes(SECRET))).toBe(false);
+  expect(await t.record()).toEqual({ version: 1, notes: ["coast.md", "trips/rome.md"] });
+  // A folder rename moves its published notes; a failed deploy leaves the old page live, the record follows, Retry moves it.
+  await rename(join(t.notesDir, "trips"), join(t.notesDir, "travel"));
+  t.github.offline = true;
+  await t.runtime.followRename(join(t.notesDir, "trips"), join(t.notesDir, "travel"));
+  expect(t.followed.at(-1)).toEqual({ paths: ["travel/rome.md"], status: "failed", problem: "sharing:offline" });
+  expect(t.site().has("notes/trips/rome.md")).toBe(true);
+  expect(await t.record()).toEqual({ version: 1, notes: ["coast.md", "travel/rome.md"] });
+  t.github.offline = false;
+  await t.runtime.followRetry();
+  expect(t.followed.at(-1)).toEqual({ paths: ["travel/rome.md"], status: "live" });
+  expect(t.site().has("notes/travel/rome.md")).toBe(true);
+  expect(t.site().has("notes/trips/rome.md")).toBe(false);
+  // A note that isn't published deploys nothing.
+  const before = t.git.pushes.length;
+  await rename(join(t.notesDir, "diary.md"), join(t.notesDir, "journal.md"));
+  await t.runtime.followRename(join(t.notesDir, "diary.md"), join(t.notesDir, "journal.md"));
+  expect(t.git.pushes.length).toBe(before);
 });
 
 it("G3.4 Unpublish: the current site loses the note after its deploy; the private note stays", async () => {
@@ -140,6 +176,8 @@ it("G3/PRJ-10 Turn off: once the emptied site is served, the published list is c
   t.git.setStale(false);
   await t.runtime.disable();
   expect(t.site().has("notes/trip.md")).toBe(false);
+  // D-421: the emptied site's address is a home saying nothing's published, not a 404.
+  expect(t.site().get("index.html")).toBe("<h1>Nothing published here yet</h1>");
   expect(await t.record()).toEqual({ version: 1, notes: [] });
   expect(await readFile(join(t.notesDir, "trip.md"), "utf8")).toBe(TRIP);
 });

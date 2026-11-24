@@ -1,5 +1,6 @@
-import { cp, mkdtemp, readFile, realpath, rm, stat, writeFile } from "node:fs/promises";
-import { join, relative, sep } from "node:path";
+import { cp, mkdtemp, readdir, readFile, realpath, rm, stat, writeFile } from "node:fs/promises";
+import { isAbsolute, join, relative, sep } from "node:path";
+import { pathToFileURL } from "node:url";
 import { GitHubError, type GitHubApi } from "@focus-notes/github";
 import { publish } from "@focus-notes/seal/publish";
 import type { SharingLayout } from "./layout.ts";
@@ -14,6 +15,19 @@ import { sharingSetup, sitePairingStore, type SharingSetupStep, type SitePairing
 const exists = (path: string) => stat(path).then(() => true, () => false);
 /** Static, script-free: the site's root sends readers to the published index at `n/`. */
 const HOME_REDIRECT = '<!doctype html>\n<meta charset="utf-8">\n<meta http-equiv="refresh" content="0; url=n/">\n<link rel="canonical" href="n/">\n<title>Published notes</title>\n<a href="n/">Published notes</a>\n';
+/** The page renderer's empty home (apps/web/reader/render.ts, D-421); renderers before it have none. */
+type EmptyHomeRenderer = { renderEmptyHome?(input: { siteUrl?: string; assets: { css: string[]; fonts: string[] } }): { file: string; html: string } };
+/** Writes the site's empty home with the renderer's stylesheet and fonts: static words only, nothing from the project. */
+async function writeEmptyHome(reader: string | undefined, directory: string, siteUrl: string): Promise<void> {
+  if (!reader || !await exists(join(reader, "render.mjs"))) return;
+  const renderer = await import(pathToFileURL(join(reader, "render.mjs")).href) as EmptyHomeRenderer;
+  if (!renderer.renderEmptyHome) return;
+  const files = await readdir(join(reader, "assets")).catch(() => [] as string[]);
+  if (files.length) await cp(join(reader, "assets"), join(directory, "assets"), { recursive: true, force: false, errorOnExist: false });
+  const { file, html } = renderer.renderEmptyHome({ siteUrl, assets: { css: files.filter(f => f.endsWith(".css")), fonts: files.filter(f => /\.woff2?$/.test(f)) } });
+  if (file !== "index.html") return;
+  await writeFile(join(directory, file), html);
+}
 /** Notes on the current public site, by notes-root-relative path (G3). Recorded only after their deploy. */
 function parsePublished(text: string): string[] {
   const value = JSON.parse(text) as { version?: unknown; notes?: unknown };
@@ -26,6 +40,8 @@ function publishProblem(error: unknown): unknown {
   return new Error(`sharing:${error.status === 0 ? "offline" : error.unauthorized ? "signedout"
     : error.status === 403 || error.status === 404 ? "refused" : "failed"}`);
 }
+
+export type RenameFollowed = { paths: string[]; status: "live" } | { paths: string[]; status: "pending"; build: string } | { paths: string[]; status: "failed"; problem: string };
 
 export function sharingRuntime(deps: {
   root(): string;
@@ -55,9 +71,13 @@ export function sharingRuntime(deps: {
   pagesWatch?: { delayMs?: number; ceilingMs?: number };
   /** A pending Publish or Unpublish's build is live, or still isn't at the ceiling (O4). */
   publishLive?(event: { build: string; live: boolean }): void;
+  /** A renamed or moved published note's deploy at its new address (D-423): live, pending (O4) or failed with Retry. */
+  renameFollowed?(event: RenameFollowed): void;
 }) {
   let current: { root: string; service: ReturnType<typeof sharingSetup> } | undefined;
   let tasks: ReturnType<typeof publicPublishing> | undefined, tasksRoot: string | undefined;
+  /** The new paths of the last rename deploy, for its Retry (D-423). */
+  let lastFollow: string[] = [];
   // Publishing, setup and removal never interleave, so a share can't redeploy a site being turned off.
   let lane: Promise<unknown> = Promise.resolve();
   const serial = <T>(work: () => Promise<T>): Promise<T> => {
@@ -162,8 +182,11 @@ export function sharingRuntime(deps: {
           await cp(join(page, "site"), directory, { recursive: true, force: false, errorOnExist: false });
           guard();
         }
-        // The paired site is this project's alone: its own address opens the published notes' index (D-419).
-        if (await exists(join(directory, "n", "index.html")) && !await exists(join(directory, "index.html"))) await writeFile(join(directory, "index.html"), HOME_REDIRECT);
+        // The paired site is this project's alone: its own address opens the published notes' index (D-419),
+        // or, with nothing published (Turn off too), a home that says so instead of a 404 (D-421).
+        if (await exists(join(directory, "n", "index.html"))) {
+          if (!await exists(join(directory, "index.html"))) await writeFile(join(directory, "index.html"), HOME_REDIRECT);
+        } else if (!await exists(join(directory, "index.html"))) await writeEmptyHome(deps.reader?.(), directory, pairing.site);
         deps.step?.("push");
         if (selection) deps.publishStep?.("publishing");
         const sealed = { directory, build: artifact.build };
@@ -258,7 +281,45 @@ export function sharingRuntime(deps: {
     publishing: () => tasks?.pending(),
     publishNotes: (selection: ConfirmedSelection) => publicTasks().publish(selection),
     unpublishNotes: (paths: readonly string[]) => publicTasks().unpublish(paths),
+    /**
+     * D-423: a published note (or a folder with published notes) renamed or moved inside the notes follows the
+     * rename. Its recorded path changes at once, so no later deploy can drop it, then one deploy publishes it at
+     * the new path and removes the old page, with the usual staging and leak check. A failure leaves the old
+     * page live, with Retry; nothing is ever silently unpublished.
+     */
+    async followRename(from: string, to: string): Promise<void> {
+      const ctx = bound(), notes = ctx.layout.privateNotes;
+      if (!notes || ctx.layout.legacy) return;
+      const rel = (p: string) => { const r = relative(notes, p); return !r || r === ".." || r.startsWith(`..${sep}`) || isAbsolute(r) ? undefined : r.split(sep).join("/"); };
+      const a = rel(from), b = rel(to);
+      if (!a || !b || a === b) return;
+      const paths = await serial(async () => {
+        const current = await ctx.readPublished();
+        const next = current.map(p => p === a ? b : p.startsWith(`${a}/`) ? `${b}${p.slice(a.length)}` : p);
+        const moved = next.filter((p, i) => p !== current[i]);
+        if (moved.length) await ctx.writePublished([...new Set(next)].sort());
+        return moved;
+      });
+      if (paths.length) await deployFollow(paths);
+    },
+    /** Retry of a rename's deploy that failed or never went live: the recorded notes, at their current paths. */
+    followRetry: () => deployFollow(lastFollow),
   };
+  function deployFollow(paths: string[]): Promise<void> {
+    lastFollow = paths;
+    return serial(async () => {
+      try {
+        const ctx = bound(), saved = await ctx.read();
+        // Not set up (or turned off meanwhile): the record already follows, and there's no site to update.
+        if (!saved || saved.phase !== "ready") return;
+        const { pending } = await ctx.build(saved, false, { notes: await ctx.presentPublished() });
+        deps.renameFollowed?.(pending ? { paths, status: "pending", build: pending } : { paths, status: "live" });
+      } catch (error) {
+        const problem = publishProblem(error);
+        deps.renameFollowed?.({ paths, status: "failed", problem: problem instanceof Error ? problem.message : "sharing:failed" });
+      }
+    });
+  }
   function publicTasks() {
     const ctx = bound();
     if (ctx.layout.legacy) throw new Error("sharing:unavailable");

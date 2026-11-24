@@ -199,7 +199,11 @@ The owner asked (5 November) what is done and pending for publishing notes as pu
 | Preview site and a local Publish… draft (*Saved to the local site preview.*, nothing sent to GitHub) | `vq-share-rest` review slice | SHR-20, SHR-21 | local review only |
 | This repository's Pages workflow builds from source; templates deploy a pinned web bundle | `.github/workflows/pages.yml`, `templates/workspace/.github/workflows/pages.yml` | PKG-02 | CI |
 
-**24 November (D-419):** real Publish and Unpublish work end to end against fakes (`publish-walkthrough.spec.ts`): links to unpublished notes publish as plain text, the site’s root opens `n/`, Unpublish is offered only for published notes (⋯ and Files), and a renamed published note leaves the site instead of blocking the next Publish. The owner, 17:37: "Where are we on the publish workflow? I want to test that also."
+**24 November (D-419):** real Publish and Unpublish work end to end against fakes (`publish-walkthrough.spec.ts`): links to unpublished notes publish as plain text, the site’s root opens `n/`, Unpublish is offered only for published notes (⋯ and Files), and a renamed published note leaves the site instead of blocking the next Publish. The owner, 17:37: "Where are we on the publish workflow? I want to test that also." Pages slower than 10 minutes is now *Still publishing*, not an error: the dialog can close, the app keeps checking, and *Published* with Copy link follows once the site is live (O4).
+
+**24 November (D-423, decided by main, owner unavailable, open to reversal):** renaming or moving a published note in the app follows the rename. One deploy publishes it at the new path and removes the old page; the person gets one *Published at the new address* notification with Copy link. A failed deploy keeps the old page live and offers Retry. This replaces the redirect from old article URLs above for in-app renames.
+
+**24 November (D-421):** with nothing published (after Turn off, or before the first Publish), the site's address shows the public index's own empty state, *Notes* and *Nothing published here yet*, instead of a 404. It holds static words only. The designed home with sections and counts is still WP-P.14.
 
 **Pending:** real Publish and Unpublish from the approved dialog; the deploy status (UC-SHARE-02's *Live / Publishing… / Not published yet* has no strings yet); the site theme on the live site (WP-P.12); the home with sections and counts (WP-P.14); the site's empty, missing-page and failure states; published images (IMG-13).
 

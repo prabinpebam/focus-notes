@@ -223,6 +223,27 @@ test("Publish walk-through: not set up, turn on, publish a folder, read the site
     await capture("published-after-wait");
     scan();
 
+    // 6c. Renaming a published note follows the rename (D-423): one deploy, one notification with Copy link, the old page gone.
+    await files();
+    await row(/^Rome/).click();
+    await page.keyboard.press("F2");
+    const fileName = page.getByRole("textbox", { name: "File name" });
+    await expect(fileName).toHaveValue("rome");
+    await fileName.fill("roma");
+    await page.keyboard.press("Enter");
+    const moved = page.getByRole("status").filter({ hasText: "Published at the new address" });
+    await expect(moved).toHaveCount(1, { timeout: 60_000 });
+    await capture("rename-followed");
+    expect(published()).toEqual(["trips/lisbon.md", "trips/roma.md"]);
+    const renamed = deployed();
+    expect(renamed.has("notes/trips/roma.md")).toBe(true);
+    expect(renamed.has("notes/trips/rome.md") || renamed.has("n/trips/rome/index.html")).toBe(false);
+    expect((await fetch(`${siteOrigin}/notes-site/n/trips/roma/`)).status).toBe(200);
+    expect((await fetch(`${siteOrigin}/notes-site/n/trips/rome/`)).status).toBe(404);
+    scan();
+    await moved.getByRole("button", { name: "Copy link", exact: true }).click();
+    await expect(page.getByRole("status").filter({ hasText: /^Public link to .* copied/ })).toHaveCount(1);
+
     // 7. Turn off sharing: the site is emptied and nothing published comes back on Turn on.
     await openSettings("Sharing");
     await settings.getByRole("button", { name: "Turn off sharing…", exact: true }).click();
@@ -232,6 +253,19 @@ test("Publish walk-through: not set up, turn on, publish a folder, read the site
     expect([...deployed().keys()].some(p => p.startsWith("notes/") && p.endsWith(".md"))).toBe(false);
     expect(published()).toEqual([]);
     scan();
+    // D-421: the site's address is a home saying nothing's published, not a 404.
+    const home = await fetch(`${siteOrigin}/notes-site/`);
+    expect(home.status).toBe(200);
+    expect(await home.text()).toContain("Nothing published here yet");
+    if (CAPTURES) {
+      const viewer = await chromium.launch();
+      try {
+        const empty = await viewer.newPage();
+        await empty.goto(`${siteOrigin}/notes-site/`);
+        await expect(empty.getByText("Nothing published here yet")).toBeVisible();
+        await empty.screenshot({ path: join(CAPTURES, `${String(++shot).padStart(2, "0")}-empty-home.png`) });
+      } finally { await viewer.close(); }
+    }
     expect(readFileSync(diary, "utf8")).toBe(DIARY);
   } finally {
     try { if (l) await quit(l); } finally {
