@@ -261,6 +261,17 @@ Each local app run used invisible E2E windows and recorded main PIDs, followed b
 
 ## Summary
 
+### Batch 3 and batch 4 landings, 24 November
+
+**Landed on `main`, exact-head Windows CI seven of seven green.** Each head was fast-forwarded under the landing lock after its own run passed. All runtime evidence uses fakes; no real repository, invitation, Pages deployment, share or deletion was made.
+
+| Head | Exact-head run | Landed |
+| --- | --- | --- |
+| `9b6440a4` (batch 3) | [45354982965](https://github.com/prabinpebam/focus-notes/actions/runs/45354982965): test, changes, web and journey shards 1–4 green | Every design approved by D-412, wired end to end: two-column dialogs, alert and popover cards (D-408), the recipient-voice share message with one Access code (D-409), the share-information template (G6.3, SHR-19), Opened files above Pinned (D-410, FIL-20, WP-P.24), the in-writing recovery alert and mass-deletion pause (G5.4, FRE-13), the browser retirement and draft export (WP-P.13, WEB-01), Welcome's scroll clearance, Delete on GitHub's web with automatic detection and optional Save a copy (D-413), the shared backup-state rule (D-414's first part), and published-image lines passing the leak gate (D-411). |
+| `e56fcfd3` (batch 4: gated `82e20dd8` plus `b61b9cb1`, one Store screenshot PNG that landed meanwhile, merged without a second gate because it can't touch the runtime, D-255) | [45366655672](https://github.com/prabinpebam/focus-notes/actions/runs/45366655672), attempt 2 on `82e20dd8`: the same seven jobs green. Attempt 1 failed only in journey shard 1, on the AI Rewrite selection (`air-rewrite.spec.ts:249`). That journey passed 3/3 locally and in the run before, and Batch 4 doesn't touch it. The first run on `2c39ed78`, [45362519872](https://github.com/prabinpebam/focus-notes/actions/runs/45362519872), was red on test drift only: FRE-06 now reaches D-415's copies step, the copies-order unit tied within one second, and FIL-12 tabbed before Files had opened. Fixed in tests; the runtime is unchanged. | D-414: backup status is unknown, shown as Saved on this computer, when Git can't read a repository. Welcome's bottom inset. D-415: a copy of the same repository already on this computer is offered in setup and Open from GitHub, used by fast-forward only. D-397 fix found at integration: the window's project pointer follows every in-window switch, so a new copy or a non-default copy lands in writing, never Open (DSK-09 now covers it). Local journeys before the push, all invisible: 51 passed. |
+
+**Still open:** owner-only rows G1.8, G2.8, G2.9, G3.7, G3.8, G5.6, G6.5 and F4.2.5; the owner's end-to-end run on the batch 4 review build; Partner Center/IARC, release and tag; Store screenshots; final MSIX and release gates.
+
 ### Batch 1b and batch 2 landings, 23 November
 
 **Landed on `main`, exact-head Windows CI seven of seven green.** Both heads were fast-forwarded only after their own run passed (attempt 2 of each run). All runtime evidence uses fakes; no real repository, invitation, Pages deployment, share or deletion was made.

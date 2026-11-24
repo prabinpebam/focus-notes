@@ -1,7 +1,7 @@
 {
   "$comment": "The implementation plan in machine-readable form. Agents read this file to choose ready work. Keep it in step with implementation-plan.md; the plan check (WP-0.1) fails CI if they disagree.",
   "version": 1,
-  "updated": "2026-11-23",
+  "updated": "2026-11-24",
   "stages": [
     {
       "id": "M0",
@@ -171,10 +171,10 @@
     },
     {
       "id": "WP-P.10", "stage": "MP", "title": "Shares without names",
-      "summary": "G6 / F10: SHR-23 opaque identifier/privacy gate, random 8-character collision-checked codes, persisted item templates and item-based All shares with Copy again/Extend/Withdraw; Turn off withdraws every active share. Runtime landed 23 November in batch 2 6aebf805 (exact-head run 45179887054, 7/7); fakes only. Open: the share-information template's two-column layout and the recipient-voice share message await the owner's design approval (D-408, D-409), then batch 3 wiring; the first real share/Extend/Withdraw (G6.5) is the owner's. UX approved D-335; build against G6.1-G6.5.",
+      "summary": "G6 / F10: SHR-23 opaque identifier/privacy gate, random 8-character collision-checked codes, persisted item templates and item-based All shares with Copy again/Extend/Withdraw; Turn off withdraws every active share. Runtime landed 23 November in batch 2 6aebf805 (exact-head run 45179887054, 7/7); fakes only. The share-information template (G6.3, SHR-19), its two-column layout and the recipient-voice share message (D-408, D-409, approved D-412) landed in batch 3 9b6440a4 (exact-head run 45354982965, 7/7); the first real share/Extend/Withdraw (G6.5) is the owner's. UX approved D-335; build against G6.1-G6.5.",
       "requirements": ["SHR-17", "SHR-18", "SHR-19", "SHR-23"], "dependsOn": ["WP-P.9", "WP-5.4"],
       "touches": ["core", "seal", "web", "views"], "reviews": ["code", "security", "accessibility"],
-      "specs": ["design/views/sharing.md", "experience/files-and-sharing.md#codes-history-and-share-information", "plan/definition-of-done.md#g6-opaque-share-codes-shares-list-and-information-template", "architecture/repository-and-publishing.html"], "lookahead": true, "status": "building"
+      "specs": ["design/views/sharing.md", "experience/files-and-sharing.md#codes-history-and-share-information", "plan/definition-of-done.md#g6-opaque-share-codes-shares-list-and-information-template", "architecture/repository-and-publishing.html"], "lookahead": true, "status": "verifying"
     },
     {
       "id": "WP-P.11", "stage": "MP", "title": "GitHub collaborators",
@@ -1802,7 +1802,7 @@
       "id": "WP-5.14",
       "stage": "M5",
       "title": "Notes folder recovery and sync status",
-      "summary": "G5 / F8: recorded-folder check before Git/watcher/load; missing/moved/disconnected means recovery, never an empty-project startup. Landed: source access gated on folder verification, Find the folder, a missing last project resuming its own window, Start with an empty folder as a new local Git project in its own window, Download again with offline/signed-out/refused/failed journeys and named recovery waits (batch 1b 09f3ade6 (exact-head run 45165997392, 7/7); batch 2 6aebf805 (exact-head run 45179887054, 7/7)). Open: the G5.4 account/sync alert awaits the owner's two-column alert approval (D-408) and batch 3 wiring; the owner's real recovery (G5.6) if needed.",
+      "summary": "G5 / F8: recorded-folder check before Git/watcher/load; missing/moved/disconnected means recovery, never an empty-project startup. Landed: source access gated on folder verification, Find the folder, a missing last project resuming its own window, Start with an empty folder as a new local Git project in its own window, Download again with offline/signed-out/refused/failed journeys and named recovery waits (batch 1b 09f3ade6 (exact-head run 45165997392, 7/7); batch 2 6aebf805 (exact-head run 45179887054, 7/7)). The G5.4 in-writing recovery alert and mass-deletion pause (D-408, approved D-412) landed in batch 3 9b6440a4 (exact-head run 45354982965, 7/7). Open: the owner's real recovery (G5.6) if needed.",
       "requirements": [
         "FRE-11",
         "FRE-12",
@@ -1832,7 +1832,7 @@
         "architecture/perceived-performance.md"
       ],
       "lookahead": false,
-      "status": "building"
+      "status": "verifying"
     },
     {
       "id": "WP-5.15",
