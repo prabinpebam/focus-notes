@@ -52,9 +52,10 @@ export function registerRecoveryAlert<S extends State>({ store, bridge, catalog,
 
   const apply = (report: SyncAlertReport) => {
     const next = report ?? NO_SYNC_ALERT;
+    const wasActive = Boolean(store.state.recoveryAlert.report.cause);
     setState({
       report: next,
-      ...(!next.cause ? { cornerOpen: false, headerOpen: false } : {}),
+      ...(wasActive && !next.cause ? { cornerOpen: false, headerOpen: false } : {}),
     });
     if (next.cause === "signIn" && !signInToastShown && catalog.has("recoveryAlert.toast.signIn")) {
       signInToastShown = true;

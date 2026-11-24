@@ -112,7 +112,7 @@ test("FRE-13 / D-408: recovery alert cards render in corner and Files header wit
     await headerCard.getByRole("button", { name: "Not now", exact: true }).click();
     await expect(headerCard).toBeHidden();
     // Close the floating Files drawer before hovering the bottom-left corner indicator again.
-    await page.keyboard.press("Escape");
+    await page.keyboard.press(`${mod}+O`);
     await expect(page.getByRole("complementary", { name: "Files" })).toBeHidden();
 
     // 3. Remaining non-busy causes render their exact titles and primary actions in two-column IconLayout.
