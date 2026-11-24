@@ -3,6 +3,18 @@
 > [!NOTE]
 > **TL;DR.** D-413 replaces the complex one-time deletion token step (superseding D-394/D-400) with step-by-step web deletion on GitHub plus automatic focus/polling detection (authenticated 404 + valid GET /user 200), and makes "Save a copy…" optional on unsynced notes with an immediate "Delete without saving" proceed action. D-412 records the owner's 24 November approval of all pending designs (D-408 two-column dialogs, D-409 Share information message, G6.3/SHR-19 share-information template mock, D-410 Opened files vertical tabs, and the Web export mock) for end-to-end integration and review, plus the 24 November worker-model override (workers on `gemini-4-neon`, coordinators on `claude-opus-5.5`). D-411 lets the leak gate pass a private line that is only an image reference to a published image. D-410 (approved) adds Opened files vertical tabs above Pinned in Files. D-409 (approved) makes Share information a message to the recipient in the sharer's voice. D-408 (approved) puts every dialog, alert card and popover card on IconLayout. Earlier decisions D-407–D-393 govern chat archiving, worker caps, 1.1.0 batch gating, Autopilot scope, GitHub links, Delete and Find.
 
+## D-pending: what "on GitHub" means is the save state's measure; unknown is its own answer
+
+**Decided (owner's report, 24 November 2026, 12:46 IST; orchestrator to number).** The owner, verbatim on review build `efa48941`:
+
+> "This status is being detected wrong. Everything is backed up but it still says there's unsaved stuff."
+
+- **Cause:** Delete project's check counted every untracked file and every commit on any local branch that no remote had (`git log --branches --not --remotes`), while the save state counts what the app wrote and hasn't committed plus commits ahead of the branch's upstream ([D-132](#d-132-save-state)). The blank **Untitled** a project opens on ([D-397](#d-397-project-entry-always-lands-in-writing)) is made empty, outside sync, so a fully backed-up project read "1 note isn't on GitHub yet".
+- **Rule:** a note is "not on GitHub yet" when it's changed or new with something in it, or changed by a commit the branch's upstream doesn't have (a detached private submodule: no fetched remote branch has it). A blank new note (empty or whitespace only) has nothing to lose and isn't listed; a new note with words in it always is.
+- **Unknown:** when Git fails or nothing on a remote is known to compare with, the answer is unknown, never "unsaved" and never "backed up". Delete says "Couldn't check what's backed up on GitHub, so some changes may be only on this computer. You can still delete." and deleting isn't blocked (saving a copy stays optional, D-413).
+
+**Affects:** [Deleting a project](../experience/project-model.md#deleting-a-project), [PRJ-23](../product/requirements.md).
+
 ## D-413: delete linked projects on GitHub web with automatic detection, and optional unsynced save
 
 **Decided (owner, 24 November 2026, 11:58 IST and 12:26 IST; ID assigned by coordinator); supersedes the one-time-token / in-app-DELETE step of [D-394](#d-394-delete-the-repository-in-the-app-with-one-time-step-up) and [D-400](#d-400-one-time-deletion-authorization-without-expanding-retained-sign-in), and the forced-save blocker on unsynced notes.** The owner, verbatim on review build `53e83c9b`:

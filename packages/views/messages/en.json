@@ -3371,6 +3371,7 @@
   "project.delete.unsynced.export": "Save a copy…",
   "project.delete.unsynced.skipSave": "Delete without saving",
   "project.delete.unsynced.none": "Every note is on GitHub.",
+  "project.delete.backupUnknown": "Couldn't check what's backed up on GitHub, so some changes may be only on this computer. You can still delete.",
   "project.delete.unsynced.saved": "Copy saved in {path}",
   "project.delete.confirm.label": "Type {name} to confirm",
   "project.delete.confirm.summaryOffline": "Moves the folder and its Git history to the Recycle Bin.",

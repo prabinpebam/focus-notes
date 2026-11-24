@@ -113,6 +113,49 @@ describe("PRJ-23: what deleting would delete", () => {
     expect(c.problem).toBeUndefined();
     expect(c).toMatchObject({ kind: "linked", repo: "ada/never-made" });
     expect(c.unsynced).toContain("untitled.md");
+    // Nothing on a remote to compare with: honestly unknown, never "all saved".
+    expect(c.backupUnknown).toBe(true);
+  });
+  it("owner, 24 Nov: a project fully on GitHub reads backed up, its blank Untitled and other local branches left out", { timeout: 30_000 }, async () => {
+    const { root, folder } = project();
+    const vault = join(root, "vault.git");
+    const remote = join(root, "remote.git");
+    execFileSync("git", ["init", "-q", "--bare", "-b", "main", vault]);
+    execFileSync("git", ["init", "-q", "--bare", "-b", "main", remote]);
+    const seed = join(root, "seed");
+    mkdirSync(join(seed, "notes"), { recursive: true });
+    writeFileSync(join(seed, "notes", "Secret.md"), "# Secret\n");
+    git(seed, "init", "-q", "-b", "main");
+    git(seed, "add", "-A");
+    git(seed, "commit", "-qm", "Private");
+    git(seed, "push", "-q", vault, "main");
+    git(folder, "-c", "protocol.file.allow=always", "submodule", "add", "-q", vault, "private");
+    git(folder, "commit", "-qm", "Private notes");
+    git(folder, "remote", "add", "origin", remote);
+    git(folder, "push", "-q", "-u", "origin", "main");
+    git(folder, "checkout", "-q", "-b", "drafts");
+    writeFileSync(join(folder, "notes", "Side.md"), "# Side\n");
+    git(folder, "add", "-A");
+    git(folder, "commit", "-qm", "Side");
+    git(folder, "checkout", "-q", "main");
+    const repos = { repo: "ada/field-notes", privateRepo: "ada/field-notes-private" };
+    expect(await deletionCheck(createRunner(), folder, repos)).toMatchObject({ unsynced: [], privateCount: 1 });
+    // The blank Untitled a project opens on (D-397), here and in the private notes: nothing to lose.
+    writeFileSync(join(folder, "Untitled.md"), "");
+    writeFileSync(join(folder, "private", "notes", "Untitled.md"), " \n");
+    const blank = await deletionCheck(createRunner(), folder, repos);
+    expect(blank.unsynced).toEqual([]);
+    expect(blank.backupUnknown).toBeUndefined();
+    // A note with words in it, never committed, still isn't on GitHub (data safety).
+    writeFileSync(join(folder, "Untitled.md"), "# Plans\n");
+    expect((await deletionCheck(createRunner(), folder, repos)).unsynced).toEqual(["Untitled.md"]);
+  });
+  it("Git failing to say what's on GitHub is unknown, never unsaved or backed up", async () => {
+    const { folder } = project();
+    const real = createRunner();
+    const failing: Parameters<typeof deletionCheck>[0] = (o) => (o.args[0] === "status" ? Promise.resolve({ code: 128, stdout: "", stderr: "fatal: index file corrupt" }) : real(o));
+    const c = await deletionCheck(failing, folder, { repo: "ada/field-notes" });
+    expect(c).toMatchObject({ kind: "linked", unsynced: [], backupUnknown: true });
   });
   it("a repository name is owner/name, never a path", () => {
     expect(isRepoSlug("ada/field-notes")).toBe(true);
