@@ -51,6 +51,8 @@ export interface ItemShareState {
   wordsBusy: boolean;
   status: string;
   information: string;
+  accessCode: string;
+  templateInvalid: boolean;
   reviewFocus: string;
   historyOpen: boolean;
   confirmId: string;
@@ -66,9 +68,14 @@ export const ITEM_SHARE_CLOSED: ItemShareState = {
   open: false, path: "", name: "", folder: false, link: true, passcode: false,
   later: false, expiry: "30d", until: "", mode: "generate", own: "",
   reviewOpen: false, expanded: [], counting: false, preparing: false, loadFailed: false, notes: 0, folders: 0, contents: [], problem: "",
-  id: "", busy: false, ready: false, generated: "", wordsId: "", wordsBusy: false, status: "", information: "", reviewFocus: "",
+  id: "", busy: false, ready: false, generated: "", wordsId: "", wordsBusy: false, status: "", information: "", accessCode: "", templateInvalid: false, reviewFocus: "",
   historyOpen: true, confirmId: "", signedOut: false, resumeAction: "", startedAt: 0, step: 0, totalSteps: 4, waitingId: "",
 };
+
+export function defaultItemShareTemplate(catalog: MessageCatalog): string {
+  const raw = { title: "{title}", link: "{link}", site: "{site}", accessCode: "{accessCode}", expires: "{expires}" };
+  return ["title", "link", "code", "until"].map((key) => catalog.format(`share.item.information.${key}`, raw)).join("\n");
+}
 
 export function registerItemShare({ store, commands, viewModels, catalog, tracker, access, platform, flush }: {
   store: Store<AppState>;
@@ -128,16 +135,16 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
   reg("share.item.reload", async () => {
     if (state().open && !state().busy && !state().preparing) await loadListing(generation);
   });
-  const template = () => ["title", "link", "code", "until"].map((key) =>
-    catalog.format(`share.item.information.${key}`, { title: "{title}", link: "{link}", site: "{site}", accessCode: "{accessCode}", expires: "{expires}" })).join("\n");
+  const template = (useDefault = false) => (!useDefault && store.state.ui.share.listing?.itemTemplate) || defaultItemShareTemplate(catalog);
   const prepareWords = async () => {
     if (!editable()) return;
     if (!access?.prepareWords) throw new Error(catalog.format("share.item.unavailable"));
     const current = generation;
     const request = ++wordsGeneration;
+    const previousId = state().wordsId || undefined;
     set({ wordsBusy: true });
     try {
-      const words = await tracker.run("share.item.words", "share.item.wordsPreparing", () => access.prepareWords!());
+      const words = await tracker.run("share.item.words", "share.item.wordsPreparing", () => access.prepareWords!(previousId));
       if (current === generation && request === wordsGeneration && !state().busy && !state().id) set({ wordsId: words.id, generated: words.value });
     } catch {
       if (current === generation && request === wordsGeneration) set({ problem: catalog.format("share.item.wordsFailed") });
@@ -296,7 +303,7 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
   reg<{ id: string; expanded: boolean }>("share.item.expand", ({ id, expanded }) => set({
     expanded: expanded ? [...new Set([...state().expanded, id])] : state().expanded.filter((p) => p !== id),
   }));
-  reg<{ what: string }>("share.item.action", async ({ what }) => {
+  reg<{ what: string; useDefault?: boolean }>("share.item.action", async ({ what, useDefault }) => {
     if (!["primary", "link", "accessCode", "information", "passcode"].includes(what)) throw new Error("Invalid share action");
     const d = state(), current = generation;
     const root = rootOf(store.state.workspace.tree, d.path);
@@ -307,9 +314,31 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
       : !d.link && !d.passcode ? "share.dialog.keepOne"
       : what === "link" && !d.link || (what === "accessCode" || what === "passcode") && !d.passcode ? "share.item.methodUnavailable"
       : d.passcode && d.mode === "own" && passcodeProblem(d.own) ? "share.item.passcodeInvalid" : undefined;
-    if (invalid) { set({ problem: catalog.format(invalid) }); return; }
+    if (invalid) { set({ problem: catalog.format(invalid), templateInvalid: false }); return; }
+    const needsInfo = what === "primary" || what === "information";
+    const activeTpl = template(Boolean(useDefault));
+    if (needsInfo) {
+      if (!useDefault && store.state.ui.share.listing?.itemTemplateInvalid) {
+        set({ problem: catalog.format("share.template.copyProblem"), templateInvalid: true, status: "" });
+        return;
+      }
+      try {
+        itemInviteText(activeTpl, {
+          title: d.name,
+          ...(d.link ? { link: "https://check.invalid/#x" } : {}),
+          ...(d.passcode ? { site: "https://check.invalid/s/", accessCode: "AAAA-BBBB check" } : {}),
+          ...(d.expiry !== "never" ? { expires: "1 January 2030" } : {}),
+        });
+      } catch (err) {
+        const code = /access:([A-Za-z.]+)/.exec(err instanceof Error ? err.message : "")?.[1];
+        if (code?.startsWith("template.")) {
+          set({ problem: catalog.format("share.template.copyProblem"), templateInvalid: true, status: "" });
+          return;
+        }
+      }
+    }
     const shell = access!;
-    set({ busy: true, problem: "", signedOut: false, resumeAction: what, status: catalog.format("share.item.creating"), startedAt: Date.now(), step: 1, totalSteps: 4 });
+    set({ busy: true, problem: "", templateInvalid: false, signedOut: false, resumeAction: what, status: catalog.format("share.item.creating"), startedAt: Date.now(), step: 1, totalSteps: 4 });
     try {
       let id = d.id;
       if (!id) {
@@ -341,20 +370,26 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
       const secret = await tracker.run("share.item.reveal", "share.item.preparing", () => shell.reveal(id));
       if (current !== generation) return;
       const granted = store.state.ui.share.listing?.grants.find((g) => g.id === id);
-      const info = itemInviteText(template(), {
+      const infoValues = {
         title: d.name, ...secret, site: store.state.ui.share.listing?.site ? new URL("s/", store.state.ui.share.listing.site).href : undefined,
         ...(granted?.expiresAt ? { expires: new Intl.DateTimeFormat("en", { day: "numeric", month: "long", year: "numeric" }).format(new Date(granted.expiresAt)) } : {}),
-      });
-      set({ ready: true, information: info, generated: secret.passcode ?? state().generated });
+      };
+      let info = "";
+      try { info = itemInviteText(activeTpl, infoValues); } catch (err) {
+        if (needsInfo) throw err;
+        info = itemInviteText(defaultItemShareTemplate(catalog), infoValues);
+      }
+      set({ ready: true, information: info, accessCode: secret.accessCode ?? "", generated: secret.accessCode ?? secret.passcode ?? state().generated });
+      const inviteArg = { template: activeTpl, ...(useDefault ? { useDefault: true } : {}) };
       await tracker.run("share.item.handoff", "share.item.handingOff", async () => {
         if (current !== generation) return;
         set({ step: 4 });
         if (what === "primary" && platform === "macos") {
           if (!shell.systemShare) throw new Error("access:sheet.unavailable");
-          await shell.systemShare(id, { template: template() });
-        } else await shell.copy(id, what === "primary" ? "information" : what as "link" | "accessCode" | "information" | "passcode", { template: template() });
+          await shell.systemShare(id, inviteArg);
+        } else await shell.copy(id, what === "primary" ? "information" : what as "link" | "accessCode" | "information" | "passcode", inviteArg);
       });
-      if (current === generation) set({ status: catalog.format(what === "primary" && platform === "macos" ? "share.item.sheetOpen" : `share.item.copied.${what === "primary" ? "information" : what}`) });
+      if (current === generation) set({ status: catalog.format(what === "primary" && platform === "macos" ? "share.item.sheetOpen" : needsInfo && useDefault ? "share.template.copiedDefault" : `share.item.copied.${what === "primary" ? "information" : what}`) });
     } catch (error) {
       if (current === generation) {
         fail(error);
@@ -374,7 +409,8 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
       newerCount: NUM, hasNewer: BOOL,
       restoreDisabled: BOOL, restoreReason: STR,
       history: { type: "array", items: { type: "object", properties: { id: STR, methods: STR, detail: STR, badge: STR, link: BOOL, active: BOOL } } },
-      lines: { type: "array", items: { type: "object", properties: { id: STR, text: STR } } },
+      lines: { type: "array", items: { type: "object", properties: { id: STR, text: STR, lead: STR, code: STR, hasCode: BOOL } } },
+      templateInvalid: BOOL,
       actionsDisabled: BOOL, actionReason: STR, controlReason: STR,
       notes: NUM, folders: NUM, counting: BOOL, countingVisible: BOOL, preparingVisible: BOOL, loadFailed: BOOL, retrying: BOOL, deleted: BOOL, problem: STR, hasProblem: BOOL,
       link: BOOL, passcode: BOOL, later: BOOL, laterDetail: STR, noMethods: BOOL, blockedReason: STR,
@@ -386,7 +422,7 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
       } } },
     } },
     setters: { expiry: "share.item.setExpiry", until: "share.item.setUntil", mode: "share.item.setMode", own: "share.item.setOwn" },
-    reads: ["ui.share.item", "ui.share.listing", "workspace.tree", "tasks"],
+    reads: ["ui.share.item", "ui.share.listing", "ui.share.template", "workspace.tree", "tasks"],
     select: (s) => {
       const d = s.ui.share.item;
       const root = rootOf(s.workspace.tree, d.path);
@@ -411,9 +447,21 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
         hiddenBelow = row.folder && !expanded.has(row.id) ? row.level : Number.POSITIVE_INFINITY;
         visible.push({ ...row, expanded: expanded.has(row.id) });
       }
+      const lines = d.information ? d.information.split("\n").map((text, id) => {
+        const idx = d.accessCode ? text.indexOf(d.accessCode) : -1;
+        if (idx >= 0) {
+          return {
+            id: String(id), text,
+            lead: text.slice(0, idx).trimEnd(),
+            code: text.slice(idx).replace(/ /g, "\u00A0"),
+            hasCode: true,
+          };
+        }
+        return { id: String(id), text, lead: "", code: "", hasCode: false };
+      }) : [];
       return {
-        ...d, lines: d.information ? d.information.split("\n").map((text, id) => ({ id: String(id), text })) : [],
-        dialogOpen: d.open && !d.confirmId, confirmOpen: Boolean(d.confirmId),
+        ...d, lines,
+        dialogOpen: d.open && !d.confirmId && !s.ui.share.template.open, confirmOpen: Boolean(d.confirmId),
         history, hasHistory: history.length > 0, historyCount: history.length,
         newerCount, hasNewer: newerCount > 0,
         restoreDisabled: !commands.describe("files.showDeleted").enabled, restoreReason: catalog.format("share.item.restoreUnavailable"),

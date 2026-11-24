@@ -6,7 +6,7 @@
  * keeps the dialogs' state, explains problems before asking, and builds the invite.
  */
 import {
-  audienceState, DEFAULT_EXPIRY, EXPIRY_CHOICES, expiryFrom, expiryUntil, INVITE_PLACEHOLDERS, inviteText, nameProblem, passcodeProblem, templateProblem,
+  audienceState, DEFAULT_EXPIRY, EXPIRY_CHOICES, expiryFrom, expiryUntil, INVITE_PLACEHOLDERS, inviteText, ITEM_PLACEHOLDERS, itemInviteText, itemTemplateProblem, nameProblem, passcodeProblem, templateProblem,
   type AccessChange, type AccessProblem, type Audience, type ExpiryChoice, type InviteValues, type TemplateProblem,
 } from "@focus-notes/seal/access";
 
@@ -19,7 +19,7 @@ import type { TaskTracker } from "./tasks.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
 import { findNode, rootOf, stemOf, type TreeNode, type WorkspaceTree } from "./workspace.ts";
 import { inScope, noteId } from "@focus-notes/seal/grants";
-import { ITEM_SHARE_CLOSED, type ItemShareState } from "./share-item.ts";
+import { defaultItemShareTemplate, ITEM_SHARE_CLOSED, type ItemShareState } from "./share-item.ts";
 
 /** What the shell reports: whether there's a private repository, the site, and the share audiences, without their secrets. */
 export interface AccessListing {
@@ -74,15 +74,15 @@ export interface AccessBridge {
   setItemTemplate?(template: string | null): Promise<AccessListing>;
   /** One audience's link and passcode, for its open invite only (review L2). */
   reveal(id: string): Promise<{ link?: string; passcode?: string; accessCode?: string }>;
-  prepareWords?(): Promise<{ id: string; value: string }>;
+  prepareWords?(previousId?: string): Promise<{ id: string; value: string }>;
   ready?(id: string): Promise<void>;
   cancelReady?(id: string): Promise<void>;
-  systemShare?(id: string, invite: { template: string }): Promise<void>;
+  systemShare?(id: string, invite: { template: string; useDefault?: boolean }): Promise<void>;
   /**
    * Copies the link, the passcode, or the invite: the shell fills in the invite's link, passcode, and
    * site itself, and clears the clipboard after 90 s (review L1).
    */
-  copy(id: string, what: "invite" | "link" | "passcode" | "accessCode" | "information", invite?: { template: string; values?: InviteValues }): Promise<void>;
+  copy(id: string, what: "invite" | "link" | "passcode" | "accessCode" | "information", invite?: { template: string; values?: InviteValues; useDefault?: boolean }): Promise<void>;
 }
 
 export type SharingSetupPhase = "reserved" | "creating" | "created" | "ready" | "removing" | "off";
@@ -156,7 +156,7 @@ export interface ShareTemplateEditor {
   busy: boolean;
 }
 export interface ShareManageState {
-  settings: { filter: string; query: string; status: string; problem: string; busy: boolean; dialog: string; id: string; off: boolean; more: boolean; resume: boolean;
+  settings: { filter: string; query: string; status: string; problem: string; problemRow: string; busy: boolean; dialog: string; id: string; off: boolean; more: boolean; resume: boolean;
     setupPreview?: SharingSetupPreview; setupStep?: SharingSetupStep };
   item: ItemShareState;
   listing?: AccessListing;
@@ -169,12 +169,12 @@ export interface ShareManageState {
   template: ShareTemplateEditor;
   /** The Share popover for the note that's open (IA-VIEW-SHARE, D-143): the audience whose invite was just copied. */
   note: { open: boolean; copied?: string };
-  /** Where a dialog goes back to when it closes: Settings → Sharing, or the note's Share popover. */
-  from: "settings" | "note";
+  /** Where a dialog goes back to when it closes: Settings → Sharing, the Share popover, or the item Share dialog. */
+  from: "settings" | "note" | "shareItem";
 }
 const EDITOR_CLOSED: ShareEditor = { open: false, name: "", link: true, passcode: true, mode: "generate", renew: false, own: "", notes: [], folders: [], filter: "", expiry: DEFAULT_EXPIRY, until: "", busy: false };
 export const SHARE_MANAGE_CLOSED: ShareManageState = {
-  settings: { filter: "all", query: "", status: "", problem: "", busy: false, dialog: "", id: "", off: false, more: false, resume: false },
+  settings: { filter: "all", query: "", status: "", problem: "", problemRow: "", busy: false, dialog: "", id: "", off: false, more: false, resume: false },
   item: ITEM_SHARE_CLOSED,
   loading: false, failed: false, editor: EDITOR_CLOSED, invite: { open: false }, confirm: { open: false, kind: "withdraw", busy: false },
   template: { open: false, value: "", failed: false, busy: false }, note: { open: false }, from: "settings",
@@ -208,16 +208,17 @@ export function registerShareManage<St extends S>({ store, access, catalog, comm
   const reg = <A extends Record<string, unknown> = Record<string, never>>(id: string, run: (a: A) => unknown) =>
     commands.register<A>({ id, title: `share.manage.command.${id.slice(13)}`, enabled: () => Boolean(access), run: async (a) => { await run(a); } });
   const text = (a: { value?: unknown }) => (typeof a.value === "string" ? a.value : "");
-  /** Back to where a dialog was opened from when it closes: Settings → Sharing, or the note's Share popover. */
+  /** Back to where a dialog was opened from when it closes: Settings → Sharing, the Share popover, or the item Share dialog. */
   const backToSettings = () => {
+    if (st().from === "shareItem") return;
     if (st().from === "note") return set({ note: { open: true } });
     store.update((s) => ({ ...s, ui: { ...s.ui, settings: { ...s.ui.settings, open: true, section: "sharing" } } }));
   };
   /** A dialog takes the place of Settings or the Share popover, and remembers which to go back to. */
   const leaveSettings = () => {
-    const from = st().note.open ? "note" : store.state.ui.settings.open ? "settings" : st().from;
+    const from = st().item.open ? "shareItem" : st().note.open ? "note" : store.state.ui.settings.open ? "settings" : st().from;
     set({ from, note: { open: false } });
-    store.update((s) => ({ ...s, ui: { ...s.ui, settings: { ...s.ui.settings, open: false } } }));
+    if (from !== "shareItem") store.update((s) => ({ ...s, ui: { ...s.ui, settings: { ...s.ui.settings, open: false } } }));
   };
 
   reg("share.manage.load", async () => {
@@ -406,30 +407,36 @@ export function registerShareManage<St extends S>({ store, access, catalog, comm
     backToSettings();
   });
 
-  // ---- the invite template (SHR-09, D-143) ----
+  // ---- the share information template (SHR-19, G6.3, D-409) ----
   /** The default template, every line: what Reset shows. */
-  const defaultTemplate = () => inviteTemplate(catalog, true);
+  const defaultTemplate = () => defaultItemShareTemplate(catalog);
   reg("share.manage.templateOpen", () => {
     if (!access || !st().listing?.available) return;
     leaveSettings();
-    set({ template: { open: true, value: st().listing?.template ?? defaultTemplate(), failed: false, busy: false } });
+    set({ template: { open: true, value: st().listing?.itemTemplate ?? defaultTemplate(), failed: false, busy: false } });
   });
   reg<{ value: string }>("share.manage.setTemplate", (a) => set({ template: { ...st().template, value: text(a).slice(0, 4000), failed: false } }));
   // A placeholder goes on the end, on its own when the last line already has text.
   reg<{ id: string }>("share.manage.insertPlaceholder", ({ id }) => {
-    if (!(INVITE_PLACEHOLDERS as readonly string[]).includes(id)) return;
+    if (!(ITEM_PLACEHOLDERS as readonly string[]).includes(id)) return;
     const v = st().template.value;
     set({ template: { ...st().template, value: `${v}${v && !/\s$/.test(v) ? " " : ""}{${id}}`, failed: false } });
   });
   reg("share.manage.templateReset", () => set({ template: { ...st().template, value: defaultTemplate(), failed: false } }));
   reg("share.manage.templateSave", async () => {
     const t = st().template;
-    if (!access || t.busy || templateProblem(t.value)) return;
+    if (!access || t.busy || itemTemplateProblem(t.value)) return;
     set({ template: { ...t, busy: true, failed: false } });
     try {
-      // The default saved is no file at all, so the app's own wording (and its fixes) keep applying.
-      const listing = await access.setTemplate(t.value.trim() === defaultTemplate() ? null : t.value);
-      set({ listing, template: { ...SHARE_MANAGE_CLOSED.template } });
+      // The default saved is no itemTemplate at all, so the app's own wording (and its fixes) keep applying.
+      const save = access.setItemTemplate ?? access.setTemplate;
+      const listing = await save(t.value.trim() === defaultTemplate() ? null : t.value);
+      set({
+        listing,
+        template: { ...SHARE_MANAGE_CLOSED.template },
+        settings: { ...st().settings, problemRow: "", ...(st().from === "settings" ? { status: "saved" } : {}) },
+        item: { ...st().item, templateInvalid: false, ...(st().item.templateInvalid ? { problem: "" } : {}) },
+      });
       backToSettings();
     } catch {
       set({ template: { ...st().template, busy: false, failed: true } });
@@ -671,23 +678,30 @@ export function registerShareManage<St extends S>({ store, access, catalog, comm
     reads: ["ui.share.template", "ui.share.listing"],
     select: (s) => {
       const t = s.ui.share.template;
-      const bad = templateProblem(t.value);
+      const bad = itemTemplateProblem(t.value);
       const site = s.ui.share.listing?.site;
       const siteS = site ? new URL("s/", site.endsWith("/") ? site : `${site}/`).href : catalog.format("share.manage.template.sample.site");
-      // The live preview, with made-up values: never a real audience's secrets (D-134).
-      const sample: InviteValues = {
-        name: catalog.format("share.manage.template.sample.name"), title: catalog.format("share.manage.template.sample.title"),
-        link: `${siteS}#${catalog.format("share.manage.template.sample.link")}`, passcode: catalog.format("share.manage.template.sample.passcode"), site: siteS,
+      // The live preview, with made-up values: never a real share's secrets (D-134, SHR-19).
+      const sample = {
+        title: catalog.format("share.manage.template.sample.title"),
+        link: `${siteS}#${catalog.format("share.manage.template.sample.link")}`,
+        accessCode: catalog.format("share.template.sample.accessCode"),
+        site: siteS,
         expires: new Intl.DateTimeFormat(catalog.locale, { dateStyle: "long" }).format(new Date(now().getTime() + 30 * DAY)),
       };
-      const preview = bad ? "" : inviteText(t.value, sample);
+      const preview = bad ? "" : itemInviteText(t.value, sample);
+      const problemKey = bad
+        ? bad.problem === "template.unknown" && bad.placeholder === "name" ? "name"
+          : bad.problem === "template.unknown" && bad.placeholder === "passcode" ? "passcode"
+          : bad.problem.slice("template.".length)
+        : "";
       return {
         open: t.open, value: t.value, busy: t.busy, invalid: Boolean(bad && t.value), isDefault: t.value.trim() === defaultTemplate(),
         canSave: !bad && !t.busy,
-        problem: t.failed ? catalog.format("share.manage.problem.failed") : bad ? catalog.format(`share.manage.problem.${bad.problem}`, { placeholder: bad.placeholder ? `{${bad.placeholder}}` : "", link: "{link}", passcode: "{passcode}" }) : "",
+        problem: t.failed ? catalog.format("share.manage.problem.failed") : bad ? catalog.format(`share.template.problem.${problemKey}`, { placeholder: bad.placeholder ? `{${bad.placeholder}}` : "" }) : "",
         hasProblem: Boolean(t.failed || bad),
         lines: preview ? preview.split("\n").map((text, n) => ({ id: String(n), text })) : [],
-        placeholders: INVITE_PLACEHOLDERS.map((id) => ({ id, label: `{${id}}` })),
+        placeholders: ITEM_PLACEHOLDERS.map((id) => ({ id, label: `{${id}}` })),
       };
     },
   });
