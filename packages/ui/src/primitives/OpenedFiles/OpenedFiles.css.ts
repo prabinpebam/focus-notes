@@ -18,20 +18,27 @@ export const headerLabel = style({
 export const list = style({ display: "flex", flexDirection: "column", gap: t.tabGap, margin: 0, padding: 0, listStyle: "none" });
 
 /**
- * One box in every state (D-354): only its fill and the name's weight change. The border is on the
- * tab itself, so the close button sits inside it.
+ * One box in every state (D-354): only its colours and the name's weight change. The border is on the
+ * tab itself, so the close button sits inside it. Inside a project the active tab takes the project
+ * accent: its tint as the fill and the accent as its whole outline (owner, 24 November; D-410).
  */
 export const tab = style({
   position: "relative", display: "flex", alignItems: "center", gap: t.inlineGap,
   minHeight: t.tabHeight, boxSizing: "border-box", paddingInlineEnd: t.paddingInline,
   borderStyle: "solid", borderWidth: t.borderWidth, borderColor: t.border, borderRadius: t.radius,
   backgroundColor: t.background,
-  transitionProperty: "background-color", transitionDuration: t.duration,
+  transitionProperty: "background-color, border-color", transitionDuration: t.duration,
   selectors: {
     "&:active": { backgroundColor: t.hover },
     "&[data-current]": { backgroundColor: t.current },
+    "[data-project-accent] &[data-current]": { backgroundColor: t.currentProject, borderColor: t.borderCurrentProject },
   },
-  "@media": { "(hover: hover)": { selectors: { "&:hover:not([data-current])": { backgroundColor: t.hover } } } },
+  "@media": {
+    "(hover: hover)": { selectors: { "&:hover:not([data-current])": { backgroundColor: t.hover } } },
+    "(forced-colors: active)": { selectors: {
+      "&[data-current], [data-project-accent] &[data-current]": { backgroundColor: t.forcedCurrent, borderColor: t.forcedCurrent, color: t.forcedCurrentText, forcedColorAdjust: "none" },
+    } },
+  },
 });
 
 /** The whole tab but its ×: one click activates. */
@@ -63,3 +70,4 @@ export const close = style({
 });
 globalStyle(`${tab}:has([data-focus-visible]) ${close}`, { visibility: "visible" });
 globalStyle(`${tab}:hover ${close}`, { "@media": { "(hover: hover)": { visibility: "visible" } } });
+globalStyle(`${tab}[data-current] ${icon}, ${tab}[data-current] ${close}`, { "@media": { "(forced-colors: active)": { color: t.forcedCurrentText } } });
