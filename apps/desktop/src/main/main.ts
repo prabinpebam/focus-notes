@@ -1716,6 +1716,16 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     return projects.pin(folder, path);
   });
   handle("projects:lastNote", async () => process.env.FOCUS_NOTES_PROJECT_NOTE || afterRecovery(await projects.lastNote()));
+  // The session's tabs (D-420), from the protected launch record: private notes included, never in state.json.
+  handle("projects:opened", async () => {
+    const tabs = await projects.opened();
+    return tabs?.map(afterRecovery).filter((path): path is string => Boolean(path));
+  });
+  handleFrom("projects:rememberOpened", (event, paths: unknown) => {
+    if (!Array.isArray(paths) || paths.some(path => typeof path !== "string")) throw new Error("Invalid opened notes");
+    if (secondaryPages.has(event.sender.id)) return;
+    return projects.rememberOpened(paths as string[]);
+  });
   handle("projects:position", (path: unknown) => {
     if (typeof path !== "string") throw new Error("Invalid recent note");
     return projects.position(path);

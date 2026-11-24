@@ -936,4 +936,59 @@ describe("Project session (D-420)", () => {
     expect(app.store.state.ui.files.opened).toEqual([a, b, c]);
     expect(app.store.state.note.path).toBe(a);
   });
+
+  describe("public notes/ plus a private/ submodule", () => {
+    const pub = "/w/notes/pub.md", p1 = "/w/private/notes/one.md", p2 = "/w/private/notes/two.md", untitled = "/w/private/notes/Untitled.md";
+    function legacyApp(disk: Record<string, string>, opened: string[] | undefined, last: string, state: Record<string, unknown> = {}) {
+      const firstNote = vi.fn(async () => "/w/private/notes/Untitled 2.md");
+      const saveAppState = vi.fn(async (_: { filesOpened?: string[] }) => {});
+      const rememberOpened = vi.fn(async (_: string[]) => {});
+      const read = async (path: string): Promise<string | null> => disk[path] ?? null;
+      const app = appWith({
+        firstNote, lastNote: async () => last, opened: async () => opened, rememberOpened, list: async () => [],
+        position: async () => undefined, remember: async () => {},
+      }, async (path: string) => { const text = await read(path); if (text === null) throw new Error("missing"); return text; }, {
+        readNoteIfExists: read, saveAppState,
+        workspace: {
+          info: async () => ({ folder, format: '{"formatVersion":1}' }),
+          scan: async () => ({ folder, roots: [{ id: "private", path: "/w/private/notes", readOnly: false }, { id: "public", path: "/w/notes", readOnly: false }], entries: [] }),
+          writeFormat: async () => {}, renameNote: async () => {}, onChange: () => () => {},
+        },
+        loadAppState: async () => ({ version: 1, firstRun: "done", lastNotePath: last, ...state }),
+      });
+      return { app, firstNote, saveAppState, rememberOpened };
+    }
+
+    it("restores private and public tabs from the protected store with a private note active, and adds no Untitled", async () => {
+      const { app, firstNote } = legacyApp({ [p1]: "# One", [pub]: "# Pub", [p2]: "# Two" }, [p1, pub, p2], p2, { filesOpened: [pub] });
+      await app.start();
+      expect(app.store.state.ui.files.opened).toEqual([p1, pub, p2]);
+      expect(app.store.state.note).toMatchObject({ path: p2, status: "ready" });
+      expect(firstNote).not.toHaveBeenCalled();
+    });
+
+    it("saves every tab to the protected store and only public ones to state.json", async () => {
+      const { app, saveAppState, rememberOpened } = legacyApp({ [p1]: "# One", [pub]: "# Pub", [p2]: "# Two" }, [p1, pub, p2], pub);
+      await app.start();
+      await app.commands.run("files.closeOpened", { id: p2 });
+      await vi.waitFor(() => expect(rememberOpened).toHaveBeenLastCalledWith([p1, pub]));
+      await vi.waitFor(() => expect(saveAppState.mock.calls.some(([s]) => Array.isArray(s.filesOpened))).toBe(true));
+      for (const [s] of saveAppState.mock.calls) if (s.filesOpened) expect(s.filesOpened).toEqual([pub]);
+    });
+
+    it("restores an Untitled note left by an earlier build like any other tab, without adding another", async () => {
+      const { app, firstNote } = legacyApp({ [untitled]: "", [p1]: "# One" }, [untitled, p1], untitled);
+      await app.start();
+      expect(app.store.state.ui.files.opened).toEqual([untitled, p1]);
+      expect(app.store.state.note.path).toBe(untitled);
+      expect(firstNote).not.toHaveBeenCalled();
+    });
+
+    it("with no tabs saved yet (a record from an earlier build), reopens the last note alone, never an Untitled", async () => {
+      const { app, firstNote } = legacyApp({ [p1]: "# One" }, undefined, p1);
+      await app.start();
+      expect(app.store.state.note.path).toBe(p1);
+      expect(firstNote).not.toHaveBeenCalled();
+    });
+  });
 });

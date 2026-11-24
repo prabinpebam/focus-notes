@@ -59,7 +59,8 @@ test("D-420: a relaunch restores the project's opened tabs in order with the act
     await editor.click();
     await instance.page.keyboard.press("Control+End");
     expect(await tabNames(instance)).toEqual(["Alpha", "Bravo", "Charlie"]);
-    await expect.poll(() => JSON.parse(readFileSync(join(dirs.userData, "state.json"), "utf8")).filesOpened).toEqual([a, b, c]);
+    // The tabs are in the OS-protected launch record only: these notes are private until published (D-419).
+    await expect.poll(() => JSON.parse(readFileSync(join(dirs.userData, "state.json"), "utf8")).filesOpened).toEqual([]);
     await quit(instance);
     closeOwned(instance);
     instance = undefined;
@@ -75,6 +76,78 @@ test("D-420: a relaunch restores the project's opened tabs in order with the act
     await expect.poll(() => readFileSync(b!, "utf8")).toContain("Bravo body. Typed after restore.");
     expect(readFileSync(a!, "utf8")).toBe("# Alpha\n\nAlpha body.\n");
     expect(readFileSync(c!, "utf8")).toBe("# Charlie\n\nCharlie body.\n");
+  } finally {
+    if (instance) {
+      try { await quit(instance); }
+      finally { closeOwned(instance); }
+    }
+    rmSync(dirs.userData, { recursive: true, force: true });
+    rmSync(dirs.docs, { recursive: true, force: true });
+  }
+});
+
+test("D-420: public notes/ plus a private/ submodule restores private and public tabs with a private note active, kept out of state.json, and no new Untitled", async () => {
+  test.setTimeout(150_000);
+  const dirs = tempDirs();
+  const root = dirs.docs;
+  const notes = join(root, "notes");
+  mkdirSync(join(root, ".focus-notes"));
+  mkdirSync(notes);
+  writeFileSync(join(root, ".focus-notes", "workspace.json"), '{"formatVersion":1}\n');
+  const pub = join(notes, "pub.md");
+  writeFileSync(pub, "# Pub\n\nPublic body.\n");
+  linkFixture(root, dirs.userData);
+  // The private notes are a Git submodule at private/, as in an older project.
+  const privateSource = join(dirs.userData, "private-source");
+  mkdirSync(join(privateSource, "notes"), { recursive: true });
+  writeFileSync(join(privateSource, "notes", "one.md"), "# One\n\nOne body.\n");
+  writeFileSync(join(privateSource, "notes", "two.md"), "# Two\n\nTwo body.\n");
+  // An empty Untitled left by an earlier build.
+  writeFileSync(join(privateSource, "notes", "Untitled.md"), "");
+  execFileSync("git", ["init", "--quiet", privateSource]);
+  execFileSync("git", ["-C", privateSource, "add", "."]);
+  execFileSync("git", ["-C", privateSource, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "--quiet", "-m", "private"]);
+  execFileSync("git", ["-C", root, "-c", "protocol.file.allow=always", "submodule", "add", "--quiet", privateSource.replace(/\\/g, "/"), "private"]);
+  const privateNotes = join(root, "private", "notes");
+  const [untitled, one, two] = ["Untitled", "one", "two"].map(name => join(privateNotes, `${name}.md`));
+  writeFileSync(join(dirs.userData, "project-folder.txt"), root);
+  writeFileSync(join(dirs.userData, "workspace.json"), JSON.stringify({ version: 1, folder: root, kind: "local" }));
+  writeFileSync(join(dirs.userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done", lastNotePath: untitled, projectIntroSeen: true, filesPinned: true }));
+  const untitledNotes = () => [...readdirSync(notes), ...readdirSync(privateNotes)].filter(name => /^Untitled/.test(name));
+  let instance: Launched | undefined;
+  try {
+    instance = await launch(dirs);
+    const editor = instance.page.getByRole("textbox", { name: "Note", exact: true });
+    const files = instance.page.getByRole("complementary", { name: "Files" });
+    await expect(files).toBeVisible();
+    const tree = files.getByRole("tree", { name: "Notes and folders" });
+    await fileRow(tree, "Pub").dblclick();
+    await expect(editor).toContainText("Public body.");
+    await fileRow(tree, "One").dblclick();
+    await expect(editor).toContainText("One body.");
+    await fileRow(tree, "Two").dblclick();
+    await expect(editor).toContainText("Two body.");
+    await files.locator("section#filesOpened").getByRole("button", { name: "One", exact: true }).click();
+    await expect(editor).toContainText("One body.");
+    await expect.poll(() => tabNames(instance!)).toEqual(["Untitled", "Pub", "One", "Two"]);
+    await expect.poll(() => JSON.parse(readFileSync(join(dirs.userData, "state.json"), "utf8")).filesOpened).toEqual([pub]);
+    await quit(instance);
+    closeOwned(instance);
+    instance = undefined;
+    // Private paths are kept out of the session's plaintext list; all tabs live in the OS-protected launch record.
+    expect(JSON.stringify(JSON.parse(readFileSync(join(dirs.userData, "state.json"), "utf8")).filesOpened)).not.toContain("one.md");
+    expect(readFileSync(join(dirs.userData, "last-project-note.dat"), "utf8")).not.toContain("one.md");
+
+    instance = await launch(dirs);
+    const again = instance.page.getByRole("textbox", { name: "Note", exact: true });
+    await expect(again).toContainText("One body.");
+    await expect(again).toBeFocused();
+    await expect.poll(() => tabNames(instance!)).toEqual(["Untitled", "Pub", "One", "Two"]);
+    await expect(instance.page.locator("section#filesOpened").getByRole("button", { name: "One", exact: true })).toHaveAttribute("aria-current", "page");
+    expect(untitledNotes()).toEqual(["Untitled.md"]);
+    expect(readFileSync(untitled!, "utf8")).toBe("");
+    expect(readFileSync(two!, "utf8").replace(/\r\n/g, "\n")).toBe("# Two\n\nTwo body.\n");
+    expect(readFileSync(one!, "utf8").replace(/\r\n/g, "\n")).toBe("# One\n\nOne body.\n");
   } finally {
     if (instance) {
       try { await quit(instance); }

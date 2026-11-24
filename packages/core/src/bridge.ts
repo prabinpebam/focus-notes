@@ -187,6 +187,10 @@ export interface PlatformBridge {
     /** Copies of that repository already on this computer, newest first (D-415). Read-only. */
     githubCopies?(owner: string, name: string): Promise<ExistingCopy[]>;
     lastNote(): Promise<string | undefined>;
+    /** The opened-files tabs in order (D-420), private notes included, from OS-protected storage; undefined: none saved yet. */
+    opened?(): Promise<string[] | undefined>;
+    /** Saves the opened-files tabs in order to OS-protected storage, beside the last note. */
+    rememberOpened?(paths: string[]): Promise<void>;
     /**
      * Exclusively creates an ordinary first note only in a positively verified empty project. `"history"`:
      * the remembered last note is gone, so only an empty Untitled is admitted, never a written certified one.
@@ -804,7 +808,7 @@ export interface AppStateFile {
   filesSort?: "changed";
   filesPins?: string[];
   filesRecent?: string[];
-  /** The opened-files tabs in their order, the project's session (D-410, D-420); never a private note's path. */
+  /** The opened-files tabs outside any private root, the fallback for a launch record from before D-420; all tabs live in the protected launch record. */
   filesOpened?: string[];
   /** The chosen light and dark themes (THM-08). */
   lightTheme?: string;

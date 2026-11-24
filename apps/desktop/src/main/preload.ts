@@ -159,6 +159,8 @@ contextBridge.exposeInMainWorld("focusNotes", {
     openGitHub: (owner: string, name: string, use?: string) => ipcRenderer.invoke("projects:openGitHub", owner, name, use),
     githubCopies: (owner: string, name: string) => ipcRenderer.invoke("projects:githubCopies", owner, name),
     lastNote: () => ipcRenderer.invoke("projects:lastNote"),
+    opened: () => ipcRenderer.invoke("projects:opened"),
+    rememberOpened: (paths: string[]) => ipcRenderer.invoke("projects:rememberOpened", paths),
     firstNote: (reason?: "history") => ipcRenderer.invoke("projects:firstNote", ...(reason ? [reason] : [])),
     position: (path: string) => ipcRenderer.invoke("projects:position", path),
     remember: (path: string, position?: { from: number; to: number; scroll: number }) => ipcRenderer.invoke("projects:remember", path, position),

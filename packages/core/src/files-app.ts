@@ -191,7 +191,13 @@ export function registerFiles(ctx: Ctx) {
     if (sessionSaved === undefined || opened === sessionSaved) return;
     sessionSaved = opened;
     if (!cacheEnabled) return;
-    void saveOpened(opened.filter(p => sourceOf(p) !== "private" && !filteredRoots.some(root => atOrUnder(p, root))));
+    const kept = opened.filter(p => !filteredRoots.some(root => atOrUnder(p, root)));
+    // Every tab, private ones too, goes to the OS-protected launch record; state.json keeps only notes known to be outside a private root.
+    void bridge.projects?.rememberOpened?.([...kept])?.catch(() => console.error("Could not save the opened files."));
+    const folder = store.state.workspace.folder?.replace(/\\/g, "/").replace(/\/+$/, "").toLowerCase();
+    const unprotected = kept.filter(p => sourceOf(p) !== "private" && rootOf(tree(), p)?.id !== "private"
+      && !(folder && atOrUnder(p.replace(/\\/g, "/").toLowerCase(), `${folder}/private`)));
+    void saveOpened(unprotected);
   });
 
   // ---- opening, revealing, closing ----
