@@ -104,9 +104,39 @@ test("GitHub references independently open exact destinations across landed surf
     await open.getByRole("button", { name: "Open from GitHub…", exact: true }).click();
     const github = page.getByRole("dialog", { name: "Open from GitHub", exact: true });
     const githubCard = github.locator("[data-item-card]").filter({ has: page.getByRole("button", { name: "Open ada/notes on GitHub", exact: true }) });
-    await activate(githubCard.getByRole("button", { name: "Open ada/notes on GitHub", exact: true }), "https://github.com/ada/notes");
     // Only Focus Notes projects are listed (D-416): ada/notes, not ada/recipes or the private companion.
     await expect(github.locator("[data-item-card]")).toHaveCount(1);
+    // D-416: the list's cards carry no edge at rest, the accent only on hover, on the same box; the focus ring is unchanged.
+    const hit = githubCard.locator("button").first();
+    const paint = () => githubCard.evaluate(card => {
+      const style = getComputedStyle(card);
+      const box = card.getBoundingClientRect();
+      return { border: style.borderTopColor, width: style.borderTopWidth, accent: getComputedStyle(card.querySelector("[data-visual-anchor]")!).color, box: [box.x, box.y, box.width, box.height].map(Math.round) };
+    });
+    const shots = process.env.FOCUS_NOTES_REVIEW_DIR;
+    const capture = async (name: string) => { if (shots) await github.screenshot({ path: join(shots, `${name}.png`), animations: "disabled" }); };
+    await expect(githubCard).toHaveAttribute("data-accent", "hover");
+    await page.evaluate(() => Promise.all(document.getAnimations().filter(animation => animation.effect?.getComputedTiming().endTime !== Infinity).map(animation => animation.finished.catch(() => undefined))));
+    for (const theme of ["paper", "ink"]) {
+      await page.evaluate(id => { document.documentElement.dataset.theme = id; document.documentElement.style.colorScheme = id === "ink" ? "dark" : "light"; }, theme);
+      await page.mouse.move(0, 0);
+      await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+      await expect.poll(async () => (await paint()).border).toBe("rgba(0, 0, 0, 0)");
+      const rest = await paint();
+      await capture(`${theme}-rest`);
+      await hit.hover();
+      await expect.poll(async () => (await paint()).border).toBe(rest.accent);
+      const hover = await paint();
+      expect(hover.box).toEqual(rest.box);
+      expect(hover.width).toBe(rest.width);
+      await capture(`${theme}-hover`);
+      await page.mouse.move(0, 0);
+      await hit.focus();
+      await expect.poll(async () => (await paint()).border).toBe("rgba(0, 0, 0, 0)");
+      expect((await paint()).box).toEqual(rest.box);
+    }
+    await page.evaluate(() => { document.documentElement.dataset.theme = "paper"; document.documentElement.style.colorScheme = "light"; });
+    await activate(githubCard.getByRole("button", { name: "Open ada/notes on GitHub", exact: true }), "https://github.com/ada/notes");
     await activate(githubCard.getByRole("button", { name: "Open ada on GitHub", exact: true }), "https://github.com/ada");
     expect(await l.app.evaluate(() => Reflect.get(globalThis, "githubReferenceClones"))).toEqual([]);
     await expect(github).toBeVisible();

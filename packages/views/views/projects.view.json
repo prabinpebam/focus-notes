@@ -182,6 +182,7 @@
              "get": "repo.description"
             },
             "icon": "github",
+            "accent": "hover",
             "personal": "title",
             "busy": {
              "get": "repo.busy"

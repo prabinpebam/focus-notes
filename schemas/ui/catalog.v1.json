@@ -3171,6 +3171,15 @@
           "default": true,
           "description": "A trailing navigation cue; false for published article entries."
         },
+        "accent": {
+          "kind": "enum",
+          "values": [
+            "rest",
+            "hover"
+          ],
+          "default": "rest",
+          "description": "A pressable card's accent edge. rest: the step's main action (D-131). hover: a list of pressable cards inside an enclosure, no edge at rest and the accent only on hover, on the same box (D-416)."
+        },
         "label": {
           "kind": "message",
           "description": "The card's accessible name, when its title alone doesn't say it (This computer is connected to GitHub as …)."
@@ -3223,6 +3232,7 @@
       },
       "fixtures": [
         "independent GitHub references",
+        "list row, accent on hover",
         "published article",
         "selected radio with independent action",
         "pending radio",
