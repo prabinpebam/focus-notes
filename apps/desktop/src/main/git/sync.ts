@@ -14,6 +14,7 @@ import { StatusCache, filesKey, gitFiles } from "./cache.ts";
 import { Cadence, FETCH_EVERY_MS, type BackupPolicy, POINTER_GAP_MS, pointerDelay, retryDelay, systemClock, type Clock, type SyncReason } from "./cadence.ts";
 import { releaseLock, takeLock } from "./lock.ts";
 import { emptyFolders } from "./folders.ts";
+import { unpushedPaths, waitsForBackup } from "./backup-state.ts";
 import { AGENT_TRAILER, agentMessage, backupMessage, agentMovesOf, agentNoteOf, agentOf, batchMessage, changesOf, pointerMessage, resolveMessage, saveMessage, undoAgentMessage, type BatchOp, type Change } from "./message.ts";
 import type { ConflictChoice, NoteConflict, RepoBackupReport, SyncProblem, SyncReport } from "@focus-notes/core";
 import type { RepoHealth } from "@focus-notes/core/diagnostics";
@@ -264,13 +265,10 @@ export class GitSync {
         else if (/\.md$/i.test(rel)) notes.add(rel);
         else other.add(rel);
       };
-      for (const e of st.entries) if (e.kind !== "ignored" && e.kind !== "unmerged" && (e.from === undefined || inNotes(e.from))) add(e.path);
+      for (const e of st.entries) if (e.kind !== "unmerged" && (e.from === undefined || inNotes(e.from)) && (await waitsForBackup(repo.dir, e))) add(e.path);
       for (const dir of await emptyFolders(join(repo.dir, NOTES))) folders.add(posix(relative(repo.dir, dir)));
       const commits = st.upstream ? st.ahead : 0;
-      if (commits > 0) {
-        const d = await this.#git(repo, ["diff", "--name-only", "--no-renames", "-z", `${st.upstream}...HEAD`]);
-        if (d.code === 0) for (const p of d.stdout.split("\0")) if (p) add(p);
-      }
+      if (commits > 0) for (const p of (await unpushedPaths((args) => this.#git(repo, args), st)) ?? []) add(p);
       out.push({ repo: id, ...(await this.#nameOf(repo)), folders: folders.size, notes: notes.size, other: other.size, commits, remote: Boolean(st.upstream) });
     }
     return out;

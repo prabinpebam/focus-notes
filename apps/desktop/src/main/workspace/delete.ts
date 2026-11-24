@@ -11,6 +11,7 @@ import { basename, dirname, isAbsolute, join, parse, relative, resolve } from "n
 import type { DeletionCheck, DeletionResult, RepoStatus } from "@focus-notes/core";
 import { GitHubError } from "@focus-notes/github";
 import { createRunner, type GitRunner } from "../git/run.ts";
+import { unpushedPaths, waitsForBackup } from "../git/backup-state.ts";
 import { parseStatus, STATUS_ARGS } from "../git/status.ts";
 
 const real = (p: string) => {
@@ -57,23 +58,14 @@ export async function countNotes(dir: string): Promise<number> {
   return n;
 }
 
-/** A new note with nothing in it (the blank Untitled a project opens on, D-397): nothing to lose. */
-async function blankNote(path: string): Promise<boolean> {
-  if (!/\.(md|markdown)$/i.test(path)) return false;
-  const info = await stat(path).catch(() => undefined);
-  if (!info?.isFile() || info.size > 4096) return false;
-  return (await readFile(path, "utf8").catch(() => "x")).trim() === "";
-}
-
 /**
- * Files in a repository its remote doesn't have yet, relative to the project: changed, new or in a
- * commit not pushed to the branch's upstream (the save state's own measure, D-132). Deleted files
- * and blank new notes are left out, since there's nothing to keep a copy of. `unknown` when Git
- * can't fully say (it fails, or nothing on a remote is known to compare with): never "all saved".
+ * Files in a repository its remote doesn't have yet, relative to the project, by the backup card's
+ * own rule (git/backup-state.ts): changed, new or in a commit not pushed. Deleted files are left
+ * out, since there's nothing to keep a copy of. `unknown` when Git can't fully say: never "all saved".
  */
 async function notOnRemote(git: GitRunner, dir: string, prefix: string): Promise<{ paths: string[]; unknown: boolean }> {
-  const out = new Set<string>();
-  const status = await git({ cwd: dir, args: [...STATUS_ARGS.filter((a) => !a.startsWith("--ignore-submodules")), "--ignore-submodules=all"], read: true });
+  const run = (args: string[]) => git({ cwd: dir, args, read: true });
+  const status = await run([...STATUS_ARGS.filter((a) => !a.startsWith("--ignore-submodules")), "--ignore-submodules=all"]);
   let st: ReturnType<typeof parseStatus> | undefined;
   try {
     if (status.code === 0) st = parseStatus(status.stdout);
@@ -81,29 +73,16 @@ async function notOnRemote(git: GitRunner, dir: string, prefix: string): Promise
     st = undefined;
   }
   if (!st) return { paths: [], unknown: true };
-  let unknown = false;
-  for (const e of st.entries) {
-    if (e.kind === "ignored" || e.xy.includes("D")) continue;
-    if (e.kind === "untracked" && (await blankNote(join(dir, e.path)))) continue;
-    out.add(e.path);
-  }
-  if (st.oid) {
-    // With an upstream, what it doesn't have; detached (a submodule) or without one, what no fetched remote branch has.
-    const remotes = st.upstream ? undefined : await git({ cwd: dir, args: ["for-each-ref", "--count=1", "--format=%(refname)", "refs/remotes"], read: true });
-    if (remotes && (remotes.code !== 0 || !remotes.stdout.trim())) unknown = true;
-    else {
-      const range = st.upstream ? ["diff", "--name-only", "--no-renames", "-z", "@{upstream}...HEAD"] : ["log", "HEAD", "--not", "--remotes", "--name-only", "--format=", "-z"];
-      const commits = await git({ cwd: dir, args: range, read: true });
-      if (commits.code !== 0) unknown = true;
-      else for (const p of commits.stdout.split(/[\0\r\n]+/)) if (p) out.add(p);
-    }
-  }
+  const out = new Set<string>();
+  for (const e of st.entries) if (!e.xy.includes("D") && (await waitsForBackup(dir, e))) out.add(e.path);
+  const commits = await unpushedPaths(run, st);
+  for (const p of commits ?? []) out.add(p);
   const paths = [...out]
     .map((p) => p.replace(/\\/g, "/"))
     .filter((p) => !p.startsWith(".") && !p.includes("/.") && p !== "private" && existsSync(join(dir, p)))
     .map((p) => `${prefix}${p}`)
     .sort();
-  return { paths, unknown };
+  return { paths, unknown: commits === undefined };
 }
 
 /**
