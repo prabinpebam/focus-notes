@@ -1281,6 +1281,43 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       if (position.key === store.state.note.key) notePosition = position;
     },
   });
+  // The project's session (D-420): each note is checked; gone notes are dropped and counted, never named.
+  let sessionRetry: { tabs: readonly string[]; active?: string } | undefined;
+  async function probeSession(tabs: readonly string[], active: string | undefined) {
+    const probes = new Map<string, SessionProbe>();
+    await Promise.all([...new Set([...tabs, ...(active ? [active] : [])])].map(async (path) => {
+      try { probes.set(path, (await bridge.readNoteIfExists!(path)) === null ? "missing" : "present"); }
+      catch { probes.set(path, "error"); }
+    }));
+    const plan = planSessionRestore({ opened: tabs, active }, (path) => probes.get(path));
+    if (plan.kind !== "error" && plan.dropped) console.warn("session.restore.dropped", plan.dropped);
+    return plan;
+  }
+  commands.register({
+    id: "project.session.retry", title: "command.project.session.retry",
+    enabled: () => sessionRetry !== undefined,
+    run: async () => {
+      const pending = sessionRetry;
+      if (!pending || !bridge.readNoteIfExists) return;
+      const plan = await probeSession(pending.tabs, pending.active);
+      if (plan.kind === "error") {
+        toast(catalog.format("project.session.restoreFailed"), {
+          tone: "error", sticky: true, mustReadReason: "recovery-decision",
+          action: { command: "project.session.retry", label: catalog.format("toast.retry") },
+        });
+        return;
+      }
+      sessionRetry = undefined;
+      const current = store.state.note.status === "ready" ? store.state.note.path : undefined;
+      if (plan.kind === "untitled") {
+        files.restoreOpened(current ? [current] : []);
+        return;
+      }
+      files.restoreOpened(plan.opened);
+      if (current !== plan.active) await openNote(plan.active);
+      editorAction("edit.focus");
+    },
+  });
   commands.register({
     id: "app.ready",
     title: "command.app.ready",
@@ -1926,17 +1963,15 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         const sessionTabs = bridge.windows?.initialOpen || bridge.windows?.initialNote || bridge.windows?.secondary || restoreFailed
           ? undefined : (appState.filesOpened ?? []).map(currentProjectNote).filter((path): path is string => Boolean(path));
         if (sessionTabs?.length && bridge.readNoteIfExists) {
-          const probes = new Map<string, SessionProbe>();
-          await Promise.all([...new Set([...sessionTabs, ...(last ? [last] : [])])].map(async (path) => {
-            try { probes.set(path, (await bridge.readNoteIfExists!(path)) === null ? "missing" : "present"); }
-            catch { probes.set(path, "error"); }
-          }));
-          const plan = planSessionRestore({ opened: sessionTabs, active: last }, (path) => probes.get(path));
+          const plan = await probeSession(sessionTabs, last);
           if (plan.kind === "error") {
             restoreFailed = true;
-            toast(catalog.format("project.launch.restoreFailed"), { tone: "error" });
+            sessionRetry = { tabs: sessionTabs, active: last };
+            toast(catalog.format("project.session.restoreFailed"), {
+              tone: "error", sticky: true, mustReadReason: "recovery-decision",
+              action: { command: "project.session.retry", label: catalog.format("toast.retry") },
+            });
           } else {
-            if (plan.dropped) console.warn("session.restore.dropped", plan.dropped);
             files.restoreOpened(plan.kind === "restore" ? plan.opened : []);
             if (plan.kind === "restore") last = plan.active;
             else { sessionGone = plan.gone; last = undefined; }
