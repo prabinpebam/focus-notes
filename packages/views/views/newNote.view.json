@@ -32,7 +32,7 @@
         { "type": "Inline", "props": { "gap": "inlineItem", "justify": "between", "align": "center" },
           "children": [
             { "type": "Button", "props": { "label": { "t": "newNote.newFolder" }, "variant": "subtle", "icon": "newFolder", "disabled": { "get": "vm.newNote.cannotNewFolder" }, "disabledReason": { "t": "newNote.finishFolder" } }, "on": { "press": { "run": "newNote.newFolder" } } },
-            { "type": "Inline", "props": { "gap": "inlineItem" }, "children": [
+            { "type": "Inline", "props": { "gap": "inlineItem", "justify": "end" }, "children": [
               { "type": "Button", "props": { "label": { "t": "project.cancel" }, "variant": "secondary" }, "on": { "press": { "run": "newNote.dismiss" } } },
               { "type": "Button", "props": { "label": { "get": "vm.newNote.createLabel" }, "variant": "primary", "disabled": { "get": "vm.newNote.cannotCreate" }, "disabledReason": { "t": "newNote.finishFolder" } }, "on": { "press": { "run": "newNote.create" } } }
             ] }

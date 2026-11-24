@@ -219,7 +219,8 @@
     "inlineGroup": { "$value": "{ref.size.16}", "$description": "Groups in a row: at least twice inlineItem (a toolbar's groups, a form's two columns)." },
     "insetSm": { "$value": "{ref.size.8}", "$description": "Inside a small container's edge: menus, tooltips, chips, list rows, status rows." },
     "insetMd": { "$value": "{ref.size.16}", "$description": "Inside a card, popover or panel's edge. Never smaller than the gaps inside it." },
-    "insetLg": { "$value": "{ref.size.24}", "$description": "Inside a dialog, sheet or page region's edge, on header, body and footer alike." },
+    "insetLg": { "$value": "{ref.size.24}", "$description": "Inside a sheet or page region's edge, and inside an alert or popover card (D-408)." },
+    "insetXl": { "$value": "{ref.size.32}", "$description": "Inside a dialog's edge, on header, body and footer alike, below the footer actions too (owner 23 November 17:21, D-408)." },
     "gutter": { "$value": "{ref.size.24}", "$description": "Between columns or regions of a view, and from a floating notice to the window's edge." },
     "marginPage": { "$value": "{ref.size.16}", "$description": "Between content and the window's edge: corners, anchored panels, a popover's clearance." },
     "scale": {

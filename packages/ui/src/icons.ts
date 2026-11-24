@@ -95,6 +95,7 @@ import { DocumentText20Regular } from "@fluentui/react-icons/headless/svg/docume
 import type { ComponentType, SVGProps } from "react";
 import type { IconName } from "./icon-names.ts";
 import { GitHubMark } from "./github-mark.tsx";
+import { HardDriveCheckmark } from "./hard-drive-check.tsx";
 import { AI_BRAND_ICONS } from "./ai-brand-icons.tsx";
 
 export const ICONS: Record<IconName, ComponentType<SVGProps<SVGSVGElement>>> = {
@@ -128,7 +129,7 @@ export const ICONS: Record<IconName, ComponentType<SVGProps<SVGSVGElement>>> = {
   // Projects, Quick notes and images (D-272 to D-313).
   image: Image20Regular, imageAdd: ImageAdd20Regular, crop: Crop20Regular, rotate: ArrowRotateClockwise20Regular,
   rotateLeft: ArrowRotateCounterclockwise20Regular, flipHorizontal: FlipHorizontal20Regular, flipVertical: FlipVertical20Regular, unlock: LockOpen20Regular,
-  openWindow: WindowNew20Regular, quickNote: Notepad20Regular, hardDrive: HardDrive20Regular, upload: ArrowUpload20Regular, caption: ClosedCaption20Regular,
+  openWindow: WindowNew20Regular, quickNote: Notepad20Regular, hardDrive: HardDrive20Regular, hardDriveCheck: HardDriveCheckmark, upload: ArrowUpload20Regular, caption: ClosedCaption20Regular,
   description: TextDescription20Regular, sparkle: Sparkle20Regular,
   // GitHub's own mark (Octicons, MIT), where the setup names GitHub (D-126).
   github: GitHubMark,

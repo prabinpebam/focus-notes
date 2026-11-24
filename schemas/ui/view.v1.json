@@ -380,6 +380,9 @@
           "$ref": "#/$defs/c_Section"
         },
         {
+          "$ref": "#/$defs/c_IconLayout"
+        },
+        {
           "$ref": "#/$defs/c_Inline"
         },
         {
@@ -701,6 +704,7 @@
                     "newFolder",
                     "github",
                     "hardDrive",
+                    "hardDriveCheck",
                     "cloud",
                     "cloudUp",
                     "cloudCheck",
@@ -1334,6 +1338,7 @@
                     "newFolder",
                     "github",
                     "hardDrive",
+                    "hardDriveCheck",
                     "cloud",
                     "cloudUp",
                     "cloudCheck",
@@ -2509,6 +2514,7 @@
                     "newFolder",
                     "github",
                     "hardDrive",
+                    "hardDriveCheck",
                     "cloud",
                     "cloudUp",
                     "cloudCheck",
@@ -2753,6 +2759,7 @@
                     "newFolder",
                     "github",
                     "hardDrive",
+                    "hardDriveCheck",
                     "cloud",
                     "cloudUp",
                     "cloudCheck",
@@ -3084,6 +3091,7 @@
                     "newFolder",
                     "github",
                     "hardDrive",
+                    "hardDriveCheck",
                     "cloud",
                     "cloudUp",
                     "cloudCheck",
@@ -3898,6 +3906,7 @@
                     "newFolder",
                     "github",
                     "hardDrive",
+                    "hardDriveCheck",
                     "cloud",
                     "cloudUp",
                     "cloudCheck",
@@ -4368,6 +4377,7 @@
                     "newFolder",
                     "github",
                     "hardDrive",
+                    "hardDriveCheck",
                     "cloud",
                     "cloudUp",
                     "cloudCheck",
@@ -7183,6 +7193,7 @@
                     "newFolder",
                     "github",
                     "hardDrive",
+                    "hardDriveCheck",
                     "cloud",
                     "cloudUp",
                     "cloudCheck",
@@ -7502,6 +7513,7 @@
                     "newFolder",
                     "github",
                     "hardDrive",
+                    "hardDriveCheck",
                     "cloud",
                     "cloudUp",
                     "cloudCheck",
@@ -8053,6 +8065,7 @@
                     "newFolder",
                     "github",
                     "hardDrive",
+                    "hardDriveCheck",
                     "cloud",
                     "cloudUp",
                     "cloudCheck",
@@ -10591,6 +10604,7 @@
                     "insetSm",
                     "insetMd",
                     "insetLg",
+                    "insetXl",
                     "gutter",
                     "marginPage"
                   ]
@@ -10616,6 +10630,7 @@
                     "insetSm",
                     "insetMd",
                     "insetLg",
+                    "insetXl",
                     "gutter",
                     "marginPage"
                   ]
@@ -10641,6 +10656,7 @@
                     "insetSm",
                     "insetMd",
                     "insetLg",
+                    "insetXl",
                     "gutter",
                     "marginPage"
                   ]
@@ -10774,6 +10790,77 @@
         }
       }
     },
+    "c_IconLayout": {
+      "type": "object",
+      "description": "The app-wide two-column layout for dialogs, alert cards and popover cards (D-408). The icon slot is the first column and holds only the icon or visual; everything else sits in the second column: the heading slot (title and its line, stackPair apart), then the default slot stackGroup below (body, details, progress, fields; stackItem apart), then the actions slot below with the largest gap (cmp.iconLayout.actionsGap, the gutter, never more than a card's inset), aligned to the trailing edge, secondary first and primary last (D-374). Nothing in the second column wraps under the icon. Without an icon it is one column with the same trailing actions. It paints no border, fill or inset: the enclosing Surface, PopoverPanel or Dialog owns the one inset.",
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "IconLayout"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {},
+          "required": []
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/node"
+          }
+        },
+        "slots": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "icon": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/node"
+              }
+            },
+            "heading": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/node"
+              }
+            },
+            "actions": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/node"
+              }
+            }
+          }
+        }
+      }
+    },
     "c_Inline": {
       "type": "object",
       "description": "Children in a row, spaced by a spacing role (a relationship, never a size).",
@@ -10822,6 +10909,7 @@
                     "insetSm",
                     "insetMd",
                     "insetLg",
+                    "insetXl",
                     "gutter",
                     "marginPage"
                   ]
@@ -10873,6 +10961,7 @@
                     "insetSm",
                     "insetMd",
                     "insetLg",
+                    "insetXl",
                     "gutter",
                     "marginPage"
                   ]
@@ -10947,6 +11036,7 @@
                     "insetSm",
                     "insetMd",
                     "insetLg",
+                    "insetXl",
                     "gutter",
                     "marginPage"
                   ]
@@ -11033,6 +11123,7 @@
                     "insetSm",
                     "insetMd",
                     "insetLg",
+                    "insetXl",
                     "gutter",
                     "marginPage"
                   ]
@@ -11179,6 +11270,7 @@
                     "insetSm",
                     "insetMd",
                     "insetLg",
+                    "insetXl",
                     "gutter",
                     "marginPage"
                   ]
@@ -11204,6 +11296,7 @@
                     "insetSm",
                     "insetMd",
                     "insetLg",
+                    "insetXl",
                     "gutter",
                     "marginPage"
                   ]
@@ -12135,6 +12228,7 @@
                     "insetSm",
                     "insetMd",
                     "insetLg",
+                    "insetXl",
                     "gutter",
                     "marginPage"
                   ]
@@ -14354,7 +14448,7 @@
     },
     "c_Dialog": {
       "type": "object",
-      "description": "A titled modal dialog with a close button, optional fixed controls and footer actions, and a scrolling body.",
+      "description": "A titled modal dialog with a close button, optional fixed controls and footer actions, and a scrolling body. With a visual it is one IconLayout (D-408): the visual alone in column 1; the title and close, the body and the footer actions (trailing, primary last) in column 2. Without one it is unchanged.",
       "required": [
         "type",
         "props"
@@ -14499,6 +14593,12 @@
           "additionalProperties": false,
           "properties": {
             "toolbar": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/node"
+              }
+            },
+            "visual": {
               "type": "array",
               "items": {
                 "$ref": "#/$defs/node"

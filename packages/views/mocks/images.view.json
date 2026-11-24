@@ -3464,26 +3464,33 @@
                 "t": "image.describe.title"
                }
               },
-              "slots": {
-               "header": [
-                {
-                 "type": "Heading",
-                 "props": {
-                  "value": {
-                   "t": "image.describe.title"
-                  },
-                  "level": "2"
-                 }
-                }
-               ],
-               "footer": [
-                {
-                 "type": "Inline",
-                 "props": {
-                  "gap": "inlineItem",
-                  "justify": "end"
-                 },
-                 "children": [
+              "children": [
+               {
+                "type": "IconLayout",
+                "slots": {
+                 "icon": [
+                  {
+                   "type": "ImageFrame",
+                   "props": {
+                    "src": {
+                     "get": "vm.mocks.harbourSrc"
+                    },
+                    "mode": "thumb"
+                   }
+                  }
+                 ],
+                 "heading": [
+                  {
+                   "type": "Heading",
+                   "props": {
+                    "value": {
+                     "t": "image.describe.title"
+                    },
+                    "level": "2"
+                   }
+                  }
+                 ],
+                 "actions": [
                   {
                    "type": "Button",
                    "on": {
@@ -3525,73 +3532,38 @@
                    }
                   }
                  ]
-                }
-               ]
-              },
-              "children": [
-               {
-                "type": "Stack",
-                "props": {
-                 "gap": "stackGroup"
                 },
                 "children": [
                  {
-                  "type": "Inline",
+                  "type": "TextField",
                   "props": {
-                   "gap": "inlineGroup",
-                   "align": "start"
-                  },
-                  "children": [
-                   {
-                    "type": "ImageFrame",
-                    "props": {
-                     "src": {
-                      "get": "vm.mocks.harbourSrc"
-                     },
-                     "mode": "thumb"
-                    }
+                   "label": {
+                    "t": "image.describe.alt"
                    },
-                   {
-                    "type": "Stack",
-                    "props": {
-                     "gap": "stackItem",
-                     "grow": true
-                    },
-                    "children": [
-                     {
-                      "type": "TextField",
-                      "props": {
-                       "label": {
-                        "t": "image.describe.alt"
-                       },
-                       "value": {
-                        "get": "vm.mocks.imageAlt"
-                       },
-                       "multiline": true,
-                       "compactMultiline": true,
-                       "autoFocus": true,
-                       "description": {
-                        "t": "image.describe.altHint"
-                       }
-                      }
-                     },
-                     {
-                      "type": "TextField",
-                      "props": {
-                       "label": {
-                        "t": "image.describe.caption"
-                       },
-                       "value": {
-                        "get": "vm.mocks.imageCaption"
-                       },
-                       "description": {
-                        "t": "image.describe.captionHint"
-                       }
-                      }
-                     }
-                    ]
+                   "value": {
+                    "get": "vm.mocks.imageAlt"
+                   },
+                   "multiline": true,
+                   "compactMultiline": true,
+                   "autoFocus": true,
+                   "description": {
+                    "t": "image.describe.altHint"
                    }
-                  ]
+                  }
+                 },
+                 {
+                  "type": "TextField",
+                  "props": {
+                   "label": {
+                    "t": "image.describe.caption"
+                   },
+                   "value": {
+                    "get": "vm.mocks.imageCaption"
+                   },
+                   "description": {
+                    "t": "image.describe.captionHint"
+                   }
+                  }
                  }
                 ]
                }
@@ -4929,22 +4901,20 @@
                 "t": "image.ai.title2"
                }
               },
-              "slots": {
-               "header": [
-                {
-                 "type": "Inline",
-                 "props": {
-                  "gap": "inlineItem",
-                  "align": "center"
-                 },
-                 "children": [
+              "children": [
+               {
+                "type": "IconLayout",
+                "slots": {
+                 "icon": [
                   {
                    "type": "Icon",
                    "props": {
                     "name": "sparkle",
                     "size": "m"
                    }
-                  },
+                  }
+                 ],
+                 "heading": [
                   {
                    "type": "Heading",
                    "props": {
@@ -4954,321 +4924,321 @@
                     "level": "2"
                    }
                   }
-                 ]
-                }
-               ],
-               "footer": [
-                {
-                 "switch": {
-                  "get": "local.last"
-                 },
-                 "cases": {
-                  "": {
-                   "type": "Inline",
-                   "props": {
-                    "gap": "inlineItem",
-                    "justify": "end"
+                 ],
+                 "actions": [
+                  {
+                   "switch": {
+                    "get": "local.last"
                    },
-                   "children": [
-                    {
-                     "type": "Button",
-                     "on": {
-                      "press": {
-                       "set": "local.step",
-                       "to": "image"
-                      }
-                     },
+                   "cases": {
+                    "": {
+                     "type": "Inline",
                      "props": {
-                      "label": {
-                       "t": "project.cancel"
-                      },
-                      "variant": "secondary"
-                     }
-                    },
-                    {
-                     "type": "Button",
-                     "on": {
-                      "press": {
-                       "set": "local.last",
-                       "to": "writing"
-                      }
+                      "gap": "inlineItem",
+                      "justify": "end"
                      },
-                     "props": {
-                      "label": {
-                       "t": "image.ai.generate"
-                      },
-                      "variant": "primary",
-                      "icon": "sparkle"
-                     }
-                    }
-                   ]
-                  },
-                  "writing": {
-                   "type": "Inline",
-                   "props": {
-                    "gap": "inlineItem",
-                    "justify": "end"
-                   },
-                   "children": [
-                    {
-                     "type": "Button",
-                     "on": {
-                      "press": {
-                       "set": "local.last",
-                       "to": ""
-                      }
-                     },
-                     "props": {
-                      "label": {
-                       "t": "image.ai.stop"
-                      },
-                      "variant": "secondary"
-                     }
-                    },
-                    {
-                     "type": "Button",
-                     "on": {
-                      "press": {
-                       "set": "local.last",
-                       "to": "review"
-                      }
-                     },
-                     "props": {
-                      "label": {
-                       "t": "project.mock.ready"
-                      },
-                      "variant": "subtle"
-                     }
-                    }
-                   ]
-                  },
-                  "review": {
-                   "type": "Inline",
-                   "props": {
-                    "gap": "inlineItem",
-                    "justify": "end"
-                   },
-                   "children": [
-                    {
-                     "type": "Button",
-                     "on": {
-                      "press": {
-                       "set": "local.last",
-                       "to": "writing"
-                      }
-                     },
-                     "props": {
-                      "label": {
-                       "t": "image.ai.again"
-                      },
-                      "variant": "subtle"
-                     }
-                    },
-                    {
-                     "type": "Button",
-                     "on": {
-                      "press": [
-                       {
-                        "set": "local.last",
-                        "to": ""
+                     "children": [
+                      {
+                       "type": "Button",
+                       "on": {
+                        "press": {
+                         "set": "local.step",
+                         "to": "image"
+                        }
                        },
-                       {
-                        "set": "local.step",
-                        "to": "image"
+                       "props": {
+                        "label": {
+                         "t": "project.cancel"
+                        },
+                        "variant": "secondary"
                        }
-                      ]
-                     },
-                     "props": {
-                      "label": {
-                       "t": "project.cancel"
                       },
-                      "variant": "secondary"
-                     }
-                    },
-                    {
-                     "type": "Button",
-                     "on": {
-                      "press": {
-                       "set": "local.captioned",
-                       "to": true
+                      {
+                       "type": "Button",
+                       "on": {
+                        "press": {
+                         "set": "local.last",
+                         "to": "writing"
+                        }
+                       },
+                       "props": {
+                        "label": {
+                         "t": "image.ai.generate"
+                        },
+                        "variant": "primary",
+                        "icon": "sparkle"
+                       }
                       }
-                     },
+                     ]
+                    },
+                    "writing": {
+                     "type": "Inline",
                      "props": {
-                      "label": {
-                       "t": "image.ai.use"
+                      "gap": "inlineItem",
+                      "justify": "end"
+                     },
+                     "children": [
+                      {
+                       "type": "Button",
+                       "on": {
+                        "press": {
+                         "set": "local.last",
+                         "to": ""
+                        }
+                       },
+                       "props": {
+                        "label": {
+                         "t": "image.ai.stop"
+                        },
+                        "variant": "secondary"
+                       }
                       },
-                      "variant": "primary"
-                     }
+                      {
+                       "type": "Button",
+                       "on": {
+                        "press": {
+                         "set": "local.last",
+                         "to": "review"
+                        }
+                       },
+                       "props": {
+                        "label": {
+                         "t": "project.mock.ready"
+                        },
+                        "variant": "subtle"
+                       }
+                      }
+                     ]
+                    },
+                    "review": {
+                     "type": "Inline",
+                     "props": {
+                      "gap": "inlineItem",
+                      "justify": "end"
+                     },
+                     "children": [
+                      {
+                       "type": "Button",
+                       "on": {
+                        "press": {
+                         "set": "local.last",
+                         "to": "writing"
+                        }
+                       },
+                       "props": {
+                        "label": {
+                         "t": "image.ai.again"
+                        },
+                        "variant": "subtle"
+                       }
+                      },
+                      {
+                       "type": "Button",
+                       "on": {
+                        "press": [
+                         {
+                          "set": "local.last",
+                          "to": ""
+                         },
+                         {
+                          "set": "local.step",
+                          "to": "image"
+                         }
+                        ]
+                       },
+                       "props": {
+                        "label": {
+                         "t": "project.cancel"
+                        },
+                        "variant": "secondary"
+                       }
+                      },
+                      {
+                       "type": "Button",
+                       "on": {
+                        "press": {
+                         "set": "local.captioned",
+                         "to": true
+                        }
+                       },
+                       "props": {
+                        "label": {
+                         "t": "image.ai.use"
+                        },
+                        "variant": "primary"
+                       }
+                      }
+                     ]
                     }
-                   ]
+                   }
                   }
-                 }
-                }
-               ]
-              },
-              "children": [
-               {
-                "switch": {
-                 "get": "local.last"
+                 ]
                 },
-                "cases": {
-                 "": {
-                  "type": "Stack",
-                  "props": {
-                   "gap": "stackItem"
+                "children": [
+                 {
+                  "switch": {
+                   "get": "local.last"
                   },
-                  "children": [
-                   {
-                    "type": "Inline",
+                  "cases": {
+                   "": {
+                    "type": "Stack",
                     "props": {
-                     "gap": "inlineGroup",
-                     "align": "start"
+                     "gap": "stackItem"
                     },
                     "children": [
                      {
-                      "type": "ImageFrame",
+                      "type": "Inline",
                       "props": {
-                       "src": {
-                        "get": "vm.mocks.harbourSrc"
-                       },
-                       "mode": "thumb"
-                      }
-                     },
-                     {
-                      "type": "ItemCard",
-                      "props": {
-                       "title": {
-                        "get": "vm.mocks.visionName"
-                       },
-                       "detail": {
-                        "get": "vm.mocks.visionModel"
-                       },
-                       "badge": {
-                        "get": "vm.mocks.visionWhere"
-                       },
-                       "icon": "aiOllama"
+                       "gap": "inlineGroup",
+                       "align": "start"
                       },
                       "children": [
                        {
-                        "type": "MenuButton",
+                        "type": "ImageFrame",
                         "props": {
-                         "label": {
-                          "t": "image.ai.integration"
+                         "src": {
+                          "get": "vm.mocks.harbourSrc"
                          },
-                         "variant": "select",
-                         "text": {
+                         "mode": "thumb"
+                        }
+                       },
+                       {
+                        "type": "ItemCard",
+                        "props": {
+                         "title": {
                           "get": "vm.mocks.visionName"
                          },
-                         "sections": {
-                          "get": "vm.mocks.integrations"
+                         "detail": {
+                          "get": "vm.mocks.visionModel"
+                         },
+                         "badge": {
+                          "get": "vm.mocks.visionWhere"
+                         },
+                         "icon": "aiOllama"
+                        },
+                        "children": [
+                         {
+                          "type": "MenuButton",
+                          "props": {
+                           "label": {
+                            "t": "image.ai.integration"
+                           },
+                           "variant": "select",
+                           "text": {
+                            "get": "vm.mocks.visionName"
+                           },
+                           "sections": {
+                            "get": "vm.mocks.integrations"
+                           }
+                          }
+                         }
+                        ]
+                       }
+                      ]
+                     },
+                     {
+                      "type": "TextField",
+                      "props": {
+                       "label": {
+                        "t": "image.ai.instruction"
+                       },
+                       "value": {
+                        "get": "vm.mocks.captionInstruction"
+                       },
+                       "multiline": true,
+                       "compactMultiline": true,
+                       "autoFocus": true
+                      }
+                     },
+                     {
+                      "type": "Text",
+                      "props": {
+                       "value": {
+                        "t": "image.ai.sends2",
+                        "args": {
+                         "name": {
+                          "get": "vm.mocks.visionName"
+                         }
+                        }
+                       },
+                       "role": "caption",
+                       "tone": "muted"
+                      }
+                     }
+                    ]
+                   },
+                   "writing": {
+                    "type": "Inline",
+                    "props": {
+                     "gap": "inlineItem",
+                     "align": "center"
+                    },
+                    "children": [
+                     {
+                      "type": "Spinner",
+                      "props": {
+                       "label": {
+                        "t": "image.ai.writing"
+                       }
+                      }
+                     },
+                     {
+                      "type": "Text",
+                      "props": {
+                       "value": {
+                        "t": "image.ai.writing"
+                       },
+                       "announce": true
+                      }
+                     }
+                    ]
+                   },
+                   "review": {
+                    "type": "Stack",
+                    "props": {
+                     "gap": "stackGroup"
+                    },
+                    "children": [
+                     {
+                      "type": "Inline",
+                      "props": {
+                       "gap": "inlineItem",
+                       "align": "start"
+                      },
+                      "children": [
+                       {
+                        "type": "ImageFrame",
+                        "props": {
+                         "src": {
+                          "get": "vm.mocks.harbourSrc"
+                         },
+                         "mode": "thumb"
+                        }
+                       },
+                       {
+                        "type": "TextField",
+                        "props": {
+                         "label": {
+                          "t": "image.ai.result"
+                         },
+                         "value": {
+                          "get": "vm.mocks.aiCaption"
+                         },
+                         "multiline": true,
+                         "compactMultiline": true,
+                         "autoFocus": true,
+                         "description": {
+                          "t": "image.ai.resultHint"
                          }
                         }
                        }
                       ]
                      }
                     ]
-                   },
-                   {
-                    "type": "TextField",
-                    "props": {
-                     "label": {
-                      "t": "image.ai.instruction"
-                     },
-                     "value": {
-                      "get": "vm.mocks.captionInstruction"
-                     },
-                     "multiline": true,
-                     "compactMultiline": true,
-                     "autoFocus": true
-                    }
-                   },
-                   {
-                    "type": "Text",
-                    "props": {
-                     "value": {
-                      "t": "image.ai.sends2",
-                      "args": {
-                       "name": {
-                        "get": "vm.mocks.visionName"
-                       }
-                      }
-                     },
-                     "role": "caption",
-                     "tone": "muted"
-                    }
                    }
-                  ]
-                 },
-                 "writing": {
-                  "type": "Inline",
-                  "props": {
-                   "gap": "inlineItem",
-                   "align": "center"
-                  },
-                  "children": [
-                   {
-                    "type": "Spinner",
-                    "props": {
-                     "label": {
-                      "t": "image.ai.writing"
-                     }
-                    }
-                   },
-                   {
-                    "type": "Text",
-                    "props": {
-                     "value": {
-                      "t": "image.ai.writing"
-                     },
-                     "announce": true
-                    }
-                   }
-                  ]
-                 },
-                 "review": {
-                  "type": "Stack",
-                  "props": {
-                   "gap": "stackGroup"
-                  },
-                  "children": [
-                   {
-                    "type": "Inline",
-                    "props": {
-                     "gap": "inlineItem",
-                     "align": "start"
-                    },
-                    "children": [
-                     {
-                      "type": "ImageFrame",
-                      "props": {
-                       "src": {
-                        "get": "vm.mocks.harbourSrc"
-                       },
-                       "mode": "thumb"
-                      }
-                     },
-                     {
-                      "type": "TextField",
-                      "props": {
-                       "label": {
-                        "t": "image.ai.result"
-                       },
-                       "value": {
-                        "get": "vm.mocks.aiCaption"
-                       },
-                       "multiline": true,
-                       "compactMultiline": true,
-                       "autoFocus": true,
-                       "description": {
-                        "t": "image.ai.resultHint"
-                       }
-                      }
-                     }
-                    ]
-                   }
-                  ]
+                  }
                  }
-                }
+                ]
                }
               ],
               "when": {
@@ -5439,22 +5409,20 @@
                 "t": "image.ai.title2"
                }
               },
-              "slots": {
-               "header": [
-                {
-                 "type": "Inline",
-                 "props": {
-                  "gap": "inlineItem",
-                  "align": "center"
-                 },
-                 "children": [
+              "children": [
+               {
+                "type": "IconLayout",
+                "slots": {
+                 "icon": [
                   {
                    "type": "Icon",
                    "props": {
                     "name": "sparkle",
                     "size": "m"
                    }
-                  },
+                  }
+                 ],
+                 "heading": [
                   {
                    "type": "Heading",
                    "props": {
@@ -5464,17 +5432,8 @@
                     "level": "2"
                    }
                   }
-                 ]
-                }
-               ],
-               "footer": [
-                {
-                 "type": "Inline",
-                 "props": {
-                  "gap": "inlineItem",
-                  "justify": "end"
-                 },
-                 "children": [
+                 ],
+                 "actions": [
                   {
                    "type": "Button",
                    "on": {
@@ -5518,14 +5477,6 @@
                    }
                   }
                  ]
-                }
-               ]
-              },
-              "children": [
-               {
-                "type": "Stack",
-                "props": {
-                 "gap": "stackGroup"
                 },
                 "children": [
                  {

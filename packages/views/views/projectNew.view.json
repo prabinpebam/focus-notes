@@ -44,10 +44,10 @@
           ] },
           "look": { "type": "Stack", "props": { "gap": "stackGroup" }, "children": [
             { "type": "ProjectScope", "props": { "accent": { "get": "vm.projectNew.accent" } }, "children": [
-              { "type": "Inline", "props": { "gap": "inlineItem", "align": "center" }, "children": [
-              { "type": "ProjectMark", "props": { "logo": { "get": "vm.projectNew.logo" }, "size": "l" } },
-              { "type": "Heading", "props": { "value": { "get": "vm.projectNew.name" }, "level": "3" } }
-              ] }
+              { "type": "IconLayout", "slots": {
+                "icon": [{ "type": "ProjectMark", "props": { "logo": { "get": "vm.projectNew.logo" }, "size": "l" } }],
+                "heading": [{ "type": "Heading", "props": { "value": { "get": "vm.projectNew.name" }, "level": "3" } }]
+              } }
             ] },
             { "type": "Stack", "props": { "gap": "stackItem" }, "children": [
             { "type": "Stack", "props": { "gap": "stackItem" }, "children": [
@@ -75,10 +75,10 @@
           ] },
           "confirm": { "type": "Stack", "props": { "gap": "stackGroup" }, "children": [
             { "type": "ProjectScope", "props": { "accent": { "get": "vm.projectNew.accent" } }, "children": [
-              { "type": "Inline", "props": { "gap": "inlineItem", "align": "center" }, "children": [
-              { "type": "ProjectMark", "props": { "logo": { "get": "vm.projectNew.logo" }, "size": "l" } },
-              { "type": "Heading", "props": { "value": { "get": "vm.projectNew.name" }, "level": "3" } }
-              ] }
+              { "type": "IconLayout", "slots": {
+                "icon": [{ "type": "ProjectMark", "props": { "logo": { "get": "vm.projectNew.logo" }, "size": "l" } }],
+                "heading": [{ "type": "Heading", "props": { "value": { "get": "vm.projectNew.name" }, "level": "3" } }]
+              } }
             ] },
             { "type": "Stack", "when": { "expr": { "!": { "get": "vm.projectNew.operation" } } }, "props": { "gap": "stackItem" }, "children": [
             { "type": "Text", "when": { "expr": { "!": { "get": "vm.projectNew.operation" } } }, "props": { "value": { "t": "project.new.willMake" } } },

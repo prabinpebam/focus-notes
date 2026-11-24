@@ -204,26 +204,26 @@
                 "props": { "value": { "t": "share.state.deleted" }, "tone": "danger" }
               },
               {
-                "type": "Inline", "when": { "get": "vm.shareItem.deleted" }, "props": { "gap": "inlineItem", "wrap": true },
+                "type": "Inline", "when": { "get": "vm.shareItem.deleted" }, "props": { "gap": "inlineItem", "wrap": true, "justify": "end" },
                 "children": [
-                  { "type": "Button", "props": { "label": { "t": "share.state.restore" }, "disabled": { "get": "vm.shareItem.restoreDisabled" }, "disabledReason": { "get": "vm.shareItem.restoreReason" } }, "on": { "press": { "run": "share.item.restore" } } },
-                  { "type": "Button", "props": { "label": { "t": "share.state.close" } }, "on": { "press": { "run": "share.item.setOpen", "args": { "open": false } } } }
+                  { "type": "Button", "props": { "label": { "t": "share.state.close" } }, "on": { "press": { "run": "share.item.setOpen", "args": { "open": false } } } },
+                  { "type": "Button", "props": { "label": { "t": "share.state.restore" }, "disabled": { "get": "vm.shareItem.restoreDisabled" }, "disabledReason": { "get": "vm.shareItem.restoreReason" } }, "on": { "press": { "run": "share.item.restore" } } }
                 ]
               },
               { "type": "Button", "when": { "get": "vm.shareItem.signedOut" }, "props": { "label": { "t": "share.state.signIn" } }, "on": { "press": { "run": "share.item.signIn" } } },
               {
                 "type": "Inline",
-                "props": { "gap": "inlineItem", "wrap": true },
+                "props": { "gap": "inlineItem", "wrap": true, "justify": "end" },
                 "children": [
-                  { "type": "Button", "props": { "label": { "get": "vm.shareItem.primaryLabel" }, "variant": "primary", "busy": { "get": "vm.shareItem.busy" }, "disabled": { "get": "vm.shareItem.actionsDisabled" }, "disabledReason": { "get": "vm.shareItem.actionReason" } },
-                    "on": { "press": { "run": "share.item.action", "args": { "what": "primary" } } } },
                   { "type": "Text", "props": { "value": { "t": "share.dialog.copyGroup" }, "tone": "muted", "role": "secondary" } },
                   { "type": "Button", "when": { "get": "vm.shareItem.link" }, "props": { "label": { "t": "share.dialog.copyLink" }, "disabled": { "get": "vm.shareItem.actionsDisabled" }, "disabledReason": { "get": "vm.shareItem.actionReason" } },
                     "on": { "press": { "run": "share.item.action", "args": { "what": "link" } } } },
                   { "type": "Button", "when": { "get": "vm.shareItem.passcode" }, "props": { "label": { "t": "share.dialog.copyCode" }, "disabled": { "get": "vm.shareItem.actionsDisabled" }, "disabledReason": { "get": "vm.shareItem.actionReason" } },
                     "on": { "press": { "run": "share.item.action", "args": { "what": "accessCode" } } } },
                   { "type": "Button", "when": { "get": "vm.shareItem.macos" }, "props": { "label": { "t": "share.dialog.copyInfo" }, "disabled": { "get": "vm.shareItem.actionsDisabled" }, "disabledReason": { "get": "vm.shareItem.actionReason" } },
-                    "on": { "press": { "run": "share.item.action", "args": { "what": "information" } } } }
+                    "on": { "press": { "run": "share.item.action", "args": { "what": "information" } } } },
+                  { "type": "Button", "props": { "label": { "get": "vm.shareItem.primaryLabel" }, "variant": "primary", "busy": { "get": "vm.shareItem.busy" }, "disabled": { "get": "vm.shareItem.actionsDisabled" }, "disabledReason": { "get": "vm.shareItem.actionReason" } },
+                    "on": { "press": { "run": "share.item.action", "args": { "what": "primary" } } } }
                 ]
               },
               { "type": "Text", "when": { "expr": { "!=": [{ "get": "vm.shareItem.status" }, ""] } }, "props": { "value": { "get": "vm.shareItem.status" }, "announce": true } },
@@ -250,7 +250,7 @@
                       { "each": { "get": "vm.shareItem.history" }, "as": "row", "key": "row.id", "render": {
                         "type": "ItemCard", "props": { "title": { "get": "row.methods" }, "detail": { "get": "row.detail" }, "badge": { "get": "row.badge" }, "icon": "share" },
                         "children": [
-                          { "type": "Inline", "when": { "get": "row.active" }, "props": { "gap": "inlineItem", "wrap": true },
+                          { "type": "Inline", "when": { "get": "row.active" }, "props": { "gap": "inlineItem", "wrap": true, "justify": "end" },
                             "children": [
                               { "type": "Button", "when": { "get": "row.link" }, "props": { "label": { "t": "share.dialog.copyLink" }, "size": "s", "disabled": { "get": "vm.shareItem.busy" }, "disabledReason": { "get": "vm.shareItem.actionReason" } }, "on": { "press": { "run": "share.item.row", "args": { "id": { "get": "row.id" }, "what": "link" } } } },
                               { "type": "Button", "props": { "label": { "t": "share.row.withdraw" }, "size": "s", "disabled": { "get": "vm.shareItem.busy" }, "disabledReason": { "get": "vm.shareItem.actionReason" } }, "on": { "press": { "run": "share.item.row", "args": { "id": { "get": "row.id" }, "what": "withdraw" } } } }

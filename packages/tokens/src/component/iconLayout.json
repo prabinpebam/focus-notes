@@ -1,0 +1,3 @@
+{ "cmp": { "iconLayout": {
+  "actionsGap": { "$type": "dimension", "$value": "{space.gutter}", "$description": "Above an IconLayout's actions: the largest gap inside a dialog or card, more than the title to details gap (stackGroup) and never more than the card's inset (D-408)." }
+} } }

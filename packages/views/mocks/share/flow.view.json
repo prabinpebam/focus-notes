@@ -207,16 +207,7 @@
    {
     "type": "Dialog",
     "id": "shareDialog",
-    "when": {
-     "expr": {
-      "==": [
-       {
-        "get": "local.open"
-       },
-       "share"
-      ]
-     }
-    },
+    "when": { "expr": { "and": [{ "==": [{ "get": "local.open" }, "share"] }, { "!=": [{ "get": "local.step" }, "first"] }] } },
     "props": {
      "title": {
       "t": "share.dialog.title",
@@ -229,16 +220,7 @@
      "closeLabel": {
       "t": "dialog.close"
      },
-     "open": {
-      "expr": {
-       "==": [
-        {
-         "get": "local.open"
-        },
-        "share"
-       ]
-      }
-     },
+     "open": { "expr": { "and": [{ "==": [{ "get": "local.open" }, "share"] }, { "!=": [{ "get": "local.step" }, "first"] }] } },
      "size": "m",
      "height": "content"
     },
@@ -937,24 +919,10 @@
               "type": "Inline",
               "props": {
                "gap": "inlineItem",
-               "wrap": true
+               "wrap": true,
+               "justify": "end"
               },
               "children": [
-               {
-                "type": "Button",
-                "props": {
-                 "label": {
-                  "t": "share.state.restore"
-                 },
-                 "size": "s"
-                },
-                "on": {
-                 "press": {
-                  "set": "local.scenario",
-                  "to": "normal"
-                 }
-                }
-               },
                {
                 "type": "Button",
                 "props": {
@@ -969,6 +937,21 @@
                   "to": ""
                  }
                 }
+               },
+               {
+                "type": "Button",
+                "props": {
+                 "label": {
+                  "t": "share.state.restore"
+                 },
+                 "size": "s"
+                },
+                "on": {
+                 "press": {
+                  "set": "local.scenario",
+                  "to": "normal"
+                 }
+                }
                }
               ]
              }
@@ -980,403 +963,405 @@
             },
             "cases": {
              "true": {
-              "type": "Inline",
-              "props": {
-               "gap": "inlineItem",
-               "wrap": true,
-               "align": "center"
-              },
-              "children": [
-               {
-                "type": "Button",
-                "props": {
-                 "label": {
-                  "t": "share.dialog.primary",
-                  "args": {
-                   "system": {
-                    "get": "local.system"
-                   }
-                  }
-                 },
-                 "variant": "primary",
-                 "disabled": {
-                  "expr": {
-                   "or": [
-                    {
-                     "==": [
-                      {
-                       "get": "local.scenario"
+                      "type": "Inline",
+                      "props": {
+                       "gap": "inlineItem",
+                       "wrap": true,
+                       "align": "center",
+                       "justify": "end"
                       },
-                      "deleted"
-                     ]
-                    },
-                    {
-                     "and": [
-                      {
-                       "!": {
-                        "get": "local.link"
-                       }
-                      },
-                      {
-                       "!": {
-                        "get": "local.passcode"
-                       }
-                      }
-                     ]
-                    }
-                   ]
-                  }
-                 },
-                 "disabledReason": {
-                  "t": "share.dialog.blocked",
-                  "args": {
-                   "scenario": {
-                    "get": "local.scenario"
-                   }
-                  }
-                 }
-                },
-                "on": {
-                 "press": {
-                  "set": "local.status",
-                  "to": {
-                   "expr": {
-                    "if": [
-                     {
-                      "==": [
+                      "children": [
                        {
-                        "get": "local.scenario"
+                        "type": "Inline",
+                        "props": {
+                         "related": true,
+                         "label": {
+                          "t": "share.dialog.copyGroup"
+                         }
+                        },
+                        "children": [
+                         {
+                          "type": "Button",
+                          "when": {
+                           "get": "local.link"
+                          },
+                          "props": {
+                           "label": {
+                            "t": "share.dialog.copyLink"
+                           },
+                           "icon": "link",
+                           "disabled": {
+                            "expr": {
+                             "==": [
+                              {
+                               "get": "local.scenario"
+                              },
+                              "deleted"
+                             ]
+                            }
+                           },
+                           "disabledReason": {
+                            "t": "share.dialog.blocked",
+                            "args": {
+                             "scenario": {
+                              "get": "local.scenario"
+                             }
+                            }
+                           }
+                          },
+                          "on": {
+                           "press": {
+                            "set": "local.status",
+                            "to": {
+                             "expr": {
+                              "if": [
+                               {
+                                "==": [
+                                 {
+                                  "get": "local.scenario"
+                                 },
+                                 "offline"
+                                ]
+                               },
+                               "waiting",
+                               "publishing"
+                              ]
+                             }
+                            }
+                           }
+                          }
+                         },
+                         {
+                          "type": "Button",
+                          "when": {
+                           "get": "local.passcode"
+                          },
+                          "props": {
+                           "label": {
+                            "t": "share.dialog.copyCode"
+                           },
+                           "icon": "lock",
+                           "disabled": {
+                            "expr": {
+                             "==": [
+                              {
+                               "get": "local.scenario"
+                              },
+                              "deleted"
+                             ]
+                            }
+                           },
+                           "disabledReason": {
+                            "t": "share.dialog.blocked",
+                            "args": {
+                             "scenario": {
+                              "get": "local.scenario"
+                             }
+                            }
+                           }
+                          },
+                          "on": {
+                           "press": {
+                            "set": "local.status",
+                            "to": {
+                             "expr": {
+                              "if": [
+                               {
+                                "==": [
+                                 {
+                                  "get": "local.scenario"
+                                 },
+                                 "offline"
+                                ]
+                               },
+                               "waiting",
+                               "publishing"
+                              ]
+                             }
+                            }
+                           }
+                          }
+                         },
+                         {
+                          "type": "Button",
+                          "when": {
+                           "expr": {
+                            "==": [
+                             {
+                              "get": "local.system"
+                             },
+                             "macos"
+                            ]
+                           }
+                          },
+                          "props": {
+                           "label": {
+                            "t": "share.dialog.copyInfo"
+                           },
+                           "icon": "copy",
+                           "disabled": {
+                            "expr": {
+                             "==": [
+                              {
+                               "get": "local.scenario"
+                              },
+                              "deleted"
+                             ]
+                            }
+                           },
+                           "disabledReason": {
+                            "t": "share.dialog.blocked",
+                            "args": {
+                             "scenario": {
+                              "get": "local.scenario"
+                             }
+                            }
+                           }
+                          },
+                          "on": {
+                           "press": {
+                            "set": "local.status",
+                            "to": {
+                             "expr": {
+                              "if": [
+                               {
+                                "==": [
+                                 {
+                                  "get": "local.scenario"
+                                 },
+                                 "offline"
+                                ]
+                               },
+                               "waiting",
+                               "publishing"
+                              ]
+                             }
+                            }
+                           }
+                          }
+                         }
+                        ]
                        },
-                       "offline"
+                       {
+                        "type": "Button",
+                        "props": {
+                         "label": {
+                          "t": "share.dialog.primary",
+                          "args": {
+                           "system": {
+                            "get": "local.system"
+                           }
+                          }
+                         },
+                         "variant": "primary",
+                         "disabled": {
+                          "expr": {
+                           "or": [
+                            {
+                             "==": [
+                              {
+                               "get": "local.scenario"
+                              },
+                              "deleted"
+                             ]
+                            },
+                            {
+                             "and": [
+                              {
+                               "!": {
+                                "get": "local.link"
+                               }
+                              },
+                              {
+                               "!": {
+                                "get": "local.passcode"
+                               }
+                              }
+                             ]
+                            }
+                           ]
+                          }
+                         },
+                         "disabledReason": {
+                          "t": "share.dialog.blocked",
+                          "args": {
+                           "scenario": {
+                            "get": "local.scenario"
+                           }
+                          }
+                         }
+                        },
+                        "on": {
+                         "press": {
+                          "set": "local.status",
+                          "to": {
+                           "expr": {
+                            "if": [
+                             {
+                              "==": [
+                               {
+                                "get": "local.scenario"
+                               },
+                               "offline"
+                              ]
+                             },
+                             "waiting",
+                             "publishing"
+                            ]
+                           }
+                          }
+                         }
+                        }
+                       }
                       ]
                      },
-                     "waiting",
-                     "publishing"
-                    ]
-                   }
-                  }
-                 }
-                }
-               },
-               {
-                "type": "Inline",
-                "props": {
-                 "related": true,
-                 "label": {
-                  "t": "share.dialog.copyGroup"
-                 }
-                },
-                "children": [
-                 {
-                  "type": "Button",
-                  "when": {
-                   "get": "local.link"
-                  },
-                  "props": {
-                   "label": {
-                    "t": "share.dialog.copyLink"
-                   },
-                   "icon": "link",
-                   "disabled": {
-                    "expr": {
-                     "==": [
-                      {
-                       "get": "local.scenario"
-                      },
-                      "deleted"
-                     ]
-                    }
-                   },
-                   "disabledReason": {
-                    "t": "share.dialog.blocked",
-                    "args": {
-                     "scenario": {
-                      "get": "local.scenario"
-                     }
-                    }
-                   }
-                  },
-                  "on": {
-                   "press": {
-                    "set": "local.status",
-                    "to": {
-                     "expr": {
-                      "if": [
-                       {
-                        "==": [
-                         {
-                          "get": "local.scenario"
-                         },
-                         "offline"
-                        ]
-                       },
-                       "waiting",
-                       "publishing"
-                      ]
-                     }
-                    }
-                   }
-                  }
-                 },
-                 {
-                  "type": "Button",
-                  "when": {
-                   "get": "local.passcode"
-                  },
-                  "props": {
-                   "label": {
-                    "t": "share.dialog.copyCode"
-                   },
-                   "icon": "lock",
-                   "disabled": {
-                    "expr": {
-                     "==": [
-                      {
-                       "get": "local.scenario"
-                      },
-                      "deleted"
-                     ]
-                    }
-                   },
-                   "disabledReason": {
-                    "t": "share.dialog.blocked",
-                    "args": {
-                     "scenario": {
-                      "get": "local.scenario"
-                     }
-                    }
-                   }
-                  },
-                  "on": {
-                   "press": {
-                    "set": "local.status",
-                    "to": {
-                     "expr": {
-                      "if": [
-                       {
-                        "==": [
-                         {
-                          "get": "local.scenario"
-                         },
-                         "offline"
-                        ]
-                       },
-                       "waiting",
-                       "publishing"
-                      ]
-                     }
-                    }
-                   }
-                  }
-                 },
-                 {
-                  "type": "Button",
-                  "when": {
-                   "expr": {
-                    "==": [
-                     {
-                      "get": "local.system"
-                     },
-                     "macos"
-                    ]
-                   }
-                  },
-                  "props": {
-                   "label": {
-                    "t": "share.dialog.copyInfo"
-                   },
-                   "icon": "copy",
-                   "disabled": {
-                    "expr": {
-                     "==": [
-                      {
-                       "get": "local.scenario"
-                      },
-                      "deleted"
-                     ]
-                    }
-                   },
-                   "disabledReason": {
-                    "t": "share.dialog.blocked",
-                    "args": {
-                     "scenario": {
-                      "get": "local.scenario"
-                     }
-                    }
-                   }
-                  },
-                  "on": {
-                   "press": {
-                    "set": "local.status",
-                    "to": {
-                     "expr": {
-                      "if": [
-                       {
-                        "==": [
-                         {
-                          "get": "local.scenario"
-                         },
-                         "offline"
-                        ]
-                       },
-                       "waiting",
-                       "publishing"
-                      ]
-                     }
-                    }
-                   }
-                  }
-                 }
-                ]
-               }
-              ]
-             },
              "false": {
-              "type": "Inline",
-              "props": {
-               "gap": "inlineItem",
-               "wrap": true,
-               "align": "center"
-              },
-              "children": [
-               {
-                "type": "Button",
-                "props": {
-                 "label": {
-                  "t": "share.dialog.primary",
-                  "args": {
-                   "system": {
-                    "get": "local.system"
-                   }
-                  }
-                 },
-                 "variant": "primary",
-                 "disabled": {
-                  "expr": {
-                   "or": [
-                    {
-                     "==": [
-                      {
-                       "get": "local.scenario"
-                      },
-                      "deleted"
-                     ]
-                    },
-                    {
-                     "==": [
-                      {
-                       "get": "local.scenario"
-                      },
-                      "offline"
-                     ]
-                    },
-                    {
-                     "and": [
-                      {
-                       "!": {
-                        "get": "local.link"
-                       }
-                      },
-                      {
-                       "!": {
-                        "get": "local.passcode"
-                       }
+                       "type": "Inline",
+                       "props": {
+                        "gap": "inlineItem",
+                        "wrap": true,
+                        "align": "center",
+                        "justify": "end"
+                       },
+                       "children": [
+                        {
+                         "type": "Inline",
+                         "props": {
+                          "related": true,
+                          "label": {
+                           "t": "share.dialog.copyGroup"
+                          }
+                         },
+                         "children": [
+                          {
+                           "type": "Button",
+                           "when": {
+                            "get": "local.link"
+                           },
+                           "props": {
+                            "label": {
+                             "t": "share.dialog.copyLink"
+                            },
+                            "icon": "link"
+                           },
+                           "on": {
+                            "press": {
+                             "set": "local.step",
+                             "to": "first"
+                            }
+                           }
+                          },
+                          {
+                           "type": "Button",
+                           "when": {
+                            "get": "local.passcode"
+                           },
+                           "props": {
+                            "label": {
+                             "t": "share.dialog.copyCode"
+                            },
+                            "icon": "lock"
+                           },
+                           "on": {
+                            "press": {
+                             "set": "local.step",
+                             "to": "first"
+                            }
+                           }
+                          },
+                          {
+                           "type": "Button",
+                           "when": {
+                            "expr": {
+                             "==": [
+                              {
+                               "get": "local.system"
+                              },
+                              "macos"
+                             ]
+                            }
+                           },
+                           "props": {
+                            "label": {
+                             "t": "share.dialog.copyInfo"
+                            },
+                            "icon": "copy"
+                           },
+                           "on": {
+                            "press": {
+                             "set": "local.step",
+                             "to": "first"
+                            }
+                           }
+                          }
+                         ]
+                        },
+                        {
+                         "type": "Button",
+                         "props": {
+                          "label": {
+                           "t": "share.dialog.primary",
+                           "args": {
+                            "system": {
+                             "get": "local.system"
+                            }
+                           }
+                          },
+                          "variant": "primary",
+                          "disabled": {
+                           "expr": {
+                            "or": [
+                             {
+                              "==": [
+                               {
+                                "get": "local.scenario"
+                               },
+                               "deleted"
+                              ]
+                             },
+                             {
+                              "==": [
+                               {
+                                "get": "local.scenario"
+                               },
+                               "offline"
+                              ]
+                             },
+                             {
+                              "and": [
+                               {
+                                "!": {
+                                 "get": "local.link"
+                                }
+                               },
+                               {
+                                "!": {
+                                 "get": "local.passcode"
+                                }
+                               }
+                              ]
+                             }
+                            ]
+                           }
+                          },
+                          "disabledReason": {
+                           "t": "share.dialog.blockedFirst",
+                           "args": {
+                            "scenario": {
+                             "get": "local.scenario"
+                            }
+                           }
+                          }
+                         },
+                         "on": {
+                          "press": {
+                           "set": "local.step",
+                           "to": "first"
+                          }
+                         }
+                        }
+                       ]
                       }
-                     ]
-                    }
-                   ]
-                  }
-                 },
-                 "disabledReason": {
-                  "t": "share.dialog.blockedFirst",
-                  "args": {
-                   "scenario": {
-                    "get": "local.scenario"
-                   }
-                  }
-                 }
-                },
-                "on": {
-                 "press": {
-                  "set": "local.step",
-                  "to": "first"
-                 }
-                }
-               },
-               {
-                "type": "Inline",
-                "props": {
-                 "related": true,
-                 "label": {
-                  "t": "share.dialog.copyGroup"
-                 }
-                },
-                "children": [
-                 {
-                  "type": "Button",
-                  "when": {
-                   "get": "local.link"
-                  },
-                  "props": {
-                   "label": {
-                    "t": "share.dialog.copyLink"
-                   },
-                   "icon": "link"
-                  },
-                  "on": {
-                   "press": {
-                    "set": "local.step",
-                    "to": "first"
-                   }
-                  }
-                 },
-                 {
-                  "type": "Button",
-                  "when": {
-                   "get": "local.passcode"
-                  },
-                  "props": {
-                   "label": {
-                    "t": "share.dialog.copyCode"
-                   },
-                   "icon": "lock"
-                  },
-                  "on": {
-                   "press": {
-                    "set": "local.step",
-                    "to": "first"
-                   }
-                  }
-                 },
-                 {
-                  "type": "Button",
-                  "when": {
-                   "expr": {
-                    "==": [
-                     {
-                      "get": "local.system"
-                     },
-                     "macos"
-                    ]
-                   }
-                  },
-                  "props": {
-                   "label": {
-                    "t": "share.dialog.copyInfo"
-                   },
-                   "icon": "copy"
-                  },
-                  "on": {
-                   "press": {
-                    "set": "local.step",
-                    "to": "first"
-                   }
-                  }
-                 }
-                ]
-               }
-              ]
-             }
             }
            },
            {
@@ -1739,7 +1724,8 @@
                  "type": "Inline",
                  "props": {
                   "gap": "inlinePair",
-                  "wrap": true
+                  "wrap": true,
+                  "justify": "end"
                  },
                  "children": [
                   {
@@ -1788,235 +1774,289 @@
           ]
          }
         ]
+       }
+      }
+     }
+    ]
+   },
+   {
+    "type": "Dialog",
+    "id": "shareFirstDialog",
+    "when": {
+     "expr": {
+      "and": [
+       {
+        "==": [
+         {
+          "get": "local.open"
+         },
+         "share"
+        ]
        },
-       "first": {
-        "type": "Stack",
-        "props": {
-         "gap": "stackGroup"
+       {
+        "==": [
+         {
+          "get": "local.step"
+         },
+         "first"
+        ]
+       }
+      ]
+     }
+    },
+    "props": {
+     "title": {
+      "t": "share.first.title"
+     },
+     "closeLabel": {
+      "t": "dialog.close"
+     },
+     "open": {
+      "expr": {
+       "and": [
+        {
+         "==": [
+          {
+           "get": "local.open"
+          },
+          "share"
+         ]
         },
-        "children": [
-         {
-          "type": "Inline",
-          "props": {
-           "gap": "inlineItem",
-           "align": "center"
+        {
+         "==": [
+          {
+           "get": "local.step"
           },
-          "children": [
-           {
-            "type": "StepMark",
-            "props": {
-             "icon": "share",
-             "tone": "accent",
-             "size": "compact"
-            }
-           },
-           {
-            "type": "Heading",
-            "props": {
-             "level": "2",
-             "value": {
-              "t": "share.first.title"
-             }
-            }
-           }
-          ]
+          "first"
+         ]
+        }
+       ]
+      }
+     },
+     "size": "m",
+     "height": "content"
+    },
+    "on": {
+     "openChange": {
+      "set": "local.step",
+      "to": "draft"
+     }
+    },
+    "slots": {
+     "visual": [
+      {
+       "type": "StepMark",
+       "props": {
+        "icon": "share",
+        "tone": "accent",
+        "size": "compact"
+       }
+      }
+     ],
+     "footer": [
+      {
+       "type": "Inline",
+       "props": {
+        "justify": "end",
+        "gap": "inlineItem"
+       },
+       "children": [
+        {
+         "type": "Button",
+         "props": {
+          "label": {
+           "t": "share.cancel"
+          },
+          "autoFocus": true
          },
-         {
-          "type": "Text",
-          "props": {
-           "value": {
-            "t": "share.first.lead"
-           },
-           "role": "lead"
+         "on": {
+          "press": {
+           "set": "local.step",
+           "to": "draft"
           }
-         },
-         {
-          "type": "Stack",
-          "props": {
-           "gap": "stackItem"
+         }
+        },
+        {
+         "type": "Button",
+         "props": {
+          "label": {
+           "t": "share.first.turnOn"
           },
-          "children": [
-           {
-            "type": "Text",
-            "props": {
-             "value": {
-              "t": "share.first.created"
-             },
-             "role": "label"
-            }
-           },
-           {
-            "type": "ItemCard",
-            "props": {
-             "title": {
-              "t": "share.first.repo"
-             },
-             "detail": {
-              "t": "share.first.repo.detail"
-             },
-             "icon": "github"
-            }
-           },
-           {
-            "type": "ItemCard",
-            "props": {
-             "title": {
-              "t": "share.first.site"
-             },
-             "detail": {
-              "t": "share.first.site.detail"
-             },
-             "icon": "globe"
-            }
-           }
-          ]
+          "variant": "primary"
          },
-         {
-          "type": "Stack",
-          "props": {
-           "gap": "stackItem"
-          },
-          "children": [
+         "on": {
+          "press": [
            {
-            "type": "Text",
-            "props": {
-             "value": {
-              "t": "share.first.see"
-             },
-             "role": "label"
-            }
+            "set": "local.sharingOn",
+            "to": true
            },
            {
-            "type": "ItemCard",
-            "props": {
-             "title": {
-              "t": "share.first.shared"
-             },
-             "badge": {
-              "t": "share.badge.shared"
-             },
-             "icon": "lock"
-            }
+            "set": "local.step",
+            "to": "draft"
            },
            {
-            "type": "ItemCard",
-            "props": {
-             "title": {
-              "t": "share.first.published"
-             },
-             "badge": {
-              "t": "share.badge.published"
-             },
-             "icon": "globe"
-            }
-           }
-          ]
-         },
-         {
-          "type": "Text",
-          "props": {
-           "value": {
-            "t": "share.first.history"
-           },
-           "tone": "muted"
-          }
-         },
-         {
-          "type": "Inline",
-          "children": [
-           {
-            "type": "Button",
-            "props": {
-             "label": {
-              "t": "share.first.more"
-             },
-             "variant": "subtle",
-             "size": "s",
-             "bleed": true,
-             "expanded": {
-              "get": "local.more"
-             }
-            },
-            "on": {
-             "press": {
-              "set": "local.more",
-              "to": {
-               "expr": {
-                "!": {
-                 "get": "local.more"
-                }
-               }
-              }
-             }
-            }
-           }
-          ]
-         },
-         {
-          "type": "Text",
-          "when": {
-           "get": "local.more"
-          },
-          "props": {
-           "value": {
-            "t": "share.first.more.detail"
-           },
-           "tone": "muted",
-           "role": "secondary"
-          }
-         },
-         {
-          "type": "Inline",
-          "props": {
-           "justify": "end",
-           "gap": "inlineItem"
-          },
-          "children": [
-           {
-            "type": "Button",
-            "props": {
-             "label": {
-              "t": "share.cancel"
-             },
-             "autoFocus": true
-            },
-            "on": {
-             "press": {
-              "set": "local.step",
-              "to": "draft"
-             }
-            }
-           },
-           {
-            "type": "Button",
-            "props": {
-             "label": {
-              "t": "share.first.turnOn"
-             },
-             "variant": "primary"
-            },
-            "on": {
-             "press": [
-              {
-               "set": "local.sharingOn",
-               "to": true
-              },
-              {
-               "set": "local.step",
-               "to": "draft"
-              },
-              {
-               "set": "local.status",
-               "to": "creating"
-              }
-             ]
-            }
+            "set": "local.status",
+            "to": "creating"
            }
           ]
          }
-        ]
-       }
+        }
+       ]
       }
+     ]
+    },
+    "children": [
+     {
+      "type": "Stack",
+      "props": {
+       "gap": "stackGroup"
+      },
+      "children": [
+       {
+        "type": "Text",
+        "props": {
+         "value": {
+          "t": "share.first.lead"
+         },
+         "role": "lead"
+        }
+       },
+       {
+        "type": "Stack",
+        "props": {
+         "gap": "stackItem"
+        },
+        "children": [
+         {
+          "type": "Text",
+          "props": {
+           "value": {
+            "t": "share.first.created"
+           },
+           "role": "label"
+          }
+         },
+         {
+          "type": "ItemCard",
+          "props": {
+           "title": {
+            "t": "share.first.repo"
+           },
+           "detail": {
+            "t": "share.first.repo.detail"
+           },
+           "icon": "github"
+          }
+         },
+         {
+          "type": "ItemCard",
+          "props": {
+           "title": {
+            "t": "share.first.site"
+           },
+           "detail": {
+            "t": "share.first.site.detail"
+           },
+           "icon": "globe"
+          }
+         }
+        ]
+       },
+       {
+        "type": "Stack",
+        "props": {
+         "gap": "stackItem"
+        },
+        "children": [
+         {
+          "type": "Text",
+          "props": {
+           "value": {
+            "t": "share.first.see"
+           },
+           "role": "label"
+          }
+         },
+         {
+          "type": "ItemCard",
+          "props": {
+           "title": {
+            "t": "share.first.shared"
+           },
+           "badge": {
+            "t": "share.badge.shared"
+           },
+           "icon": "lock"
+          }
+         },
+         {
+          "type": "ItemCard",
+          "props": {
+           "title": {
+            "t": "share.first.published"
+           },
+           "badge": {
+            "t": "share.badge.published"
+           },
+           "icon": "globe"
+          }
+         }
+        ]
+       },
+       {
+        "type": "Text",
+        "props": {
+         "value": {
+          "t": "share.first.history"
+         },
+         "tone": "muted"
+        }
+       },
+       {
+        "type": "Inline",
+        "children": [
+         {
+          "type": "Button",
+          "props": {
+           "label": {
+            "t": "share.first.more"
+           },
+           "variant": "subtle",
+           "size": "s",
+           "bleed": true,
+           "expanded": {
+            "get": "local.more"
+           }
+          },
+          "on": {
+           "press": {
+            "set": "local.more",
+            "to": {
+             "expr": {
+              "!": {
+               "get": "local.more"
+              }
+             }
+            }
+           }
+          }
+         }
+        ]
+       },
+       {
+        "type": "Text",
+        "when": {
+         "get": "local.more"
+        },
+        "props": {
+         "value": {
+          "t": "share.first.more.detail"
+         },
+         "tone": "muted",
+         "role": "secondary"
+        }
+       }
+      ]
      }
     ]
    },

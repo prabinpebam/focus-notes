@@ -9,7 +9,8 @@
  "local": {
   "step": "rewrite",
   "prompt": "Make it warmer",
-  "spot": "closed"
+  "spot": "closed",
+  "preset": ""
  },
  "root": {
   "type": "AppRoot",
@@ -424,34 +425,85 @@
                     },
                     "children": [
                      {
-                       "type": "Button",
-                       "props": {
-                         "label": {
-                           "t": "rewrite.preset.concise"
-                         },
-                         "size": "s",
-                         "variant": "subtle"
+                      "type": "Button",
+                      "props": {
+                       "label": {
+                        "t": "rewrite.preset.concise"
+                       },
+                       "size": "s",
+                       "variant": "subtle",
+                       "toggle": true,
+                       "pressed": {
+                        "expr": {
+                         "==": [
+                          {
+                           "get": "local.preset"
+                          },
+                          "concise"
+                         ]
+                        }
                        }
+                      },
+                      "on": {
+                       "press": {
+                        "set": "local.preset",
+                        "to": "concise"
+                       }
+                      }
                      },
                      {
-                       "type": "Button",
-                       "props": {
-                         "label": {
-                           "t": "rewrite.preset.warmer"
-                         },
-                         "size": "s",
-                         "variant": "subtle"
+                      "type": "Button",
+                      "props": {
+                       "label": {
+                        "t": "rewrite.preset.warmer"
+                       },
+                       "size": "s",
+                       "variant": "subtle",
+                       "toggle": true,
+                       "pressed": {
+                        "expr": {
+                         "==": [
+                          {
+                           "get": "local.preset"
+                          },
+                          "warmer"
+                         ]
+                        }
                        }
+                      },
+                      "on": {
+                       "press": {
+                        "set": "local.preset",
+                        "to": "warmer"
+                       }
+                      }
                      },
                      {
-                       "type": "Button",
-                       "props": {
-                         "label": {
-                           "t": "rewrite.preset.grammar"
-                         },
-                         "size": "s",
-                         "variant": "subtle"
+                      "type": "Button",
+                      "props": {
+                       "label": {
+                        "t": "rewrite.preset.grammar"
+                       },
+                       "size": "s",
+                       "variant": "subtle",
+                       "toggle": true,
+                       "pressed": {
+                        "expr": {
+                         "==": [
+                          {
+                           "get": "local.preset"
+                          },
+                          "grammar"
+                         ]
+                        }
                        }
+                      },
+                      "on": {
+                       "press": {
+                        "set": "local.preset",
+                        "to": "grammar"
+                       }
+                      }
                      }
                     ]
                    },

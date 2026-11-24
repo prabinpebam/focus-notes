@@ -60,6 +60,7 @@ import { StepMark } from "./primitives/StepMark/StepMark.tsx";
 import { ItemCard } from "./primitives/ItemCard/ItemCard.tsx";
 import { SaveState } from "./primitives/SaveState/SaveState.tsx";
 import { Columns } from "./layouts/Columns/Columns.tsx";
+import { IconLayout } from "./layouts/IconLayout/IconLayout.tsx";
 import { StepDots } from "./primitives/StepDots/StepDots.tsx";
 import { StatusRow } from "./primitives/StatusRow/StatusRow.tsx";
 import { CodeBlock } from "./primitives/CodeBlock/CodeBlock.tsx";
@@ -90,7 +91,7 @@ export const registry = defineRegistry({
   OpenItem, ImageCrop,
   ToolbarComposer,
   Text, Heading, Icon, Button, IconButton, Tooltip, SignalDot, TriggerButton, Divider, PopoverPanel, MenuButton, Shortcut, SearchField, SegmentedControl, DialogPanel, Spinner, CommitMark, Skeleton, LiveRegion, Toast, ResultList, Tabs, MorphPanel, TextField, PillButton, FileTree, VersionPane, WindowControls, ThemeGallery, Slider, ColorField, AppMark, StepMark, ItemCard, SaveState, StepDots, StatusRow, CodeBlock, VersionCompare, StrengthMeter, Switch, ProgressBar, DatePicker, ProjectMark, ImageFrame, FontChoice, ProjectPill, PickerButton, ScanRadar,
-  Stack, Section, Inline, Columns, Surface, Layer, Center, AppRoot, ToolbarRow, Field, Positioner, Sheet, ProjectScope, ReaderPage, PrintPage, NoteContent,
+  Stack, Section, IconLayout, Inline, Columns, Surface, Layer, Center, AppRoot, ToolbarRow, Field, Positioner, Sheet, ProjectScope, ReaderPage, PrintPage, NoteContent,
   EditorSurface, TableControls, BlockHandle, WindowFrame, TextMenu,
   Trigger, Toolbar, Dialog,
 });

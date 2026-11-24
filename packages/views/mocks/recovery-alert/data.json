@@ -1,0 +1,230 @@
+{
+  "copy": {
+    "windowIntro": "The sign-in stopped working. Writing carries on: the draft below is still being saved on this computer. The alert sits in the corner and after the notes' name in Files, and both open the same card.",
+    "cardsIntro": "Every cause the alert covers, as its card. Hover, keyboard focus or a press on either alert icon opens it. Sync starts by itself only when nothing here could be lost.",
+    "statesIntro": "The corner and the Files header in each state. Normal and offline states have no alert; only a problem shows it.",
+    "cornerHeading": "Corner",
+    "filesHeading": "Files header",
+    "toast": "Your notes aren't being backed up: GitHub sign-in stopped working.",
+    "signInAgain": "Sign in again",
+    "empty": "Nothing here",
+    "alertLabel": "Not backed up · sign in to GitHub",
+    "cardLabel": "Sync problem"
+  },
+  "files": {
+    "title": "prabins-notes",
+    "login": "@prabin-demo",
+    "rows": [
+      { "id": "f1", "name": "Field notes, Tuesday" },
+      { "id": "f2", "name": "Reading list" },
+      { "id": "f3", "name": "Garden plan" },
+      { "id": "f4", "name": "Ideas" }
+    ]
+  },
+  "note": {
+    "title": "Field notes, Tuesday",
+    "body": [
+      { "id": "p1", "text": "The river was higher than last week, and the heron was back on the far bank before eight." },
+      { "id": "p3", "text": "Notes for the weekend: check the tide table, bring the long lens, and leave before the fog lifts." },
+      { "id": "p4", "text": "The path by the reeds is flooded again, so the far hide is only reachable from the north gate." },
+      { "id": "p5", "text": "A pair of kingfishers crossed twice, low and fast, too quick for a photograph but not for a note." },
+      { "id": "p2", "text": "Written after the sign-in stopped working: this paragraph is saved on this computer and backs up once you sign in again." }
+    ]
+  },
+  "signIn": [
+    {
+      "id": "signIn",
+      "icon": "warning",
+      "tone": "warning",
+      "busy": false,
+      "title": "Not backed up · sign in to GitHub",
+      "line": "GitHub isn't accepting the sign-in on this computer. Your notes are saved here.",
+      "progress": 0,
+      "progressLabel": "",
+      "facts": [
+        { "id": "a", "text": "This folder: Documents\\prabins-notes" },
+        { "id": "b", "text": "Notes on GitHub: prabin-demo/prabins-notes" },
+        { "id": "c", "text": "Last backup: 3 hours ago" }
+      ],
+      "primary": "Sign in again",
+      "secondary": "",
+      "notNow": "Not now"
+    }
+  ],
+  "cards": [
+    {
+      "id": "autoSync",
+      "icon": "cloudUp",
+      "tone": "accent",
+      "busy": true,
+      "title": "Not connected to your notes on GitHub",
+      "line": "This folder isn't linked to prabins-notes on GitHub, backed up 3 hours ago. Nothing of yours is in it, so sync started by itself.",
+      "progress": 45,
+      "progressLabel": "Downloading your notes · 45%",
+      "facts": [
+        { "id": "a", "text": "This folder: Documents\\prabins-notes" },
+        { "id": "b", "text": "Notes on GitHub: prabin-demo/prabins-notes" }
+      ],
+      "primary": "",
+      "secondary": "",
+      "notNow": ""
+    },
+    {
+      "id": "unlinked",
+      "icon": "warning",
+      "tone": "warning",
+      "busy": false,
+      "title": "Not connected to your notes on GitHub",
+      "line": "This folder has 4 notes that aren't on GitHub. Sync now adds them to your notes as private notes, keeps both where they differ, and moves this folder to the Recycle Bin.",
+      "progress": 0,
+      "progressLabel": "",
+      "facts": [
+        { "id": "a", "text": "This folder: Documents\\prabins-notes" },
+        { "id": "b", "text": "Notes on GitHub: prabin-demo/prabins-notes" },
+        { "id": "c", "text": "Last backup: 3 hours ago" }
+      ],
+      "primary": "Sync now",
+      "secondary": "",
+      "notNow": "Not now"
+    },
+    {
+      "id": "signIn",
+      "icon": "warning",
+      "tone": "warning",
+      "busy": false,
+      "title": "Not backed up · sign in to GitHub",
+      "line": "GitHub isn't accepting the sign-in on this computer. Your notes are saved here.",
+      "progress": 0,
+      "progressLabel": "",
+      "facts": [
+        { "id": "a", "text": "This folder: Documents\\prabins-notes" },
+        { "id": "b", "text": "Notes on GitHub: prabin-demo/prabins-notes" },
+        { "id": "c", "text": "Last backup: 3 hours ago" }
+      ],
+      "primary": "Sign in again",
+      "secondary": "",
+      "notNow": "Not now"
+    },
+    {
+      "id": "otherAccount",
+      "icon": "warning",
+      "tone": "warning",
+      "busy": false,
+      "title": "Signed in as @other",
+      "line": "@other can't reach prabins-notes. Switch to the account that owns them.",
+      "progress": 0,
+      "progressLabel": "",
+      "facts": [
+        { "id": "a", "text": "This folder: Documents\\prabins-notes" },
+        { "id": "b", "text": "Notes on GitHub: prabin-demo/prabins-notes" },
+        { "id": "c", "text": "Last backup: 3 hours ago" }
+      ],
+      "primary": "Switch account",
+      "secondary": "",
+      "notNow": "Not now"
+    },
+    {
+      "id": "remoteGone",
+      "icon": "warning",
+      "tone": "warning",
+      "busy": false,
+      "title": "Your notes aren't on GitHub",
+      "line": "prabins-notes isn't on GitHub any more, or this account can't see it. Everything is still on this computer.",
+      "progress": 0,
+      "progressLabel": "",
+      "facts": [
+        { "id": "a", "text": "This folder: Documents\\prabins-notes" },
+        { "id": "b", "text": "Notes on GitHub: prabin-demo/prabins-notes" },
+        { "id": "c", "text": "Last backup: 2 days ago" }
+      ],
+      "primary": "Choose what to do…",
+      "secondary": "",
+      "notNow": "Not now"
+    },
+    {
+      "id": "inbound",
+      "icon": "warning",
+      "tone": "warning",
+      "busy": false,
+      "title": "GitHub has 3 changes this computer doesn't have",
+      "line": "They couldn't come in because the network dropped during the last sync.",
+      "progress": 0,
+      "progressLabel": "",
+      "facts": [
+        { "id": "a", "text": "This folder: Documents\\prabins-notes" },
+        { "id": "b", "text": "Notes on GitHub: prabin-demo/prabins-notes" },
+        { "id": "c", "text": "Last backup: 20 minutes ago" }
+      ],
+      "primary": "Sync now",
+      "secondary": "",
+      "notNow": "Not now"
+    },
+    {
+      "id": "massDelete",
+      "icon": "warning",
+      "tone": "warning",
+      "busy": false,
+      "title": "48 notes are missing from this folder",
+      "line": "They were removed outside Focus Notes. They're still on GitHub, and backup is paused so they aren't removed there too.",
+      "progress": 0,
+      "progressLabel": "",
+      "facts": [
+        { "id": "a", "text": "This folder: Documents\\prabins-notes" },
+        { "id": "b", "text": "Notes on GitHub: prabin-demo/prabins-notes" },
+        { "id": "c", "text": "Last backup: 1 hour ago" }
+      ],
+      "primary": "Restore them",
+      "secondary": "Remove them from GitHub too",
+      "notNow": ""
+    },
+    {
+      "id": "syncing",
+      "icon": "cloudUp",
+      "tone": "accent",
+      "busy": true,
+      "title": "Syncing your notes · 2 of 5",
+      "line": "Bringing in the notes from this computer. You can keep writing.",
+      "progress": 40,
+      "progressLabel": "Syncing your notes · 2 of 5",
+      "facts": [
+        { "id": "a", "text": "Download your notes · done" },
+        { "id": "b", "text": "Bring in the notes from this computer · now" },
+        { "id": "c", "text": "Back up, check, then switch the folder" }
+      ],
+      "primary": "",
+      "secondary": "",
+      "notNow": ""
+    },
+    {
+      "id": "failed",
+      "icon": "warning",
+      "tone": "danger",
+      "busy": false,
+      "title": "Sync didn't finish",
+      "line": "Backing up failed because GitHub stopped answering. This folder is as it was, and the hidden copy was removed.",
+      "progress": 0,
+      "progressLabel": "",
+      "facts": [
+        { "id": "a", "text": "This folder: Documents\\prabins-notes" },
+        { "id": "b", "text": "Notes on GitHub: prabin-demo/prabins-notes" }
+      ],
+      "primary": "Try again",
+      "secondary": "",
+      "notNow": "Not now"
+    }
+  ],
+  "corner": [
+    { "id": "synced", "state": "synced", "label": "Backed up", "text": "", "note": "Normal: no alert" },
+    { "id": "offline", "state": "savedLocal", "label": "Offline mode · saved on this computer", "text": "", "note": "Offline mode is a choice: muted, no alert" },
+    { "id": "download", "state": "syncing", "label": "Downloading your notes · 45%", "text": "Downloading your notes · 45%", "note": "Started by itself: the turning ring" },
+    { "id": "sync", "state": "syncing", "label": "Syncing your notes · 2 of 5", "text": "Syncing your notes · 2 of 5", "note": "After Sync now: the turning ring" },
+    { "id": "unlinked", "state": "error", "label": "Not connected to your notes on GitHub", "text": "", "note": "Out of sync: the alert opens the card" },
+    { "id": "signIn", "state": "error", "label": "Not backed up · sign in to GitHub", "text": "", "note": "Sign-in stopped working: the alert opens the card" }
+  ],
+  "header": [
+    { "id": "github", "icon": "github", "title": "prabins-notes", "login": "@prabin-demo", "alert": false, "note": "On GitHub, in order" },
+    { "id": "githubAlert", "icon": "github", "title": "prabins-notes", "login": "@prabin-demo", "alert": true, "note": "Out of sync: the alert follows the name" },
+    { "id": "offline", "icon": "folder", "title": "Focus Notes", "login": "", "alert": false, "note": "Offline mode: the folder's name" },
+    { "id": "onedrive", "icon": "folder", "title": "prabins-notes · OneDrive", "login": "", "alert": false, "note": "Synced by another service" }
+  ]
+}

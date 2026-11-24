@@ -736,8 +736,12 @@
                    "checked": {
                     "bind": "local.watermark"
                    },
-                   "onLabel": { "t": "switch.on" },
-                   "offLabel": { "t": "switch.off" }
+                   "onLabel": {
+                    "t": "switch.on"
+                   },
+                   "offLabel": {
+                    "t": "switch.off"
+                   }
                   }
                  },
                  {
@@ -1879,24 +1883,25 @@
                 "type": "Inline",
                 "props": {
                  "gap": "inlineItem",
-                 "wrap": true
+                 "wrap": true,
+                 "justify": "end"
                 },
                 "children": [
                  {
-                   "type": "Button",
-                   "on": {
-                     "press": {
-                       "set": "local.plate",
-                       "to": "neutral"
-                     }
-                   },
-                   "props": {
-                     "label": {
-                       "t": "project.upload.usePlate"
-                     },
-                     "variant": "secondary",
-                     "size": "s"
+                  "type": "Button",
+                  "on": {
+                   "press": {
+                    "set": "local.plate",
+                    "to": "neutral"
                    }
+                  },
+                  "props": {
+                   "label": {
+                    "t": "project.upload.usePlate"
+                   },
+                   "variant": "secondary",
+                   "size": "s"
+                  }
                  },
                  {
                   "type": "Button",
@@ -1982,9 +1987,25 @@
                {
                 "type": "Inline",
                 "props": {
-                 "gap": "inlineItem"
+                 "gap": "inlineItem",
+                 "justify": "end"
                 },
                 "children": [
+                 {
+                  "type": "Button",
+                  "on": {
+                   "press": {
+                    "set": "local.screen",
+                    "to": "settings"
+                   }
+                  },
+                  "props": {
+                   "label": {
+                    "t": "project.upload.preset"
+                   },
+                   "variant": "secondary"
+                  }
+                 },
                  {
                   "type": "Button",
                   "on": {
@@ -1999,21 +2020,6 @@
                    },
                    "variant": "primary",
                    "icon": "upload"
-                  }
-                 },
-                 {
-                  "type": "Button",
-                  "on": {
-                   "press": {
-                    "set": "local.screen",
-                    "to": "settings"
-                   }
-                  },
-                  "props": {
-                   "label": {
-                    "t": "project.upload.preset"
-                   },
-                   "variant": "secondary"
                   }
                  }
                 ]

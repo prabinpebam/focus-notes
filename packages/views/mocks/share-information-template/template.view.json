@@ -1,0 +1,957 @@
+{
+ "focus": "page",
+ "local": {
+  "draft": "",
+  "saved": "",
+  "dialog": "",
+  "status": "",
+  "problemRow": "",
+  "sample": "both",
+  "pName": false,
+  "pPass": false,
+  "pLink": true,
+  "pCode": true,
+  "isDefault": true,
+  "savedLink": true,
+  "savedCode": true,
+  "savedDefault": true
+ },
+ "root": {
+  "type": "Stack",
+  "id": "page",
+  "props": {
+   "gap": "stackSection",
+   "padding": "insetLg"
+  },
+  "children": [
+   {
+    "type": "Stack",
+    "props": {
+     "gap": "stackItem"
+    },
+    "children": [
+     {
+      "type": "Heading",
+      "props": {
+       "level": "1",
+       "value": {
+        "get": "vm.mockShareTemplate.copy.title"
+       }
+      }
+     },
+     {
+      "type": "ItemCard",
+      "props": {
+       "title": {
+        "get": "vm.mockShareTemplate.copy.cardTitle"
+       },
+       "detail": {
+        "get": "vm.mockShareTemplate.copy.cardDetail"
+       },
+       "icon": "mail",
+       "badge": {
+        "expr": {
+         "if": [
+          {
+           "get": "local.savedDefault"
+          },
+          {
+           "get": "vm.mockShareTemplate.copy.badgeDefault"
+          },
+          {
+           "get": "vm.mockShareTemplate.copy.badgeEdited"
+          }
+         ]
+        }
+       }
+      },
+      "children": [
+       {
+        "type": "Button",
+        "props": {
+         "label": {
+          "get": "vm.mockShareTemplate.copy.edit"
+         }
+        },
+        "on": {
+         "press": {
+          "set": "local.dialog",
+          "to": "edit"
+         }
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "type": "Stack",
+    "props": {
+     "gap": "stackItem"
+    },
+    "children": [
+     {
+      "type": "Heading",
+      "props": {
+       "level": "2",
+       "value": {
+        "get": "vm.mockShareTemplate.copy.sharesHeading"
+       }
+      }
+     },
+     {
+      "each": {
+       "get": "vm.mockShareTemplate.shares"
+      },
+      "as": "row",
+      "key": "row.id",
+      "render": {
+       "type": "Stack",
+       "props": {
+        "gap": "stackPair"
+       },
+       "children": [
+        {
+         "type": "ItemCard",
+         "props": {
+          "title": {
+           "get": "row.title"
+          },
+          "detail": {
+           "get": "row.detail"
+          },
+          "badge": {
+           "get": "row.badge"
+          },
+          "icon": {
+           "get": "row.icon"
+          }
+         },
+         "children": [
+          {
+           "type": "Button",
+           "props": {
+            "label": {
+             "get": "vm.mockShareTemplate.copy.copyInfo"
+            },
+            "icon": "copy"
+           },
+           "on": {
+            "press": [
+             {
+              "set": "local.problemRow",
+              "to": {
+               "expr": {
+                "if": [
+                 {
+                  "or": [
+                   {
+                    "and": [
+                     {
+                      "get": "row.canLink"
+                     },
+                     {
+                      "get": "local.savedLink"
+                     }
+                    ]
+                   },
+                   {
+                    "and": [
+                     {
+                      "get": "row.canCode"
+                     },
+                     {
+                      "get": "local.savedCode"
+                     }
+                    ]
+                   }
+                  ]
+                 },
+                 "",
+                 {
+                  "get": "row.id"
+                 }
+                ]
+               }
+              }
+             },
+             {
+              "set": "local.status",
+              "to": {
+               "expr": {
+                "if": [
+                 {
+                  "or": [
+                   {
+                    "and": [
+                     {
+                      "get": "row.canLink"
+                     },
+                     {
+                      "get": "local.savedLink"
+                     }
+                    ]
+                   },
+                   {
+                    "and": [
+                     {
+                      "get": "row.canCode"
+                     },
+                     {
+                      "get": "local.savedCode"
+                     }
+                    ]
+                   }
+                  ]
+                 },
+                 "copied",
+                 ""
+                ]
+               }
+              }
+             }
+            ]
+           }
+          }
+         ]
+        },
+        {
+         "type": "Inline",
+         "when": {
+          "expr": {
+           "==": [
+            {
+             "get": "local.problemRow"
+            },
+            {
+             "get": "row.id"
+            }
+           ]
+          }
+         },
+         "props": {
+          "gap": "inlineItem",
+          "wrap": true
+         },
+         "children": [
+          {
+           "type": "Text",
+           "props": {
+            "value": {
+             "get": "vm.mockShareTemplate.copy.copyProblem"
+            },
+            "tone": "danger",
+            "announce": true
+           }
+          },
+          {
+           "type": "Button",
+           "props": {
+            "label": {
+             "get": "vm.mockShareTemplate.copy.editTemplate"
+            },
+            "variant": "secondary",
+            "size": "s"
+           },
+           "on": {
+            "press": [
+             {
+              "set": "local.dialog",
+              "to": "edit"
+             }
+            ]
+           }
+          },
+          {
+           "type": "Button",
+           "props": {
+            "label": {
+             "get": "vm.mockShareTemplate.copy.useDefault"
+            },
+            "variant": "secondary",
+            "size": "s"
+           },
+           "on": {
+            "press": [
+             {
+              "set": "local.problemRow",
+              "to": ""
+             },
+             {
+              "set": "local.status",
+              "to": "copiedDefault"
+             }
+            ]
+           }
+          }
+         ]
+        }
+       ]
+      },
+      "empty": {
+       "type": "Text",
+       "props": {
+        "value": {
+         "get": "vm.mockShareTemplate.copy.sharesEmpty"
+        },
+        "tone": "muted"
+       }
+      }
+     }
+    ]
+   },
+   {
+    "type": "Dialog",
+    "when": {
+     "expr": {
+      "==": [
+       {
+        "get": "local.dialog"
+       },
+       "edit"
+      ]
+     }
+    },
+    "props": {
+     "open": true,
+     "size": "m",
+     "height": "content",
+     "title": {
+      "get": "vm.mockShareTemplate.copy.dialogTitle"
+     },
+     "closeLabel": {
+      "t": "dialog.close"
+     }
+    },
+    "on": {
+     "openChange": {
+      "set": "local.dialog",
+      "to": ""
+     }
+    },
+    "slots": {
+     "footer": [
+      {
+       "type": "Inline",
+       "props": {
+        "gap": "inlineItem",
+        "justify": "end",
+        "wrap": true
+       },
+       "children": [
+        {
+         "type": "Button",
+         "props": {
+          "label": {
+           "get": "vm.mockShareTemplate.copy.reset"
+          },
+          "variant": "secondary",
+          "disabled": {
+           "get": "local.isDefault"
+          },
+          "disabledReason": {
+           "get": "vm.mockShareTemplate.copy.resetDisabled"
+          }
+         },
+         "on": {
+          "press": [
+           {
+            "set": "local.draft",
+            "to": {
+             "get": "vm.mockShareTemplate.templates.default"
+            }
+           },
+           {
+            "set": "local.pName",
+            "to": {
+             "expr": {
+              "in": [
+               "{name}",
+               {
+                "get": "vm.mockShareTemplate.templates.default"
+               }
+              ]
+             }
+            }
+           },
+           {
+            "set": "local.pPass",
+            "to": {
+             "expr": {
+              "in": [
+               "{passcode}",
+               {
+                "get": "vm.mockShareTemplate.templates.default"
+               }
+              ]
+             }
+            }
+           },
+           {
+            "set": "local.pLink",
+            "to": {
+             "expr": {
+              "in": [
+               "{link}",
+               {
+                "get": "vm.mockShareTemplate.templates.default"
+               }
+              ]
+             }
+            }
+           },
+           {
+            "set": "local.pCode",
+            "to": {
+             "expr": {
+              "and": [
+               {
+                "in": [
+                 "{site}",
+                 {
+                  "get": "vm.mockShareTemplate.templates.default"
+                 }
+                ]
+               },
+               {
+                "in": [
+                 "{accessCode}",
+                 {
+                  "get": "vm.mockShareTemplate.templates.default"
+                 }
+                ]
+               }
+              ]
+             }
+            }
+           },
+           {
+            "set": "local.isDefault",
+            "to": {
+             "expr": {
+              "==": [
+               {
+                "get": "vm.mockShareTemplate.templates.default"
+               },
+               {
+                "get": "vm.mockShareTemplate.templates.default"
+               }
+              ]
+             }
+            }
+           }
+          ]
+         }
+        },
+        {
+         "type": "Button",
+         "props": {
+          "label": {
+           "get": "vm.mockShareTemplate.copy.save"
+          },
+          "variant": "primary",
+          "disabled": {
+           "expr": {
+            "or": [
+             {
+              "get": "local.pName"
+             },
+             {
+              "get": "local.pPass"
+             },
+             {
+              "and": [
+               {
+                "!": {
+                 "get": "local.pLink"
+                }
+               },
+               {
+                "!": {
+                 "get": "local.pCode"
+                }
+               }
+              ]
+             }
+            ]
+           }
+          },
+          "disabledReason": {
+           "get": "vm.mockShareTemplate.copy.saveDisabled"
+          }
+         },
+         "on": {
+          "press": [
+           {
+            "set": "local.saved",
+            "to": {
+             "get": "local.draft"
+            }
+           },
+           {
+            "set": "local.savedLink",
+            "to": {
+             "get": "local.pLink"
+            }
+           },
+           {
+            "set": "local.savedCode",
+            "to": {
+             "get": "local.pCode"
+            }
+           },
+           {
+            "set": "local.savedDefault",
+            "to": {
+             "get": "local.isDefault"
+            }
+           },
+           {
+            "set": "local.problemRow",
+            "to": ""
+           },
+           {
+            "set": "local.dialog",
+            "to": ""
+           },
+           {
+            "set": "local.status",
+            "to": "saved"
+           }
+          ]
+         }
+        }
+       ]
+      }
+     ]
+    },
+    "children": [
+     {
+      "type": "Stack",
+      "props": {
+       "gap": "stackGroup"
+      },
+      "children": [
+       {
+        "type": "TextField",
+        "props": {
+         "label": {
+          "get": "vm.mockShareTemplate.copy.field"
+         },
+         "value": {
+          "bind": "local.draft"
+         },
+         "multiline": true,
+         "autoFocus": true,
+         "description": {
+          "get": "vm.mockShareTemplate.copy.fieldHelp"
+         },
+         "invalid": {
+          "expr": {
+           "or": [
+            {
+             "get": "local.pName"
+            },
+            {
+             "get": "local.pPass"
+            },
+            {
+             "and": [
+              {
+               "!": {
+                "get": "local.pLink"
+               }
+              },
+              {
+               "!": {
+                "get": "local.pCode"
+               }
+              }
+             ]
+            }
+           ]
+          }
+         },
+         "error": {
+          "expr": {
+           "if": [
+            {
+             "get": "local.pName"
+            },
+            {
+             "get": "vm.mockShareTemplate.copy.problemName"
+            },
+            {
+             "get": "local.pPass"
+            },
+            {
+             "get": "vm.mockShareTemplate.copy.problemPasscode"
+            },
+            {
+             "and": [
+              {
+               "!": {
+                "get": "local.pLink"
+               }
+              },
+              {
+               "!": {
+                "get": "local.pCode"
+               }
+              }
+             ]
+            },
+            {
+             "get": "vm.mockShareTemplate.copy.problemMethod"
+            },
+            ""
+           ]
+          }
+         }
+        },
+        "on": {
+         "change": [
+          {
+           "set": "local.pName",
+           "to": {
+            "expr": {
+             "in": [
+              "{name}",
+              {
+               "get": "event.value"
+              }
+             ]
+            }
+           }
+          },
+          {
+           "set": "local.pPass",
+           "to": {
+            "expr": {
+             "in": [
+              "{passcode}",
+              {
+               "get": "event.value"
+              }
+             ]
+            }
+           }
+          },
+          {
+           "set": "local.pLink",
+           "to": {
+            "expr": {
+             "in": [
+              "{link}",
+              {
+               "get": "event.value"
+              }
+             ]
+            }
+           }
+          },
+          {
+           "set": "local.pCode",
+           "to": {
+            "expr": {
+             "and": [
+              {
+               "in": [
+                "{site}",
+                {
+                 "get": "event.value"
+                }
+               ]
+              },
+              {
+               "in": [
+                "{accessCode}",
+                {
+                 "get": "event.value"
+                }
+               ]
+              }
+             ]
+            }
+           }
+          },
+          {
+           "set": "local.isDefault",
+           "to": {
+            "expr": {
+             "==": [
+              {
+               "get": "event.value"
+              },
+              {
+               "get": "vm.mockShareTemplate.templates.default"
+              }
+             ]
+            }
+           }
+          }
+         ]
+        }
+       },
+       {
+        "type": "Stack",
+        "when": {
+         "expr": {
+          "and": [
+           {
+            "!": {
+             "get": "local.pName"
+            }
+           },
+           {
+            "!": {
+             "get": "local.pPass"
+            }
+           },
+           {
+            "or": [
+             {
+              "get": "local.pLink"
+             },
+             {
+              "get": "local.pCode"
+             }
+            ]
+           }
+          ]
+         }
+        },
+        "props": {
+         "gap": "stackPair"
+        },
+        "children": [
+         {
+          "type": "Text",
+          "props": {
+           "value": {
+            "get": "vm.mockShareTemplate.copy.previewHeading"
+           },
+           "role": "label"
+          }
+         },
+         {
+          "type": "Text",
+          "props": {
+           "value": {
+            "expr": {
+             "if": [
+              {
+               "==": [
+                {
+                 "get": "local.sample"
+                },
+                "link"
+               ]
+              },
+              {
+               "get": "vm.mockShareTemplate.copy.previewFor.link"
+              },
+              {
+               "==": [
+                {
+                 "get": "local.sample"
+                },
+                "code"
+               ]
+              },
+              {
+               "get": "vm.mockShareTemplate.copy.previewFor.code"
+              },
+              {
+               "get": "vm.mockShareTemplate.copy.previewFor.both"
+              }
+             ]
+            }
+           },
+           "role": "caption",
+           "tone": "muted"
+          }
+         },
+         {
+          "type": "Surface",
+          "props": {
+           "variant": "sunken",
+           "shape": "control",
+           "padding": "insetMd"
+          },
+          "children": [
+           {
+            "type": "Stack",
+            "props": {
+             "gap": "stackPair"
+            },
+            "children": [
+             {
+              "each": {
+               "get": "vm.mockShareTemplate.previewLines"
+              },
+              "as": "line",
+              "key": "line.id",
+              "render": {
+               "type": "Text",
+               "when": {
+                "expr": {
+                 "and": [
+                  {
+                   "in": [
+                    {
+                     "get": "line.source"
+                    },
+                    {
+                     "get": "local.draft"
+                    }
+                   ]
+                  },
+                  {
+                   "in": [
+                    {
+                     "get": "local.sample"
+                    },
+                    {
+                     "get": "line.samples"
+                    }
+                   ]
+                  }
+                 ]
+                }
+               },
+               "props": {
+                "value": {
+                 "get": "line.text"
+                },
+                "role": "secondary",
+                "personal": true
+               }
+              },
+              "empty": {
+               "type": "Text",
+               "props": {
+                "value": {
+                 "get": "vm.mockShareTemplate.copy.previewEmpty"
+                },
+                "tone": "muted"
+               }
+              }
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "type": "Layer",
+    "id": "toasts",
+    "when": {
+     "expr": {
+      "!=": [
+       {
+        "get": "local.status"
+       },
+       ""
+      ]
+     }
+    },
+    "props": {
+     "layer": "toast",
+     "position": "bottomCenter"
+    },
+    "children": [
+     {
+      "type": "Toast",
+      "when": {
+       "expr": {
+        "==": [
+         {
+          "get": "local.status"
+         },
+         "saved"
+        ]
+       }
+      },
+      "props": {
+       "tone": "success",
+       "message": {
+        "get": "vm.mockShareTemplate.copy.toastSaved"
+       },
+       "dismissLabel": {
+        "t": "toast.dismiss"
+       }
+      },
+      "on": {
+       "dismiss": {
+        "set": "local.status",
+        "to": ""
+       }
+      }
+     },
+     {
+      "type": "Toast",
+      "when": {
+       "expr": {
+        "==": [
+         {
+          "get": "local.status"
+         },
+         "copied"
+        ]
+       }
+      },
+      "props": {
+       "tone": "success",
+       "message": {
+        "get": "vm.mockShareTemplate.copy.toastCopied"
+       },
+       "dismissLabel": {
+        "t": "toast.dismiss"
+       }
+      },
+      "on": {
+       "dismiss": {
+        "set": "local.status",
+        "to": ""
+       }
+      }
+     },
+     {
+      "type": "Toast",
+      "when": {
+       "expr": {
+        "==": [
+         {
+          "get": "local.status"
+         },
+         "copiedDefault"
+        ]
+       }
+      },
+      "props": {
+       "tone": "success",
+       "message": {
+        "get": "vm.mockShareTemplate.copy.toastCopiedDefault"
+       },
+       "dismissLabel": {
+        "t": "toast.dismiss"
+       }
+      },
+      "on": {
+       "dismiss": {
+        "set": "local.status",
+        "to": ""
+       }
+      }
+     }
+    ]
+   }
+  ]
+ }
+}
