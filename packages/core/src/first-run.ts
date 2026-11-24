@@ -208,6 +208,15 @@ export interface WorkspaceResult {
   privateNotes?: boolean;
 }
 
+/** A folder on this computer that's already a clone of the repository being opened (D-415). */
+export interface ExistingCopy {
+  folder: string;
+  /** The folder's own name ("prabins-notes 2"). */
+  name: string;
+  /** When it last changed (its newest commit), in milliseconds since 1970. */
+  updated: number;
+}
+
 /** A long first-run call's progress (PRF-13): `done` of `total`, a part, and a percentage when Git reports one. */
 export interface FirstRunProgress {
   op: "findNotes" | "clone";
@@ -266,6 +275,13 @@ export interface FirstRunBridge {
   chooseFolder(): Promise<string | undefined>;
   /** Clones into the chosen folder, or Documents/<name>; `new`: the next free folder for the name, not the chosen one (D-154). */
   clone(owner: string, name: string, where?: "new"): Promise<WorkspaceResult>;
+  /**
+   * Copies of the repository already here (D-415): Documents' "<name>" and "<name> N" folders and the
+   * known projects whose `origin` is it, most recently updated first. Read-only.
+   */
+  copies?(owner: string, name: string): Promise<ExistingCopy[]>;
+  /** Uses one of those copies: fetched and fast-forwarded only, never overwritten, then checked like Open folder (D-415). */
+  useCopy?(folder: string): Promise<WorkspaceResult>;
   cancelClone?(): Promise<void>;
   /** Continues only the in-process downloaded-folder receipt; never starts another clone. */
   resumeClone?(): Promise<WorkspaceResult>;
