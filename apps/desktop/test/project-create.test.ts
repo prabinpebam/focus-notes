@@ -467,9 +467,7 @@ it.skipIf(process.platform !== "win32")("expires a hung protector without plaint
   const position = { from: 1, to: 1, scroll: 0 };
   try {
     await projects.remember(join(root, "hung.md"), position);
-    await new Promise<void>(resolve => setImmediate(resolve));
-    await new Promise<void>(resolve => setImmediate(resolve));
-    expect(protection.pending).toHaveLength(1);
+    await vi.waitFor(() => expect(protection.pending).toHaveLength(1));
     const latest = join(root, "latest.md");
     await projects.remember(latest, position);
     expect(writes).not.toHaveBeenCalled();

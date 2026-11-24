@@ -211,7 +211,7 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     if (expectedClear?.epoch !== metadataEpoch || expectedClear.generation !== current.generation) metadataEpoch++;
     expectedClear = undefined;
     pendingLaunch = undefined;
-    launchRecord = Promise.resolve(undefined);
+    launchRecord = Promise.resolve(undefined); sessionOpened = Promise.resolve(undefined);
     ownRecent = undefined;
     ownRecentBytes = undefined;
     known.clear();
@@ -297,6 +297,11 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
       const record: unknown = JSON.parse(content);
       if (!record || typeof record !== "object" || !("path" in record) || typeof record.path !== "string") throw new Error("Invalid protected launch record.");
       if (removedPath(record.path, folders)) await rm(path, { force: true });
+      else if ("opened" in record && Array.isArray(record.opened) && record.opened.some(note => typeof note !== "string" || removedPath(note, folders))) {
+        const opened = record.opened.filter((note): note is string => typeof note === "string" && !removedPath(note, folders));
+        await atomicWrite(path, await protect(JSON.stringify({ ...record, opened })));
+        if (profile === userData) { launchRecord = undefined; sessionOpened = undefined; }
+      }
     }
   }
   async function saveRecent(profile: string, record: Recent, epoch: number, ticket: MetadataTicket, previous: string | undefined) {
@@ -340,8 +345,10 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     });
     return recentWrites;
   }
-  type LaunchRecord = { path: string; position?: { from: number; to: number; scroll: number } };
+  /** `opened`: the project's opened-files tabs in order (D-420), private notes included, so kept only in this protected record. */
+  type LaunchRecord = { path: string; position?: { from: number; to: number; scroll: number }; opened?: string[] };
   let launchRecord: Promise<LaunchRecord | undefined> | undefined;
+  let sessionOpened: Promise<string[] | undefined> | undefined;
   async function readLastRecord(): Promise<LaunchRecord | undefined> {
     let encrypted: string;
     try { encrypted = await readFile(lastNoteFile, "utf8"); }
@@ -361,6 +368,34 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     return reading;
   }
   async function lastNote() { return (await lastRecord())?.path; }
+  // Read before anything replaces the cached record, so a remembered note never drops the saved tabs.
+  function knownOpened(): Promise<string[] | undefined> {
+    if (!sessionOpened) {
+      const reading = lastRecord().then(record => Array.isArray(record?.opened) ? record.opened.filter((p): p is string => typeof p === "string") : undefined);
+      sessionOpened = reading;
+      void reading.catch(() => { if (sessionOpened === reading) sessionOpened = undefined; });
+    }
+    return sessionOpened;
+  }
+  /** The saved tabs, or undefined when none were saved (a record from before D-420). */
+  async function opened(): Promise<string[] | undefined> {
+    const saved = await knownOpened();
+    return saved ? [...saved] : undefined;
+  }
+  function rememberOpened(paths: readonly string[]) {
+    if (!acceptingMetadata) return;
+    if (paths.length > 500 || paths.some(path => typeof path !== "string" || !isAbsolute(path) || !writingFile(path))) throw new Error("Invalid opened notes");
+    const tabs = [...new Set(paths)].filter(path => !removedPath(path, excludedFolders));
+    sessionOpened = Promise.resolve(tabs);
+    void (async () => {
+      // Tabs ride on the launch record; with no note remembered yet they wait for the first one.
+      if (pendingLaunch) return;
+      const current = await lastRecord().catch(() => undefined);
+      if (!current || pendingLaunch || !acceptingMetadata) return;
+      pendingLaunch = { record: { path: current.path, ...(current.position ? { position: current.position } : {}) }, epoch: metadataEpoch, ticket: ownTicket };
+      scheduleLaunch();
+    })();
+  }
   async function position(path: string) {
     const record = await lastRecord();
     return record?.path === path ? record.position : undefined;
@@ -383,13 +418,18 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
         }
         if (pendingLaunch || pending.epoch !== metadataEpoch) continue;
         if (!safeStorage.isEncryptionAvailable()) throw new Error("Protected launch storage is unavailable.");
-        const content = JSON.stringify(pending.record);
+        const tabs = await knownOpened().catch(() => undefined);
+        if (pendingLaunch || pending.epoch !== metadataEpoch) continue;
+        const removedRoots = await removedProjectFolders(rootProfile, metadata);
+        const record: LaunchRecord = tabs ? { ...pending.record, opened: tabs.filter(path => !removedPath(path, removedRoots)) } : pending.record;
+        const content = JSON.stringify(record);
         const encrypted = process.platform === "win32"
           ? `dpapi:${await windowsProtectedRecord(Buffer.from(content, "utf8").toString("base64"), true)}`
           : safeStorage.encryptString(content).toString("base64");
         // Protection can finish after a newer cursor or note arrived. Never publish the stale record.
         if (!pendingLaunch && pending.epoch === metadataEpoch) await metadata.commit(userData, await pending.ticket, async () => {
-          if (!removedPath(pending.record.path, await removedProjectFolders(rootProfile, metadata))) await atomicWrite(lastNoteFile, encrypted);
+          const roots = await removedProjectFolders(rootProfile, metadata);
+          if (!removedPath(record.path, roots) && !record.opened?.some(path => removedPath(path, roots))) await atomicWrite(lastNoteFile, encrypted);
         });
       } catch (error) {
         console.error("Could not persist protected launch record:", error instanceof Error ? error.name : "Error");
@@ -413,6 +453,7 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     if (!acceptingMetadata) return;
     if (removedPath(path, excludedFolders)) return;
     if (!safeStorage.isEncryptionAvailable()) throw new Error("Protected launch storage is unavailable.");
+    void knownOpened().catch(() => undefined);
     const previous = snapshot ? undefined : lastRecord();
     const record: LaunchRecord = { path, position: snapshot };
     pendingLaunch = { record, previous, epoch: metadataEpoch, ticket: ownTicket };
@@ -437,7 +478,7 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     metadataEpoch++;
     const epoch = metadataEpoch;
     pendingLaunch = undefined;
-    launchRecord = Promise.resolve(undefined);
+    launchRecord = Promise.resolve(undefined); sessionOpened = Promise.resolve(undefined);
     ownRecent = undefined;
     ownRecentBytes = undefined;
     const previous = purging;
@@ -949,5 +990,5 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     await open(folder, file);
     return { file, here: false };
   }
-  return { removedRoots: () => removedProjectFolders(rootProfile, metadata), removed: () => metadata.isRemoved(userData), onFiltered: (listener: (folders: string[]) => Promise<void>) => { onFiltered = listener; }, list, known: knownFolder, stats, repo, adopt, openFile, openFilePath, open, choose, upload, pin, localNote, importLocal, edited: (path: string) => score(path, 2), parent: async () => dirname(home()), chooseParent, check, create, startEmpty, continueCreate, pendingCreate, lastNote, position, remember, closed, purge, resume, dispose, canCache, saveState, pendingCleanup: () => metadata.pendingScopes(), cleanupIssues: () => metadata.cleanupIssues(), retryCleanup, onCleared: (listener: () => Promise<void>) => { onCleared = listener; }, firstNoteAdmission: metadata.firstNoteAdmission };
+  return { removedRoots: () => removedProjectFolders(rootProfile, metadata), removed: () => metadata.isRemoved(userData), onFiltered: (listener: (folders: string[]) => Promise<void>) => { onFiltered = listener; }, list, known: knownFolder, stats, repo, adopt, openFile, openFilePath, open, choose, upload, pin, localNote, importLocal, edited: (path: string) => score(path, 2), parent: async () => dirname(home()), chooseParent, check, create, startEmpty, continueCreate, pendingCreate, lastNote, opened, rememberOpened, position, remember, closed, purge, resume, dispose, canCache, saveState, pendingCleanup: () => metadata.pendingScopes(), cleanupIssues: () => metadata.cleanupIssues(), retryCleanup, onCleared: (listener: () => Promise<void>) => { onCleared = listener; }, firstNoteAdmission: metadata.firstNoteAdmission };
 }

@@ -1963,8 +1963,15 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         // The project's session (D-420): its opened-files tabs in order and the active note, with no Untitled on top.
         // Notes that are gone are dropped quietly; a note that can't be read is an error, and the saved tabs stay as they were.
         let sessionGone = false;
+        // The tabs come from the protected launch record (private notes included); state.json's public-only list
+        // is the fallback for a record saved before tabs were kept there.
+        let savedTabs: readonly string[] | undefined = appState.filesOpened;
+        if (bridge.projects?.opened && !restoreFailed && !bridge.windows?.initialOpen && !bridge.windows?.initialNote && !bridge.windows?.secondary) {
+          try { savedTabs = (await bridge.projects.opened()) ?? savedTabs; }
+          catch { restoreFailed = true; toast(catalog.format("project.launch.restoreFailed"), { tone: "error" }); }
+        }
         const sessionTabs = bridge.windows?.initialOpen || bridge.windows?.initialNote || bridge.windows?.secondary || restoreFailed
-          ? undefined : (appState.filesOpened ?? []).map(currentProjectNote).filter((path): path is string => Boolean(path));
+          ? undefined : (savedTabs ?? []).map(currentProjectNote).filter((path): path is string => Boolean(path));
         if (sessionTabs?.length && bridge.readNoteIfExists) {
           const plan = await probeSession(sessionTabs, last);
           if (plan.kind === "error") {
