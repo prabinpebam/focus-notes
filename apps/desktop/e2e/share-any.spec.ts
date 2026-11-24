@@ -87,7 +87,7 @@ test("D-424: Share… and Publish on a private note, Share… and Unpublish on a
     menu = await rowMenu(page, /^Welcome/);
     await menu.getByRole("menuitem", { name: "Share…", exact: true }).click();
     const share = page.getByRole("dialog", { name: "Share “Welcome”", exact: true });
-    await expect(share.getByText("Sharing can’t be turned on for this project yet. Your notes stay private. To let anyone read a note, publish it.", { exact: true })).toBeVisible({ timeout: 30_000 });
+    await expect(share.getByText("To share, link this project to GitHub in Settings → Project.", { exact: true })).toBeVisible({ timeout: 30_000 });
     await expect(share.getByRole("switch", { name: /Link/ }).first()).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(share).toHaveCount(0);

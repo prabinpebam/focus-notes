@@ -23,14 +23,14 @@ test("G2.2, D-424: an unconfigured project offers Share… with the reason it ca
     await page.keyboard.press(process.platform === "darwin" ? "Meta+," : "Control+,");
     const settings = page.getByRole("dialog", { name: "Settings", exact: true });
     await settings.getByRole("tab", { name: "Sharing", exact: true }).click();
-    await expect(settings.getByText("Turning on sharing isn’t available yet. Your notes stay private.", { exact: true })).toBeVisible();
+    await expect(settings.getByText("To share, link this project to GitHub in Settings → Project.", { exact: true })).toBeVisible();
     await expect(settings.getByRole("button", { name: "Turn on sharing", exact: true })).toHaveCount(0);
     await page.keyboard.press("Escape");
     await page.keyboard.press(process.platform === "darwin" ? "Meta+Shift+E" : "Control+Shift+E");
     await page.getByRole("treeitem", { name: "Welcome welcome.md", exact: true }).click({ button: "right" });
     // D-424: Share… shows for every note; where sharing can't start it says why, and nothing is written.
     await page.getByRole("menuitem", { name: "Share…", exact: true }).click();
-    await expect(page.getByRole("dialog", { name: "Share “Welcome”", exact: true }).getByText("Sharing can’t be turned on for this project yet. Your notes stay private. To let anyone read a note, publish it.", { exact: true })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole("dialog", { name: "Share “Welcome”", exact: true }).getByText("To share, link this project to GitHub in Settings → Project.", { exact: true })).toBeVisible({ timeout: 30_000 });
     await page.keyboard.press("Escape");
     expect(readFileSync(note, "utf8")).toBe(before);
     expect(existsSync(join(dirs.docs, "private", "access.json"))).toBe(false);
