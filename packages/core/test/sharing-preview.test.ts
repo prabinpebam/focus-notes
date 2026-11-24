@@ -1,5 +1,7 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { createApp, type AppStateFile, type PlatformBridge } from "../src/index.ts";
+import { menuBarModel } from "../src/menu-bar.ts";
+import { NO_PUBLICATION, publishPathOf, publishStatus } from "../src/publish-status.ts";
 import en from "../../views/messages/en.json" with { type: "json" };
 
 afterEach(() => vi.useRealTimers());
@@ -201,10 +203,12 @@ async function liveFixture(onSite: string[] = []) {
   for (let i = 0; i < 5; i++) await Promise.resolve();
   const vm = () => app.viewModels.select("vm.sharingPreview", app.store.state) as Record<string, unknown>;
   const toasts = () => app.store.state.ui.toasts;
+  // settle(error) rejects; settle(undefined, "build") leaves Pages pending (O4); settle(undefined, [...]) sets the site's notes.
   return { app, vm, toasts, published, unpublished, copied, step: (s: string) => step?.(s), live: (build: string, ok: boolean) => live?.({ build, live: ok }),
-    followed: (event: { paths: string[]; status: string; build?: string; problem?: string }) => followed?.(event), retried: () => retried, settle: (value?: Error, pending?: string) => {
+    followed: (event: { paths: string[]; status: string; build?: string; problem?: string }) => followed?.(event), retried: () => retried, settle: (value?: Error, arg?: string | string[]) => {
     const current = next; next = deferred();
-    if (value) current.reject(value); else current.resolve({ commit: "c".repeat(40), published: ["a.md"], changed: ["a.md"], ...(pending ? { pending } : {}) });
+    const pending = typeof arg === "string" ? arg : undefined, site = Array.isArray(arg) ? arg : ["a.md"];
+    if (value) current.reject(value); else current.resolve({ commit: "c".repeat(40), published: site, changed: ["a.md"], ...(pending ? { pending } : {}) });
   } };
 }
 
@@ -320,4 +324,71 @@ it("G3.2/G3.4: a leak stop never names private content; Unpublish says the note 
   t.settle();
   await removal;
   expect(t.toasts().some(n => n.message.includes("Your note stays here") && n.message.includes("can’t be withdrawn"))).toBe(true);
+});
+
+const statusLine = (t: Awaited<ReturnType<typeof liveFixture>>) => {
+  const more = (t.app.viewModels.select("vm.toolbar", t.app.store.state) as { more: { id: string; items: { id: string; label: string; disabled?: boolean }[] }[] }).more;
+  return more.find(g => g.id === "note")?.items.find(i => i.id === "note.publishStatus");
+};
+const fileMenuStatus = (t: Awaited<ReturnType<typeof liveFixture>>) =>
+  menuBarModel(t.app.commands, t.app.messages, "windows").menus.find(m => m.id === "file")!.items.find(i => i.kind === "command" && i.id === "note.publishStatus");
+// Publish closes an unpinned Files panel; the row is read as the open panel would show it.
+const rowMark = (t: Awaited<ReturnType<typeof liveFixture>>) => {
+  const s = t.app.store.state;
+  const open = { ...s, ui: { ...s.ui, files: { ...s.ui.files, open: true } } };
+  return ((t.app.viewModels.select("vm.files", open) as { items: { id: string; description: string }[] }).items.find(i => i.id === "/w/notes/a.md"))?.description;
+};
+
+it("D-422: publishStatus derives Live, Publishing… and Not published yet from the site set and the Publish in flight", () => {
+  const tree = { roots: [{ id: "private" as const, path: "/w/notes", readOnly: false, children: [] }, { id: "public" as const, path: "/w/public", readOnly: false, children: [] }] };
+  expect(publishPathOf(tree, "/w/notes/ideas/a.md")).toBe("ideas/a.md");
+  expect(publishPathOf(tree, "/w/public/a.md")).toBeUndefined();
+  expect(publishPathOf(tree, undefined)).toBeUndefined();
+  expect(publishStatus("a.md", NO_PUBLICATION)).toBe("unpublished");
+  expect(publishStatus("a.md", { published: ["a.md"], publishing: [] })).toBe("live");
+  expect(publishStatus("a.md", { published: ["a.md"], publishing: ["a.md"] })).toBe("publishing");
+  expect(publishStatus("b.md", { published: ["a.md"], publishing: ["a.md"] })).toBe("unpublished");
+  expect(publishStatus(undefined, { published: ["a.md"], publishing: [] })).toBeUndefined();
+});
+
+it("D-422: the Files row shows publishing… then live, the ⋯ and File status line follows, and Unpublish leaves no mark", async () => {
+  const t = await liveFixture();
+  await t.app.commands.run("files.open");
+  expect(rowMark(t)).toBe("");
+  expect(statusLine(t)).toMatchObject({ label: "Not published yet", disabled: true });
+  expect(fileMenuStatus(t)).toMatchObject({ label: "Not published yet", enabled: false });
+  await t.app.commands.run("note.publish");
+  const task = t.app.commands.run("sharing.publish");
+  await Promise.resolve();
+  expect(rowMark(t)).toBe("publishing…");
+  expect(statusLine(t)).toMatchObject({ label: "Publishing…" });
+  t.settle();
+  await task;
+  expect(rowMark(t)).toBe("live");
+  expect(statusLine(t)).toMatchObject({ label: "Live on your site" });
+  expect(fileMenuStatus(t)).toMatchObject({ label: "Live on your site" });
+  const removal = t.app.commands.run("note.unpublish");
+  await Promise.resolve(); await Promise.resolve();
+  expect(rowMark(t)).toBe("live");
+  t.settle(undefined, []);
+  await removal;
+  expect(rowMark(t)).toBe("");
+  expect(statusLine(t)).toMatchObject({ label: "Not published yet" });
+});
+
+it("D-422: a failed Publish leaves the previous status, and no status line shows where there's no live site", async () => {
+  const t = await liveFixture(["a.md"]);
+  await t.app.commands.run("files.open");
+  expect(rowMark(t)).toBe("live");
+  await t.app.commands.run("note.publish");
+  const task = t.app.commands.run("sharing.publish");
+  await Promise.resolve();
+  expect(rowMark(t)).toBe("publishing…");
+  t.settle(new Error("sharing:offline"));
+  await task;
+  expect(rowMark(t)).toBe("live");
+  t.app.store.update(s => ({ ...s, ui: { ...s.ui, share: { ...s.ui.share, listing: undefined } } }));
+  expect(rowMark(t)).toBe("");
+  expect(statusLine(t)).toBeUndefined();
+  expect(fileMenuStatus(t)).toBeUndefined();
 });

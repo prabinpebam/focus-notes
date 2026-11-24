@@ -16,7 +16,7 @@ Manage notes inside one project, then choose deliberately whether anything leave
 | Project heading | Name, logo, backup state, Open local folder |
 | Pinned | Shortcuts to real folders and notes; Unpin never deletes content |
 | Recent | Files only, newest first, with folder location |
-| Private | The project's private notes and sealed shares |
+| Private | The project's private notes and sealed shares; a published note's row ends in a muted *live*, or *publishing…* while its Publish runs (D-422); unpublished notes carry no mark |
 | Public (sharing enabled) | Explicitly published source in the site's repository |
 | Recently deleted / Recovered | Restore Git history or crash drafts without overwriting newer text |
 

@@ -77,7 +77,8 @@ describe("DSK-05: the macOS menu bar lists every command", () => {
     // And the menu bar built from it has each of them once.
     const ids = flat(menuBarModel(app.commands, app.messages, "macos")).flatMap((i) => ("id" in i && i.id ? [i.id] : []));
     expect(ids.length).toBe(new Set(ids).size);
-    expect(new Set(ids)).toEqual(new Set(listed));
+    // The publish status line shows only with a live site (D-422), which this desktop hasn't got.
+    expect(new Set(ids)).toEqual(new Set(listed.filter((id) => id !== "note.publishStatus")));
   });
 
   it("has every toolbar and ⋯ action, and every app-wide and editor key, of the desktop", async () => {

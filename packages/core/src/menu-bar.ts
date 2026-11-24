@@ -10,6 +10,7 @@ import { BUILT_IN_THEMES, CONTENT_FONTS } from "./themes.ts";
 import { shortcutFor, type CommandRegistry, type Platform } from "./commands.ts";
 import type { MessageCatalog } from "./messages.ts";
 import type { Store } from "./store.ts";
+import { PUBLISH_STATUS_COMMAND, PUBLISH_STATUS_TITLE } from "./publish-status.ts";
 
 /** System items macOS draws and runs itself. */
 export const MENU_ROLES = [
@@ -46,7 +47,7 @@ export const MENU_BAR: readonly MenuBarMenu[] = [
   },
   {
     id: "file", label: "menu.file",
-    items: ["note.new", "note.newIn", "note.open", "projects.open", "spotlight.quickOpen", "note.openInNewWindow", "-", "note.save", "sync.now", "-", "note.share", "note.publish", "note.unpublish", "note.copyPublicLink", "files.makePublic", "files.makePrivate", "-", "notes.import", "files.import", "-", "note.print", "print.pageNumbers", "-", { role: "close" }],
+    items: ["note.new", "note.newIn", "note.open", "projects.open", "spotlight.quickOpen", "note.openInNewWindow", "-", "note.save", "sync.now", "-", "note.share", "note.publishStatus", "note.publish", "note.unpublish", "note.copyPublicLink", "files.makePublic", "files.makePrivate", "-", "notes.import", "files.import", "-", "note.print", "print.pageNumbers", "-", { role: "close" }],
   },
   {
     id: "edit", label: "menu.edit",
@@ -151,6 +152,7 @@ export function menuBarModel(commands: CommandRegistry<AppState>, catalog: Messa
     if (!commands.has(id)) return undefined;
     const d = commands.describe(id);
     if (id === "note.share" && d.disabledReason === "share.item.unavailable") return undefined;
+    if (id === PUBLISH_STATUS_COMMAND && d.title === PUBLISH_STATUS_TITLE) return undefined;
     const chord = shortcutFor(commands.shortcut(id), platform);
     return {
       kind: "command", id, label: catalog.format(d.title), enabled: d.enabled,

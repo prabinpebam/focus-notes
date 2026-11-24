@@ -20,6 +20,7 @@ import {
 } from "./files.ts";
 import { copyPublicLink, publicLinkReason } from "./public-link-app.ts";
 import { shareEntryAvailable } from "./share-manage.ts";
+import { publishPathOf, publishStatus } from "./publish-status.ts";
 import {
   applyChanges, buildTree, dirOf, findNode, isWithin, joinPath, markPublished, planCreateFolder, planCreateNote, planDelete, planMove, planRename, planRenameFolder, planVisibility, retitle, rootOf, stemOf,
   visibilityOf, walk, type RefusalReason, type WorkspaceTree,
@@ -1013,6 +1014,11 @@ export function registerFiles(ctx: Ctx) {
   // A public note held out of Git says so (D-158): not backed up yet, or kept on this computer.
   const publicDescription = (s: AppState, path: string) =>
     catalog.format(s.ui.held.held.waiting.includes(path) ? "held.pill.waiting" : s.ui.held.held.local.includes(path) ? "held.pill.local" : "files.public");
+  /** A note's mark on the paired site (D-422): live or publishing…; nothing while it isn't published, which would be noise. */
+  const siteMark = (s: AppState, path: string) => {
+    const status = publishStatus(publishPathOf(s.workspace.tree, path), s.ui.share.publication);
+    return status === "live" || status === "publishing" ? catalog.format(`files.publish.${status}`) : "";
+  };
   const visibilityTargets = (s: AppState): string[] => {
     const f = s.ui.files;
     const t = s.workspace.tree;
@@ -1591,7 +1597,7 @@ export function registerFiles(ctx: Ctx) {
     },
     setters: { filter: "files.setFilter", editValue: "files.setEditValue" },
     // The tree, the open note, and whether the workspace can be written (PRF-11). Cheap while closed.
-    reads: ["ui.files", "workspace", "note.path", "ui.held", "account.login", "commits", "tasks"],
+    reads: ["ui.files", "workspace", "note.path", "ui.held", "account.login", "commits", "tasks", "ui.share.publication"],
     shows: (s) => (s.ui.files.open ? [{ kind: "tree" }] : []),
     select: (s) => {
       const f = s.ui.files;
@@ -1627,7 +1633,7 @@ export function registerFiles(ctx: Ctx) {
         id: r.id, kind: r.kind === "root" ? "section" : r.kind, level: r.level,
         label: r.kind === "root" ? rootLabel(r.rootId) : r.label,
         description: r.readOnly ? catalog.format("files.readOnly") : r.kind === "note" && unsaved.has(r.path) ? catalog.format("files.unsaved")
-          : r.rootId === "public" && r.kind === "note" ? publicDescription(s, r.path) : "",
+          : r.rootId === "public" && r.kind === "note" ? publicDescription(s, r.path) : r.kind === "note" ? siteMark(s, r.path) : "",
         detail: r.kind === "note" && stemOf(r.name) !== r.label ? r.name : "",
         title: r.kind === "note" ? r.path : "", parent: r.parent ?? "",
         expanded: r.expanded, hasChildren: r.hasChildren, selected: selected.has(r.id), current: r.path === s.note.path && r.kind === "note",

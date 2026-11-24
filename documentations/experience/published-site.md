@@ -160,6 +160,8 @@ Proposed for today's workspace (D-349, SHR-25, SHR-26), so publishing works befo
 | Site with nothing published | The site's empty home (designed in slice 1) |
 | A page that was unpublished | The site's missing page with a link home (designed in slice 1) |
 
+**As built: publish status (D-422).** With a live paired site, a published note's Files row ends in a muted *live*, and *publishing…* while its Publish runs; the word is part of the row's name ("Trip to the coast, live"), with no border or fill. A note that isn't published has no mark. The open note's status line sits in ⋯ → Note and the File menu, above Publish…: *Live on your site*, *Publishing…* or *Not published yet*, as an unavailable item that only reports. Without a live site the line is absent. All of it derives from the site's published list and the Publish in flight (`ui.share.publication`); nothing is added to the writing window.
+
 Template workspaces deploy a pinned web bundle, so site theme and home changes reach them only after a web release and the Update app pull request; this repository's own site builds from source and gets them when `main` lands.
 
 ## Publishing design review (5 November)

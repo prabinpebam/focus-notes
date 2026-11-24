@@ -155,3 +155,56 @@ test("G3.4: Unpublish from the ⋯ menu removes the note and its photo from the 
     await fake.close();
   }
 });
+
+test("D-422: the Files row shows publishing… then live, ⋯ shows the status line, and after Unpublish no mark remains", async () => {
+  const { dirs, fake, env } = await pairedProject();
+  let l: Launched | undefined;
+  try {
+    fake.git.setStale(true);
+    l = await launch(dirs, env);
+    const page = l.page;
+    const more = async () => {
+      const button = page.getByRole("toolbar", { name: "Toolbar", exact: true }).getByRole("button", { name: "More", exact: true });
+      if (!(await button.isVisible())) await page.keyboard.press(process.platform === "darwin" ? "Meta+." : "Control+.");
+      await button.click();
+    };
+    const status = async (words: string) => {
+      await more();
+      await expect(page.getByRole("menuitem", { name: words, exact: true })).toBeDisabled();
+      await page.keyboard.press("Escape");
+    };
+    const trip = page.getByRole("treeitem", { name: /^Trip to the coast\b/ });
+    const showTrip = async () => {
+      if (!(await trip.isVisible())) await page.keyboard.press(process.platform === "darwin" ? "Meta+Shift+E" : "Control+Shift+E");
+      if (!(await trip.isVisible())) { await page.getByRole("treeitem", { name: "journeys", exact: true }).click(); await page.keyboard.press("ArrowRight"); }
+      await expect(trip).toBeVisible();
+    };
+    await expect(page.getByRole("textbox", { name: "Note", exact: true })).toContainText("harbour wall");
+    await status("Not published yet");
+    await showTrip();
+    await expect(trip).not.toContainText(/live|publishing/);
+    const dialog = await openPublish(l);
+    await dialog.getByRole("button", { name: "Publish", exact: true }).click();
+    await expect.poll(() => fake.git.pushes.length, { timeout: 30_000 }).toBe(1);
+    await page.keyboard.press("Escape");
+    await expect(dialog).toHaveCount(0);
+    // Pushed, Pages not serving it yet: Publishing…, never Live early.
+    await showTrip();
+    await expect(trip).toHaveAccessibleName(/^Trip to the coast, publishing…/);
+    await status("Publishing…");
+    fake.git.setStale(false);
+    await expect(page.getByRole("status").filter({ hasText: "Published “Trip to the coast”" })).toHaveCount(1, { timeout: 30_000 });
+    await showTrip();
+    await expect(trip).toHaveAccessibleName(/^Trip to the coast, live/);
+    await status("Live on your site");
+    await more();
+    await page.getByRole("menuitem", { name: "Unpublish", exact: true }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Removed “Trip to the coast” from your site." })).toHaveCount(1, { timeout: 30_000 });
+    await showTrip();
+    await expect(trip).not.toContainText(/live|publishing/);
+    await status("Not published yet");
+  } finally {
+    await closeApp(l);
+    await fake.close();
+  }
+});
