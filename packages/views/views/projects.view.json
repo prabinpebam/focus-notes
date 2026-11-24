@@ -101,6 +101,28 @@
            },
            "skeleton": true
           }
+         },         {
+          "type": "ItemCard",
+          "when": {
+           "get": "vm.projects.githubWaiting"
+          },
+          "props": {
+           "title": {
+            "t": "project.open.loading"
+           },
+           "skeleton": true
+          }
+         },         {
+          "type": "ItemCard",
+          "when": {
+           "get": "vm.projects.githubWaiting"
+          },
+          "props": {
+           "title": {
+            "t": "project.open.loading"
+           },
+           "skeleton": true
+          }
          },
          {
           "each": {
@@ -109,7 +131,7 @@
           "as": "repo",
           "key": "repo.id",
           "empty": {
-           "type": "Text",
+           "type": "EmptyState",
            "when": {
             "expr": {
              "and": [
@@ -132,10 +154,22 @@
             }
            },
            "props": {
-            "value": {
-             "t": "project.github.empty"
+            "title": {
+             "t": "project.github.noProjects"
             },
-            "tone": "muted"
+            "detail": {
+             "t": "project.github.noProjectsDetail"
+            },
+            "actionLabel": {
+             "t": "project.github.newProject"
+            },
+            "icon": "github",
+            "size": "component"
+           },
+           "on": {
+            "action": {
+             "run": "projects.new"
+            }
            }
           },
           "render": {

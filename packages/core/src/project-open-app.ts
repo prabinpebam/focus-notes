@@ -304,7 +304,7 @@ export function registerProjectOpen(ctx: {
     run: async () => {
       github.open = true; github.loading = true; github.error = ""; github.retry = undefined; github.pending = ""; changed();
       const load = async () => {
-        try { github.repos = await bridge.projects!.githubRepos!(); github.error = ""; github.retry = undefined; }
+        try { github.repos = await ctx.tracker.run("project.githubRepos", "project.github.checking", () => bridge.projects!.githubRepos!(), undefined, "fn:project.githubRepos"); github.error = ""; github.retry = undefined; }
         catch (e) {
           const signedOut = String(e).includes("signedOut");
           github.error = ctx.catalog.format(signedOut ? "project.github.signedOut" : "project.github.failed");
