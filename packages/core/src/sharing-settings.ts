@@ -77,7 +77,8 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
     const generation = ++setupGeneration, project = projectKey();
     const current = () => generation === setupGeneration && project === projectKey();
     setupPending = true;
-    set({ busy: true, problem: "", setupStep: "check" });
+    // Confirmed: the explanation folds away so the progress and any problem fit beside Retry without scrolling.
+    set({ busy: true, problem: "", setupStep: "check", more: false });
     const unsubscribe = setup.onStep?.(step => { if (current()) set({ setupStep: step }); });
     try {
       await tracker.run("sharing.setup.enable", "share.item.preparing", async () => {
@@ -185,7 +186,7 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
       project: str, site: str, on: bool, off: bool, offDetail: str, localReview: bool, busy: bool, status: str, problem: str, copyLabel: str, extendLabel: str, templateBadge: str,
       empty: bool, waiting: bool, failed: bool, retrying: bool, emptyTitle: str, emptyDetail: str, emptyAction: str, loadProblem: str,
       filter: str, query: str, dialog: str, confirmOpen: bool, confirmTitle: str, confirmText: str, confirmLabel: str,
-      firstOpen: bool, more: bool, repo: str, canSetup: bool, setupSite: str, setupProblem: bool, setupStatus: str, firstAcceptLabel: str,
+      firstOpen: bool, more: bool, moreIcon: str, repo: str, canSetup: bool, setupSite: str, setupProblem: bool, setupStatus: str, firstAcceptLabel: str,
       filters: { type: "array", items: { type: "object", properties: { id: str, label: str } } },
       rows: { type: "array", items: { type: "object", properties: {
         id: str, item: str, detail: str, badge: str, icon: str, live: bool, hasTemplateProblem: bool, copyMenu: menuSchema, extendMenu: menuSchema,
@@ -239,7 +240,8 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
         setupSite: m.setupPreview?.site ?? (listing?.localReview ? listing.site ?? "" : ""),
         setupProblem: Boolean(m.problem),
         firstAcceptLabel: catalog.format(m.problem ? "sharing.invite.retry" : "share.first.turnOn"),
-        setupStatus: m.busy ? catalog.format(m.setupStep === "push" ? "setup.step.push" : m.setupStep === "pages" ? "setup.step.pages" : "share.item.preparing") : "",
+        setupStatus: m.busy ? catalog.format(`sharing.setup.busy.${["push", "deploy", "pages"].includes(m.setupStep ?? "") ? m.setupStep : "prepare"}`) : "",
+        moreIcon: m.more ? "chevronDown" : "chevronRight",
         confirmTitle: kind === "off" ? catalog.format("sharing.off.title", { project: typeof projectName === "string" ? projectName : "" }) : catalog.format(`share.${kind}.title`), confirmText: catalog.format(kind === "off" ? "share.off.history" : `share.${kind}.text`),
         confirmLabel: catalog.format(`share.${kind}.confirm`),
         filters: filters.map(id => ({ id, label: catalog.format(`sharing.filter.${id}`) })), rows,

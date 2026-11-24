@@ -94,7 +94,7 @@ export interface AccessBridge {
 }
 
 export type SharingSetupPhase = "reserved" | "creating" | "created" | "ready" | "removing" | "off";
-export type SharingSetupStep = "check" | "create" | "prepare" | "push" | "pages" | "preserve" | "remove" | "ready";
+export type SharingSetupStep = "check" | "create" | "prepare" | "push" | "deploy" | "pages" | "preserve" | "remove" | "ready";
 export interface SharingSetupPreview {
   project: string; owner: string; name: string; site: string; phase: SharingSetupPhase | "unconfigured";
 }

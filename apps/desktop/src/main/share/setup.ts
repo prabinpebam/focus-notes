@@ -15,6 +15,7 @@ export interface SitePairing {
   site: string;
 }
 const fail = (code: string) => new Error(`sharing:${code}`);
+const DEFAULT_SITE = "notes-site";
 const phases: SitePairing["phase"][] = ["reserved", "creating", "created", "ready", "removing", "off"];
 function setupProblem(error: unknown): Error {
   if (error instanceof Error && /^sharing:[a-z]+$/.test(error.message)) return error;
@@ -59,6 +60,20 @@ export function sitePairingStore(file: string, atomicWrite: (file: string, text:
   };
 }
 
+/**
+ * Ours to adopt: any Focus Notes site marker or our site manifest, or, under the default name only, an empty
+ * repository (no files beyond GitHub's starter README). An empty repository with any other name stays someone else's.
+ */
+async function adoptable(api: GitHubApi, owner: string, name: string, repo: { description?: string; defaultBranch: string }): Promise<boolean> {
+  if (/^Focus Notes site [a-f0-9-]{36}$/.test(repo.description ?? "")) return true;
+  if (await api.hasFile(owner, name, "site/focus-notes.json")) return true;
+  if (name.toLowerCase() !== DEFAULT_SITE) return false;
+  const head = await api.head(owner, name, repo.defaultBranch);
+  if (!head) return true;
+  const listing = await api.tree(owner, name, await api.commitTree(owner, name, head));
+  return !listing.truncated && listing.entries.every(entry => entry.path === "README.md");
+}
+
 export function sharingSetup(deps: {
   api(): Promise<GitHubApi | undefined>;
   project(): Promise<string | undefined>;
@@ -101,7 +116,7 @@ export function sharingSetup(deps: {
     async describe(): Promise<SharingSetupPreview> {
       try {
         const { project, owner, pairing } = await context();
-        const name = pairing?.name ?? "notes-site";
+        const name = pairing?.name ?? DEFAULT_SITE;
         return { project, owner, name, site: pairing?.site ?? siteAddress(owner, name), phase: pairing?.phase ?? "unconfigured" };
       } catch (error) { throw setupProblem(error); }
     },
@@ -124,7 +139,9 @@ export function sharingSetup(deps: {
         const marker = `Focus Notes site ${pairing.intent}`;
         let repo = await ctx.api.findRepo(pairing.owner, pairing.name);
         if (repo && (repo.private || repo.template || !repo.canAdmin || !repo.canPush)) throw fail("refused");
-        if (repo && (pairing.phase === "reserved" || pairing.phase === "creating") && repo.description !== marker) throw fail("taken");
+        // A site this account already made with Focus Notes (another pairing, or a lost record), or an empty
+        // repository, is adopted; anything else under that name stays someone else's.
+        if (repo && (pairing.phase === "reserved" || pairing.phase === "creating") && repo.description !== marker && !await adoptable(ctx.api, pairing.owner, pairing.name, repo)) throw fail("taken");
         if (!repo) {
           if (pairing.phase !== "reserved" && pairing.phase !== "creating") throw fail("missing");
           pairing = { ...pairing, phase: "creating" };

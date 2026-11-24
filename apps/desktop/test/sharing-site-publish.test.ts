@@ -31,6 +31,14 @@ async function fixture() {
 }
 const writes = (github: FakeGitHub, repo: string) => github.calls.filter(c => c.method !== "GET" && c.path.startsWith(`/repos/${repo}/`));
 const created = (github: FakeGitHub) => github.calls.filter(c => c.method === "POST" && c.path === "/user/repos");
+/** The production publisher with short Pages polling, so a failed run is seen within milliseconds. */
+const fastRuntime = (t: Awaited<ReturnType<typeof fixture>>, timeoutMs = 2_000) => {
+  const runtime: ReturnType<typeof sharingRuntime> = sharingRuntime({ ...t.deps, publisher: pagesArtifactPublisher({
+    api: t.deps.api, get: t.git.get, timeoutMs, delayMs: 5, pushed: () => t.steps.push("deploy"),
+    target: async () => ({ ...(await runtime.pairing())! }),
+  }) });
+  return runtime;
+};
 
 it("PRJ-10 G2.1/G2.3: production setup (no candidate flag or publisher) creates one paired public site and deploys its sealed build", async () => {
   const t = await fixture();
@@ -84,6 +92,48 @@ it("G2.3: a push Pages doesn't serve yet never stores readiness; Retry deploys a
     t.git.setStale(false);
     await expect(runtime.enable("notes-site")).resolves.toMatchObject({ phase: "ready" });
     expect(created(t.github)).toHaveLength(1);
+  } finally { await rm(t.directory, { recursive: true, force: true }); }
+});
+
+it("24 Nov: a failed first Pages run is re-run once and setup finishes; it reports the deploy wait after the push", async () => {
+  const t = await fixture();
+  try {
+    t.git.failPagesRuns(1);
+    const runtime = fastRuntime(t);
+    await expect(runtime.enable("notes-site")).resolves.toMatchObject({ phase: "ready" });
+    expect(t.github.calls.filter(c => /rerun-failed-jobs$/.test(c.path))).toHaveLength(1);
+    expect(t.steps.indexOf("deploy")).toBeGreaterThan(t.steps.indexOf("push"));
+  } finally { await rm(t.directory, { recursive: true, force: true }); }
+});
+
+it("24 Nov: a Pages run that fails again ends the wait at once with sharing:pages; Retry deploys a fresh build to the same site", async () => {
+  const t = await fixture();
+  try {
+    t.git.failPagesRuns(2);
+    const runtime = fastRuntime(t, 60_000);
+    const started = Date.now();
+    await expect(runtime.enable("notes-site")).rejects.toThrow("sharing:pages");
+    expect(Date.now() - started).toBeLessThan(10_000);
+    expect((await runtime.pairing())?.phase).toBe("created");
+    await expect(runtime.enable("notes-site")).resolves.toMatchObject({ phase: "ready" });
+    expect(created(t.github)).toHaveLength(1);
+  } finally { await rm(t.directory, { recursive: true, force: true }); }
+});
+
+it("24 Nov: an existing notes-site made by Focus Notes, or an empty one, is adopted; someone else's stays taken", async () => {
+  for (const existing of [{ description: "Focus Notes site d14492eb-2f57-4ffd-a24a-bcd76f8dcb86", files: ["README.md"] }, { files: ["README.md"] }]) {
+    const t = await fixture();
+    try {
+      t.github.add({ owner: "ada", name: "notes-site", files: existing.files });
+      if (existing.description) t.github.repo("notes-site")!.description = existing.description;
+      await expect(fastRuntime(t).enable("notes-site")).resolves.toMatchObject({ phase: "ready" });
+      expect(created(t.github)).toHaveLength(0);
+    } finally { await rm(t.directory, { recursive: true, force: true }); }
+  }
+  const t = await fixture();
+  try {
+    t.github.add({ owner: "ada", name: "notes-site", files: ["README.md", "index.html"] });
+    await expect(fastRuntime(t).enable("notes-site")).rejects.toThrow("sharing:taken");
   } finally { await rm(t.directory, { recursive: true, force: true }); }
 });
 

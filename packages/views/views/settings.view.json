@@ -5663,6 +5663,7 @@
                       "get": "vm.sharingSettings.firstAcceptLabel"
                     },
                     "busy": { "get": "vm.sharingSettings.busy" },
+                    "busyLabel": { "get": "vm.sharingSettings.setupStatus" },
                     "variant": "primary"
                   },
                   "on": {
@@ -5810,7 +5811,9 @@
                         "t": "share.first.more"
                       },
                       "variant": "subtle",
-                      "size": "s",
+                      "icon": {
+                        "get": "vm.sharingSettings.moreIcon"
+                      },
                       "bleed": true,
                       "expanded": {
                         "get": "vm.sharingSettings.more"
@@ -5836,11 +5839,6 @@
                   "tone": "muted",
                   "role": "secondary"
                 }
-              },
-              {
-                "type": "Text",
-                "when": { "get": "vm.sharingSettings.busy" },
-                "props": { "value": { "get": "vm.sharingSettings.setupStatus" }, "tone": "muted", "role": "secondary" }
               },
               {
                 "type": "Text",

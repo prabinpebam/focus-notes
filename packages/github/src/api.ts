@@ -78,6 +78,14 @@ export interface DeployKey {
   readOnly: boolean;
 }
 
+/** One GitHub Actions workflow run: `status` is queued, in_progress or completed; `conclusion` is set once completed. */
+export interface WorkflowRun {
+  id: number;
+  status: string;
+  conclusion: string | null;
+  attempt: number;
+}
+
 /** A repository's GitHub Pages site. `workflow` means GitHub Actions is the source. */
 export interface PagesSite {
   buildType: "workflow" | "legacy";
@@ -322,6 +330,18 @@ export class GitHubApi {
   /** Turns on Pages with GitHub Actions as the source, or switches an existing site to it. */
   async usePagesWorkflow(owner: string, repo: string, exists: boolean): Promise<void> {
     await this.request(exists ? "PUT" : "POST", `/repos/${owner}/${repo}/pages`, { build_type: "workflow" });
+  }
+
+  /** The Actions runs for one commit, newest first: how a Pages deploy of that commit is going. */
+  async workflowRuns(owner: string, repo: string, headSha: string): Promise<WorkflowRun[]> {
+    const r = await this.request<{ workflow_runs?: { id: number; status: string; conclusion: string | null; run_attempt?: number }[] }>(
+      "GET", `/repos/${owner}/${repo}/actions/runs?head_sha=${encodeURIComponent(headSha)}&per_page=20`);
+    return (r.workflow_runs ?? []).map(x => ({ id: x.id, status: x.status, conclusion: x.conclusion, attempt: x.run_attempt ?? 1 }));
+  }
+
+  /** Runs a finished run's failed jobs again (a new attempt of the same run). */
+  async rerunFailedJobs(owner: string, repo: string, id: number): Promise<void> {
+    await this.request("POST", `/repos/${owner}/${repo}/actions/runs/${id}/rerun-failed-jobs`);
   }
 
   /** The commit a branch points at, or undefined for an empty repository. */

@@ -89,11 +89,21 @@ export function DialogPanel({ label, open: requested, size = "l", header, fixed,
       tall = overlay.clientHeight;
       anchor();
     });
+    // Grown past the room below where it opened (a status, an error, More details): centred again, so the
+    // title keeps its inset instead of scrolling under the top edge. Once it's at the top, the body scrolls.
+    const grown = new ResizeObserver(() => {
+      const body = bodyRef.current;
+      if (overlay.dataset.anchored === undefined || !body || body.scrollHeight <= body.clientHeight + 1) return;
+      if (modal.offsetTop > parseFloat(getComputedStyle(overlay).paddingBlockEnd) + 0.5) anchor();
+    });
     anchor();
     watch.observe(overlay);
+    grown.observe(modal);
+    if (bodyRef.current?.firstElementChild) grown.observe(bodyRef.current.firstElementChild);
     return () => {
       cancelAnimationFrame(frame);
       watch.disconnect();
+      grown.disconnect();
       delete overlay.dataset.anchored;
       overlay.style.removeProperty(name);
     };
