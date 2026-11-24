@@ -40,7 +40,7 @@ test("AGT-06: a deep link opens its note at its heading; a search link opens Spo
     await expect(editor).toBeVisible();
     await expect(editor).not.toContainText("First line.");
     // A search link that looks like a command only searches notes: Spotlight's list holds no command.
-    if (hostile.includes("search")) await expect(l.page.getByRole("option", { name: /Make public/ })).toHaveCount(0);
+    if (hostile.includes("search")) await expect(l.page.getByRole("option", { name: /^Publish/ })).toHaveCount(0);
     else await expect(l.page.getByRole("dialog")).toHaveCount(0);
     await quit(l);
   }

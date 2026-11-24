@@ -7,6 +7,7 @@ import type { TaskTracker } from "./tasks.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
 import { sharingAvailable, type AccessBridge } from "./share-manage.ts";
 import { findNode, joinPath, rootOf, stemOf, type TreeNode } from "./workspace.ts";
+import { publicLinkOf } from "./public-link-app.ts";
 import { audienceState, expiryFrom, expiryUntil, itemInviteText, passcodeProblem, type Audience, type ExpiryChoice } from "@focus-notes/seal/access";
 
 interface ReviewRow {
@@ -62,6 +63,11 @@ export interface ItemShareState {
   step: number;
   totalSteps: number;
   waitingId: string;
+  /** A published (public) note: Share… offers its web address only, no encryption (D-424). */
+  published: boolean;
+  publicUrl: string;
+  /** Why sharing can't start here yet (D-424): outside a project, a project not linked to GitHub, or the older public-and-private layout. */
+  setup: "" | "notInProject" | "unlinked" | "legacy";
 }
 
 export const ITEM_SHARE_CLOSED: ItemShareState = {
@@ -70,6 +76,7 @@ export const ITEM_SHARE_CLOSED: ItemShareState = {
   reviewOpen: false, expanded: [], counting: false, preparing: false, loadFailed: false, notes: 0, folders: 0, contents: [], problem: "",
   id: "", busy: false, ready: false, generated: "", wordsId: "", wordsBusy: false, status: "", information: "", accessCode: "", templateInvalid: false, reviewFocus: "",
   historyOpen: true, confirmId: "", signedOut: false, resumeAction: "", startedAt: 0, step: 0, totalSteps: 4, waitingId: "",
+  published: false, publicUrl: "", setup: "",
 };
 
 export function defaultItemShareTemplate(catalog: MessageCatalog): string {
@@ -77,7 +84,7 @@ export function defaultItemShareTemplate(catalog: MessageCatalog): string {
   return ["title", "link", "code", "until"].map((key) => catalog.format(`share.item.information.${key}`, raw)).join("\n");
 }
 
-export function registerItemShare({ store, commands, viewModels, catalog, tracker, access, platform, flush }: {
+export function registerItemShare({ store, commands, viewModels, catalog, tracker, access, platform, flush, copyText, toast, publishedUrl }: {
   store: Store<AppState>;
   commands: CommandRegistry<AppState>;
   viewModels: ViewModelRegistry<AppState>;
@@ -86,6 +93,9 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
   access: AccessBridge | undefined;
   platform: string;
   flush: () => Promise<boolean>;
+  copyText?: (text: string) => Promise<void>;
+  toast: (message: string) => unknown;
+  publishedUrl?: (path: string) => string | undefined;
 }) {
   const state = () => store.state.ui.share.item;
   const set = (patch: Partial<ItemShareState>) => store.update((s) => ({
@@ -123,6 +133,12 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
       // Sharing off in a project that can turn it on: the first-share confirmation, then this item's dialog (D-418).
       const firstShare = listing.localReview ? store.state.ui.share.settings.off || !listing.site : !sharingAvailable(store.state) && Boolean(listing.available && listing.setupAvailable);
       if (firstShare) await commands.run("sharing.firstOpen", { resume: true });
+      // Share… shows for every note (D-424): where sharing can't be turned on here, the dialog says what to do.
+      // A project with public and private sections is the older layout, where sharing can't be turned on from here.
+      else if (!sharingAvailable(store.state) && !listing.localReview) {
+        const legacy = store.state.workspace.tree.roots.some((r) => r.id === "public");
+        set({ setup: !listing.available ? "notInProject" : legacy ? "legacy" : "unlinked" });
+      }
     } catch (error) {
       if (current === generation) {
         console.error("Sharing preparation failed", opErrorCode(error));
@@ -135,6 +151,25 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
       if (current === generation) set({ preparing: false });
     }
   };
+  reg("share.item.copyPublished", async () => {
+    const d = state();
+    if (!d.open || !d.published || !d.publicUrl || !copyText) return;
+    try {
+      await copyText(d.publicUrl);
+      set({ open: false });
+      toast(catalog.format("toast.publicLinkCopied", { note: d.name }));
+    } catch {
+      set({ problem: catalog.format("spotlight.copyFailed") });
+    }
+  });
+  reg("share.item.fixSetup", async () => {
+    const setup = state().setup;
+    set({ open: false });
+    if (setup === "unlinked") {
+      await commands.run("settings.open");
+      await commands.run("settings.setSection", { value: "project" });
+    }
+  });
   reg("share.item.reload", async () => {
     if (state().open && !state().busy && !state().preparing) await loadListing(generation);
   });
@@ -165,10 +200,15 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
     const pending = state().waitingId;
     if (pending && access?.cancelReady) await access.cancelReady(pending);
     if (current !== generation) return;
+    // A published note is already a web page: sharing it is sending its address (D-424).
+    // In public notes, or a private note on the live site.
+    const siteUrl = node.kind === "note" ? publishedUrl?.(target) : undefined;
+    const published = node.kind === "note" && (rootOf(tree, target)?.id === "public" || Boolean(siteUrl));
     set({
       ...ITEM_SHARE_CLOSED, open: true, path: target,
       name: node.kind === "note" ? node.title || stemOf(node.name) : node.name,
       folder: node.kind === "folder", counting: node.kind === "folder",
+      published, publicUrl: published ? siteUrl ?? publicLinkOf(tree, store.state.workspace.site, target) ?? "" : "",
     });
     store.update((s) => ({
       ...s, ui: { ...s.ui, toolbarOpen: false,
@@ -176,6 +216,7 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
         share: { ...s.ui.share, note: { open: false } },
       },
     }));
+    if (published) return;
     await loadListing(current);
     if (node.kind !== "folder" || current !== generation) return;
     try {
@@ -408,7 +449,7 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
       open: BOOL, title: STR, name: STR, folder: BOOL, icon: STR, detail: STR, badge: STR,
       id: STR, busy: BOOL, ready: BOOL, generated: STR, wordsId: STR, wordsBusy: BOOL, status: STR, information: STR, controlsLocked: BOOL,
       primaryLabel: STR, macos: BOOL, reviewFocus: STR,
-      dialogOpen: BOOL, historyOpen: BOOL, hasHistory: BOOL, historyCount: NUM, confirmOpen: BOOL, signedOut: BOOL, progress: STR,
+      dialogOpen: BOOL, publishedOpen: BOOL, publicUrl: STR, copyDisabled: BOOL, copyReason: STR, setupVisible: BOOL, setupMessage: STR, setupAction: STR, setupFixable: BOOL, historyOpen: BOOL, hasHistory: BOOL, historyCount: NUM, confirmOpen: BOOL, signedOut: BOOL, progress: STR,
       newerCount: NUM, hasNewer: BOOL,
       restoreDisabled: BOOL, restoreReason: STR,
       history: { type: "array", items: { type: "object", properties: { id: STR, methods: STR, detail: STR, badge: STR, link: BOOL, active: BOOL } } },
@@ -430,7 +471,7 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
       const d = s.ui.share.item;
       const root = rootOf(s.workspace.tree, d.path);
       const deleted = d.open && (!root || !findNode(s.workspace.tree, d.path));
-      const blockedReason = deleted ? catalog.format("share.state.deleted") : root?.id !== "private" ? catalog.format("share.item.privateOnly")
+      const blockedReason = deleted ? catalog.format("share.state.deleted") : d.setup ? catalog.format(`share.item.setup.${d.setup}`) : root?.id !== "private" ? catalog.format("share.item.privateOnly")
         : !d.link && !d.passcode ? catalog.format("share.dialog.keepOne") : d.counting ? catalog.format("share.dialog.counting") : "";
       const expanded = new Set(d.expanded);
       const history = (s.ui.share.listing?.grants ?? []).filter((g) => matchesItem(s, g)).map((g) => {
@@ -464,7 +505,7 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
       }) : [];
       return {
         ...d, lines,
-        dialogOpen: d.open && !d.confirmId && !s.ui.share.template.open, confirmOpen: Boolean(d.confirmId),
+        dialogOpen: d.open && !d.published && !d.confirmId && !s.ui.share.template.open, confirmOpen: Boolean(d.confirmId),
         history, hasHistory: history.length > 0, historyCount: history.length,
         newerCount, hasNewer: newerCount > 0,
         restoreDisabled: !commands.describe("files.showDeleted").enabled, restoreReason: catalog.format("share.item.restoreUnavailable"),
@@ -483,6 +524,10 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
         detail: deleted ? catalog.format("share.item.deleted") : d.folder
           ? catalog.format("share.item.counts", { notes: d.notes, folders: d.folders }) : catalog.format("share.item.note"),
         hasProblem: Boolean(d.problem),
+        publishedOpen: d.open && d.published,
+        copyDisabled: !d.publicUrl || !copyText, copyReason: catalog.format(d.publicUrl ? "spotlight.reason.noClipboard" : "command.note.copyPublicLink.noSite"),
+        setupVisible: Boolean(d.setup), setupMessage: d.setup ? catalog.format(`share.item.setup.${d.setup}`) : "",
+        setupAction: catalog.format("share.item.setup.action"), setupFixable: d.setup === "unlinked",
         laterDetail: catalog.format("share.dialog.later.detail", { on: d.later ? "yes" : "no" }),
         noMethods: !d.link && !d.passcode,
         blockedReason,

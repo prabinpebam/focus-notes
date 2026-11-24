@@ -516,11 +516,12 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   });
   registerFeedback({ store, bridge, catalog, commands, viewModels, toast, announce, tracker, clock });
   registerShareManage({ store, access: bridge.access, catalog, commands, viewModels, tracker });
-  registerItemShare({ store, catalog, commands, viewModels, tracker, access: bridge.access, platform: bridge.platform, flush });
+  let sitePublishedUrl: ((path: string) => string | undefined) | undefined;
+  registerItemShare({ store, catalog, commands, viewModels, tracker, access: bridge.access, platform: bridge.platform, flush, toast, publishedUrl: (path) => sitePublishedUrl?.(path), ...(bridge.copyText ? { copyText: (text: string) => bridge.copyText!(text) } : {}) });
   registerSharingSettings({ store, catalog, commands, viewModels, tracker, access: bridge.access });
   registerSharingPeople({ store, catalog, commands, viewModels, tracker, access: bridge.access });
-  registerSharingPreview({ store, catalog, commands, viewModels, tracker, appState: () => appState, persistAppState, readNote: path => bridge.readNote(path), toast,
-    ...(bridge.publishing ? { publishing: bridge.publishing } : {}), ...(bridge.copyText ? { copyText: (text: string) => bridge.copyText!(text) } : {}) });
+  sitePublishedUrl = registerSharingPreview({ store, catalog, commands, viewModels, tracker, appState: () => appState, persistAppState, readNote: path => bridge.readNote(path), toast,
+    ...(bridge.publishing ? { publishing: bridge.publishing } : {}), ...(bridge.copyText ? { copyText: (text: string) => bridge.copyText!(text) } : {}) }).publishedUrl;
   const workspace = registerWorkspaceFeatures({
     store, commands, viewModels, catalog, bridge, tracker, toast, setNote, persistAppState, afterWrites, ...(options.workspaceFormat ? { format: options.workspaceFormat } : {}),
     // Unsaved edits and a file changed outside: both versions go to the resolver (D-92, FIL-12).
@@ -1448,7 +1449,9 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   });
   const menuBar = registerMenuBar({ store, commands, catalog, platform: bridge.platform, ...(bridge.nativeWindow ? { bridge: bridge.nativeWindow } : {}) });
   // The actions that can be pinned (UI-08, D-170): the six defaults, then ⋯'s own commands.
-  const pinnable = () => [...new Set([...DEFAULT_TOOLBAR, ...[...MORE_MENU, ...extraMenu].flatMap((g) => g.items.filter((e): e is string => typeof e === "string"))])].filter((id) => commands.has(id) && id !== PUBLISH_STATUS_COMMAND && (id !== "note.share" || shareEntryAvailable(store.state)));
+  // Share… is offered for every open note (D-424), and with no note where sharing is set up.
+  const shareShown = (s: AppState) => Boolean(s.note.path) || shareEntryAvailable(s);
+  const pinnable = () => [...new Set([...DEFAULT_TOOLBAR, ...[...MORE_MENU, ...extraMenu].flatMap((g) => g.items.filter((e): e is string => typeof e === "string"))])].filter((id) => commands.has(id) && id !== PUBLISH_STATUS_COMMAND && (id !== "note.share" || shareShown(store.state)));
   registerToolbarCustomize({
     store, commands, viewModels, catalog, persistAppState, announce, toast, pinnable, defaults: DEFAULT_TOOLBAR,
     describeItem,
@@ -1565,14 +1568,14 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     select: (s) => ({
       open: s.ui.toolbarOpen,
       // The six the writer pinned (UI-08, D-170); a pinned action leaves ⋯, and an unpinned default joins it.
-      items: s.toolbarPinned.filter(id => id !== "note.share" || shareEntryAvailable(s)).map(describeItem),
+      items: s.toolbarPinned.filter(id => id !== "note.share" || shareShown(s)).map(describeItem),
       // Sync appearance joins the Theme group where there's a private repository to sync through (PRV-03).
       more: [
         ...(DEFAULT_TOOLBAR.some((d) => !s.toolbarPinned.includes(d)) ? [{ id: "actions", label: "menu.actions", items: DEFAULT_TOOLBAR.filter((d) => !s.toolbarPinned.includes(d)) as MenuEntry[] }] : []),
         ...[...MORE_MENU.slice(0, -1), ...extraMenu, ...MORE_MENU.slice(-1)].map((g) => ({
           ...g,
           items: (bridge.projects?.local && g.id === "note" ? ["local.import", "note.print", "print.pageNumbers"] : g.items)
-            .filter((e) => typeof e !== "string" || (!s.toolbarPinned.includes(e) && (e !== "note.share" || shareEntryAvailable(s))
+            .filter((e) => typeof e !== "string" || (!s.toolbarPinned.includes(e) && (e !== "note.share" || shareShown(s))
               && (e !== PUBLISH_STATUS_COMMAND || commands.describe(e).title !== PUBLISH_STATUS_TITLE))),
         })),
       ].filter((g) => g.items.length).map((g) => (g.id === "theme" && s.settingsSync !== "unavailable" ? { ...g, items: [...g.items, "settings.sync"] } : g)).map((g) => ({

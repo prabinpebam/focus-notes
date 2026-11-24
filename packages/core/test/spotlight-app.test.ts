@@ -601,7 +601,7 @@ describe("SPT-03: quick actions (→ or Mod+K)", () => {
     await app.commands.run("spotlight.actions");
     expect(vm(app).actionsTitle).toBe("More actions for “Ideas”");
     expect(vm(app).items.map((i) => `${i.label}${i.disabled ? " (unavailable)" : ""}`)).toEqual([
-      "Open", "Open in new window (unavailable)", "Copy Markdown link", "Rename", "Move to…", "Make public", "Show in Files", "Delete",
+      "Open", "Open in new window (unavailable)", "Copy Markdown link", "Rename", "Move to…", "Publish", "Show in Files", "Delete",
     ]);
     // Without windows of their own (this shell has none), it says why.
     expect(vm(app).items[1]!.description).toBe("Only the desktop app opens a note in a new window");

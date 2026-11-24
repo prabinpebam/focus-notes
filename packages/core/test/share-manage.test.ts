@@ -157,7 +157,7 @@ describe("G2 read-only default site confirmation", () => {
   });
 });
 
-it("hides unconfigured Share in Files, Note, pinned toolbar and the native menu, then restores configured sharing", async () => {
+it("D-424: offers Share… for a note where sharing can't start yet, and the dialog says how to fix it", async () => {
   const t = shell();
   const configured = await t.bridge.access!.load();
   t.bridge.access!.load = async () => ({ available: true, site: SITE, vault: false, grants: [] });
@@ -166,17 +166,22 @@ it("hides unconfigured Share in Files, Note, pinned toolbar and the native menu,
   await t.run("settings.setSection", { value: "sharing" });
   await t.run("files.reveal");
   t.app.store.update(s => ({ ...s, toolbarPinned: [...s.toolbarPinned, "note.share"] }));
-  expect(t.app.commands.describe("note.share").enabled).toBe(false);
-  expect(t.app.commands.describe("files.share").enabled).toBe(false);
-  expect(t.vm("vm.files").menu.flatMap((g: { items: { id: string }[] }) => g.items).map((i: { id: string }) => i.id)).not.toContain("files.share");
-  expect(t.vm("vm.toolbar").items.map((i: { id: string }) => i.id)).not.toContain("note.share");
-  expect(t.vm("vm.toolbar").more.flatMap((g: { items: { id: string }[] }) => g.items).map((i: { id: string }) => i.id)).not.toContain("note.share");
-  expect(menuBarModel(t.app.commands, catalog, "macos").menus.find(m => m.id === "file")!.items).not.toContainEqual(expect.objectContaining({ id: "note.share" }));
+  expect(t.app.commands.describe("note.share").enabled).toBe(true);
+  expect(t.app.commands.describe("files.share").enabled).toBe(true);
+  expect(t.vm("vm.files").menu.flatMap((g: { items: { id: string }[] }) => g.items).map((i: { id: string }) => i.id)).toContain("files.share");
+  expect(t.vm("vm.toolbar").items.map((i: { id: string }) => i.id)).toContain("note.share");
+  expect(menuBarModel(t.app.commands, catalog, "macos").menus.find(m => m.id === "file")!.items).toContainEqual(expect.objectContaining({ id: "note.share", enabled: true }));
+  await t.run("note.share");
+  expect(t.vm("vm.shareItem")).toMatchObject({ dialogOpen: true, setupVisible: true, setupMessage: en["share.item.setup.legacy"], setupFixable: false, actionsDisabled: true });
+  // This shell has public and private sections, the older layout: the reason has no fix button, and closing changes nothing.
+  await t.run("share.item.fixSetup");
+  expect(t.app.store.state.ui.share.item.open).toBe(false);
   expect(t.vm("vm.sharingSettings")).toMatchObject({ off: true, localReview: false, offDetail: en["sharing.setup.unavailable"] });
   expect(String(t.vm("vm.sharingSettings").offDetail)).not.toContain("Settings");
   expect(t.access().grants).toHaveLength(1);
   t.bridge.access!.load = async () => configured;
   await t.run("share.manage.load");
+  await t.run("files.reveal");
   expect(t.app.commands.describe("note.share").enabled).toBe(true);
   expect(t.app.commands.describe("files.share").enabled).toBe(true);
   expect(t.vm("vm.files").menu.flatMap((g: { items: { id: string }[] }) => g.items).map((i: { id: string }) => i.id)).toContain("files.share");

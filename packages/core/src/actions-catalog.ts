@@ -98,7 +98,6 @@ export const CATALOG: readonly CatalogEntry[] = [
   { id: "note.share", steps: [["note.share"]], label: "actions.note.share", anchor: "note", effect: "outbound", leaves: "github", when: inProject, alsoIn: ["toolbar", "File menu"], proof: proof("note.share") },
   {
     id: "note.publish", steps: [["note.publish"]], label: "actions.note.publish", anchor: "note", effect: "outbound", leaves: "github", when: inProject,
-    blockedBy: (s) => (s.visibility === "private" ? "actions.reason.makePublicFirst" : undefined), fix: "note.makePublic",
     alsoIn: ["toolbar", "File menu"], proof: proof("note.publish"),
   },
   {

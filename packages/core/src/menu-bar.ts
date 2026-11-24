@@ -47,7 +47,7 @@ export const MENU_BAR: readonly MenuBarMenu[] = [
   },
   {
     id: "file", label: "menu.file",
-    items: ["note.new", "note.newIn", "note.open", "projects.open", "spotlight.quickOpen", "note.openInNewWindow", "-", "note.save", "sync.now", "-", "note.share", "note.publishStatus", "note.publish", "note.unpublish", "note.copyPublicLink", "files.makePublic", "files.makePrivate", "-", "notes.import", "files.import", "-", "note.print", "print.pageNumbers", "-", { role: "close" }],
+    items: ["note.new", "note.newIn", "note.open", "projects.open", "spotlight.quickOpen", "note.openInNewWindow", "-", "note.save", "sync.now", "-", "note.share", "note.publishStatus", "note.publish", "note.unpublish", "note.copyPublicLink", "-", "notes.import", "files.import", "-", "note.print", "print.pageNumbers", "-", { role: "close" }],
   },
   {
     id: "edit", label: "menu.edit",
@@ -98,6 +98,7 @@ export const MENU_BAR: readonly MenuBarMenu[] = [
  * bar's tests check it.
  */
 export const NOT_IN_MENU_BAR: readonly { why: string; ids: RegExp }[] = [
+  { why: "File → Publish… and Unpublish run them for a note in a project without a paired site (D-424)", ids: /^files\.make(Public|Private)$/ },
   { why: "This file settings' explicit text-to-Markdown copy action", ids: /^note\.saveAsMarkdown$/ },
   { why: "a displayed repository or account reference supplies its own destination", ids: /^github\.open$/ },
   { why: "print preparation pill's Cancel control", ids: /^print\.cancel$/ },

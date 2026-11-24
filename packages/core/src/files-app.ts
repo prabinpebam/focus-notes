@@ -19,7 +19,6 @@ import {
   topLevel, visibleRows, withoutNoteId, type FileRow, type FilesSort, type Selection,
 } from "./files.ts";
 import { copyPublicLink, publicLinkReason } from "./public-link-app.ts";
-import { shareEntryAvailable } from "./share-manage.ts";
 import { publishPathOf, publishStatus } from "./publish-status.ts";
 import {
   applyChanges, buildTree, dirOf, findNode, isWithin, joinPath, markPublished, planCreateFolder, planCreateNote, planDelete, planMove, planRename, planRenameFolder, planVisibility, retitle, rootOf, stemOf,
@@ -477,7 +476,7 @@ export function registerFiles(ctx: Ctx) {
   });
   commands.register({
     id: "files.share", title: "command.note.share", icon: "share",
-    enabled: (s) => Boolean(bridge.access) && shareEntryAvailable(s) && Boolean(rowById(s.ui.files.selection.focus)) && !isRootRow(s.ui.files.selection.focus),
+    enabled: (s) => Boolean(bridge.access) && Boolean(rowById(s.ui.files.selection.focus)) && !isRootRow(s.ui.files.selection.focus),
     disabledReason: "command.note.share.reason",
     run: async () => {
       const row = rowById(files().selection.focus);
@@ -1063,7 +1062,7 @@ export function registerFiles(ctx: Ctx) {
   for (const to of ["public", "private"] as const) {
     commands.register({
       id: to === "public" ? "files.makePublic" : "files.makePrivate", title: to === "public" ? "command.files.makePublic" : "command.files.makePrivate",
-      icon: to === "public" ? "share" : "lock", group: "files",
+      icon: to === "public" ? "globe" : "lock", group: "files",
       enabled: (s) => canMake(s, to),
       run: () => {
         const t = tree();
@@ -1582,9 +1581,21 @@ export function registerFiles(ctx: Ctx) {
       both, reveal: Boolean(ws?.revealItem), openFolder: Boolean(ws?.openFolder), paths: Boolean(ws?.revealItem) && Boolean(bridge.copyText), copyFiles: Boolean(ws?.copyItems), copyText: Boolean(bridge.copyText),
       importFiles: Boolean(ws?.chooseImport && ws.readImport && ctx.htmlToMarkdown),
     });
-    if (bridge.access && shareEntryAvailable(s) && focus.kind !== "root") sections.splice(1, 0, ["files.share"]);
-    if (focus.kind !== "root" && commands.describe("files.publish").enabled) sections.splice(2, 0, ["files.publish", ...(commands.describe("files.unpublish").enabled ? ["files.unpublish"] : [])]);
-    const menu = sections.map((ids, i) => ({ id: `rowMenu${i}`, items: ids.map(item) }));
+    // Share… for every item, private or published (D-424); the dialog guides when sharing can't start yet.
+    if (bridge.access && focus.kind !== "root" && acted.length <= 1) sections.splice(1, 0, ["files.share"]);
+    // One Publish and one Unpublish (D-424): the site's Publish… / Unpublish when sharing is live, else moving
+    // between private and public notes, which the owner calls publishing too.
+    if (focus.kind !== "root") {
+      // Without a public section, Publish… is always offered for a private item; before sharing is on it says how (D-424).
+      const site = focus.rootId === "private" && (commands.describe("files.publish").enabled || !both) ? ["files.publish"] : [];
+      const off = commands.describe("files.unpublish").enabled ? ["files.unpublish"] : [];
+      for (const section of sections) {
+        if (site.length) { const i = section.indexOf("files.makePublic"); if (i >= 0) section.splice(i, 1); }
+        if (off.length) { const i = section.indexOf("files.makePrivate"); if (i >= 0) section.splice(i, 1); }
+      }
+      if (site.length || off.length) sections.splice(2, 0, [...site, ...off]);
+    }
+    const menu = sections.filter((ids) => ids.length).map((ids, i) => ({ id: `rowMenu${i}`, items: ids.map(item) }));
     if (focus.kind !== "root") menu[0]?.items.splice(1, 0, item("files.pinItem"));
     const what = acted.length > 1 ? catalog.format("files.items", { count: acted.length }) : catalog.format("files.quoted", { name: focus.kind === "root" ? rootLabel(focus.rootId) : focus.label });
     return { menu, menuLabel: catalog.format("files.menuLabel", { what }) };

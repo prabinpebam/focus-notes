@@ -92,7 +92,7 @@ describe("FIL-06, SHR-02: changing who can see a note, always confirmed", () => 
     expect(app.commands.describe("files.makePublic").enabled).toBe(true);
     expect(app.commands.describe("files.makePrivate").enabled).toBe(false);
     await app.commands.run("files.makePublic");
-    expect(confirmVm(app)).toMatchObject({ open: true, title: "Make public?", confirmLabel: "Make public", danger: false });
+    expect(confirmVm(app)).toMatchObject({ open: true, title: "Publish?", confirmLabel: "Publish", danger: false });
     expect(confirmVm(app).message).toContain("Anyone with the link will be able to read “On focus”");
     // Nothing moves until confirmed.
     expect(f.batches).toEqual([]);
@@ -100,7 +100,7 @@ describe("FIL-06, SHR-02: changing who can see a note, always confirmed", () => 
     await done(app);
     expect(f.batches).toEqual([[{ op: "move", from: `${PRIV}/essays/on-focus.md`, to: `${PUB}/essays/on-focus.md` }]]);
     expect(app.store.state.note.path).toBe(`${PUB}/essays/on-focus.md`);
-    expect(toasts(app)).toContain("Made “On focus” public.");
+    expect(toasts(app)).toContain("Published “On focus”.");
   });
 
   it("Make private says what it can't undo, and cancelling changes nothing", async () => {
@@ -120,7 +120,7 @@ describe("FIL-06, SHR-02: changing who can see a note, always confirmed", () => 
     await app.commands.run("files.open");
     await app.commands.run("files.select", { id: `${PRIV}/plan.md`, mode: "replace" });
     await app.commands.run("files.drop", { source: `${PRIV}/plan.md`, target: "root:public" });
-    expect(confirmVm(app)).toMatchObject({ open: true, title: "Make public?" });
+    expect(confirmVm(app)).toMatchObject({ open: true, title: "Publish?" });
     f.refuseNext();
     await app.commands.run("files.confirm");
     await done(app);
@@ -130,7 +130,7 @@ describe("FIL-06, SHR-02: changing who can see a note, always confirmed", () => 
     const ids = (app.viewModels.select("vm.files", app.store.state) as { items: { id: string }[] }).items.map((i) => i.id);
     expect(ids).toContain(`${PRIV}/plan.md`);
     expect(ids).not.toContain(`${PUB}/plan.md`);
-    expect(toasts(app).at(-1)).toMatch(/^Couldn't make “Plan” public/);
+    expect(toasts(app).at(-1)).toMatch(/^Couldn't publish “Plan”/);
   });
 
   it("links in a public note are never rewritten to name a private one", async () => {
@@ -274,6 +274,6 @@ describe("PRV-03: Sync appearance stores synced settings in the private reposito
     expect(app.commands.describe("settings.sync").enabled).toBe(false);
     const more = (app.viewModels.select("vm.toolbar", app.store.state) as { more: { id: string; items: { id: string }[] }[] }).more;
     expect(more.find((g) => g.id === "theme")!.items.map((i) => i.id)).not.toContain("settings.sync");
-    expect(more.find((g) => g.id === "notes")!.items.map((i) => i.id)).toEqual(["files.makePublic", "files.makePrivate", "notes.import"]);
+    expect(more.find((g) => g.id === "notes")!.items.map((i) => i.id)).toEqual(["notes.import"]);
   });
 });

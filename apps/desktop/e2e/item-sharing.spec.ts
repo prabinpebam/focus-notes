@@ -12,7 +12,7 @@ import { launch, quit } from "./helpers.ts";
 import { configureSharing, git, instance, write } from "./instance.ts";
 import { pointerModality } from "./visual-quality.ts";
 
-test("G2.2: an unconfigured project hides Share and explains unavailable setup without changing notes", async () => {
+test("G2.2, D-424: an unconfigured project offers Share… with the reason it can't start, without changing notes", async () => {
   const { dirs } = instance();
   const note = join(dirs.docs, "private", "notes", "welcome.md");
   const before = readFileSync(note, "utf8");
@@ -28,7 +28,10 @@ test("G2.2: an unconfigured project hides Share and explains unavailable setup w
     await page.keyboard.press("Escape");
     await page.keyboard.press(process.platform === "darwin" ? "Meta+Shift+E" : "Control+Shift+E");
     await page.getByRole("treeitem", { name: "Welcome welcome.md", exact: true }).click({ button: "right" });
-    await expect(page.getByRole("menuitem", { name: "Share…", exact: true })).toHaveCount(0);
+    // D-424: Share… shows for every note; where sharing can't start it says why, and nothing is written.
+    await page.getByRole("menuitem", { name: "Share…", exact: true }).click();
+    await expect(page.getByRole("dialog", { name: "Share “Welcome”", exact: true }).getByText("Sharing can’t be turned on for this project yet. Your notes stay private. To let anyone read a note, publish it.", { exact: true })).toBeVisible({ timeout: 30_000 });
+    await page.keyboard.press("Escape");
     expect(readFileSync(note, "utf8")).toBe(before);
     expect(existsSync(join(dirs.docs, "private", "access.json"))).toBe(false);
   } finally {
