@@ -1,5 +1,6 @@
 import { Button } from "react-aria-components";
 import { Icon } from "../Icon/Icon.tsx";
+import { BorderProgress } from "../CommitMark/BorderProgress.tsx";
 import type { IconName } from "../../icon-names.ts";
 import type { SAVE_STATES } from "./contract.ts";
 import * as s from "./SaveState.css.ts";
@@ -48,7 +49,7 @@ export function SaveState({ state, label, text, id, interactive = true, onPress 
         data-state={state}
         {...(onPress ? { onPress } : {})}
       >
-        {state === "syncing" ? <span className={s.moving} aria-hidden="true" data-backup-ring="" /> : null}
+        {state === "syncing" ? <BorderProgress state="pending" /> : null}
         {glyph}
         {text ? <span className={s.text}>{text}</span> : null}
       </Button>

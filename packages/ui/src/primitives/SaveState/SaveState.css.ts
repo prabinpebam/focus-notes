@@ -1,4 +1,4 @@
-import { keyframes, style, styleVariants } from "@vanilla-extract/css";
+import { style, styleVariants } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
 
 const t = tokens.cmp.saveState;
@@ -33,22 +33,14 @@ export const pill = style({
   },
 });
 
+// While backing up, the shared border arc (D-356) is the pill's border: its own hairline steps aside, same width.
 export const tone = styleVariants({
-  savedLocal: {}, pending: {}, syncing: {}, synced: {}, offline: {},
+  savedLocal: {}, pending: {}, synced: {}, offline: {},
+  syncing: { borderColor: t.transparent, selectors: { "&[data-hovered], &[data-pressed], &[data-focus-visible]": { borderColor: t.transparent } } },
   error: { color: t.danger, selectors: { "&[data-hovered], &[data-pressed], &[data-focus-visible]": { color: t.danger } } },
 });
 
 export const glyph = style({ position: "relative", display: "inline-flex" });
-
-const spin = keyframes({ to: { transform: "rotate(1turn)" } });
-export const moving = style({
-  position: "absolute", inset: 0, borderRadius: t.radius,
-  borderStyle: "solid", borderWidth: t.borderWidth, borderColor: t.transparent, borderTopColor: t.dotColor,
-  pointerEvents: "none", animationName: spin, animationDuration: t.cycle,
-  animationTimingFunction: "linear", animationIterationCount: "infinite",
-  selectors: { ':root[data-motion="reduced"] &': { animationName: "none" } },
-  "@media": { "(prefers-reduced-motion: reduce)": { animationName: "none" } },
-});
 
 export const dot = style({
   position: "absolute",

@@ -95,10 +95,10 @@ test("EDT-11: the open card and border ring track backup, including reopening mi
     }).toPass({ timeout: 10_000 });
     await backup.click();
     await expect(icon).toHaveAttribute("data-state", "syncing");
-    await expect(icon.locator("[data-backup-ring]")).toBeVisible();
+    await expect(icon.locator('[data-border-progress="pending"]')).toBeVisible();
     await expect(card).toContainText("Backing up your changes to GitHub");
     await expect(backup).toBeDisabled();
-    expect(await icon.locator("[data-backup-ring]").evaluate((el) => getComputedStyle(el).animationName)).not.toBe("none");
+    expect(await icon.locator('[data-border-progress="pending"]').evaluate((el) => getComputedStyle(el).animationName)).not.toBe("none");
     await page.mouse.move(500, 300);
     await page.keyboard.press("Escape");
     await expect(card).toBeHidden();
@@ -106,10 +106,10 @@ test("EDT-11: the open card and border ring track backup, including reopening mi
     await expect(card).toBeVisible();
     await expect(card).toContainText("Backing up your changes to GitHub");
     await page.emulateMedia({ reducedMotion: "reduce" });
-    await expect.poll(() => icon.locator("[data-backup-ring]").evaluate((el) => getComputedStyle(el).animationName)).toBe("none");
+    await expect.poll(() => icon.locator('[data-border-progress="pending"]').evaluate((el) => getComputedStyle(el).animationName)).toBe("none");
     await app.evaluate(() => (globalThis as typeof globalThis & { finishBackup: () => void }).finishBackup());
     await expect(icon).toHaveAttribute("data-state", "synced");
-    await expect(icon.locator("[data-backup-ring]")).toHaveCount(0);
+    await expect(icon.locator('[data-border-progress="pending"]')).toHaveCount(0);
     await expect(card).toContainText("Last backup:");
     await expect(backup).toBeEnabled();
     await page.mouse.move(500, 300);

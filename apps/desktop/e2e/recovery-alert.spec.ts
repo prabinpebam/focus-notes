@@ -142,7 +142,7 @@ test("FRE-13 / D-408: recovery alert cards render in corner and Files header wit
     await pushAlert({ ...base, cause: "autoSync", progress: 45 });
     await expect(saveState).toHaveAttribute("data-state", "syncing");
     await expect(saveState).toContainText("Downloading your notes · 45%");
-    await expect(saveState.locator("[data-backup-ring]")).toBeVisible();
+    await expect(saveState.locator('[data-border-progress="pending"]')).toBeVisible();
     await saveState.hover();
     const busyCard = page.getByRole("dialog", { name: "Sync problem", exact: true });
     await expect(busyCard).toBeVisible();

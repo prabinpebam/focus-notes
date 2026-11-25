@@ -223,7 +223,7 @@ The icon is `warning` in `color.warning`. Danger stays for a save that couldn't 
 - the facts: this folder, the notes on GitHub, and the last backup;
 - the primary action, and *Not now*.
 
-While it syncs, the card shows the steps and the percentage, and the icon shows the turning ring.
+While it syncs, the card shows the steps and the percentage, and the icon's border shows the travelling arc (D-356).
 
 | Cause | Card title · its line | Action | Starts by itself? |
 | --- | --- | --- | --- |
@@ -281,7 +281,7 @@ These are added to the save state's states ([Feedback and dialogs → Save and s
 | Synced by another service | a folder with a cloud | "Saved here · OneDrive keeps it in sync" | Muted |
 | Out of sync | warning | The cause in a few words ("Not connected to your notes on GitHub") | `color.warning` |
 | Sign-in stopped working | warning | "Not backed up · sign in to GitHub" | `color.warning` |
-| Downloading or syncing the folder | the cloud with an arrow, with the turning ring | "Downloading your notes · 45%", "Syncing your notes · 2 of 5" | Muted |
+| Downloading or syncing the folder | the cloud with an arrow, with the travelling border arc | "Downloading your notes · 45%", "Syncing your notes · 2 of 5" | Muted |
 
 **The Files header names the notes and who they're backed up as:**
 
