@@ -84,6 +84,11 @@ export interface TreeItem {
   /** Enables the in-place pin action, named by the view model. */
   pinLabel?: string;
   pinCommit?: "rest" | "pending" | "confirmed" | "failed";
+  /**
+   * D-428: the row is being deleted (its link turned off or its page taken down first). Its own border carries the
+   * pending arc, or the failed outline when a step stopped; hovering or focusing it shows the tree's `rowCard`.
+   */
+  deleting?: "pending" | "failed";
 }
 
 /**

@@ -219,6 +219,12 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
       { id: "confirmed.md", kind: "note", level: 1, label: "Pinned", pinLabel: "Unpin Pinned", pinned: true, pinCommit: "confirmed" },
       { id: "failed.md", kind: "note", level: 1, label: "Pin not saved", pinLabel: "Pin Pin not saved", pinned: false, pinCommit: "failed" },
     ],
+    treeDeleting: [
+      { id: "root:private", kind: "section", level: 1, label: "Private", expanded: true, hasChildren: true },
+      { id: "trip.md", kind: "note", level: 2, label: "Trip plans", parent: "root:private", description: "Deleting…", deleting: "pending" },
+      { id: "diary.md", kind: "note", level: 2, label: "Diary", parent: "root:private", description: "Stopped", deleting: "failed" },
+      { id: "ideas.md", kind: "note", level: 2, label: "Ideas", parent: "root:private" },
+    ],
     treeEditing: [
       { id: "root:private", kind: "section", level: 1, label: "Private", expanded: true, hasChildren: true },
       { id: "new:", kind: "folder", level: 2, label: "bold", parent: "root:private", editing: true },
@@ -324,6 +330,7 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
         matchFirst: { type: "string" },
         tree: { type: "array", items: TREE_ITEM },
         treePins: { type: "array", items: TREE_ITEM },
+        treeDeleting: { type: "array", items: TREE_ITEM },
         treeFocus: { type: "string" },
         treeEditing: { type: "array", items: TREE_ITEM },
         treeEditLabel: { type: "string" },

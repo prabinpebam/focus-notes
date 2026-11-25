@@ -305,7 +305,8 @@ export function checkUi(inputs: CheckInputs): Problem[] {
         if (slot.max !== undefined && kids.length > slot.max) add("design", `${at}/children`, `${node.type} takes at most ${slot.max} children`);
       }
       kids.forEach((k, i) => walk(k, `${at}/children/${i}`, scope, c, here));
-      for (const [name, nodes] of Object.entries(node.slots ?? {})) nodes.forEach((k, i) => walk(k, `${at}/slots/${name}/${i}`, scope, undefined, here));
+      // A FileTree's row card (D-428) opens in its own popover: a surface of its own, like a PopoverPanel.
+      for (const [name, nodes] of Object.entries(node.slots ?? {})) nodes.forEach((k, i) => walk(k, `${at}/slots/${name}/${i}`, scope, undefined, node.type === "FileTree" && name === "rowCard" ? `${at}/slots/${name}` : here));
     };
 
     walk(doc.root, "/root", {});

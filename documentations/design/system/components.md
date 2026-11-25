@@ -91,7 +91,7 @@ A declared state is covered by a fixture, reached by a named journey, or listed 
 | MorphPanel | primitive | `closed`, `opening`, `open`, `closing` | 3 | None |
 | TextField | primitive | `rest`, `focused`, `invalid`, `pending`, `confirmed`, `failed` | 23 | `focused` |
 | PillButton | primitive | `rest`, `hover`, `pressed`, `focusVisible` | 6 | `hover`, `pressed`, `focusVisible` |
-| FileTree | primitive | `rest`, `hover`, `focusVisible`, `selected`, `current`, `multiSelected`, `editing`, `invalid`, `dropTarget`, `pending`, `readOnly`, `menuOpen`, `pinAvailable`, `pinPending`, `pinConfirmed`, `pinFailed` | 3 | `hover`, `focusVisible`, `dropTarget`, `menuOpen` |
+| FileTree | primitive | `rest`, `hover`, `focusVisible`, `selected`, `current`, `multiSelected`, `editing`, `invalid`, `dropTarget`, `pending`, `readOnly`, `menuOpen`, `pinAvailable`, `pinPending`, `pinConfirmed`, `pinFailed`, `deleting`, `deleteFailed` | 4 | `hover`, `focusVisible`, `dropTarget`, `menuOpen` |
 | VersionPane | primitive | `rest`, `changed`, `empty` | 2 | None |
 | WindowControls | primitive | `hidden`, `shown`, `buttonHover`, `closeHover`, `focusVisible`, `layoutsOpen`, `zoneHover` | 3 | `buttonHover`, `focusVisible`, `zoneHover` |
 | ThemeGallery | primitive | `rest`, `hover`, `selected`, `focusVisible`, `previewing`, `pending`, `confirmed`, `failed` | 6 | `hover`, `focusVisible` |

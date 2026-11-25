@@ -6,6 +6,8 @@ import { useWindowBoundary } from "../../layouts/AppRoot/in-window.tsx";
 import { Icon } from "../Icon/Icon.tsx";
 import { IconButton } from "../IconButton/IconButton.tsx";
 import { Spinner } from "../Spinner/Spinner.tsx";
+import { BorderProgress } from "../CommitMark/BorderProgress.tsx";
+import * as popoverStyles from "../PopoverPanel/PopoverPanel.css.ts";
 import type { MenuSection, TreeItem } from "../../data.ts";
 import * as s from "./FileTree.css.ts";
 import { typeAhead, type TypeAheadState } from "./typeAhead.ts";
@@ -28,7 +30,13 @@ export interface FileTreeProps {
   menuLabel?: string;
   /** Controls at a section row's trailing end, by the row's `accessory` (a section's backup, D-191). */
   sectionEnd?: ReactNode[];
+  /** D-428: the card a deleting row shows on hover or focus: its steps, elapsed time, and Retry. */
+  rowCard?: ReactNode;
+  /** Names the row card for assistive technology. */
+  cardLabel?: string;
   id: string;
+  /** The row whose card is showing, or "" when none is. */
+  onCard?: (p: { id: string }) => void;
   onSelect?: (p: { id: string; mode: string }) => void;
   onExpand?: (p: { id: string; expanded: boolean }) => void;
   onAction?: (p: { id: string }) => void;
@@ -55,7 +63,7 @@ const EXPAND_AFTER_MS = 600;
 /** The last focus request each tree met, by id, kept while it's re-created (DEF-20). */
 const metRequests = new Map<string, number>();
 
-export function FileTree({ label, items, focusId, focusRequest, windowed = false, editValue = "", editLabel, editError, menu = [], menuLabel = "", sectionEnd = [], id, onSelect, onExpand, onAction, onDrop, onEditChange, onEditBlur, onMenuAction, onPin }: FileTreeProps) {
+export function FileTree({ label, items, focusId, focusRequest, windowed = false, editValue = "", editLabel, editError, menu = [], menuLabel = "", sectionEnd = [], rowCard, cardLabel = "", id, onSelect, onExpand, onAction, onDrop, onEditChange, onEditBlur, onMenuAction, onPin, onCard }: FileTreeProps) {
   const ref = useRef<HTMLDivElement | null>(null);
   const input = useRef<HTMLInputElement | null>(null);
   const [dropId, setDropId] = useState("");
@@ -118,6 +126,32 @@ export function FileTree({ label, items, focusId, focusRequest, windowed = false
     el?.focus({ preventScroll: true });
     el?.scrollIntoView({ block: "nearest" });
   };
+
+  // ---- a deleting row's card (D-428): opens on hover or focus, like the save-status card ----
+  const [cardId, setCardId] = useState("");
+  const cardAnchor = useRef<HTMLElement | null>(null);
+  const cardPanel = useRef<HTMLDivElement | null>(null);
+  const cardPointed = useRef(false);
+  const cardTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const onCardRef = useRef(onCard);
+  onCardRef.current = onCard;
+  const setCard = (next: string) => setCardId((was) => { if (was !== next) onCardRef.current?.({ id: next }); return next; });
+  const showCard = (item: TreeItem) => { clearTimeout(cardTimer.current); if (item.deleting && rowCard) setCard(item.id); };
+  const hideCardSoon = () => {
+    clearTimeout(cardTimer.current);
+    cardTimer.current = setTimeout(() => {
+      const active = document.activeElement;
+      if (cardPointed.current || cardPanel.current?.contains(active) || (active instanceof HTMLElement && active.id && active.id === rowElId(cardIdRef.current))) return;
+      setCard("");
+    }, 200);
+  };
+  const cardIdRef = useRef("");
+  cardIdRef.current = cardId;
+  const rowElId = (itemId: string) => itemId ? treeRowId(id, itemId) : "";
+  useEffect(() => () => clearTimeout(cardTimer.current), []);
+  const cardItem = cardId ? byId.get(cardId) : undefined;
+  // The row is gone (deleted) or no longer deleting: the card goes with it.
+  useEffect(() => { if (cardId && !cardItem?.deleting) setCard(""); }, [cardId, cardItem?.deleting]);
   // Focus follows the focused row while it's in the tree; a new request brings it in from outside.
   useLayoutEffect(() => {
     if (editing) return;
@@ -327,6 +361,7 @@ export function FileTree({ label, items, focusId, focusRequest, windowed = false
             ref={(el) => {
               el?.style.setProperty(varName(s.depth), String(Math.max(0, item.level - 1)));
               if (el && menuAt?.id === item.id && menuAt.at === "row") anchor.current = el;
+              if (el && cardId === item.id) cardAnchor.current = el;
             }}
             role="treeitem"
             aria-labelledby={labelId ? [labelId, descriptionId, detailId].filter(Boolean).join(" ") : undefined}
@@ -336,14 +371,25 @@ export function FileTree({ label, items, focusId, focusRequest, windowed = false
             aria-setsize={bounded ? siblings.get(index)?.size : undefined}
             aria-selected={item.selected}
             aria-expanded={folder ? item.expanded : undefined}
-            aria-busy={item.pending ? true : undefined}
+            aria-busy={item.pending || item.deleting === "pending" ? true : undefined}
             tabIndex={item.id === focused && !item.editing ? 0 : -1}
-            title={item.title || undefined}
+            title={item.deleting ? undefined : item.title || undefined}
             className={`${s.row} ${item.kind === "section" ? s.section : ""}`}
             data-current={item.current ? "" : undefined}
+            data-deleting={item.deleting}
             data-drop-target={dropId === item.id ? "" : undefined}
             data-kind={item.kind}
             data-menu-open={menuAt?.id === item.id ? "" : undefined}
+            onPointerEnter={item.deleting ? (e) => { if (e.pointerType !== "touch") showCard(item); } : undefined}
+            onPointerLeave={item.deleting ? hideCardSoon : undefined}
+            onFocus={item.deleting ? (e) => { if (e.target === e.currentTarget) showCard(item); } : undefined}
+            onBlur={item.deleting ? hideCardSoon : undefined}
+            onKeyDownCapture={item.deleting ? (e) => {
+              // Tab goes into the open card first, to its Retry (as the save-status card's trigger does).
+              if (e.key !== "Tab" || e.shiftKey || cardId !== item.id) return;
+              const first = cardPanel.current?.querySelector<HTMLElement>('button:not([aria-disabled="true"]), [tabindex="0"]');
+              if (first) { e.preventDefault(); e.stopPropagation(); first.focus(); }
+            } : undefined}
             onContextMenu={(e) => contextMenu(e, item)}
             draggable={item.draggable && !item.editing}
             onClick={(e) => click(e, item)}
@@ -409,6 +455,7 @@ export function FileTree({ label, items, focusId, focusRequest, windowed = false
             {item.description && !item.editing ? <span id={descriptionId} className={s.description}> {item.description}</span> : null}
             {item.detail && !item.editing ? <span id={detailId} className={s.description}> {item.detail}</span> : null}
             {item.pending ? <span className={s.pending}><Spinner size="s" /></span> : null}
+            {item.deleting ? <BorderProgress state={item.deleting} /> : null}
             {end ? (
               // Its own control, not the row's: its keys, clicks and presses stay with it (D-191).
               <span
@@ -474,6 +521,41 @@ export function FileTree({ label, items, focusId, focusRequest, windowed = false
               menuClosed();
             }}
           />
+        </Popover>
+      ) : null}
+      {cardItem?.deleting && rowCard ? (
+        <Popover
+          triggerRef={cardAnchor}
+          isOpen
+          isNonModal
+          onOpenChange={(open) => { if (!open) setCard(""); }}
+          placement="bottom start"
+          offset={4}
+          className={popoverStyles.popover}
+          data-padding="comfortable"
+          data-width="content"
+          {...boundary}
+          data-surface="popover"
+          aria-label={cardLabel}
+        >
+          <div
+            ref={cardPanel}
+            className={popoverStyles.dialog}
+            role="dialog"
+            aria-label={cardLabel}
+            tabIndex={-1}
+            onPointerEnter={() => { cardPointed.current = true; clearTimeout(cardTimer.current); }}
+            onPointerLeave={() => { cardPointed.current = false; hideCardSoon(); }}
+            onBlur={hideCardSoon}
+            onKeyDown={(e) => {
+              if (e.key !== "Escape") return;
+              e.preventDefault();
+              e.stopPropagation();
+              const row = cardId;
+              setCard("");
+              focusRow(row);
+            }}
+          >{rowCard}</div>
         </Popover>
       ) : null}
     </div>

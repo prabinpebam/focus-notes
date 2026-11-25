@@ -6673,6 +6673,10 @@
         "menuLabel": {
           "kind": "text",
           "description": "The menu's name: Actions for “Ideas”."
+        },
+        "cardLabel": {
+          "kind": "text",
+          "description": "D-428: names the card a deleting row shows on hover or focus."
         }
       },
       "events": {
@@ -6716,12 +6720,22 @@
             "id": "text",
             "pinned": "boolean"
           }
+        },
+        "card": {
+          "payload": {
+            "id": "text"
+          }
         }
       },
       "slots": {
         "sectionEnd": {
           "accepts": [
             "PopoverPanel"
+          ]
+        },
+        "rowCard": {
+          "accepts": [
+            "IconLayout"
           ]
         }
       },
@@ -6741,7 +6755,9 @@
         "pinAvailable",
         "pinPending",
         "pinConfirmed",
-        "pinFailed"
+        "pinFailed",
+        "deleting",
+        "deleteFailed"
       ],
       "tokens": "cmp.fileTree.*",
       "a11y": {
@@ -6769,6 +6785,21 @@
             },
             "items": {
               "get": "vm.gallery.treePins"
+            }
+          }
+        },
+        {
+          "name": "deleting rows: the border arc, and the failed outline",
+          "covers": [
+            "deleting",
+            "deleteFailed"
+          ],
+          "props": {
+            "label": {
+              "t": "files.tree"
+            },
+            "items": {
+              "get": "vm.gallery.treeDeleting"
             }
           }
         },

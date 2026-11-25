@@ -4,6 +4,7 @@
   "ia": "IA-VIEW-CANVAS",
   "viewModels": [
     "vm.app",
+    "vm.deleting",
     "vm.project",
     "vm.projects",
     "vm.projectIntro",
@@ -3318,11 +3319,77 @@
             }
           }
         },
+        "slots": {
+          "visual": [
+            {
+              "type": "StepMark",
+              "props": {
+                "icon": {
+                  "get": "vm.confirm.icon"
+                },
+                "size": "compact",
+                "tone": {
+                  "get": "vm.confirm.tone"
+                }
+              }
+            }
+          ],
+          "footer": [
+            {
+              "type": "Inline",
+              "props": {
+                "justify": "end",
+                "gap": "inlineItem"
+              },
+              "children": [
+                {
+                  "type": "Button",
+                  "when": {
+                    "get": "vm.confirm.danger"
+                  },
+                  "props": {
+                    "label": {
+                      "get": "vm.confirm.confirmLabel"
+                    },
+                    "variant": "danger"
+                  },
+                  "on": {
+                    "press": {
+                      "run": "files.confirm"
+                    }
+                  }
+                },
+                {
+                  "type": "Button",
+                  "when": {
+                    "expr": {
+                      "!": {
+                        "get": "vm.confirm.danger"
+                      }
+                    }
+                  },
+                  "props": {
+                    "label": {
+                      "get": "vm.confirm.confirmLabel"
+                    },
+                    "variant": "primary",
+                    "autoFocus": true
+                  },
+                  "on": {
+                    "press": {
+                      "run": "files.confirm"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
         "children": [
           {
             "type": "Stack",
             "props": {
-              "gap": "stackGroup"
+              "gap": "stackPair"
             },
             "children": [
               {
@@ -3334,69 +3401,26 @@
                 }
               },
               {
-                "type": "Inline",
-                "props": {
-                  "justify": "end",
-                  "gap": "inlineItem"
+                "type": "Text",
+                "when": {
+                  "get": "vm.confirm.shared"
                 },
-                "children": [
-                  {
-                    "type": "Button",
-                    "props": {
-                      "label": {
-                        "t": "files.confirm.cancel"
-                      },
-                      "variant": "secondary",
-                      "autoFocus": true
-                    },
-                    "on": {
-                      "press": {
-                        "run": "files.setConfirmOpen",
-                        "args": {
-                          "open": false
-                        }
-                      }
-                    }
-                  },
-                  {
-                    "type": "Button",
-                    "when": {
-                      "get": "vm.confirm.danger"
-                    },
-                    "props": {
-                      "label": {
-                        "get": "vm.confirm.confirmLabel"
-                      },
-                      "variant": "danger"
-                    },
-                    "on": {
-                      "press": {
-                        "run": "files.confirm"
-                      }
-                    }
-                  },
-                  {
-                    "type": "Button",
-                    "when": {
-                      "expr": {
-                        "!": {
-                          "get": "vm.confirm.danger"
-                        }
-                      }
-                    },
-                    "props": {
-                      "label": {
-                        "get": "vm.confirm.confirmLabel"
-                      },
-                      "variant": "primary"
-                    },
-                    "on": {
-                      "press": {
-                        "run": "files.confirm"
-                      }
-                    }
+                "props": {
+                  "value": {
+                    "get": "vm.confirm.sharedText"
                   }
-                ]
+                }
+              },
+              {
+                "type": "Text",
+                "when": {
+                  "get": "vm.confirm.published"
+                },
+                "props": {
+                  "value": {
+                    "get": "vm.confirm.publishedText"
+                  }
+                }
               }
             ]
           }
@@ -4932,6 +4956,206 @@
             "type": "FileTree",
             "id": "filesTree",
             "slots": {
+                "rowCard": [
+                  {
+                    "type": "IconLayout",
+                    "id": "filesDeleteCard",
+                    "slots": {
+                      "icon": [
+                        {
+                          "type": "StepMark",
+                          "props": {
+                            "icon": {
+                              "get": "vm.deleting.icon"
+                            },
+                            "size": "compact",
+                            "tone": {
+                              "get": "vm.deleting.tone"
+                            }
+                          }
+                        }
+                      ],
+                      "heading": [
+                        {
+                          "type": "Heading",
+                          "props": {
+                            "value": {
+                              "get": "vm.deleting.title"
+                            },
+                            "level": "2"
+                          }
+                        },
+                        {
+                          "type": "Text",
+                          "props": {
+                            "value": {
+                              "get": "vm.deleting.summary"
+                            }
+                          }
+                        }
+                      ],
+                      "actions": [
+                        {
+                          "type": "Button",
+                          "when": {
+                            "get": "vm.deleting.failed"
+                          },
+                          "props": {
+                            "label": {
+                              "t": "files.deleting.anyway"
+                            },
+                            "variant": "secondary"
+                          },
+                          "on": {
+                            "press": {
+                              "run": "files.deleteAnyway"
+                            }
+                          }
+                        },
+                        {
+                          "type": "Button",
+                          "when": {
+                            "get": "vm.deleting.failed"
+                          },
+                          "props": {
+                            "label": {
+                              "t": "commit.retry"
+                            },
+                            "variant": "primary",
+                            "busy": {
+                              "get": "vm.deleting.busy"
+                            }
+                          },
+                          "on": {
+                            "press": {
+                              "run": "files.deleteRetry"
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    "children": [
+                      {
+                        "type": "Stack",
+                        "props": {
+                          "gap": "stackItem"
+                        },
+                        "children": [
+                          {
+                            "empty": { "type": "Text", "props": { "value": { "t": "files.deleting.mark" }, "role": "secondary", "tone": "muted" } },
+                          "each": {
+                              "get": "vm.deleting.steps"
+                            },
+                            "as": "step",
+                            "key": "step.id",
+                            "render": {
+                              "type": "Inline",
+                              "props": {
+                                "gap": "inlineItem",
+                                "align": "center"
+                              },
+                              "children": [
+                                {
+                                  "type": "StepMark",
+                                  "props": {
+                                    "size": "compact",
+                                    "icon": {
+                                      "get": "step.icon"
+                                    },
+                                    "tone": {
+                                      "get": "step.tone"
+                                    },
+                                    "busy": {
+                                      "get": "step.busy"
+                                    },
+                                    "label": {
+                                      "get": "step.stateLabel"
+                                    }
+                                  }
+                                },
+                                {
+                                  "type": "Text",
+                                  "props": {
+                                    "value": {
+                                      "get": "step.label"
+                                    },
+                                    "role": "secondary",
+                                    "tone": "muted"
+                                  }
+                                }
+                              ]
+                            }
+                          },
+                          {
+                            "type": "Text",
+                            "when": {
+                              "expr": {
+                                "!=": [
+                                  {
+                                    "get": "vm.deleting.line"
+                                  },
+                                  ""
+                                ]
+                              }
+                            },
+                            "props": {
+                              "value": {
+                                "get": "vm.deleting.line"
+                              },
+                              "role": "caption",
+                              "tone": "muted"
+                            }
+                          },
+                          {
+                            "type": "StatusRow",
+                            "when": {
+                              "expr": {
+                                "!=": [
+                                  {
+                                    "get": "vm.deleting.still"
+                                  },
+                                  ""
+                                ]
+                              }
+                            },
+                            "props": {
+                              "message": {
+                                "get": "vm.deleting.still"
+                              },
+                              "tone": "info",
+                              "icon": "info"
+                            }
+                          },
+                          {
+                            "type": "Text",
+                            "when": {
+                              "get": "vm.deleting.failed"
+                            },
+                            "props": {
+                              "value": {
+                                "get": "vm.deleting.problem"
+                              },
+                              "tone": "danger"
+                            }
+                          },
+                          {
+                            "type": "Text",
+                            "when": {
+                              "get": "vm.deleting.failed"
+                            },
+                            "props": {
+                              "value": {
+                                "get": "vm.deleting.anywayWarning"
+                              },
+                              "role": "caption",
+                              "tone": "muted"
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
               "sectionEnd": [
                 {
                   "type": "PopoverPanel",
@@ -5298,6 +5522,7 @@
               ]
             },
             "props": {
+              "cardLabel": { "get": "vm.deleting.cardLabel" },
               "label": {
                 "t": "files.tree"
               },
@@ -5327,6 +5552,7 @@
               }
             },
             "on": {
+              "card": { "run": "files.deleteCard", "args": { "id": { "get": "event.id" } } },
               "pin": { "run": "files.pinItem", "args": { "id": { "get": "event.id" }, "pinned": { "get": "event.pinned" } } },
               "menuAction": {
                 "run": "command.run",

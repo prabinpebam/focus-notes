@@ -913,6 +913,7 @@ describe("DD-FB-01: Undo in the toast for moves and deletes", () => {
     await app.commands.run("files.open");
     await app.commands.run("files.select", { id: `${PRIV}/a.md`, mode: "replace" });
     await app.commands.run("files.delete");
+    await app.commands.run("files.confirm");
     await done(app);
     expect(lastToast(app)).toMatchObject({ message: "Moved “A” to the trash." });
     expect(lastToast(app)?.action).toBeUndefined();

@@ -156,6 +156,8 @@ test("D-162: right-click, the row's ⋯, Shift+F10 and the Menu key open an item
   await page.keyboard.press("End");
   await expect(copyMenu.getByRole("menuitem", { name: /^Delete/ })).toBeFocused();
   await page.keyboard.press("Enter");
+  // Every delete asks first (D-428).
+  await page.getByRole("dialog", { name: "Delete “Ideas copy”?", exact: true }).getByRole("button", { name: "Delete 1 note", exact: true }).click();
   await expect(row("Ideas copy")).toHaveCount(0);
   await expect.poll(() => trashed()).toEqual([join(dirs.docs, "ideas-copy.md")]);
   await expect(page.locator("#toasts").getByText("Moved “Ideas copy” to the trash.")).toBeVisible();

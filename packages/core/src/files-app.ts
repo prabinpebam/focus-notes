@@ -20,6 +20,8 @@ import {
 } from "./files.ts";
 import { copyPublicLink, publicLinkReason } from "./public-link-app.ts";
 import { publishPathOf, publishStatus } from "./publish-status.ts";
+import { deleteCardView, deleteDoneKey, deletePhase, newDeleteJob, runDelete, type DeleteJob } from "./delete-takedown.ts";
+import { siteTakedown, type SiteTakedown } from "./site-takedown.ts";
 import {
   applyChanges, buildTree, dirOf, findNode, isWithin, joinPath, markPublished, planCreateFolder, planCreateNote, planDelete, planMove, planRename, planRenameFolder, planVisibility, retitle, rootOf, stemOf,
   visibilityOf, walk, type RefusalReason, type WorkspaceTree,
@@ -56,8 +58,12 @@ export interface FilesState {
    * What asks first: deleting (Files → Deleting), and changing who can see notes (DD-FILES-08):
    * Make public or private keeps each item's folder path (`dest` unset); a drop or Move to… has one.
    */
-  confirm?: { kind: "delete"; paths: string[]; notes: number; name: string } | { kind: "visibility"; to: "public" | "private"; paths: string[]; dest?: string; name: string }
+  confirm?: { kind: "delete"; paths: string[]; notes: number; name: string; shared?: number; published?: number } | { kind: "visibility"; to: "public" | "private"; paths: string[]; dest?: string; name: string }
     | { kind: "discard"; id: string; name: string; chars: number };
+  /** D-428: deletes whose link or page is coming down first; their rows stay, marked Deleting…, until done. */
+  deleting?: readonly DeleteJob[];
+  /** The deleting row whose card is showing (D-428). */
+  deleteCard?: string;
   /**
    * Move to… (IA-CMP-MOVE). `restore` is a deleted note being restored to a chosen folder (FIL-10);
    * `save` is a Recovered draft being saved as a new note in one (QLT-06, D-221).
@@ -112,6 +118,8 @@ interface Ctx {
   tracker?: Pick<TaskTracker, "run" | "section">;
   /** HTML as Markdown, for Import files (FIL-15); without it, Import files isn't offered. */
   htmlToMarkdown?: (html: string) => string;
+  /** D-428: how a shared or published note comes down before it's deleted; defaults to the bridge's (swapped by D-429). */
+  takedown?: SiteTakedown;
 }
 
 const REASONS: Record<RefusalReason | OpErrorCode, string> = {
@@ -130,6 +138,7 @@ export function registerFiles(ctx: Ctx) {
   const canWrite = (s: AppState) => Boolean(ws?.apply) && s.workspace.access === "write";
   const reason = (r: keyof typeof REASONS) => catalog.format(REASONS[r]);
   let deletedGeneration = 0;
+  const takedown = ctx.takedown ?? siteTakedown(store, bridge);
 
   // ---- rows ----
   // Worked out only when the tree, the open folders, the filter, or the order change: never per keystroke (D-175).
@@ -746,21 +755,83 @@ export function registerFiles(ctx: Ctx) {
   commands.register({ id: "move.chooseActive", title: "command.move.choose", shortcut: { default: "Enter", handledBy: "moveField" }, layer: "power", group: "files", run: (_a, c) => c.run("move.choose", { id: "" }) });
   commands.register<{ open: boolean }>({ id: "move.setOpen", title: "command.files.moveTo", run: ({ open }) => { if (!open) setFiles((f) => ({ move: { ...f.move, open: false, restore: undefined, save: undefined }, focusRequest: f.focusRequest + 1 })); } });
 
-  // ---- deleting (FIL-01, FIL-02) ----
-  function doDelete(paths: string[]): void {
+  // ---- deleting (FIL-01, FIL-02; D-428: a shared or published note comes down first) ----
+  const deleting = () => files().deleting ?? [];
+  const jobOf = (id: string) => deleting().find((j) => j.id === id);
+  const setJob = (id: string, patch: Partial<DeleteJob>) => setFiles((f) => ({ deleting: (f.deleting ?? []).map((j) => (j.id === id ? { ...j, ...patch } : j)) }));
+  const dropJob = (id: string) => setFiles((f) => ({ deleting: (f.deleting ?? []).filter((j) => j.id !== id), ...(f.deleteCard === id ? { deleteCard: "" } : {}) }));
+  /** A row being deleted: one of a job's paths, or inside one. */
+  const deletingJob = (path: string) => deleting().find((j) => j.paths.some((p) => isWithin(p, path)));
+  /** What has to come down before these go (D-428), through the one takedown boundary: links, pages, and public notes' own pages. */
+  const takedownOf = (paths: readonly string[]) => {
+    const s = store.state;
+    const { grants, published } = takedown.find(paths);
+    // Public notes (a Private + Public project) are web pages themselves: deleting one takes its page down.
+    const publicPages = paths.filter((p) => rootOf(s.workspace.tree, p)?.id === "public").length;
+    return { grants, published, publicPages };
+  };
+  const refreshShares = () => takedown.refresh();
+  function localDelete(paths: string[], done: string): Promise<boolean> {
     const plan = planDelete(tree(), paths);
     const what = whatOf(paths);
-    if (plan.kind === "refused") return void refused("files.deleteFailed", { what }, plan.reason);
+    if (plan.kind === "refused") { refused("files.deleteFailed", { what }, plan.reason); return Promise.resolve(false); }
     // Folders that go with it, parent first, so Undo can put notes back where they were.
     const folders = [...walk(tree())].filter((x) => x.node.kind === "folder" && paths.some((p) => isWithin(p, x.path))).map((x) => x.path).sort((a, b) => a.length - b.length);
-    void perform(plan.tree, paths.map((path) => ({ op: "delete" as const, path })), {
-      touched: [], deletes: paths,
-      done: catalog.format(bridge.platform === "web" ? "files.deleted" : "files.trashed", { what }),
+    return perform(plan.tree, paths.map((path) => ({ op: "delete" as const, path })), {
+      touched: [], deletes: paths, done,
       failed: (why) => catalog.format("files.deleteFailed", { what, reason: why }),
       // With Git, a delete is a commit, so Undo restores it from history (FIL-10).
       ...(canRestore(store.state) ? { undo: () => undelete(paths, folders, what) } : {}),
     });
   }
+  function doDelete(paths: string[]): void {
+    const { grants, published } = takedownOf(paths);
+    const what = whatOf(paths);
+    if (!grants.length && !published.length) {
+      void localDelete(paths, catalog.format(bridge.platform === "web" ? "files.deleted" : "files.trashed", { what }));
+      return;
+    }
+    const job = newDeleteJob(paths, what, grants, published, Date.now());
+    setFiles((f) => ({ deleting: [...(f.deleting ?? []).filter((j) => j.id !== job.id), job] }));
+    void runJob(job.id);
+  }
+  /** Runs or resumes a delete: the link off, the page down, the website updated, and only then the note deleted. */
+  async function runJob(id: string): Promise<void> {
+    const get = () => jobOf(id)!;
+    const update = (patch: Partial<DeleteJob>) => setJob(id, patch);
+    const off = takedown.onPhase((phase) => { const j = jobOf(id); const patch = j && deletePhase(j, phase, Date.now()); if (patch) update(patch); });
+    const work = () => runDelete(get, update, {
+      withdraw: (grant) => takedown.withdraw(grant),
+      redeploy: () => takedown.redeploy(),
+      unpublish: (rels) => takedown.unpublish(rels),
+      deleteLocal: () => localDelete(get().paths, catalog.format(deleteDoneKey(get(), false))),
+    });
+    try {
+      const ok = ctx.tracker ? await ctx.tracker.run("files.deleteTakedown", "files.deleting.mark", work, undefined, "fn:files.deleteTakedown", "none") : await work();
+      if (ok) dropJob(id);
+    } finally {
+      off();
+    }
+  }
+  commands.register<{ id: string }>({ id: "files.deleteCard", title: "command.files.delete", run: ({ id }) => setFiles(() => ({ deleteCard: id })) });
+  const cardJob = () => jobOf(files().deleteCard ?? "") ?? deleting().find((j) => j.failed) ?? deleting()[0];
+  commands.register({
+    id: "files.deleteRetry", title: "commit.retry",
+    enabled: () => Boolean(cardJob()?.failed && !cardJob()?.busy),
+    run: () => { const j = cardJob(); if (j?.failed && !j.busy) void runJob(j.id); },
+  });
+  // The takedown stopped: the note is deleted here now, and its link or page stays up, as the card warned (D-428).
+  commands.register({
+    id: "files.deleteAnyway", title: "files.deleting.anyway",
+    enabled: () => Boolean(cardJob()?.failed && !cardJob()?.busy),
+    run: async () => {
+      const j = cardJob();
+      if (!j?.failed || j.busy) return;
+      setJob(j.id, { busy: true });
+      if (await localDelete(j.paths, catalog.format(deleteDoneKey(j, true)))) dropJob(j.id);
+      else setJob(j.id, { busy: false });
+    },
+  });
   /** Undo for a delete: its folders made again, then its notes restored from history where they were. */
   async function undelete(paths: readonly string[], folders: readonly string[], what: string): Promise<void> {
     try {
@@ -782,15 +853,20 @@ export function registerFiles(ctx: Ctx) {
   commands.register({
     id: "files.delete", title: "command.files.delete", icon: "delete", shortcut: { macos: "Mod+Backspace", default: "Delete", handledBy: "filesTree" }, layer: "basic", group: "files",
     enabled: canWrite,
-    run: () => {
+    run: async () => {
       const paths = topLevel(actedOn(files().selection, files().selection.focus).map((id) => rowById(id)?.path ?? id));
       if (!paths.length) return;
+      // Already being deleted: its card says how far it got.
+      if (paths.some((p) => deletingJob(p))) return;
       const what = whatOf(paths);
       const plan = planDelete(tree(), paths);
       if (plan.kind === "refused") return void refused("files.deleteFailed", { what }, plan.reason);
-      // A folder with notes, five or more items, or a public note asks first (DD-FILES-06).
-      if (plan.ask) return setFiles(() => ({ confirm: { kind: "delete", paths, notes: plan.notes.length, name: what } }));
-      doDelete(paths);
+      // Every delete asks first, and says when a link or a web page goes with it (D-428, was DD-FILES-06).
+      await refreshShares();
+      const t = takedownOf(paths);
+      const shared = t.grants.length;
+      const published = t.published.length + t.publicPages;
+      setFiles(() => ({ confirm: { kind: "delete", paths, notes: plan.notes.length, name: what, shared, published } }));
     },
   });
   commands.register({
@@ -1508,6 +1584,7 @@ export function registerFiles(ctx: Ctx) {
     properties: Object.fromEntries([
       ...["id", "label", "description", "detail", "title", "parent", "pinLabel"].map((k) => [k, { type: "string" as const }]),
       ["pinCommit", { type: "string" as const, enum: ["rest", "pending", "confirmed", "failed"] }],
+      ["deleting", { type: "string" as const, enum: ["pending", "failed"] }],
       ["kind", { type: "string" as const, enum: ["section", "folder", "note"] }],
       ["level", { type: "number" as const }],
       ["accessory", { type: "number" as const }],
@@ -1659,21 +1736,27 @@ export function registerFiles(ctx: Ctx) {
         shortcuts.push({ id, kind: "section", label: catalog.format(section === "pinned" ? "project.pinned" : "recent.title"), level: 1, expanded, hasChildren: entries.length > 0 });
         if (expanded) shortcuts.push(...entries);
       }
-      const items: Record<string, unknown>[] = rows.map((r) => ({
+      const items: Record<string, unknown>[] = rows.map((r) => {
+        // D-428: a row whose link or page is coming down stays, marked, until the delete is done.
+        const job = r.kind !== "root" ? (f.deleting ?? []).find((j) => j.paths.some((p) => isWithin(p, r.path))) : undefined;
+        return {
         id: r.id, kind: r.kind === "root" ? "section" : r.kind, level: r.level,
         label: r.kind === "root" ? rootLabel(r.rootId) : r.label,
-        description: r.readOnly ? catalog.format("files.readOnly") : r.kind === "note" && unsaved.has(r.path) ? catalog.format("files.unsaved")
+        description: job ? catalog.format(job.failed ? "files.deleting.stopped" : "files.deleting.mark")
+          : r.readOnly ? catalog.format("files.readOnly") : r.kind === "note" && unsaved.has(r.path) ? catalog.format("files.unsaved")
           : r.rootId === "public" && r.kind === "note" ? publicDescription(s, r.path) : r.kind === "note" ? siteMark(s, r.path) : "",
+        ...(job ? { deleting: job.failed ? "failed" : "pending" } : {}),
         detail: r.kind === "note" && stemOf(r.name) !== r.label ? r.name : "",
         title: r.kind === "note" ? r.path : "", parent: r.parent ?? "",
         expanded: r.expanded, hasChildren: r.hasChildren, selected: selected.has(r.id), current: r.path === s.note.path && r.kind === "note",
         pending: pending.has(r.id), readOnly: r.readOnly,
         ...(r.kind !== "root" ? pinState(r.id, r.label) : {}),
-        draggable: writable && !r.readOnly && r.kind !== "root", droppable: writable && !r.readOnly && r.kind !== "note",
+        draggable: writable && !r.readOnly && r.kind !== "root" && !job, droppable: writable && !r.readOnly && r.kind !== "note" && !job,
         editing: f.edit?.kind === "rename" && f.edit.id === r.id,
         // Private and Public each carry their repository's backup at the trailing end (D-191).
         ...(r.kind === "root" && (r.rootId === "private" || r.rootId === "public") ? { accessory: r.rootId === "private" ? 0 : 1 } : {}),
-      }));
+        };
+      });
       // A new folder's name field shows in place, first in its folder.
       if (f.edit?.kind === "newFolder") {
         const parentRow = rows.find((r) => (r.kind === "root" ? r.path === f.edit!.parent : r.id === f.edit!.parent));
@@ -1773,29 +1856,54 @@ export function registerFiles(ctx: Ctx) {
   });
   viewModels.register({
     id: "vm.confirm",
-    schema: { type: "object", properties: { open: { type: "boolean" }, title: { type: "string" }, message: { type: "string" }, confirmLabel: { type: "string" }, danger: { type: "boolean" } } },
+    schema: { type: "object", properties: {
+      open: { type: "boolean" }, title: { type: "string" }, message: { type: "string" }, confirmLabel: { type: "string" }, danger: { type: "boolean" },
+      icon: { type: "string" }, tone: { type: "string" }, shared: { type: "boolean" }, sharedText: { type: "string" }, published: { type: "boolean" }, publishedText: { type: "string" },
+    } },
     reads: ["ui.files.confirm", "workspace.tree"],
     select: (s) => {
       const c = s.ui.files.confirm;
-      if (!c) return { open: false, title: "", message: "", confirmLabel: "", danger: false };
+      const none = { shared: false, sharedText: "", published: false, publishedText: "" };
+      if (!c) return { open: false, title: "", message: "", confirmLabel: "", danger: false, icon: "delete", tone: "danger", ...none };
       if (c.kind === "discard") {
         // A discarded draft can't come back: said before it goes (D-221).
         return {
-          open: true, title: catalog.format("recovered.confirm.title"), danger: true,
+          open: true, title: catalog.format("recovered.confirm.title"), danger: true, icon: "delete", tone: "danger", ...none,
           message: catalog.format("recovered.confirm.message", { what: c.name, chars: c.chars }), confirmLabel: catalog.format("recovered.confirm.action"),
         };
       }
       if (c.kind === "visibility") {
         // Making something public says who will read it; making it private says what it can't undo (Files and sharing → Changing visibility).
         const key = c.to === "public" ? "files.confirmPublic" : "files.confirmPrivate";
-        return { open: true, title: catalog.format(`${key}.title`), message: catalog.format(`${key}.message`, { what: c.name }), confirmLabel: catalog.format(`${key}.action`), danger: false };
+        return { open: true, title: catalog.format(`${key}.title`), message: catalog.format(`${key}.message`, { what: c.name }), confirmLabel: catalog.format(`${key}.action`), danger: false,
+          icon: c.to === "public" ? "globe" : "lock", tone: "accent", ...none };
       }
-      const pub = c.paths.some((p) => rootOf(s.workspace.tree, p)?.id === "public");
+      // D-428: what goes with it, in plain words: its link, its web page, or both.
+      const one = c.paths.length === 1 && c.notes <= 1;
+      const shared = Boolean(c.shared), published = Boolean(c.published);
       return {
-        open: true, title: catalog.format("files.confirm.title"), danger: true,
-        message: catalog.format(pub ? "files.confirm.public" : "files.confirm.message", { what: c.name, notes: c.notes }),
-        confirmLabel: catalog.format(pub ? "files.confirm.unpublish" : "files.confirm.delete", { notes: c.notes }),
+        open: true, title: catalog.format("files.confirm.title", { what: c.name }), danger: true, icon: "delete", tone: "danger",
+        message: catalog.format("files.confirm.message", { what: c.name, notes: c.notes }),
+        confirmLabel: catalog.format(published ? "files.confirm.unpublish" : "files.confirm.delete", { notes: c.notes }),
+        shared, sharedText: shared ? catalog.format(one ? "files.confirm.shared" : "files.confirm.sharedMany") : "",
+        published, publishedText: published ? catalog.format(one ? "files.confirm.published" : "files.confirm.publishedMany") : "",
       };
+    },
+  });
+  // The deleting row's card (D-428): the steps of the row it's showing for, its elapsed time, and Retry.
+  viewModels.register({
+    id: "vm.deleting",
+    schema: { type: "object", properties: {
+      title: { type: "string" }, cardLabel: { type: "string" }, summary: { type: "string" }, icon: { type: "string" }, tone: { type: "string" },
+      line: { type: "string" }, still: { type: "string" }, failed: { type: "boolean" }, busy: { type: "boolean" }, problem: { type: "string" }, anywayWarning: { type: "string" },
+      steps: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, icon: { type: "string" }, tone: { type: "string" }, busy: { type: "boolean" }, state: { type: "string" }, stateLabel: { type: "string" } } } },
+    } },
+    // The tracker's tasks tick every second while a delete runs, which moves the elapsed clock.
+    reads: ["ui.files.deleting", "ui.files.deleteCard", "tasks"],
+    select: (s) => {
+      const jobs = s.ui.files.deleting ?? [];
+      const job = jobs.find((j) => j.id === s.ui.files.deleteCard) ?? jobs.find((j) => j.failed) ?? jobs[0];
+      return deleteCardView(job, catalog, Date.now());
     },
   });
 

@@ -168,16 +168,17 @@ test("FIL-01, FIL-02: the panel opens by keyboard and from the toolbar; notes an
   await expect.poll(() => ls(join(dirs.docs, "Projects"))).toEqual(["Sketches"]);
   expect(existsSync(join(dirs.docs, "Projects", "Sketches", "drafting-plan.md"))).toBe(true);
 
-  // One note is deleted without asking, to the trash; a folder with notes asks first.
+  // Every delete asks first (D-428), to the trash; a folder says how many notes go.
   await row("Ideas").click();
   await page.keyboard.press(process.platform === "darwin" ? "Meta+Backspace" : "Delete");
+  await page.getByRole("dialog", { name: "Delete “Ideas”?", exact: true }).getByRole("button", { name: "Delete 1 note", exact: true }).click();
   await expect(page.locator("#toasts").getByText("Moved “Ideas” to the trash.")).toBeVisible();
   await expect(row("Ideas")).toHaveCount(0);
   expect(await trashed()).toEqual([join(dirs.docs, "ideas.md")]);
   await row("Projects").click();
   await page.keyboard.press(process.platform === "darwin" ? "Meta+Backspace" : "Delete");
-  const confirm = page.getByRole("dialog", { name: "Delete" });
-  await expect(confirm).toContainText("Delete “Projects”? This deletes 1 note.");
+  const confirm = page.getByRole("dialog", { name: "Delete “Projects”?", exact: true });
+  await expect(confirm).toContainText("This deletes 1 note.");
   expect(await settledAxe(page)).toEqual([]);
   await confirm.getByRole("button", { name: "Delete 1 note" }).click();
   await expect.poll(() => existsSync(join(dirs.docs, "Projects"))).toBe(false);

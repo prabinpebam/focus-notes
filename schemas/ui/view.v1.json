@@ -6225,6 +6225,13 @@
                   "$ref": "#/$defs/read"
                 }
               ]
+            },
+            "cardLabel": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
             }
           },
           "required": [
@@ -6259,6 +6266,9 @@
             },
             "pin": {
               "$ref": "#/$defs/actions"
+            },
+            "card": {
+              "$ref": "#/$defs/actions"
             }
           }
         },
@@ -6267,6 +6277,12 @@
           "additionalProperties": false,
           "properties": {
             "sectionEnd": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/node"
+              }
+            },
+            "rowCard": {
               "type": "array",
               "items": {
                 "$ref": "#/$defs/node"

@@ -63,6 +63,8 @@ test("M2 demo: full screen, Files, links that follow a rename, and the text back
 
   await row("Old").click();
   await page.keyboard.press("Delete");
+  // Every delete asks first (D-428).
+  await page.getByRole("dialog", { name: "Delete “Old”?", exact: true }).getByRole("button", { name: "Delete 1 note", exact: true }).click();
   await expect(page.locator("#toasts").getByText("Moved “Old” to the trash.")).toBeVisible();
   await expect.poll(() => existsSync(join(docs, "old.md"))).toBe(false);
 
