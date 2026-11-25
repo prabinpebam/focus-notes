@@ -592,25 +592,6 @@
                           }
                         }
                       },
-                      "children": [
-                        {
-                          "type": "Switch",
-                          "props": {
-                            "label": {
-                              "t": "project.delete.private.switch"
-                            },
-                            "checked": {
-                              "bind": "vm.projectDelete.private"
-                            },
-                            "onLabel": {
-                              "t": "switch.on"
-                            },
-                            "offLabel": {
-                              "t": "switch.off"
-                            }
-                          }
-                        }
-                      ],
                       "on": {
                         "titlePress": {
                           "run": "github.open",
@@ -623,19 +604,26 @@
                       }
                     },
                     {
+                      "type": "SegmentedControl",
+                      "props": {
+                        "label": {
+                          "t": "project.delete.scope.label"
+                        },
+                        "options": {
+                          "get": "vm.projectDelete.scopes"
+                        },
+                        "value": {
+                          "bind": "vm.projectDelete.scope"
+                        }
+                      }
+                    },
+                    {
                       "type": "Text",
                       "props": {
                         "value": {
-                          "t": "project.delete.private.keep"
+                          "get": "vm.projectDelete.scopeDetail"
                         },
                         "tone": "muted"
-                      },
-                      "when": {
-                        "expr": {
-                          "!": {
-                            "get": "vm.projectDelete.private"
-                          }
-                        }
                       }
                     }
                   ],

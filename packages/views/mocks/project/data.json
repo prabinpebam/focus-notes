@@ -390,6 +390,8 @@
     "repo": "prabin/garden-notes",
     "siteRepo": "prabin/garden-notes-site",
     "privateRepo": "prabin/garden-notes-private",
+    "scopes": [{ "id": "both", "label": "Both" }, { "id": "public", "label": "Only the public one" }, { "id": "private", "label": "Only the private one" }],
+    "scopeDetail": "Deletes prabin/garden-notes (your published pages and shares) and prabin/garden-notes-private (your private notes). The project is gone only when both are.",
     "unsyncedProceedLabel": "Delete without saving",
     "otherRepo": "meera/garden-notes",
     "otherOwner": "@meera",
