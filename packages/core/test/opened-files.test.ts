@@ -168,6 +168,7 @@ describe("Opened files view model and commands (D-410, FIL-20)", () => {
     // Delete renamed-spec.md
     await app.commands.run("files.select", { id: "renamed-spec.md", mode: "replace" });
     await app.commands.run("files.delete");
+    await app.commands.run("files.confirm");
     await settle();
     expect(openedVm(app).items.map((i) => i.id)).toEqual(["welcome.md"]);
   });

@@ -110,7 +110,7 @@ const outcomes: Record<string, Outcome> = {
     history: true,
     check: async ({ page }, docs) => {
       const path = join(docs, "notes", "welcome.md");
-      const confirm = page.getByRole("dialog", { name: "Delete", exact: true });
+      const confirm = page.getByRole("dialog", { name: /^Delete “/ });
       await expect(confirm).toBeVisible();
       expect(existsSync(path)).toBe(true);
       await confirm.getByRole("button", { name: "Delete and unpublish", exact: true }).click();

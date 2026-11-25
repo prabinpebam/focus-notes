@@ -2535,6 +2535,10 @@
         "menuLabel": {
           "kind": "text",
           "description": "The menu's name: Actions for “Ideas”."
+        },
+        "cardLabel": {
+          "kind": "text",
+          "description": "D-428: names the card a deleting row shows on hover or focus."
         }
       },
       "events": {
@@ -2578,12 +2582,22 @@
             "id": "text",
             "pinned": "boolean"
           }
+        },
+        "card": {
+          "payload": {
+            "id": "text"
+          }
         }
       },
       "slots": {
         "sectionEnd": {
           "accepts": [
             "PopoverPanel"
+          ]
+        },
+        "rowCard": {
+          "accepts": [
+            "IconLayout"
           ]
         }
       },
@@ -2603,7 +2617,9 @@
         "pinAvailable",
         "pinPending",
         "pinConfirmed",
-        "pinFailed"
+        "pinFailed",
+        "deleting",
+        "deleteFailed"
       ],
       "tokens": "cmp.fileTree.*",
       "a11y": {
@@ -2612,6 +2628,7 @@
       },
       "fixtures": [
         "same-slot pin action and acknowledged outcomes",
+        "deleting rows: the border arc, and the failed outline",
         "sections, folders, the current note, and a multiple selection",
         "naming a folder, with an error"
       ]
@@ -7410,6 +7427,7 @@
       "ia": "IA-VIEW-CANVAS",
       "viewModels": [
         "vm.app",
+        "vm.deleting",
         "vm.project",
         "vm.projects",
         "vm.projectIntro",

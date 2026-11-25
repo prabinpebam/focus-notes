@@ -316,7 +316,7 @@ for (const appearance of ["light", "dark"]) test(`Close tooltip never changes di
       const tree = l.page.getByRole("tree", { name: "Notes and folders", exact: true });
       await fileRow(tree, "Geometry").click();
       await l.page.keyboard.press("Delete");
-      await check(l.page.getByRole("dialog", { name: "Delete", exact: true }));
+      await check(l.page.getByRole("dialog", { name: "Delete “Geometry”?", exact: true }));
       await l.page.keyboard.press("Escape");
       await l.page.keyboard.press("Control+Alt+o");
       const open = l.page.getByRole("dialog", { name: "Open", exact: true }).or(l.page.getByRole("region", { name: "Open", exact: true }));

@@ -31,7 +31,12 @@ const mockOf = (node: unknown, model: string): unknown => {
 };
 
 const sheet = findSheet(compose(canvas))!;
-const keep = (sheet.children as Node[]).filter((c) => c.id === "filesShortcuts" || c.id === "filesTree").map(({ slots: _slots, ...c }) => c);
+const keep = (sheet.children as Node[]).filter((c) => c.id === "filesShortcuts" || c.id === "filesTree").map(({ slots: _slots, ...c }) => {
+  // The deleting card (D-428) went with the slots; its label goes too.
+  const { cardLabel: _cardLabel, ...props } = (c.props ?? {}) as Node;
+  const { card: _card, ...on } = (c.on ?? {}) as Node;
+  return { ...c, props, ...(c.on ? { on } : {}) };
+});
 const opened: Node = {
   type: "OpenedFiles", id: "filesOpened", when: { get: "vm.deleted.closed" },
   props: { label: { t: "files.opened.heading" }, items: { get: "vm.opened.items" }, menu: { get: "vm.opened.menu" }, menuLabel: { t: "files.opened.menu" }, closeLabel: { t: "files.opened.close" } },

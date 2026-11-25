@@ -435,18 +435,23 @@ describe("creating, renaming, and deleting (FIL-01, FIL-02)", () => {
     expect(f.batches).toEqual([[{ op: "move", from: "a", to: "b" }]]);
     expect(app.store.state.note.path).toBe("b/n.md");
   });
-  it("one note is deleted without asking; a folder with notes asks first", async () => {
+  it("every delete asks first (D-428): one note, and a folder with notes", async () => {
     const f = setup({ notes: { "x.md": "# X\n", "f/y.md": "# Y\n" } });
     const app = await started(f);
     await app.commands.run("files.open");
     await app.commands.run("files.select", { id: "x.md", mode: "replace" });
     await app.commands.run("files.delete");
+    expect(app.viewModels.select("vm.confirm", app.store.state)).toMatchObject({
+      open: true, title: "Delete “X”?", message: "This deletes 1 note.", confirmLabel: "Delete 1 note", shared: false, published: false, icon: "delete", tone: "danger",
+    });
+    expect(f.batches).toHaveLength(0);
+    await app.commands.run("files.confirm");
     await settle();
     expect(f.notes.get("x.md")?.deleted).toBe(true);
     expect(toasts(app)).toContain("Deleted “X”.");
     await app.commands.run("files.select", { id: "f", mode: "replace" });
     await app.commands.run("files.delete");
-    expect(app.viewModels.select("vm.confirm", app.store.state)).toMatchObject({ open: true, message: "Delete “f”? This deletes 1 note.", confirmLabel: "Delete 1 note" });
+    expect(app.viewModels.select("vm.confirm", app.store.state)).toMatchObject({ open: true, message: "This deletes 1 note.", confirmLabel: "Delete 1 note" });
     expect(f.batches).toHaveLength(1);
     await app.commands.run("files.confirm");
     await settle();
