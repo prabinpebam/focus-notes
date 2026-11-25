@@ -139,6 +139,47 @@ it("D-429: a Private + Public project shares through its own public repository: 
   } finally { await rm(t.directory, { recursive: true, force: true }); }
 });
 
+it("D-429: an old separate site's pairing isn't used; Turn on moves it, empties the old site, and it's forgotten only once GitHub says it's gone", async () => {
+  const t = await fixture();
+  const legacy = join(t.directory, "legacy");
+  await mkdir(join(legacy, "notes"), { recursive: true });
+  await mkdir(join(legacy, "private", "notes"), { recursive: true });
+  await mkdir(join(legacy, "private", ".git"));
+  await mkdir(join(legacy, "private", ".focus-notes"));
+  await writeFile(join(legacy, "private", ".focus-notes", "site-pairing.json"), JSON.stringify({
+    version: 1, project: "ada/book-private", owner: "ada", name: "notes-site", intent: "0b6f1c2e-3d4a-4b5c-8d9e-0f1a2b3c4d5e", phase: "ready", site: "https://ada.github.io/notes-site/",
+  }));
+  const reader = join(t.directory, "reader");
+  await mkdir(join(reader, "assets"), { recursive: true });
+  await writeFile(join(reader, "render.mjs"), "export const renderNotePage = () => ({ file: 'n/x/index.html', html: '', title: '' });\nexport const renderEmptyHome = () => ({ file: 'index.html', html: 'Nothing published here yet' });\n");
+  t.github.add({ owner: "ada", name: "book-private", private: true });
+  t.github.repos.delete("ada/book");
+  t.github.add({ owner: "ada", name: "book", private: false });
+  t.github.add({ owner: "ada", name: "notes-site", private: false });
+  t.switch(legacy);
+  const pushed: string[] = [], retired: string[] = [];
+  const runtime = sharingRuntime({
+    ...t.deps, reader: () => reader,
+    repository: async (dir: string) => dir === join(legacy, "private") ? "ada/book-private" : "ada/book",
+    publisher: async (_project, artifact) => { pushed.push(artifact.build); return { status: "published", commit: "a".repeat(40), pages: { status: "built", repository: "ada/book", build: artifact.build } }; },
+    retirePublisher: async (_project, artifact) => { retired.push(artifact.directory); return { status: "published", commit: "a".repeat(40), pages: { status: "built", repository: "ada/notes-site", build: artifact.build } }; },
+  });
+  try {
+    expect(await runtime.pairing()).toBeUndefined();
+    expect(await runtime.describe()).toMatchObject({ name: "book", moveFrom: "ada/notes-site", phase: "unconfigured" });
+    await expect(runtime.publish()).rejects.toThrow("access:site.unavailable");
+    expect(pushed).toEqual([]);
+    await expect(runtime.enable("book")).resolves.toMatchObject({ name: "book", from: "ada/notes-site", phase: "ready" });
+    await expect.poll(() => retired.length).toBe(1);
+    expect(await runtime.oldSite()).toBe("ada/notes-site");
+    await expect(runtime.checkOldSite()).resolves.toBe(false);
+    t.github.repos.delete("ada/notes-site");
+    await expect(runtime.checkOldSite()).resolves.toBe(true);
+    expect(await runtime.oldSite()).toBeUndefined();
+    expect(t.github.calls.filter(c => c.method === "DELETE" || (c.method === "POST" && c.path === "/user/repos"))).toEqual([]);
+  } finally { await rm(t.directory, { recursive: true, force: true }); }
+});
+
 it("D-429: in the Private + Public layout a missing or private public repository is never created or used", async () => {
   const t = await fixture();
   const legacy = join(t.directory, "legacy");

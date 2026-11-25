@@ -64,6 +64,25 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
     }
   });
   reg<Record<string, never>>("sharing.firstMore", () => set({ more: !state().more }));
+  // D-429: deleting the old separate site is the owner's, on GitHub, after typing its name here; never automatic.
+  reg<Record<string, never>>("sharing.oldSiteOpen", () => { if (state().oldSite) { set({ dialog: "oldSite", oldSiteTyped: "", problem: "" }); settingsOpen(false); } });
+  reg<{ value: string }>("sharing.oldSiteType", ({ value }) => set({ oldSiteTyped: value }));
+  const oldSiteName = () => state().oldSite?.split("/")[1] ?? "";
+  reg<Record<string, never>>("sharing.oldSiteGitHub", async () => {
+    if (!state().oldSite || state().oldSiteTyped?.trim() !== oldSiteName()) return;
+    await access?.setup?.openOldSite?.();
+  });
+  reg<Record<string, never>>("sharing.oldSiteCheck", async () => {
+    const site = state().oldSite;
+    if (!site || state().busy) return;
+    set({ busy: true, problem: "" });
+    try {
+      const gone = await tracker.run("sharing.oldSite.check", "share.item.preparing", async () => Boolean(await access?.setup?.checkOldSite?.()));
+      if (gone) { set({ oldSite: undefined, oldSiteTyped: "", dialog: "", status: "oldSiteGone" }); settingsOpen(true); }
+      else set({ problem: catalog.format("share.oldSite.waiting", { site }) });
+    } catch (error) { set({ problem: setupProblem(error) }); }
+    finally { set({ busy: false }); }
+  });
   const firstClose = (accepted: boolean) => {
     const resume = state().resume;
     ++setupGeneration;
@@ -93,6 +112,10 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
         if (!current()) return;
         if (!listing.available || !listing.configured || listing.site !== result.site) throw new Error("sharing:unacknowledged");
         store.update(s => ({ ...s, ui: { ...s.ui, share: { ...s.ui.share, listing } } }));
+        // D-429: shares that moved from an old separate site leave it to be deleted; Settings offers that.
+        const oldSite = await setup.oldSite?.().catch(() => undefined);
+        if (!current()) return;
+        set({ oldSite });
         progress.done();
         firstClose(true);
       }, undefined, "fn:sharing.setup.enable", "success");
@@ -205,13 +228,14 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
       project: str, site: str, on: bool, off: bool, offDetail: str, localReview: bool, busy: bool, status: str, problem: str, copyLabel: str, extendLabel: str, templateBadge: str,
       empty: bool, waiting: bool, failed: bool, retrying: bool, emptyTitle: str, emptyDetail: str, emptyAction: str, loadProblem: str,
       filter: str, query: str, dialog: str, confirmOpen: bool, confirmTitle: str, confirmText: str, confirmLabel: str,
-      firstOpen: bool, more: bool, moreIcon: str, repo: str, targetLabel: str, repoTitle: str, canSetup: bool, setupSite: str, setupProblem: bool, setupStatus: str, firstAcceptLabel: str,
+      firstOpen: bool, more: bool, moreIcon: str, repo: str, targetLabel: str, repoTitle: str, moveText: str, canSetup: bool, setupSite: str, setupProblem: bool, setupStatus: str, firstAcceptLabel: str,
+      oldSite: str, oldSiteOpen: bool, oldSiteTyped: str, oldSiteReady: bool, oldSiteName: str,
       filters: { type: "array", items: { type: "object", properties: { id: str, label: str } } },
       rows: { type: "array", items: { type: "object", properties: {
         id: str, item: str, detail: str, badge: str, icon: str, live: bool, hasTemplateProblem: bool, copyMenu: menuSchema, extendMenu: menuSchema,
       } } },
     } },
-    setters: { filter: "sharing.filter", query: "sharing.query" },
+    setters: { filter: "sharing.filter", query: "sharing.query", oldSiteTyped: "sharing.oldSiteType" },
     reads: "*",
     select: s => {
       const m = s.ui.share.settings, listing = s.ui.share.listing;
@@ -258,6 +282,9 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
         // The Private + Public layout uses the project's own public repository; nothing is created there (D-429).
         targetLabel: catalog.format(m.setupPreview?.existing ? "share.first.existing" : "share.first.created"),
         repoTitle: catalog.format(m.setupPreview?.existing ? "share.first.repo.existing" : "share.first.repo"),
+        moveText: m.setupPreview?.moveFrom ? catalog.format("share.first.move", { site: m.setupPreview.moveFrom }) : "",
+        oldSite: m.oldSite ?? "", oldSiteOpen: m.dialog === "oldSite" && Boolean(m.oldSite), oldSiteTyped: m.oldSiteTyped ?? "",
+        oldSiteName: m.oldSite?.split("/")[1] ?? "", oldSiteReady: Boolean(m.oldSite) && (m.oldSiteTyped ?? "").trim() === m.oldSite?.split("/")[1],
         canSetup: Boolean(listing?.localReview || access?.setup && listing?.available && listing.setupAvailable),
         setupSite: m.setupPreview?.site ?? (listing?.localReview ? listing.site ?? "" : ""),
         setupProblem: Boolean(m.problem),

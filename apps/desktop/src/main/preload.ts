@@ -307,6 +307,9 @@ contextBridge.exposeInMainWorld("focusNotes", {
       describe: () => ipcRenderer.invoke("sharing:setupPreview"),
       enable: (name: string) => ipcRenderer.invoke("sharing:setupEnable", name),
       disable: () => ipcRenderer.invoke("sharing:setupDisable"),
+      oldSite: () => ipcRenderer.invoke("sharing:oldSite"),
+      openOldSite: () => ipcRenderer.invoke("sharing:oldSiteOpen"),
+      checkOldSite: () => ipcRenderer.invoke("sharing:oldSiteCheck"),
       onStep: (listener: (step: SharingSetupStep) => void) => {
         const handler = (_event: unknown, step: SharingSetupStep) => listener(step);
         ipcRenderer.on("sharing:setupStep", handler);

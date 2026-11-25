@@ -2177,6 +2177,18 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     return sharing.enable(name);
   });
   handle("sharing:setupDisable", () => sharing.disable());
+  // D-429: the old separate shares site, after its shares moved into the public repository. The owner deletes it on
+  // GitHub (D-413's way, never from the app); the app only opens its settings and checks it's gone.
+  handle("sharing:oldSite", () => sharing.oldSite());
+  handle("sharing:oldSiteOpen", async () => {
+    const old = await sharing.oldSite();
+    if (!old || !isRepoSlug(old)) throw new Error("sharing:unconfigured");
+    const url = `https://github.com/${old}/settings`;
+    if (!isWebLink(url)) throw new Error("sharing:failed");
+    if (journey) return void process.stdout.write(`[focus-notes] open-external ${url}\n`);
+    await shell.openExternal(url);
+  });
+  handle("sharing:oldSiteCheck", () => sharing.checkOldSite());
   // Publish and Unpublish (G3): notes-root-relative paths; staging re-validates each one.
   const notePaths = (value: unknown): string[] => {
     if (!Array.isArray(value) || value.length > 10_000 || value.some(p => typeof p !== "string")) throw new Error("sharing:scope");

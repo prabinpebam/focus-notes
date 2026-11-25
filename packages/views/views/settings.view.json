@@ -2580,6 +2580,41 @@
                           {
                             "type": "ItemCard",
                             "when": {
+                              "expr": { "and": [{ "get": "vm.sharingSettings.on" }, { "!=": [{ "get": "vm.sharingSettings.oldSite" }, ""] }] }
+                            },
+                            "props": {
+                              "title": {
+                                "t": "share.oldSite.title"
+                              },
+                              "detail": {
+                                "t": "share.oldSite.detail",
+                                "args": {
+                                  "site": {
+                                    "get": "vm.sharingSettings.oldSite"
+                                  }
+                                }
+                              },
+                              "icon": "github"
+                            },
+                            "children": [
+                              {
+                                "type": "Button",
+                                "props": {
+                                  "label": {
+                                    "t": "share.oldSite.delete"
+                                  }
+                                },
+                                "on": {
+                                  "press": {
+                                    "run": "sharing.oldSiteOpen"
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "type": "ItemCard",
+                            "when": {
                               "get": "vm.sharingSettings.off"
                             },
                             "props": {
@@ -5612,6 +5647,147 @@
       },
       {
         "type": "Dialog",
+        "id": "sharingOldSite",
+        "when": {
+          "get": "vm.sharingSettings.oldSiteOpen"
+        },
+        "props": {
+          "title": {
+            "t": "share.oldSite.dialogTitle",
+            "args": {
+              "site": {
+                "get": "vm.sharingSettings.oldSite"
+              }
+            }
+          },
+          "closeLabel": {
+            "t": "dialog.close"
+          },
+          "open": {
+            "get": "vm.sharingSettings.oldSiteOpen"
+          },
+          "size": "s",
+          "height": "content"
+        },
+        "on": {
+          "openChange": {
+            "run": "sharing.confirmClose"
+          }
+        },
+        "slots": {
+          "visual": [
+            {
+              "type": "StepMark",
+              "props": {
+                "icon": "delete",
+                "tone": "danger",
+                "size": "compact"
+              }
+            }
+          ],
+          "footer": [
+            {
+              "type": "Inline",
+              "props": {
+                "justify": "end",
+                "gap": "inlineItem"
+              },
+              "children": [
+                {
+                  "type": "Button",
+                  "props": {
+                    "label": {
+                      "t": "share.oldSite.check"
+                    },
+                    "busy": {
+                      "get": "vm.sharingSettings.busy"
+                    }
+                  },
+                  "on": {
+                    "press": {
+                      "run": "sharing.oldSiteCheck"
+                    }
+                  }
+                },
+                {
+                  "type": "Button",
+                  "props": {
+                    "label": {
+                      "t": "share.oldSite.open"
+                    },
+                    "variant": "danger",
+                    "disabled": {
+                      "expr": { "!": [{ "get": "vm.sharingSettings.oldSiteReady" }] }
+                    },
+                    "disabledReason": {
+                      "t": "share.oldSite.confirm",
+                      "args": {
+                        "name": {
+                          "get": "vm.sharingSettings.oldSiteName"
+                        }
+                      }
+                    }
+                  },
+                  "on": {
+                    "press": {
+                      "run": "sharing.oldSiteGitHub"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "children": [
+          {
+            "type": "Stack",
+            "props": {
+              "gap": "stackGroup"
+            },
+            "children": [
+              {
+                "type": "Text",
+                "props": {
+                  "value": {
+                    "t": "share.oldSite.text"
+                  }
+                }
+              },
+              {
+                "type": "TextField",
+                "props": {
+                  "label": {
+                    "t": "share.oldSite.confirm",
+                    "args": {
+                      "name": {
+                        "get": "vm.sharingSettings.oldSiteName"
+                      }
+                    }
+                  },
+                  "value": {
+                    "bind": "vm.sharingSettings.oldSiteTyped"
+                  },
+                  "autoFocus": true
+                }
+              },
+              {
+                "type": "Text",
+                "when": {
+                  "expr": { "!=": [{ "get": "vm.sharingSettings.problem" }, ""] }
+                },
+                "props": {
+                  "value": {
+                    "get": "vm.sharingSettings.problem"
+                  },
+                  "tone": "danger"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Dialog",
         "id": "sharingFirst",
         "when": {
           "get": "vm.sharingSettings.firstOpen"
@@ -5692,6 +5868,15 @@
                     "t": "share.first.lead"
                   },
                   "role": "lead"
+                }
+              },
+              {
+                "type": "Text",
+                "when": { "expr": { "!=": [{ "get": "vm.sharingSettings.moveText" }, ""] } },
+                "props": {
+                  "value": {
+                    "get": "vm.sharingSettings.moveText"
+                  }
                 }
               },
               {
