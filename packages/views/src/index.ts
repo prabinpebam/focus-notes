@@ -31,7 +31,7 @@ import { shareProgressMocks } from "../mocks/share-progress/index.ts";
 import { compose } from "./compose.ts";
 
 /** Every view document in the app. Fragments join this when they exist. */
-export const views: Record<string, unknown> = { canvas: compose(canvas), settings: compose(settings), theme, history, feedback, panelFailure, rewrite, newNote, shareItem, sitePreview: compose(sitePreview), projects: compose(projects), projectNew, projectIntro, localImport };
+export const views: Record<string, unknown> = { canvas: compose(canvas), settings: compose(settings), theme, history, feedback, panelFailure, rewrite, newNote, shareItem: compose(shareItem), sitePreview: compose(sitePreview), projects: compose(projects), projectNew, projectIntro, localImport };
 export { pages, messages };
 /** The product site's pages (IA-VIEW-SITE, WP-10.1; help is in the Slate docs, D-181), rendered at build time by the site's renderer. */
 export const sitePages: Record<string, unknown> = { siteLanding, sitePage };

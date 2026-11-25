@@ -1,4 +1,5 @@
 import type { AppState } from "./app.ts";
+import { shareProgress, shareProgressView } from "./share-progress.ts";
 import { opErrorCode } from "./bridge.ts";
 import type { CommandRegistry } from "./commands.ts";
 import type { MessageCatalog } from "./messages.ts";
@@ -111,14 +112,25 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
     return Boolean(g.item && g.item.path === relative && g.item.folder === d.folder);
   };
   const row = (id: string) => store.state.ui.share.listing?.grants.find((g) => g.id === id && matchesItem(store.state, g));
+  const progress = shareProgress(store);
+  /** Moves the stepper (D-427) with the desktop's phases while `work` runs. */
+  const withSteps = async <T>(work: () => Promise<T>): Promise<T> => {
+    const off = access?.setup?.onStep?.(step => progress.step(step));
+    try { return await work(); } finally { off?.(); }
+  };
   const fail = (error: unknown) => {
     // The last match: Electron prefixes the channel ("Error invoking remote method 'access:ready': …").
     const code = [...(error instanceof Error ? error.message : "").matchAll(/access:([A-Za-z.]+)/g)].at(-1)?.[1];
+    const pages = /sharing:pages/.test(error instanceof Error ? error.message : "");
+    const p = progress.get();
+    const stepped = (p.op === "share" || p.op === "withdraw") && !p.failed && p.at < 4;
+    if (stepped) progress.fail();
+    const stopped = stepped ? `${shareProgressView(progress.get(), catalog, 0).failedStep} ` : "";
     const signedOut = code === "signedOut" || code === "auth";
     const message = code === "offline" ? "share.item.offline" : signedOut ? "share.item.signedOut"
       : code === "scope.changed" ? "share.item.contentsChanged" : code === "notReady" ? "share.item.notReady"
-      : code === "expiry.invalid" ? "share.item.expiryInvalid" : "share.item.failed";
-    set({ problem: catalog.format(message), signedOut, status: "", ready: false, information: "" });
+      : code === "expiry.invalid" ? "share.item.expiryInvalid" : pages ? "share.item.websiteFailed" : "share.item.failed";
+    set({ problem: stopped + catalog.format(message), signedOut, status: "", ready: false, information: "" });
   };
   const reg = <A extends Record<string, unknown> = Record<string, never>>(id: string, run: (a: A) => void | Promise<void>) =>
     commands.register<A>({ id, title: "command.note.share", run });
@@ -248,6 +260,7 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
     if (!open) {
       const id = state().waitingId || state().id;
       generation++; set({ ...ITEM_SHARE_CLOSED });
+      if (["share", "withdraw"].includes(progress.get().op)) progress.clear();
       if (id && access?.cancelReady) return access.cancelReady(id);
     }
   });
@@ -310,8 +323,21 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
     const id = state().confirmId, current = generation;
     if (!access || state().busy || !row(id)) return;
     set({ busy: true, problem: "" });
+    progress.start("withdraw");
+    progress.step("save");
     try {
-      const listing = await tracker.run("share.item.withdraw", "share.item.withdrawing", () => access.apply({ op: "withdraw", id }));
+      const listing = await tracker.run("share.item.withdraw", "share.item.withdrawing", () => withSteps(async () => {
+        // A Retry after the website update failed carries on from there: the share is already stopped.
+        const done = row(id) && audienceState(row(id)!) !== "active" && access.redeploy ? { ...store.state.ui.share.listing!, id, deployed: await access.redeploy() } : await access.apply({ op: "withdraw", id });
+        if (done.deployed === false) {
+          // Saved here already: the list shows it withdrawn, so Retry only updates the website.
+          const { id: _, deployed: __, ...saved } = done;
+          if (current === generation) store.update((s) => ({ ...s, ui: { ...s.ui, share: { ...s.ui.share, listing: saved } } }));
+          throw new Error("sharing:pages");
+        }
+        return done;
+      }));
+      progress.done();
       if (current !== generation) return;
       store.update((s) => ({ ...s, ui: { ...s.ui, share: { ...s.ui.share, listing } } }));
       set({ confirmId: "", ...(id === state().id ? { ready: false, information: "" } : {}), status: catalog.format("share.item.withdrawn") });
@@ -381,6 +407,7 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
     }
     const shell = access!;
     set({ busy: true, problem: "", templateInvalid: false, signedOut: false, resumeAction: what, status: catalog.format("share.item.creating"), startedAt: Date.now(), step: 1, totalSteps: 4 });
+    if (!d.ready) progress.start("share");
     try {
       let id = d.id;
       if (!id) {
@@ -405,7 +432,8 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
       }
       if (!d.ready) {
         set({ status: catalog.format("share.item.publishing"), step: 2, waitingId: id });
-        await tracker.run("share.item.publish", "share.item.publishing", () => shell.ready!(id));
+        await tracker.run("share.item.publish", "share.item.publishing", () => withSteps(() => shell.ready!(id)));
+        progress.step("verify");
       }
       if (current !== generation) return;
       set({ step: 3 });
@@ -447,7 +475,7 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
       open: BOOL, title: STR, name: STR, folder: BOOL, icon: STR, detail: STR, badge: STR,
       id: STR, busy: BOOL, ready: BOOL, generated: STR, wordsId: STR, wordsBusy: BOOL, status: STR, information: STR, controlsLocked: BOOL,
       primaryLabel: STR, macos: BOOL, reviewFocus: STR,
-      dialogOpen: BOOL, publishedOpen: BOOL, publicUrl: STR, copyDisabled: BOOL, copyReason: STR, setupVisible: BOOL, setupMessage: STR, setupAction: STR, setupFixable: BOOL, historyOpen: BOOL, hasHistory: BOOL, historyCount: NUM, confirmOpen: BOOL, signedOut: BOOL, progress: STR,
+      dialogOpen: BOOL, publishedOpen: BOOL, publicUrl: STR, copyDisabled: BOOL, copyReason: STR, setupVisible: BOOL, setupMessage: STR, setupAction: STR, setupFixable: BOOL, historyOpen: BOOL, hasHistory: BOOL, historyCount: NUM, confirmOpen: BOOL, signedOut: BOOL, progress: STR, withdrawLabel: STR,
       newerCount: NUM, hasNewer: BOOL,
       restoreDisabled: BOOL, restoreReason: STR,
       history: { type: "array", items: { type: "object", properties: { id: STR, methods: STR, detail: STR, badge: STR, link: BOOL, active: BOOL } } },
@@ -507,6 +535,7 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
         history, hasHistory: history.length > 0, historyCount: history.length,
         newerCount, hasNewer: newerCount > 0,
         restoreDisabled: !commands.describe("files.showDeleted").enabled, restoreReason: catalog.format("share.item.restoreUnavailable"),
+        withdrawLabel: catalog.format(d.problem && progress.get().op === "withdraw" && progress.get().failed ? "commit.retry" : "share.withdraw.confirm"),
         progress: d.busy && elapsed >= 3 ? catalog.format("share.item.progress", { step: d.step, total: d.totalSteps, seconds: elapsed }) : "",
         controlsLocked: d.busy || d.wordsBusy || Boolean(d.id), macos: platform === "macos",
         controlReason: catalog.format(d.id ? "share.item.controlsSaved" : d.wordsBusy ? "share.item.wordsPreparing" : "share.item.creating"),

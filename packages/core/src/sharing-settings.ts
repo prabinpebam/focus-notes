@@ -9,7 +9,7 @@ import { defaultItemShareTemplate } from "./share-item.ts";
 import { sharingAvailable, type AccessBridge, type ShareManageState } from "./share-manage.ts";
 import { joinPath, findNode } from "./workspace.ts";
 import { opErrorCode } from "./bridge.ts";
-import { shareProgress, shareProgressView } from "./share-progress.ts";
+import { shareProgress, shareProgressView, type ShareOperation } from "./share-progress.ts";
 
 export function registerSharingSettings({ store, catalog, commands, viewModels, tracker, access }: {
   store: Store<AppState>; catalog: MessageCatalog; commands: CommandRegistry<AppState>;
@@ -30,7 +30,7 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
   });
   const settingsOpen = (open: boolean) => store.update(s => ({ ...s, ui: { ...s.ui, settings: { ...s.ui.settings, open, section: "sharing" } } }));
   reg<{ id?: string; kind: string }>("sharing.confirmOpen", ({ id = "", kind }) => { set({ dialog: kind, id, problem: "" }); settingsOpen(false); });
-  reg<Record<string, never>>("sharing.confirmClose", () => { if (!state().busy) { set({ dialog: "" }); settingsOpen(true); } });
+  reg<Record<string, never>>("sharing.confirmClose", () => { if (!state().busy) { set({ dialog: "" }); progress.clear(); settingsOpen(true); } });
   let setupGeneration = 0;
   let setupPending = false;
   // One honest reason with its recovery (G2.2): the main process names the cause as `sharing:<code>`.
@@ -105,16 +105,22 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
       if (current()) set({ busy: false });
     }
   });
-  const work = async (action: () => Promise<void>, status: string) => {
+  const work = async (action: () => Promise<void>, status: string, op?: ShareOperation) => {
     if (state().busy) return;
     set({ busy: true, problem: "", status: "" });
+    // D-427: a long change streams its steps in its confirmation; Retry carries on from a failed one.
+    const off = op ? (progress.start(op), access?.setup?.onStep?.(step => progress.step(step))) : undefined;
     try {
       await tracker.run("sharing.change", "share.item.preparing", action);
+      if (op) progress.clear();
       set({ status, dialog: "" });
       settingsOpen(true);
-    } catch {
-      set({ problem: catalog.format("share.item.failed") });
-    } finally { set({ busy: false }); }
+    } catch (error) {
+      const pages = /sharing:pages/.test(error instanceof Error ? error.message : String(error));
+      if (op) progress.fail();
+      const failed = catalog.format(pages ? "share.item.websiteFailed" : "share.item.failed");
+      set({ problem: op ? `${shareProgressView(progress.get(), catalog, 0).failedStep} ${failed}` : failed });
+    } finally { off?.(); set({ busy: false }); }
   };
   reg<{ id: string; action: string; useDefault?: boolean }>("sharing.copy", async ({ id, action, useDefault }) => {
     const grant = store.state.ui.share.listing?.grants.find(g => g.id === id && g.item);
@@ -170,16 +176,24 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
       await work(async () => {
         const result = await setup.disable();
         if (result.phase !== "off") throw new Error("sharing:unacknowledged");
+        progress.step("off");
         const listing = await access.load();
         store.update(s => ({ ...s, ui: { ...s.ui, share: { ...s.ui.share, listing } } }));
-      }, "off");
+      }, "off", "turnOff");
       return;
     }
     if (!access || (dialog !== "withdraw" && dialog !== "delete")) throw new Error(catalog.format("share.item.unavailable"));
+    const withdraw = dialog === "withdraw";
+    const already = withdraw && store.state.ui.share.listing?.grants.some(g => g.id === id && audienceState(g) !== "active");
     await work(async () => {
-      const { id: _, ...listing } = await access.apply({ op: dialog, id });
+      if (withdraw) progress.step("save");
+      // Retry after the website update failed: the share is already stopped, so only the update runs again.
+      if (already && access.redeploy) { if (!await access.redeploy()) throw new Error("sharing:pages"); return; }
+      const { id: _, deployed, ...listing } = await access.apply({ op: dialog, id });
+      // Saved even when the website update after it failed, so Retry only updates the website.
       store.update(s => ({ ...s, ui: { ...s.ui, share: { ...s.ui.share, listing } } }));
-    }, dialog === "withdraw" ? "withdrawn" : "deleted");
+      if (deployed === false) throw new Error("sharing:pages");
+    }, withdraw ? "withdrawn" : "deleted", withdraw ? "withdraw" : undefined);
   });
   const str = { type: "string" as const }, bool = { type: "boolean" as const };
   const menuSchema = { type: "array" as const, items: { type: "object" as const, properties: {
@@ -248,7 +262,7 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
         setupStatus: m.busy ? catalog.format(m.dialog === "first" && s.ui.share.progress?.op === "turnOn" ? "share.progress.turnOn.busy" : "sharing.setup.busy.prepare") : "",
         moreIcon: m.more ? "chevronDown" : "chevronRight",
         confirmTitle: kind === "off" ? catalog.format("sharing.off.title", { project: typeof projectName === "string" ? projectName : "" }) : catalog.format(`share.${kind}.title`), confirmText: catalog.format(kind === "off" ? "share.off.history" : `share.${kind}.text`),
-        confirmLabel: catalog.format(`share.${kind}.confirm`),
+        confirmLabel: catalog.format(m.problem && s.ui.share.progress?.failed && ["withdraw", "turnOff"].includes(s.ui.share.progress.op) ? "commit.retry" : `share.${kind}.confirm`),
         filters: filters.map(id => ({ id, label: catalog.format(`sharing.filter.${id}`) })), rows,
       };
     },

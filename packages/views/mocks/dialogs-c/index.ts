@@ -16,13 +16,14 @@ const mockOf = (node: unknown, from: string, to: string): unknown => {
   if (!node || typeof node !== "object") return typeof node === "string" ? node.replace(new RegExp(`^vm\\.${from}\\b`), `vm.${to}`) : node;
   return Object.fromEntries(Object.entries(node).filter(([k]) => k !== "on").map(([k, v]) => [k === "bind" ? "get" : k, mockOf(v, from, to)]));
 };
-const dialogOf = (doc: Node, index: number, from: string, to: string, focus: string) => ({ focus, root: { type: "Stack", id: "dialogsC", children: [mockOf(doc.root.children[index], from, to)] } });
+const dialogOf = (doc: Node, index: number, from: string, to: string, focus: string) => ({ focus, root: { type: "Stack", id: "dialogsC", children: [mockOf(mockOf(compose(doc.root.children[index]), "shareProgress", "dcShareProgress"), from, to)] } });
 
 export const dialogsCMocks = {
   id: "dialogsC",
   label: "Mocks: two-column dialogs, sharing, projects and rewrite (D-408)",
   models: {
     dcShare: data.share,
+    dcShareProgress: { show: false, op: "", line: "", still: "", failedStep: "", steps: [{ id: "encrypt", label: "Lock the note", state: "waiting", icon: "lock", tone: "neutral", busy: false, stateLabel: "Not started yet" }] },
     dcShareDeleted: { ...data.share, deleted: true, primaryLabel: "Share", actionsDisabled: true, actionReason: "The folder was deleted" },
     dcProjects: data.projects,
     dcRewrite: { confirmingDiscard: true },

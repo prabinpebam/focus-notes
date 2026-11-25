@@ -3,18 +3,21 @@
   "when": { "get": "vm.sharingPreview.showProgress" },
   "props": { "gap": "stackItem" },
   "children": [
-    { "each": { "get": "vm.sharingPreview.parts" }, "as": "part", "key": "part.id", "empty": {
-      "type": "Text", "props": { "value": { "t": "sharing.preview.preparing" } }
-    }, "render": {
-      "type": "Inline", "props": { "gap": "inlineItem", "align": "center" }, "children": [
-        { "type": "StepMark", "props": { "size": "compact", "icon": { "get": "part.icon" }, "tone": { "get": "part.tone" }, "busy": { "get": "part.busy" } } },
-        { "type": "Text", "props": { "value": { "get": "part.label" }, "role": "secondary", "tone": "muted" } }
-      ]
-    } },
-    { "type": "ProgressBar", "props": { "value": { "get": "vm.sharingPreview.progress" }, "label": { "get": "vm.sharingPreview.progressLabel" } } },
-    { "type": "Text", "when": { "expr": { "!=": [{ "get": "vm.sharingPreview.elapsed" }, ""] } }, "props": {
-      "value": { "get": "vm.sharingPreview.elapsed" }, "role": "caption", "tone": "muted"
-    } },
+    { "type": "Stack", "when": { "expr": { "!": { "get": "vm.sharingPreview.stepped" } } }, "props": { "gap": "stackItem" }, "children": [
+      { "each": { "get": "vm.sharingPreview.parts" }, "as": "part", "key": "part.id", "empty": {
+        "type": "Text", "props": { "value": { "t": "sharing.preview.preparing" } }
+      }, "render": {
+        "type": "Inline", "props": { "gap": "inlineItem", "align": "center" }, "children": [
+          { "type": "StepMark", "props": { "size": "compact", "icon": { "get": "part.icon" }, "tone": { "get": "part.tone" }, "busy": { "get": "part.busy" } } },
+          { "type": "Text", "props": { "value": { "get": "part.label" }, "role": "secondary", "tone": "muted" } }
+        ]
+      } },
+      { "type": "ProgressBar", "props": { "value": { "get": "vm.sharingPreview.progress" }, "label": { "get": "vm.sharingPreview.progressLabel" } } },
+      { "type": "Text", "when": { "expr": { "!=": [{ "get": "vm.sharingPreview.elapsed" }, ""] } }, "props": {
+        "value": { "get": "vm.sharingPreview.elapsed" }, "role": "caption", "tone": "muted"
+      } }
+    ] },
+    { "type": "Stack", "when": { "get": "vm.sharingPreview.stepped" }, "children": [{ "use": "share.steps" }] },
     { "type": "StatusRow", "when": { "get": "vm.sharingPreview.failed" }, "props": {
       "message": { "get": "vm.sharingPreview.problem" }, "tone": "danger",
       "actionLabel": { "t": "commit.retry" }, "actionBusy": { "get": "vm.sharingPreview.busy" }, "actionBusyLabel": { "t": "uiStates.recovery.retrying" }

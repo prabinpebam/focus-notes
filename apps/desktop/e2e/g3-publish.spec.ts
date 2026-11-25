@@ -69,7 +69,9 @@ test("G3.1/G3.5: Publish saves exactly the note to the paired site, keeps runnin
     const dialog = await openPublish(l);
     await dialog.getByRole("button", { name: "Publish", exact: true }).click();
     await expect.poll(() => fake.git.pushes.length, { timeout: 30_000 }).toBe(1);
-    await expect(dialog).toContainText("Publish on your site");
+    // D-427: the uploaded steps are ticked and GitHub's update is the step being worked on.
+    await expect(dialog.getByText("GitHub updates your website", { exact: true })).toBeVisible();
+    await expect(dialog.getByRole("img", { name: "Working on this now", exact: true })).toHaveCount(1);
     await l.page.keyboard.press("Escape");
     await expect(dialog).toHaveCount(0);
     // Pushed but not yet served: never Published, and writing goes on.

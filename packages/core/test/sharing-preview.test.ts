@@ -317,7 +317,7 @@ it("G3.2/G3.4: a leak stop never names private content; Unpublish says the note 
   const task = t.app.commands.run("sharing.publish");
   t.settle(new Error("Leak check failed: private content found in 1 place(s): notes/index.json (path)"));
   await task;
-  expect(t.vm().problem).toBe("Publishing stopped: the site would include text from your private notes. Nothing was published.");
+  expect(t.vm().problem).toBe("Stopped at “Prepare the notes”. Publishing stopped: the site would include text from your private notes. Nothing was published.");
   const removal = t.app.commands.run("note.unpublish");
   await Promise.resolve(); await Promise.resolve();
   expect(t.unpublished).toEqual([["a.md"]]);

@@ -64,5 +64,5 @@ it("a failed Turn off keeps sharing on with the dialog and an error, never a fal
   await t.run("share.manage.load");
   await t.run("sharing.confirmOpen", { kind: "turnOff" });
   await t.run("sharing.confirm");
-  expect(t.vm("vm.sharingSettings")).toMatchObject({ on: true, confirmOpen: true, busy: false, problem: en["share.item.failed"], status: "" });
+  expect(t.vm("vm.sharingSettings")).toMatchObject({ on: true, confirmOpen: true, busy: false, problem: `Stopped at “Keep your notes safe”. ${en["share.item.failed"]}`, status: "" });
 });

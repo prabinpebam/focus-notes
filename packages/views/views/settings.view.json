@@ -5553,6 +5553,7 @@
                   }
                 }
               },
+              { "type": "Stack", "when": { "expr": { "or": [{ "==": [{ "get": "vm.shareProgress.op" }, "withdraw"] }, { "==": [{ "get": "vm.shareProgress.op" }, "turnOff"] }] } }, "children": [{ "use": "share.steps" }] },
               {
                 "type": "Text",
                 "when": {
@@ -5754,7 +5755,7 @@
               },
               {
                 "type": "Stack",
-                "when": { "expr": { "!": { "get": "vm.shareProgress.show" } } },
+                "when": { "expr": { "!=": [{ "get": "vm.shareProgress.op" }, "turnOn"] } },
                 "props": {
                   "gap": "stackItem"
                 },
@@ -5796,7 +5797,7 @@
               },
               {
                 "type": "Text",
-                "when": { "expr": { "!": { "get": "vm.shareProgress.show" } } },
+                "when": { "expr": { "!=": [{ "get": "vm.shareProgress.op" }, "turnOn"] } },
                 "props": {
                   "value": {
                     "t": "share.first.history"
@@ -5843,7 +5844,7 @@
                   "role": "secondary"
                 }
               },
-              { "use": "share.steps" },
+              { "type": "Stack", "when": { "expr": { "==": [{ "get": "vm.shareProgress.op" }, "turnOn"] } }, "children": [{ "use": "share.steps" }] },
               {
                 "type": "Text",
                 "when": { "get": "vm.sharingSettings.setupProblem" },

@@ -50,6 +50,9 @@ describe("share and publish progress (D-427)", () => {
   });
 
   it("gives every operation its own steps", () => {
+    // Publish, Unpublish and Withdraw end when the dialog says so: their last step's start keeps it working.
+    const withdraw = shareProgressStep(shareProgressStart("withdraw", SHARE_PROGRESS_IDLE, 0), "deploy", 1);
+    expect(shareProgressView(withdraw, catalog, 1).steps.map(s => s.state)).toEqual(["done", "done", "running"]);
     for (const op of Object.keys(SHARE_STEPS) as (keyof typeof SHARE_STEPS)[]) {
       const view = shareProgressView(shareProgressStart(op, SHARE_PROGRESS_IDLE, 0), catalog, 0);
       expect(view.steps.length).toBeGreaterThanOrEqual(3);

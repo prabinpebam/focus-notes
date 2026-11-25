@@ -3720,5 +3720,7 @@
   "share.progress.turnOff.update.line": "GitHub is taking your notes off your website. This usually takes 1–2 minutes.",
   "share.progress.turnOff.off.label": "Sharing is off",
   "share.progress.turnOff.off.line": "Finishing.",
-  "share.progress.preparing": "Getting ready…"
+  "share.progress.preparing": "Getting ready…",
+  "share.item.websiteFailed": "GitHub couldn’t update your website, even after trying twice. Your notes stay private. Retry in a minute.",
+  "share.progress.failedAtFirst": "Stopped at “{step}”."
 }

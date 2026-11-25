@@ -2,7 +2,7 @@
   "$schema": "https://prabinpebam.github.io/focus-notes/schemas/ui/view.v1.json",
   "id": "sitePreview",
   "ia": "IA-VIEW-PUBLIC",
-  "viewModels": [
+  "viewModels": ["vm.shareProgress", 
     "vm.app",
     "vm.project",
     "vm.sharingPreview"

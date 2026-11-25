@@ -2447,16 +2447,23 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   handle("access:load", async () => (settingsAvailable() ? access.load() : { available: false, vault: false, grants: [] }));
   // A withdrawal, expiry change or removal reaches readers only when the paired site is deployed again (G6.2):
   // deploy now; if that fails, the change stays recorded and the deploy retries in the background.
-  const redeployAfter = (attempt = 0): Promise<void> => deployAccess().catch((error: unknown) => {
+  const redeployAfter = (attempt = 0): Promise<boolean> => deployAccess().then(() => true, (error: unknown) => {
     logLine(`Sharing: site deploy after an access change failed (${error instanceof Error ? error.message : "unknown"})`);
     if (attempt < 5) setTimeout(() => void redeployAfter(attempt + 1), 30_000).unref();
+    return false;
   });
   handle("access:apply", async (change) => {
     if (!settingsAvailable()) throw new Error("access:failed");
     const result = await access.apply(change);
     const op = (change as { op?: unknown } | null)?.op;
-    if (op !== "createItem" && op !== "addItemNotes" && (await sharing.pairing())?.phase === "ready") await redeployAfter();
+    if (op !== "createItem" && op !== "addItemNotes" && (await sharing.pairing())?.phase === "ready") return { ...result, deployed: await redeployAfter() };
     return result;
+  });
+  // Retry of a failed website update after a saved change (D-427): one attempt, its answer to the dialog.
+  handle("access:redeploy", async () => {
+    if (!settingsAvailable() || (await sharing.pairing())?.phase !== "ready") return false;
+    await deployAccess();
+    return true;
   });
   // A secret goes to the window only for an open invite, and to the clipboard only from here, cleared after 90 s (review L1, L2).
   // Journeys copy into memory, so they never overwrite (or depend on) the computer's clipboard.

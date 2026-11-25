@@ -120,14 +120,15 @@ describe("G2 read-only default site confirmation", () => {
     const t = await setup();
     await t.run("sharing.firstOpen");
     await t.run("sharing.firstAccept");
-    expect(t.vm("vm.sharingSettings").problem).toBe(en["sharing.setup.problem.failed"]);
+    // D-427: the problem names the step it stopped at; nothing was done before it.
+    expect(t.vm("vm.sharingSettings").problem).toBe(`Stopped at “Make your notes site”. ${en["sharing.setup.problem.failed"]}`);
     const enable = vi.mocked(t.bridge.access!.setup!.enable);
     enable.mockImplementation(async () => { throw new Error("Error invoking remote method 'sharing:enable': Error: sharing:refused"); });
     await t.run("sharing.firstAccept");
-    expect(t.vm("vm.sharingSettings").problem).toBe(en["sharing.setup.problem.refused"]);
+    expect(t.vm("vm.sharingSettings").problem).toBe(`Stopped at “Make your notes site”. ${en["sharing.setup.problem.refused"]}`);
     enable.mockImplementation(async () => { throw new Error("sharing:offline"); });
     await t.run("sharing.firstAccept");
-    expect(t.vm("vm.sharingSettings")).toMatchObject({ problem: en["sharing.setup.problem.offline"], firstOpen: true, repo: "ada/notes-site" });
+    expect(t.vm("vm.sharingSettings")).toMatchObject({ problem: `Stopped at “Make your notes site”. ${en["sharing.setup.problem.offline"]}`, firstOpen: true, repo: "ada/notes-site" });
   });
   it("enables modern sharing only after the matching ready pairing loads, without an owner vault", async () => {
     const t = await setup();

@@ -12,18 +12,18 @@ interface WithProgress { ui: { share: { progress?: ShareProgress } }; tasks: rea
  */
 export type ShareOperation = "turnOn" | "share" | "publish" | "unpublish" | "withdraw" | "turnOff";
 
-export const SHARE_STEPS: Readonly<Record<ShareOperation, readonly { id: string; icon: string; from: readonly string[] }[]>> = {
+export const SHARE_STEPS: Readonly<Record<ShareOperation, readonly { id: string; icon: string; from: readonly string[]; end?: true }[]>> = {
   turnOn: [
     { id: "site", icon: "globe", from: ["check", "create"] },
     { id: "upload", icon: "cloudUp", from: ["prepare", "pages", "push"] },
     { id: "build", icon: "sync", from: ["deploy"] },
-    { id: "live", icon: "globe", from: ["ready"] },
+    { id: "live", icon: "globe", from: ["ready"], end: true },
   ],
   share: [
     { id: "encrypt", icon: "lock", from: ["seal"] },
     { id: "upload", icon: "cloudUp", from: ["push"] },
     { id: "update", icon: "sync", from: ["deploy"] },
-    { id: "link", icon: "link", from: ["verify"] },
+    { id: "link", icon: "link", from: ["verify"], end: true },
   ],
   publish: [
     { id: "prepare", icon: "document", from: ["saving", "seal"] },
@@ -44,7 +44,7 @@ export const SHARE_STEPS: Readonly<Record<ShareOperation, readonly { id: string;
     { id: "keep", icon: "lock", from: ["check", "preserve"] },
     { id: "empty", icon: "delete", from: ["remove", "seal", "push"] },
     { id: "update", icon: "sync", from: ["deploy"] },
-    { id: "off", icon: "cloudOff", from: ["off"] },
+    { id: "off", icon: "cloudOff", from: ["off"], end: true },
   ],
 };
 
@@ -73,8 +73,8 @@ export function shareProgressStep(p: ShareProgress, phase: string, now: number):
   if (phase === "slow") return { ...p, slow: true };
   const steps = SHARE_STEPS[p.op];
   const index = steps.findIndex(step => step.from.includes(phase));
-  // The last step's phase means it's reached, and the operation ends there: it shows done, not running.
-  const target = index === steps.length - 1 ? steps.length : index;
+  // An end step's phase means the operation is finished: it shows done, not running.
+  const target = steps[index]?.end ? steps.length : index;
   return index < 0 || target <= p.at ? p : { ...p, at: target, slow: false, stepStarted: now };
 }
 
@@ -104,13 +104,13 @@ export function shareProgressView(p: ShareProgress, catalog: MessageCatalog, now
     }),
     line: running ? `${catalog.format(key(current.id, "line"))} ${clock(seconds)}` : "",
     still: running && p.slow ? catalog.format("share.progress.still") : "",
-    failedStep: p.failed ? catalog.format("share.progress.failedAt", { step: catalog.format(key(current.id, "label")) }) : "",
+    failedStep: p.failed ? catalog.format(p.at === 0 ? "share.progress.failedAtFirst" : "share.progress.failedAt", { step: catalog.format(key(current.id, "label")) }) : "",
   };
 }
 
 /** Every message key a stepper reads, for the copy check. */
 export function shareProgressKeys(): string[] {
-  const keys = ["share.progress.still", "share.progress.failedAt", ...["done", "running", "waiting", "failed"].map(s => `share.progress.state.${s}`)];
+  const keys = ["share.progress.still", "share.progress.failedAt", "share.progress.failedAtFirst", ...["done", "running", "waiting", "failed"].map(s => `share.progress.state.${s}`)];
   for (const [op, steps] of Object.entries(SHARE_STEPS)) for (const step of steps) for (const part of ["label", "line"]) keys.push(`share.progress.${op}.${step.id}.${part}`);
   return keys;
 }
@@ -125,6 +125,8 @@ export function shareProgress<S extends WithProgress>(store: Store<S>, now: () =
     step: (phase: string) => put(shareProgressStep(get(), phase, now())),
     done: () => put(shareProgressDone(get())),
     fail: () => put(shareProgressFail(get())),
+    /** The operation's own longer-wait message has taken over (Still publishing, O4). */
+    quiet: () => put({ ...get(), slow: false }),
     clear: () => put(SHARE_PROGRESS_IDLE),
   };
 }

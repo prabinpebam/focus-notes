@@ -10,7 +10,7 @@
     "modes": [{ "id": "words", "label": "Words" }, { "id": "own", "label": "My own" }], "mode": "words", "ownMode": false,
     "generated": "maple-river-lantern", "wordsBusy": false, "actionsDisabled": false, "actionReason": "", "own": "", "strength": 0,
     "deleted": false, "restoreDisabled": false, "restoreReason": "", "signedOut": false, "macos": false,
-    "primaryLabel": "Share", "busy": false, "status": "", "progress": "", "ready": false, "templateInvalid": false, "lines": [{ "id": "l1", "text": "Book drafts and 11 notes inside", "lead": "", "code": "", "hasCode": false }],
+    "primaryLabel": "Share", "busy": false, "status": "", "progress": "", "withdrawLabel": "Withdraw share", "ready": false, "templateInvalid": false, "lines": [{ "id": "l1", "text": "Book drafts and 11 notes inside", "lead": "", "code": "", "hasCode": false }],
     "hasHistory": true, "historyCount": 1, "historyOpen": true, "hasNewer": false, "newerCount": 0,
     "history": [{ "id": "h1", "methods": "Link and access code", "detail": "Shared 3 November · expires in 27 days", "badge": "Active", "link": true, "active": true }],
     "confirmOpen": false, "reviewOpen": false, "reviewTitle": "", "reviewSummary": "", "items": [], "reviewFocus": ""

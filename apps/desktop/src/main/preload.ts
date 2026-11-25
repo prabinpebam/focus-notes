@@ -295,6 +295,7 @@ contextBridge.exposeInMainWorld("focusNotes", {
     },
     load: () => ipcRenderer.invoke("access:load"),
     apply: (change: unknown) => ipcRenderer.invoke("access:apply", change),
+    redeploy: () => ipcRenderer.invoke("access:redeploy"),
     reveal: (id: string) => ipcRenderer.invoke("access:reveal", id),
     prepareWords: (previousId?: string) => ipcRenderer.invoke("access:words", previousId),
     ready: (id: string) => ipcRenderer.invoke("access:ready", id),
@@ -321,8 +322,10 @@ contextBridge.exposeInMainWorld("focusNotes", {
     unpublish: (paths: unknown) => ipcRenderer.invoke("sharing:unpublish", paths),
     onStep: (listener: (step: string) => void) => {
       const handler = (_event: unknown, step: unknown) => { if (typeof step === "string") listener(step); };
+      // The site build's own phases (seal, push, deploy, slow) come on the setup channel (D-427).
       ipcRenderer.on("sharing:publishStep", handler);
-      return () => ipcRenderer.removeListener("sharing:publishStep", handler);
+      ipcRenderer.on("sharing:setupStep", handler);
+      return () => { ipcRenderer.removeListener("sharing:publishStep", handler); ipcRenderer.removeListener("sharing:setupStep", handler); };
     },
     onLive: (listener: (event: { build: string; live: boolean }) => void) => {
       const handler = (_event: unknown, value: unknown) => {

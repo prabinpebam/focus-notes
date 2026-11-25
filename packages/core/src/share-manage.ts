@@ -76,7 +76,10 @@ export interface AccessBridge {
   };
   load(): Promise<AccessListing>;
   /** Makes one change and commits it. Rejects with a message containing `access:<problem>` when it can't. */
-  apply(change: AccessChange): Promise<AccessListing & { id: string }>;
+  /** `deployed: false`: the change is saved, but the website update after it failed (it retries in the background; D-427). */
+  apply(change: AccessChange): Promise<AccessListing & { id: string; deployed?: boolean }>;
+  /** Updates the website with the saved shares again: Retry after a failed update (D-427). True once it's live. */
+  redeploy?(): Promise<boolean>;
   /** Saves the invite template to `private/access-message.json`, or with null goes back to the default (D-143). */
   setTemplate(template: string | null): Promise<AccessListing>;
   setItemTemplate?(template: string | null): Promise<AccessListing>;

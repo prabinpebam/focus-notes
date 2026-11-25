@@ -7565,13 +7565,15 @@
       "id": "shareItem",
       "ia": "IA-VIEW-SHARE",
       "viewModels": [
-        "vm.shareItem"
+        "vm.shareItem",
+        "vm.shareProgress"
       ]
     },
     {
       "id": "sitePreview",
       "ia": "IA-VIEW-PUBLIC",
       "viewModels": [
+        "vm.shareProgress",
         "vm.app",
         "vm.project",
         "vm.sharingPreview"

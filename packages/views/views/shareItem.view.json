@@ -2,7 +2,7 @@
   "$schema": "https://prabinpebam.github.io/focus-notes/schemas/ui/view.v1.json",
   "id": "shareItem",
   "ia": "IA-VIEW-SHARE",
-  "viewModels": ["vm.shareItem"],
+  "viewModels": ["vm.shareItem", "vm.shareProgress"],
   "focus": "shareItemLink",
   "overlay": true,
   "root": {
@@ -248,7 +248,7 @@
                 ]
               },
               { "type": "Text", "when": { "expr": { "!=": [{ "get": "vm.shareItem.status" }, ""] } }, "props": { "value": { "get": "vm.shareItem.status" }, "announce": true } },
-              { "type": "Text", "when": { "expr": { "!=": [{ "get": "vm.shareItem.progress" }, ""] } }, "props": { "value": { "get": "vm.shareItem.progress" }, "tone": "muted", "role": "secondary" } },
+              { "type": "Stack", "when": { "expr": { "==": [{ "get": "vm.shareProgress.op" }, "share"] } }, "children": [{ "use": "share.steps" }] },
               {
                 "type": "Stack", "when": { "get": "vm.shareItem.ready" }, "props": { "gap": "stackItem" },
                 "children": [
@@ -346,10 +346,11 @@
         "children": [
           { "type": "Stack", "props": { "gap": "stackGroup" }, "children": [
             { "type": "Text", "props": { "value": { "t": "share.withdraw.text" } } },
+            { "type": "Stack", "when": { "expr": { "==": [{ "get": "vm.shareProgress.op" }, "withdraw"] } }, "children": [{ "use": "share.steps" }] },
             { "type": "Text", "when": { "get": "vm.shareItem.hasProblem" }, "props": { "value": { "get": "vm.shareItem.problem" }, "tone": "danger" } },
             { "type": "Inline", "props": { "gap": "inlineItem", "justify": "end" }, "children": [
               { "type": "Button", "props": { "label": { "t": "share.manage.cancel" }, "autoFocus": true }, "on": { "press": { "run": "share.item.setConfirmOpen", "args": { "open": false } } } },
-              { "type": "Button", "props": { "label": { "t": "share.withdraw.confirm" }, "variant": "danger", "busy": { "get": "vm.shareItem.busy" } }, "on": { "press": { "run": "share.item.withdraw" } } }
+              { "type": "Button", "props": { "label": { "get": "vm.shareItem.withdrawLabel" }, "variant": "danger", "busy": { "get": "vm.shareItem.busy" } }, "on": { "press": { "run": "share.item.withdraw" } } }
             ] }
           ] }
         ]
