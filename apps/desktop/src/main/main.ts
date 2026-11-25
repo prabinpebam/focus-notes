@@ -2505,6 +2505,17 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     await deployAccess();
     return true;
   });
+  // D-428 takedown (D-429's one public site): the deleted note's file is already out of the public notes, or its share
+  // already withdrawn; this saves, then rebuilds and pushes the site without it and waits for Pages.
+  handle("sharing:takeDown", async () => {
+    if (!settingsAvailable()) throw new Error("sharing:unavailable");
+    const g = await gitOpening;
+    if (g) {
+      const report = await g.request("save");
+      if (report.state === "problem") throw new Error(`sharing:${report.problem === "offline" ? "offline" : "failed"}`);
+    }
+    return sharing.takeDown();
+  });
   // A secret goes to the window only for an open invite, and to the clipboard only from here, cleared after 90 s (review L1, L2).
   // Journeys copy into memory, so they never overwrite (or depend on) the computer's clipboard.
   const secretCopy = secretClipboard(appClipboard());

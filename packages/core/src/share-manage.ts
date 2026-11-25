@@ -85,6 +85,11 @@ export interface AccessBridge {
   apply(change: AccessChange): Promise<AccessListing & { id: string; deployed?: boolean }>;
   /** Updates the website with the saved shares again: Retry after a failed update (D-427). True once it's live. */
   redeploy?(): Promise<boolean>;
+  /**
+   * D-428/D-429: rebuilds the project's one public site from the current records (shares, published notes, the
+   * public notes folder) and pushes it, so whatever was removed first leaves the site. Rejects with `sharing:<problem>`.
+   */
+  takeDown?(): Promise<{ commit: string; pending?: string }>;
   /** Saves the invite template to `private/access-message.json`, or with null goes back to the default (D-143). */
   setTemplate(template: string | null): Promise<AccessListing>;
   setItemTemplate?(template: string | null): Promise<AccessListing>;

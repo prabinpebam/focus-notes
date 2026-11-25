@@ -645,6 +645,9 @@ describe("SPT-03: quick actions (→ or Mod+K)", () => {
     expect(app.store.state.ui.files.move).toMatchObject({ open: true, paths: [`${PRIV}/ideas.md`] });
     await app.commands.run("move.setOpen", { open: false });
     await act("ideas", "delete");
+    // Every delete asks first (D-428).
+    await vi.waitFor(() => expect(app.store.state.ui.files.confirm).toMatchObject({ kind: "delete" }));
+    await app.commands.run("files.confirm");
     await vi.waitFor(() => expect(app.store.state.workspace.tree.roots[0]!.children.some((c) => c.name === "ideas.md")).toBe(false));
   });
 

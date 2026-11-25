@@ -296,6 +296,8 @@ contextBridge.exposeInMainWorld("focusNotes", {
     load: () => ipcRenderer.invoke("access:load"),
     apply: (change: unknown) => ipcRenderer.invoke("access:apply", change),
     redeploy: () => ipcRenderer.invoke("access:redeploy"),
+    // D-428/D-429: rebuilds the one public site from the current records, so what's no longer shared or published leaves it.
+    takeDown: () => ipcRenderer.invoke("sharing:takeDown"),
     reveal: (id: string) => ipcRenderer.invoke("access:reveal", id),
     prepareWords: (previousId?: string) => ipcRenderer.invoke("access:words", previousId),
     ready: (id: string) => ipcRenderer.invoke("access:ready", id),

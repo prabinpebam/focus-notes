@@ -4998,7 +4998,7 @@
                         {
                           "type": "Button",
                           "when": {
-                            "get": "vm.deleting.failed"
+                            "get": "vm.deleting.canAnyway"
                           },
                           "props": {
                             "label": {
