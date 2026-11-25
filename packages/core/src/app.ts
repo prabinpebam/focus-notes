@@ -47,6 +47,7 @@ import { FEEDBACK_CLOSED, registerFeedback, type FeedbackState } from "./feedbac
 import { registerAi } from "./ai-app.ts";
 import { registerShareManage, shareEntryAvailable, sharingAvailable, SHARE_MANAGE_CLOSED, type ShareManageState } from "./share-manage.ts";
 import { registerItemShare } from "./share-item.ts";
+import { registerShareProgressView } from "./share-progress.ts";
 import { registerSharingSettings } from "./sharing-settings.ts";
 import { registerSharingPeople } from "./sharing-people.ts";
 import { registerSharingPreview } from "./sharing-preview.ts";
@@ -519,6 +520,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   let sitePublishedUrl: ((path: string) => string | undefined) | undefined;
   registerItemShare({ store, catalog, commands, viewModels, tracker, access: bridge.access, platform: bridge.platform, flush, toast, publishedUrl: (path) => sitePublishedUrl?.(path), ...(bridge.copyText ? { copyText: (text: string) => bridge.copyText!(text) } : {}) });
   registerSharingSettings({ store, catalog, commands, viewModels, tracker, access: bridge.access });
+  registerShareProgressView(viewModels, catalog);
   registerSharingPeople({ store, catalog, commands, viewModels, tracker, access: bridge.access });
   sitePublishedUrl = registerSharingPreview({ store, catalog, commands, viewModels, tracker, appState: () => appState, persistAppState, readNote: path => bridge.readNote(path), toast,
     ...(bridge.publishing ? { publishing: bridge.publishing } : {}), ...(bridge.copyText ? { copyText: (text: string) => bridge.copyText!(text) } : {}) }).publishedUrl;

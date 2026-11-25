@@ -7534,6 +7534,7 @@
       "ia": "IA-VIEW-SETTINGS",
       "viewModels": [
         "vm.settings",
+        "vm.shareProgress",
         "vm.signOut",
         "vm.removeWorkspace",
         "vm.shareManage",

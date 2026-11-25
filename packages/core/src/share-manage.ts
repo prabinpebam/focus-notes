@@ -94,7 +94,8 @@ export interface AccessBridge {
 }
 
 export type SharingSetupPhase = "reserved" | "creating" | "created" | "ready" | "removing" | "off";
-export type SharingSetupStep = "check" | "create" | "prepare" | "push" | "deploy" | "pages" | "preserve" | "remove" | "ready";
+import type { ShareProgress } from "./share-progress.ts";
+export type SharingSetupStep = "check" | "create" | "prepare" | "seal" | "push" | "deploy" | "slow" | "pages" | "preserve" | "remove" | "ready";
 export interface SharingSetupPreview {
   project: string; owner: string; name: string; site: string; phase: SharingSetupPhase | "unconfigured";
 }
@@ -166,6 +167,8 @@ export interface ShareTemplateEditor {
 export interface ShareManageState {
   settings: { filter: string; query: string; status: string; problem: string; problemRow: string; busy: boolean; dialog: string; id: string; off: boolean; more: boolean; resume: boolean;
     setupPreview?: SharingSetupPreview; setupStep?: SharingSetupStep };
+  /** The running (or last failed) share or publish operation's steps (D-427): one at a time, as the desktop runs them. */
+  progress?: ShareProgress;
   item: ItemShareState;
   listing?: AccessListing;
   loading: boolean;

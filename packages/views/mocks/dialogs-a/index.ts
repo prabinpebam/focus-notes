@@ -6,6 +6,7 @@
 import canvas from "../../views/canvas.view.json" with { type: "json" };
 import settings from "../../views/settings.view.json" with { type: "json" };
 import shared from "../data.json" with { type: "json" };
+import { compose } from "../../src/compose.ts";
 
 type Node = Record<string, unknown>;
 const isNode = (v: unknown): v is Node => typeof v === "object" && v !== null && !Array.isArray(v);
@@ -84,6 +85,7 @@ export const dialogsAMocks = {
       firstOpen: true, repo: "prabin/notes-shared", setupSite: "prabin.github.io/notes", more: false, moreIcon: "chevronRight", busy: false,
       setupStatus: "", setupProblem: false, problem: "", firstAcceptLabel: "Turn on sharing",
     },
+    shareProgress: { show: false, op: "", steps: [{ id: "site", label: "Make your notes site", state: "waiting", icon: "globe", tone: "neutral", busy: false, stateLabel: "Not started yet" }], line: "", still: "", failedStep: "" },
     project: { name: "Field notes" },
   } },
   views: {
@@ -91,7 +93,7 @@ export const dialogsAMocks = {
     repoPrivate: page(openCard("repoBackup-private")),
     repoPublic: page(openCard("repoBackup-public")),
     caption: page(lift(canvas, "imageCaption")),
-    sharingFirst: page(lift(settings, "sharingFirst")),
+    sharingFirst: page(lift(compose(settings), "sharingFirst")),
   },
   entries: [
     { id: "dialogsa.backup", label: "1. Backup details card (writing window corner)", view: "backup" },

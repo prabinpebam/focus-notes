@@ -2156,6 +2156,8 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     renameFollowed: event => sendSharing("sharing:renameFollowed", event),
     // Journeys only: a short Pages wait, so Still publishing can be walked without waiting 10 minutes.
     ...(devEnv("FOCUS_NOTES_PAGES_WAIT_MS") ? { pagesWaitMs: Number(devEnv("FOCUS_NOTES_PAGES_WAIT_MS")), pagesWatch: { delayMs: 500 } } : {}),
+    // Journeys only: Still working after a short build, not after 2 minutes (D-427).
+    ...(devEnv("FOCUS_NOTES_PAGES_SLOW_MS") ? { pagesSlowMs: Number(devEnv("FOCUS_NOTES_PAGES_SLOW_MS")) } : {}),
     withdrawShares: () => access.withdrawAll(),
   });
   // A legacy pair's own repository site, where its public notes are (D-424); shares go to its paired site (D-425).

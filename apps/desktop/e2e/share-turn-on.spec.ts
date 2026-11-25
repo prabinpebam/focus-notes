@@ -101,10 +101,19 @@ test("24 Nov: Turn on sharing when GitHub's Pages run fails shows the reason wit
     // The first Pages run fails, and so does its one re-run: the dialog says why, offers Retry, and keeps its state.
     fake.git.failPagesRuns(2);
     await confirmation.getByRole("button", { name: "Turn on sharing", exact: true }).click();
-    await expect(confirmation.getByText("Putting your website up…", { exact: true })).toBeVisible({ timeout: 30_000 });
+    // D-427: the real steps in plain words, in order; done ones ticked, the current one active, with its elapsed time.
+    const steps = ["Make your notes site", "Upload your notes site", "GitHub puts your website up", "Your website is live"];
+    const states = ["Done", "Working on this now", "Not started yet", "Stopped here"];
+    const marks = async () => (await confirmation.getByRole("img").evaluateAll(els => els.map(e => e.getAttribute("aria-label") ?? ""))).filter(n => states.includes(n));
+    await expect(confirmation.getByText(/^GitHub is putting your website up\. This usually takes 1–2 minutes\. \d+:\d\d$/)).toBeVisible({ timeout: 30_000 });
+    expect(await marks()).toEqual(["Done", "Done", "Working on this now", "Not started yet"]);
+    const order = await Promise.all(steps.map(label => confirmation.getByText(label, { exact: true }).boundingBox().then(b => b!.y)));
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
     await shot(confirmation, "turn-on-busy.dark");
-    await expect(confirmation.getByText("GitHub couldn’t put your website up, even after trying twice. Your notes stay private. Retry in a minute.", { exact: true }))
+    await expect(confirmation.getByText("Stopped at “GitHub puts your website up”. The steps before it are done and kept. GitHub couldn’t put your website up, even after trying twice. Your notes stay private. Retry in a minute.", { exact: true }))
       .toBeVisible({ timeout: 60_000 });
+    expect(await marks()).toEqual(["Done", "Done", "Stopped here", "Not started yet"]);
+    const uploads = github.calls.filter(c => c.method === "PATCH" && c.path === "/repos/ada/notes-site/git/refs/heads/main").length;
     const retry = confirmation.getByRole("button", { name: "Retry", exact: true });
     await expect(retry).toBeEnabled();
     await expect(confirmation).toContainText("ada/notes-site");
@@ -115,9 +124,13 @@ test("24 Nov: Turn on sharing when GitHub's Pages run fails shows the reason wit
     await scheme(page, "light").then(() => shot(confirmation, "turn-on-error.light"), () => {});
     await expect(confirmation).toBeVisible();
 
-    // Retry deploys a fresh build to the same site; no second repository; it continues into the note's Share.
+    // Retry carries on from the failed step: the earlier steps stay ticked, GitHub builds the same upload again (no
+    // second upload, no second repository), and it continues into the note's Share.
     await retry.click();
+    await expect.poll(marks, { timeout: 30_000 }).toEqual(["Done", "Done", "Working on this now", "Not started yet"]).catch(() => {});
     await expect(confirmation).toHaveCount(0, { timeout: 60_000 });
+    expect(github.calls.filter(c => c.method === "POST" && /\/actions\/runs\/\d+\/rerun-failed-jobs$/.test(c.path))).toHaveLength(2);
+    expect(github.calls.filter(c => c.method === "PATCH" && c.path === "/repos/ada/notes-site/git/refs/heads/main")).toHaveLength(uploads);
     await expect(page.getByRole("dialog", { name: "Share “Diary”", exact: true })).toBeVisible({ timeout: 30_000 });
     expect(github.calls.filter(c => c.method === "POST" && c.path === "/user/repos")).toHaveLength(1);
     expect(fake.git.site("ada/notes-site").has("focus-notes.json")).toBe(true);

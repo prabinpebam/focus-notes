@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { cp, mkdtemp, readdir, readFile, realpath, rm, stat, writeFile } from "node:fs/promises";
 import { isAbsolute, join, relative, sep } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -8,7 +9,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import { publicPublishing, type PublicDeploy, type PublicTaskStep } from "./public-publishing.ts";
 import { stagePublicSelection, type ConfirmedSelection } from "./public-selection.ts";
 import { configurePublicSite, requirePublishedArtifact, type SealedArtifactPublisher } from "./site.ts";
-import { fetchDeployedSite, pagesArtifactPublisher, servedBuild, type DeployedSiteGet } from "./site-publish.ts";
+import { fetchDeployedSite, pagesArtifactPublisher, servedBuild, type DeployedSiteGet, type FailedBuild, type PagesPublisher } from "./site-publish.ts";
 import { sharedImageDestinations } from "./media.ts";
 import { sharingSetup, sitePairingStore, type SharingSetupStep, type SitePairing } from "./setup.ts";
 
@@ -65,6 +66,8 @@ export function sharingRuntime(deps: {
   /** The page renderer's folder (`render.mjs`, `assets/`): plaintext Publish needs its pages for Copy link. */
   reader?(): string | undefined;
   publishStep?(step: PublicTaskStep): void;
+  /** How long GitHub's build may take before the progress says Still working (default 2 minutes, D-427). */
+  pagesSlowMs?: number;
   /** How long a Publish waits for Pages before it reports Still publishing (default 10 minutes). */
   pagesWaitMs?: number;
   /** Background checking after that: how often, and for how long before it's a failure (default 15 s, 1 hour). */
@@ -86,12 +89,21 @@ export function sharingRuntime(deps: {
     return next;
   };
   const get = deps.get ?? fetchDeployedSite;
-  const publisher = deps.publisher ?? pagesArtifactPublisher({
+  /** The last upload whose GitHub build failed, with what it was built from, so Retry builds it again instead of uploading again (D-427). */
+  let failedBuild: (FailedBuild & { inputs: string; empty: boolean }) | undefined;
+  let failing: FailedBuild | undefined;
+  // Set from the publisher's callback, so read through a function the compiler doesn't narrow.
+  const lastFailing = (): FailedBuild | undefined => failing;
+  const publisher: SealedArtifactPublisher = deps.publisher ?? pagesArtifactPublisher({
     api: deps.api,
     target: async project => { const saved = await bound().read(); return saved?.project === project ? saved : undefined; },
     get, ...(deps.pagesWaitMs === undefined ? {} : { timeoutMs: deps.pagesWaitMs }),
+    ...(deps.pagesSlowMs === undefined ? {} : { slowAfterMs: deps.pagesSlowMs }),
     pushed: () => deps.step?.("deploy"),
+    slow: () => deps.step?.("slow"),
+    failed: failed => { failing = failed; },
   });
+  const resumable = typeof (publisher as Partial<PagesPublisher>).resume === "function" ? publisher as PagesPublisher : undefined;
   /** Builds pushed to the site this session, oldest first: a newer one being served means an older one's notes are live too. */
   const pushed: string[] = [];
   /** Checks in the background until Pages serves `build` (or a later push), then says so once (O4). */
@@ -158,8 +170,32 @@ export function sharingRuntime(deps: {
       deps.written(publishedFile);
     };
     /** Seals and deploys the site with the recorded published notes, or `selection` for a Publish or Unpublish (G3). */
+    /** What a site build is made from: the share records and the published list. Changed since a failed build: upload afresh. */
+    const inputs = async () => {
+      const hash = createHash("sha256");
+      for (const file of [join(privateDir, "access.json"), publishedFile, join(privateDir, ".focus-notes", "site-pairing.json")]) {
+        hash.update(file).update(await readFile(file).catch(() => Buffer.from("absent")));
+      }
+      return hash.digest("hex");
+    };
     const build = async (pairing: SitePairing, empty = false, selection?: ConfirmedSelection): Promise<PublicDeploy> => {
       guard();
+      // Retry after GitHub's build failed: the upload is already on the site, so build that again (D-427).
+      const memo = failedBuild;
+      failedBuild = undefined;
+      if (memo && !selection && memo.empty === empty && memo.project === pairing.project && resumable && memo.inputs === await inputs()) {
+        failing = undefined;
+        let result: Awaited<ReturnType<PagesPublisher["resume"]>>;
+        try { result = await resumable.resume(memo); }
+        catch (error) { const f = lastFailing(); if (f) failedBuild = { ...f, inputs: memo.inputs, empty }; throw error; }
+        guard();
+        if (result) {
+          requirePublishedArtifact(result, pairing, { directory: "", build: memo.build });
+          return { commit: result.status === "published" ? result.commit : "" };
+        }
+      }
+      const before = selection ? "" : await inputs();
+      deps.step?.("seal");
       const notes = empty || layout.legacy ? [] : selection?.notes ?? await presentPublished();
       const reader = notes.length ? deps.reader?.() : undefined;
       if (notes.length && (!reader || !layout.privateNotes)) throw new Error("sharing:unavailable");
@@ -192,7 +228,10 @@ export function sharingRuntime(deps: {
         deps.step?.("push");
         if (selection) deps.publishStep?.("publishing");
         const sealed = { directory, build: artifact.build };
-        const result = await publisher(pairing.project, sealed);
+        failing = undefined;
+        let result: Awaited<ReturnType<SealedArtifactPublisher>>;
+        try { result = await publisher(pairing.project, sealed); }
+        catch (error) { const f = lastFailing(); if (f && !selection) failedBuild = { ...f, inputs: before, empty }; throw error; }
         if (result.status === "published") pushed.push(sealed.build);
         guard();
         // Only a Publish or Unpublish may outlast the wait: its commit is on the site's branch, so Pages serving it is

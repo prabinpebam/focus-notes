@@ -9,6 +9,7 @@ import { defaultItemShareTemplate } from "./share-item.ts";
 import { sharingAvailable, type AccessBridge, type ShareManageState } from "./share-manage.ts";
 import { joinPath, findNode } from "./workspace.ts";
 import { opErrorCode } from "./bridge.ts";
+import { shareProgress, shareProgressView } from "./share-progress.ts";
 
 export function registerSharingSettings({ store, catalog, commands, viewModels, tracker, access }: {
   store: Store<AppState>; catalog: MessageCatalog; commands: CommandRegistry<AppState>;
@@ -38,6 +39,7 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
     const key = `sharing.setup.problem.${code}`;
     return catalog.format(code && catalog.has(key) ? key : "sharing.setup.problem.failed");
   };
+  const progress = shareProgress(store);
   const projectKey = () => `${store.state.workspace.folder ?? ""}:${store.state.workspace.repo ?? ""}`;
   reg<{ resume?: boolean }>("sharing.firstOpen", async ({ resume = false }) => {
     if (setupPending) return;
@@ -45,6 +47,7 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
     if (!review && !access?.setup) throw new Error(catalog.format("share.item.unavailable"));
     const generation = ++setupGeneration, project = projectKey();
     set({ dialog: "first", more: false, resume, problem: "", setupPreview: undefined, setupStep: "check", busy: !review });
+    progress.clear();
     settingsOpen(false);
     if (resume) store.update(s => ({ ...s, ui: { ...s.ui, share: { ...s.ui.share, item: { ...s.ui.share.item, open: false } } } }));
     if (review) return;
@@ -79,7 +82,8 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
     setupPending = true;
     // Confirmed: the explanation folds away so the progress and any problem fit beside Retry without scrolling.
     set({ busy: true, problem: "", setupStep: "check", more: false });
-    const unsubscribe = setup.onStep?.(step => { if (current()) set({ setupStep: step }); });
+    progress.start("turnOn");
+    const unsubscribe = setup.onStep?.(step => { if (current()) { set({ setupStep: step }); progress.step(step); } });
     try {
       await tracker.run("sharing.setup.enable", "share.item.preparing", async () => {
         const result = await setup.enable(preview.name);
@@ -89,11 +93,12 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
         if (!current()) return;
         if (!listing.available || !listing.configured || listing.site !== result.site) throw new Error("sharing:unacknowledged");
         store.update(s => ({ ...s, ui: { ...s.ui, share: { ...s.ui.share, listing } } }));
+        progress.done();
         firstClose(true);
       }, undefined, "fn:sharing.setup.enable", "success");
     } catch (error) {
       console.error("Sharing setup failed", opErrorCode(error));
-      if (current()) set({ problem: setupProblem(error) });
+      if (current()) { progress.fail(); set({ problem: `${shareProgressView(progress.get(), catalog, 0).failedStep} ${setupProblem(error)}` }); }
     } finally {
       unsubscribe?.();
       setupPending = false;
@@ -240,7 +245,7 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
         setupSite: m.setupPreview?.site ?? (listing?.localReview ? listing.site ?? "" : ""),
         setupProblem: Boolean(m.problem),
         firstAcceptLabel: catalog.format(m.problem ? "sharing.invite.retry" : "share.first.turnOn"),
-        setupStatus: m.busy ? catalog.format(`sharing.setup.busy.${["push", "deploy", "pages"].includes(m.setupStep ?? "") ? m.setupStep : "prepare"}`) : "",
+        setupStatus: m.busy ? catalog.format(m.dialog === "first" && s.ui.share.progress?.op === "turnOn" ? "share.progress.turnOn.busy" : "sharing.setup.busy.prepare") : "",
         moreIcon: m.more ? "chevronDown" : "chevronRight",
         confirmTitle: kind === "off" ? catalog.format("sharing.off.title", { project: typeof projectName === "string" ? projectName : "" }) : catalog.format(`share.${kind}.title`), confirmText: catalog.format(kind === "off" ? "share.off.history" : `share.${kind}.text`),
         confirmLabel: catalog.format(`share.${kind}.confirm`),

@@ -1,0 +1,21 @@
+{
+  "type": "Stack",
+  "when": { "get": "vm.shareProgress.show" },
+  "props": { "gap": "stackItem" },
+  "children": [
+    { "each": { "get": "vm.shareProgress.steps" }, "as": "step", "key": "step.id", "empty": {
+      "type": "Text", "props": { "value": { "t": "share.progress.preparing" }, "role": "secondary", "tone": "muted" }
+    }, "render": {
+      "type": "Inline", "props": { "gap": "inlineItem", "align": "center" }, "children": [
+        { "type": "StepMark", "props": { "size": "compact", "icon": { "get": "step.icon" }, "tone": { "get": "step.tone" }, "busy": { "get": "step.busy" }, "label": { "get": "step.stateLabel" } } },
+        { "type": "Text", "props": { "value": { "get": "step.label" }, "role": "secondary", "tone": "muted" } }
+      ]
+    } },
+    { "type": "Text", "when": { "expr": { "!=": [{ "get": "vm.shareProgress.line" }, ""] } }, "props": {
+      "value": { "get": "vm.shareProgress.line" }, "role": "caption", "tone": "muted"
+    } },
+    { "type": "StatusRow", "when": { "expr": { "!=": [{ "get": "vm.shareProgress.still" }, ""] } }, "props": {
+      "message": { "get": "vm.shareProgress.still" }, "tone": "info", "icon": "info"
+    } }
+  ]
+}
