@@ -97,7 +97,8 @@ test("D6/24: offline, the Share dialog says it publishes when back online, keeps
     const { share } = await shareRome(l);
     github.offline = true;
     await share.getByRole("button", { name: "Copy link", exact: true }).click();
-    await expect(share.getByText("You're offline. Your share will publish when you're back online. Try the same action again to copy it.", { exact: true })).toBeVisible({ timeout: 60_000 });
+    // D-427: a failed share names the step it stopped at, then the reason.
+    await expect(share.getByText("Stopped at “Upload it”. The steps before it are done and kept. You're offline. Your share will publish when you're back online. Try the same action again to copy it.", { exact: true })).toBeVisible({ timeout: 60_000 });
     await expect(share.getByText("Sharing couldn’t finish. Your draft is kept. Try again.", { exact: true })).toHaveCount(0);
     github.offline = false;
     await share.getByRole("group", { name: "Copy", exact: true }).getByRole("button", { name: "Copy link", exact: true }).click();
@@ -113,12 +114,12 @@ test("D6/25: signed out of GitHub, the Share dialog asks to sign in again with S
     const { share } = await shareRome(l);
     github.revoked = true;
     await share.getByRole("button", { name: "Copy link", exact: true }).click();
-    await expect(share.getByText("Sign in to GitHub again to publish this share. Your draft is kept.", { exact: true })).toBeVisible({ timeout: 60_000 });
+    await expect(share.getByText("Stopped at “Upload it”. The steps before it are done and kept. Sign in to GitHub again to publish this share. Your draft is kept.", { exact: true })).toBeVisible({ timeout: 60_000 });
     await expect(share.getByRole("button", { name: "Sign in", exact: true })).toBeVisible();
     // Signed in again (the fake accepts the token): the same action finishes without a second share.
     github.revoked = false;
     await share.getByRole("group", { name: "Copy", exact: true }).getByRole("button", { name: "Copy link", exact: true }).click();
     await expect(share.getByText("Link copied.", { exact: true })).toBeVisible({ timeout: 60_000 });
-    await expect(share.getByText("Sign in to GitHub again to publish this share. Your draft is kept.", { exact: true })).toHaveCount(0);
+    await expect(share.getByText(/Sign in to GitHub again to publish this share\. Your draft is kept\./)).toHaveCount(0);
   } finally { await close(l, fake); }
 });
