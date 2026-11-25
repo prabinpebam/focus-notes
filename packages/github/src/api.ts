@@ -400,4 +400,9 @@ export class GitHubApi {
   async createFile(owner: string, repo: string, path: string, text: string, message: string, branch: string): Promise<void> {
     await this.request("PUT", `/repos/${owner}/${repo}/contents/${encodePath(path)}`, { message, content: utf8ToBase64(text), branch });
   }
+
+  /** Replaces a file through the contents API; `sha` is the version being replaced, so a concurrent change fails instead of being lost. */
+  async updateFile(owner: string, repo: string, path: string, text: string, message: string, branch: string, sha: string): Promise<void> {
+    await this.request("PUT", `/repos/${owner}/${repo}/contents/${encodePath(path)}`, { message, content: utf8ToBase64(text), branch, sha });
+  }
 }

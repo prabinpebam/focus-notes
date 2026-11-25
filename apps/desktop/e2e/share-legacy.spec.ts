@@ -32,6 +32,7 @@ test("D-425: public+private layout: Share… on a private note turns sharing on,
   git(priv, "commit", "-qm", "Fixture notes");
   git(priv, "push", "-q", "origin", "main");
   git(priv, "remote", "add", "identity", "https://github.com/ada/book-private.git");
+  git(docs, "remote", "add", "identity", "https://github.com/ada/book.git");
   git(docs, "add", "-A");
   git(docs, "commit", "-qm", "Fixture pointer");
   git(docs, "push", "-q", "origin", "main");
@@ -40,15 +41,17 @@ test("D-425: public+private layout: Share… on a private note turns sharing on,
 
   const github = new FakeGitHub("focus-notes-local-candidate");
   github.add({ owner: "ada", name: "book-private", private: true, files: ["notes/diary.md"] });
+  // D-429: the project's own public repository is the site; no other repository is made.
+  github.add({ owner: "ada", name: "book", private: false, files: [".focus-notes/workspace.json"] });
   const fake = await serveFakeGitHub(github);
-  const siteUrl = "https://ada.github.io/notes-site/";
-  const deployed = () => fake.git.site("ada/notes-site");
+  const siteUrl = "https://ada.github.io/book/";
+  const deployed = () => fake.git.site("ada/book");
   const reader = () => new SiteReader(async path => deployed().get(path));
   const types: Record<string, string> = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json", ".svg": "image/svg+xml", ".woff2": "font/woff2", ".woff": "font/woff" };
   const pages = createServer((req, res) => {
-    const path = decodeURIComponent(new URL(req.url!, "http://site").pathname).replace(/^\/notes-site\//, "");
+    const path = decodeURIComponent(new URL(req.url!, "http://site").pathname).replace(/^\/book\//, "");
     const file = path.endsWith("/") || path === "" ? `${path}index.html` : path;
-    const bytes = fake.git.siteBytes("ada/notes-site").get(file);
+    const bytes = fake.git.siteBytes("ada/book").get(file);
     if (!bytes) { res.writeHead(404).end(); return; }
     res.writeHead(200, { "content-type": types[extname(file)] ?? "application/octet-stream" }).end(bytes);
   });
@@ -82,7 +85,7 @@ test("D-425: public+private layout: Share… on a private note turns sharing on,
     await rowMenu("Diary diary.md");
     await page.getByRole("menuitem", { name: "Share…", exact: true }).click();
     const confirmation = page.getByRole("dialog", { name: /^Turn on sharing for/ });
-    await expect(confirmation).toContainText("ada/notes-site", { timeout: 30_000 });
+    await expect(confirmation).toContainText("ada/book", { timeout: 30_000 });
     await expect(confirmation).toContainText(siteUrl);
     await expect(page.getByText(/can’t be turned on|isn’t available yet|publish it/)).toHaveCount(0);
     expect(github.calls.filter(c => c.method !== "GET")).toEqual([]);
@@ -111,7 +114,10 @@ test("D-425: public+private layout: Share… on a private note turns sharing on,
     expect(expiresAt - before).toBeLessThan(7.1 * 86_400_000);
 
     // 4. Leak scan of every deployed byte: no plaintext of the shared note, the unrelated note or the public notes.
-    for (const text of [SECRET, UNRELATED, PUBLIC, "diary", "other.md", "book-private"]) expect(siteText()).not.toContain(text);
+    for (const text of [SECRET, UNRELATED, "diary", "other.md", "book-private"]) expect(siteText()).not.toContain(text);
+    // The public notes are the same site's published pages (D-429).
+    expect(siteText()).toContain(PUBLIC);
+    expect(github.calls.filter(c => c.method === "POST" && c.path === "/user/repos")).toEqual([]);
     expect(deployed().has("s/index.html")).toBe(true);
     const session = await reader().openLinkSession(grant.id, grant.link!.secret);
     expect(JSON.stringify(session)).not.toContain(UNRELATED);
@@ -120,25 +126,25 @@ test("D-425: public+private layout: Share… on a private note turns sharing on,
     const browser = await chromium.launch();
     try {
       const recipient = await (await browser.newContext()).newPage();
-      await recipient.goto(`${siteOrigin}/notes-site/s/#${grant.id}.${grant.link!.secret}`);
+      await recipient.goto(`${siteOrigin}/book/s/#${grant.id}.${grant.link!.secret}`);
       await expect(recipient.getByRole("heading", { level: 1 })).toHaveText("Diary");
       await expect(recipient.getByText(SECRET)).toBeVisible();
       await expect(recipient.getByText(UNRELATED)).toHaveCount(0);
       await expect(recipient.getByRole("textbox")).toHaveCount(0);
       const byCode = await (await browser.newContext()).newPage();
-      await byCode.goto(`${siteOrigin}/notes-site/s/`);
+      await byCode.goto(`${siteOrigin}/book/s/`);
       await byCode.getByRole("textbox", { name: "Access code", exact: true }).fill(accessCode);
       await byCode.getByRole("button", { name: "Open", exact: true }).click();
       await expect(byCode.getByText(SECRET)).toBeVisible();
       const wrong = await (await browser.newContext()).newPage();
-      await wrong.goto(`${siteOrigin}/notes-site/s/`);
+      await wrong.goto(`${siteOrigin}/book/s/`);
       await wrong.getByRole("textbox", { name: "Access code", exact: true }).fill(accessCode.replace(/ .*/, " wrong-words-for-this"));
       await wrong.getByRole("button", { name: "Open", exact: true }).click();
       await expect(wrong.getByRole("alert").or(wrong.getByRole("status")).first()).toBeVisible({ timeout: 30_000 });
       await expect(wrong.getByText(SECRET)).toHaveCount(0);
       const late = await (await browser.newContext()).newPage();
       await late.clock.setFixedTime(new Date(expiresAt + 86_400_000));
-      await late.goto(`${siteOrigin}/notes-site/s/#${grant.id}.${grant.link!.secret}`);
+      await late.goto(`${siteOrigin}/book/s/#${grant.id}.${grant.link!.secret}`);
       await expect(late.getByRole("alert").or(late.getByRole("status")).first()).toBeVisible({ timeout: 30_000 });
       await expect(late.getByText(SECRET)).toHaveCount(0);
     } finally { await browser.close(); }
@@ -154,7 +160,7 @@ test("D-425: public+private layout: Share… on a private note turns sharing on,
     await withdraw.getByRole("button", { name: "Withdraw share", exact: true }).click();
     await expect.poll(() => access().grants.find(g => g.id === grant.id)?.revokedAt).toBeTruthy();
     await expect.poll(async () => (await Promise.allSettled([reader().openLinkSession(grant.id, grant.link!.secret)]))[0]!.status, { timeout: 60_000 }).toBe("rejected");
-    for (const text of [SECRET, UNRELATED, PUBLIC]) expect(siteText()).not.toContain(text);
+    for (const text of [SECRET, UNRELATED]) expect(siteText()).not.toContain(text);
     expect(readFileSync(join(priv, "notes", "other.md"), "utf8")).toBe(`# Other\n\n${UNRELATED}\n`);
     await page.keyboard.press("Escape");
 

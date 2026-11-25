@@ -54,7 +54,7 @@ const steps = (at: number, failed = false) => labels.map((label, i) => {
 });
 const model = (o: { busy: boolean; at: number; failed?: boolean; line?: string; still?: string; problem?: string }) => ({
   sharingSettings: {
-    firstOpen: true, repo: "prabin/notes-site", setupSite: "https://prabin.github.io/notes-site/", more: false, moreIcon: "chevronRight", busy: o.busy,
+    firstOpen: true, repo: "prabin/notes-site", targetLabel: "What's created", repoTitle: "Public copy on GitHub", setupSite: "https://prabin.github.io/notes-site/", more: false, moreIcon: "chevronRight", busy: o.busy,
     setupStatus: o.busy ? "Turning on sharing…" : "", setupProblem: Boolean(o.problem), problem: o.problem ?? "",
     firstAcceptLabel: o.problem ? "Retry" : "Turn on sharing",
   },

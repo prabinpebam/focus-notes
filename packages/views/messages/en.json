@@ -3080,6 +3080,8 @@
   "share.first.lead": "Your other notes stay private.",
   "share.first.created": "What's created",
   "share.first.repo": "Public copy on GitHub",
+  "share.first.existing": "Where it goes",
+  "share.first.repo.existing": "Your public repository",
   "share.first.repo.detail": "prabin/Book-site",
   "share.first.site": "Website",
   "share.first.site.detail": "prabin.github.io/Book-site",

@@ -101,6 +101,10 @@ import type { ShareProgress } from "./share-progress.ts";
 export type SharingSetupStep = "check" | "create" | "prepare" | "seal" | "push" | "deploy" | "slow" | "pages" | "preserve" | "remove" | "ready";
 export interface SharingSetupPreview {
   project: string; owner: string; name: string; site: string; phase: SharingSetupPhase | "unconfigured";
+  /** The old separate site (`owner/name`) whose shares move into this one, in the Private + Public layout (D-429). */
+  moveFrom?: string;
+  /** The site is the project's own public repository, already there: nothing is created (D-429). */
+  existing?: boolean;
 }
 
 // ---- the invite (SHR-09) ----

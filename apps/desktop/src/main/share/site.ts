@@ -63,15 +63,23 @@ jobs:
 }
 export const PUBLIC_SITE_WORKFLOW = publicSiteWorkflow();
 
-export async function configurePublicSite(api: GitHubApi, pairing: Pick<SitePairing, "owner" | "name">, step: (step: SharingSetupStep) => void): Promise<void> {
+/** A Pages workflow Focus Notes put there: the template's (Deploy app, then Publish site) or an earlier site's. */
+const managedWorkflow = (text: string) => /^env:\s*\n\s+FOCUS_NOTES_SOURCE:/m.test(text) || /^name: Publish site$/m.test(text);
+
+export async function configurePublicSite(api: GitHubApi, pairing: Pick<SitePairing, "owner" | "name">, step: (step: SharingSetupStep) => void, options: { replaceManaged?: boolean } = {}): Promise<void> {
   const repo = await api.repo(pairing.owner, pairing.name);
   if (repo.private || repo.template || !repo.canAdmin || !repo.canPush) throw new Error("sharing:refused");
   const workflow = publicSiteWorkflow(repo.defaultBranch);
   const path = ".github/workflows/pages.yml";
   const existing = await api.file(pairing.owner, pairing.name, path);
-  if (existing && existing.text !== workflow) throw new Error("sharing:workflow");
-  if (!existing) {
+  if (existing && existing.text === workflow) return;
+  // The project's own public repository (D-429): its template workflow deployed the app; the site the app builds replaces it.
+  if (existing && options.replaceManaged && managedWorkflow(existing.text)) {
     step("push");
-    await api.createFile(pairing.owner, pairing.name, path, workflow, "Set up public site publishing", repo.defaultBranch);
+    await api.updateFile(pairing.owner, pairing.name, path, workflow, "Publish the site Focus Notes builds", repo.defaultBranch, existing.sha);
+    return;
   }
+  if (existing) throw new Error("sharing:workflow");
+  step("push");
+  await api.createFile(pairing.owner, pairing.name, path, workflow, "Set up public site publishing", repo.defaultBranch);
 }
