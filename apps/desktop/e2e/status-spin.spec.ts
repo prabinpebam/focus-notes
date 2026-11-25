@@ -44,6 +44,9 @@ test("D-356: the backing-up status moves only its border arc; glyph, box and pro
   try {
     const icon = page.locator("#saveState");
     await expect(icon).toBeVisible();
+    // The renderer's start-up status pull waits for Git to open; under load it could land mid-frames and end the arc.
+    // Ours queues behind it, so once it's answered the start-up one has been applied.
+    await page.evaluate(() => (window as unknown as { focusNotes: { sync: { status(): Promise<unknown> } } }).focusNotes.sync.status());
     await page.mouse.move(500, 300);
     const neighbour = "[data-project-pill]";
     const hasPill = (await page.locator(neighbour).count()) > 0;
