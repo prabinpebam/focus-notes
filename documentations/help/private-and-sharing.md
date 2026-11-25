@@ -23,6 +23,14 @@ On Windows, choose **Copy share information**, **Copy link**, or **Copy access c
 
 **Publish and Unpublish.** **Publish** makes a private note a web page (it asks first). **Unpublish** takes the page down at the next publish and makes the note private again. Both are in the Files row menu and **⋯ → Note**. Sharing also puts a note on the website, but encrypted: it only opens with the link, the passcode or both.
 
+**See each step while it works.** Turning sharing on, sharing, publishing and taking a note down can take a minute or two, because GitHub has to update your website. Each step shows as it happens: done steps get a tick, the current one turns, and the time so far is shown. If a step stops, it says which one, and **Retry** carries on from there. Nothing done so far is lost.
+
+**Where your shares live.** In a project with public and private notes, your published pages and your encrypted shares are on one website: your project's public one. Turning sharing on there creates nothing new on GitHub.
+
+**Moved from an older site.** If an earlier version made a separate site for your shares (named like `notes-site`), the next **Turn on sharing** moves your shares to your project's public website. Their links change, so send the new ones. Then open **Settings → Sharing** and choose **Delete old site…**. Type its name, choose **Open GitHub settings**, delete it there, and come back to choose **Check again**.
+
+**Deleting a shared or published note.** Focus Notes always asks before it deletes a note, and says if its link or web page goes too. It turns the link off and takes the page down first, then deletes the note. Until that's done, the note stays in Files marked *Deleting…*; point to it to see the steps. If a step stops, choose **Retry**, or **Delete anyway** to delete the note now and leave its link or page up.
+
 Retrying a failed publication in the same dialog reuses the saved share. Opening **Share…** again starts an independent share; it does not replace the earlier link. With **Include notes added later** off, a folder share includes only the reviewed note identities, not another note later created at the same path.
 
 **Not available yet:** shared-before actions, adding newer notes to an earlier share, first-site setup from this dialog and full review of very large folders. Change… and template editing aren't part of this dialog. Settings → Sharing remains available for existing named grants.
