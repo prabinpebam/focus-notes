@@ -112,6 +112,8 @@ const outcomes: Record<string, Outcome> = {
       const path = join(docs, "notes", "welcome.md");
       const confirm = page.getByRole("dialog", { name: /^Delete “/ });
       await expect(confirm).toBeVisible();
+      // A public note (Private + Public) is a web page: the confirmation says it goes too (D-428).
+      await expect(confirm.getByText("This note is published. Deleting it also takes its web page down.", { exact: true })).toBeVisible();
       expect(existsSync(path)).toBe(true);
       await confirm.getByRole("button", { name: "Delete and unpublish", exact: true }).click();
       await expect.poll(() => existsSync(path)).toBe(false);

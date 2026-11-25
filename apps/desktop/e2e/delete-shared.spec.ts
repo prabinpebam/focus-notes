@@ -15,8 +15,8 @@ import { configure, git, write } from "./instance.ts";
  * delete…" Every delete asks; a shared note's link is turned off and the website updated before the note is deleted,
  * its row staying, Deleting…, with its steps on hover. GitHub and its website are a loopback fake held back on demand.
  */
-test("D-428: deleting a shared note asks, keeps the row Deleting… while its link goes, then deletes it; a plain note asks too", async () => {
-  test.setTimeout(300_000);
+test("D-428: deleting a shared note asks, keeps the row Deleting… while its link goes, then deletes it; a failed step stops before the delete with Retry or Delete anyway; a plain note asks too", async () => {
+  test.setTimeout(420_000);
   const dirs = tempDirs();
   const root = dirs.docs;
   writeFileSync(join(dirs.userData, "project-folder.txt"), root);
@@ -32,8 +32,12 @@ test("D-428: deleting a shared note asks, keeps the row Deleting… while its li
   const diary = join(root, "notes", "diary.md");
   const lisbon = join(root, "notes", "trips", "lisbon.md");
   const plain = join(root, "notes", "plain.md");
+  const rome = join(root, "notes", "trips", "rome.md");
+  const tokyo = join(root, "notes", "trips", "tokyo.md");
   write(diary, "# Diary\n\nSynthetic diary line.\n");
   write(lisbon, "# Lisbon\n\nTram 28 at dawn.\n");
+  write(rome, "# Rome\n\nCoffee at the corner.\n");
+  write(tokyo, "# Tokyo\n\nTrains on time.\n");
   write(plain, "# Plain\n\nNothing shared here.\n");
   writeFileSync(join(dirs.userData, "state.json"), JSON.stringify({ version: 1, firstRun: "done", projectIntroSeen: true, lastNotePath: diary }));
   git(root, "add", "-A");
@@ -119,6 +123,59 @@ test("D-428: deleting a shared note asks, keeps the row Deleting… while its li
     expect(access().grants.find(g => g.id === grant.id)?.revokedAt).toBeTruthy();
     await expect.poll(async () => (await Promise.allSettled([reader().openLinkSession(grant.id, grant.link!.secret)]))[0]!.status).toBe("rejected");
     expect(existsSync(lisbon)).toBe(false);
+
+    // GitHub can't update the website: the row stays, Stopped, and the note isn't deleted. Focusing the row opens its
+    // card; Tab reaches Retry, which only updates the website again, and then the note goes.
+    const shareNote = async (name: string) => {
+      await files();
+      const r = page.getByRole("treeitem", { name: new RegExp(`^${name}`) });
+      await r.click({ button: "right" });
+      await page.getByRole("menuitem", { name: "Share…", exact: true }).click();
+      const dialog = page.getByRole("dialog", { name: `Share “${name}”`, exact: true });
+      await dialog.getByRole("button", { name: "Copy share information", exact: true }).click();
+      await expect(dialog.getByText("Share information copied.", { exact: true })).toBeVisible({ timeout: 60_000 });
+      await dialog.press("Escape");
+      await expect(dialog).toHaveCount(0);
+      return access().grants.find(g => !g.owner && !g.revokedAt)!;
+    };
+    const deleteShared = async (name: string) => {
+      await files();
+      await page.getByRole("treeitem", { name: new RegExp(`^${name}`) }).click({ button: "right" });
+      await page.getByRole("menuitem", { name: /^Delete/ }).click();
+      await page.getByRole("dialog", { name: `Delete “${name}”?`, exact: true }).getByRole("button", { name: "Delete 1 note", exact: true }).click();
+    };
+    await shareNote("Rome");
+    const romeRow = page.getByRole("treeitem", { name: /^Rome/ });
+    fake.git.failPagesRuns(2);
+    await deleteShared("Rome");
+    await expect(romeRow).toHaveAttribute("data-deleting", "failed", { timeout: 60_000 });
+    await expect(romeRow).toContainText("Stopped");
+    expect(existsSync(rome)).toBe(true);
+    await romeRow.focus();
+    const romeCard = page.getByRole("dialog", { name: "Deleting “Rome”: steps", exact: true });
+    await expect(romeCard.getByText(/^Stopped at “Update your website”/)).toBeVisible();
+    await expect(romeCard.getByText(/its link keeps working/)).toBeVisible();
+    await page.keyboard.press("Tab");
+    await expect(romeCard.getByRole("button", { name: "Delete anyway", exact: true })).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(romeCard.getByRole("button", { name: "Retry", exact: true })).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(romeRow).toHaveCount(0, { timeout: 60_000 });
+    expect(existsSync(rome)).toBe(false);
+
+    // Delete anyway: the note goes now, its link still opens, and the notification says so.
+    const tokyoGrant = await shareNote("Tokyo");
+    const tokyoRow = page.getByRole("treeitem", { name: /^Tokyo/ });
+    fake.git.failPagesRuns(2);
+    await deleteShared("Tokyo");
+    await expect(tokyoRow).toHaveAttribute("data-deleting", "failed", { timeout: 60_000 });
+    await tokyoRow.hover();
+    await page.getByRole("dialog", { name: "Deleting “Tokyo”: steps", exact: true }).getByRole("button", { name: "Delete anyway", exact: true }).click();
+    await expect(tokyoRow).toHaveCount(0, { timeout: 30_000 });
+    await expect(page.getByRole("status").filter({ hasText: "Deleted. Its link still works" }).first()).toBeVisible();
+    await expect.poll(() => existsSync(tokyo)).toBe(false);
+    await reader().openLinkSession(tokyoGrant.id, tokyoGrant.link!.secret);
+    await page.mouse.move(1, 1);
 
     // A plain private note asks too, without the explanation, then goes.
     const plainRow = page.getByRole("treeitem", { name: /^Plain/ });
