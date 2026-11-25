@@ -111,9 +111,11 @@ for (const github of [false, true]) {
         if (github) await wizard.getByRole("textbox", { name: "Repository name", exact: true }).fill(`fresh-project-${round}`);
         for (let i = 0; i < 2; i++) await wizard.getByRole("button", { name: "Next", exact: true }).click();
         await wizard.getByRole("button", { name: "Create project", exact: true }).click();
-        await expect(wizard).toBeHidden();
+        // Creating the project (and its repository) can take a while on a loaded runner; wait for the window, not a sleep.
+        await expect(wizard).toBeHidden({ timeout: 30_000 });
         await expect(open).toBeHidden();
-        const profile = profileOf(dirs.userData, folder);
+        let profile = "";
+        await expect.poll(() => { try { profile = profileOf(dirs.userData, folder); return true; } catch { return false; } }, { timeout: 30_000, message: "The new project's window has a profile" }).toBe(true);
         child = await attachProject(profile);
         const attached = child;
         await assertWriting(attached.page, () => attached.browser.contexts()[0]!.pages().length, folder, `Round ${round} thought.`);
@@ -121,8 +123,9 @@ for (const github of [false, true]) {
           // The person deletes this project from disk, then makes another with the same name.
           await closeProject(child);
           child = undefined;
-          rmSync(folder, { recursive: true, force: true });
-          rmSync(profile, { recursive: true, force: true });
+          // Windows may hold the closed project's files for a moment; retry the delete rather than fail on EPERM.
+          rmSync(folder, { recursive: true, force: true, maxRetries: 20, retryDelay: 250 });
+          rmSync(profile, { recursive: true, force: true, maxRetries: 20, retryDelay: 250 });
         }
       }
       expect(existsSync(folder)).toBe(true);

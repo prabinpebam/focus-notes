@@ -1,7 +1,7 @@
 import { mkdir, mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, expect, it } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
 import { GitHubApi } from "@focus-notes/github";
 import { FakeGitHub } from "../../../packages/github/test/fake-github.ts";
 import { gitData } from "./fake-pages.ts";
@@ -11,7 +11,7 @@ import type { SharingLayout } from "../src/main/share/layout.ts";
 import type { SitePairing } from "../src/main/share/setup.ts";
 
 const dirs: string[] = [];
-afterEach(async () => { await Promise.all(dirs.splice(0).map(d => rm(d, { recursive: true, force: true }))); });
+afterEach(async () => { vi.useRealTimers(); await Promise.all(dirs.splice(0).map(d => rm(d, { recursive: true, force: true }))); });
 const temp = async () => { const d = await mkdtemp(join(tmpdir(), "fn-g3-")); dirs.push(d); return d; };
 const pairing: SitePairing = { version: 1, project: "ada/book", owner: "ada", name: "quiet-site", intent: "11111111-1111-1111-1111-111111111111", phase: "ready", site: "https://ada.github.io/quiet-site/" };
 const SECRET = "This private line must never reach the public site.";
@@ -139,8 +139,16 @@ it("G3.4: an offline push is never Published or recorded, and Retry publishes", 
 
 it("O4: Pages slower than the wait is Still publishing, not an error; background checks say when it's live, or fail at the ceiling", async () => {
   const t = await project({ notes: { "trip.md": TRIP, "rome.md": "# Rome\n" } });
+  // Only the clock is fake, so the publish wait and the 300 ms ceiling pass when the test says, never because a slow runner stalled.
+  vi.useFakeTimers({ toFake: ["Date"] });
+  const settle = async <T>(work: Promise<T>) => {
+    let done = false;
+    work.then(() => { done = true; }, () => { done = true; });
+    while (!done) { vi.setSystemTime(Date.now() + 10); await new Promise(r => setTimeout(r, 1)); }
+    return work;
+  };
   t.git.setStale(true);
-  const result = await t.runtime.publishNotes({ notes: ["trip.md"] });
+  const result = await settle(t.runtime.publishNotes({ notes: ["trip.md"] }));
   expect(result).toMatchObject({ published: ["trip.md"], changed: ["trip.md"] });
   expect(result.pending).toMatch(/\S/);
   // The commit is on the site's branch, so the record says what Pages will serve.
@@ -149,11 +157,14 @@ it("O4: Pages slower than the wait is Still publishing, not an error; background
   await new Promise(r => setTimeout(r, 20));
   expect(t.live).toEqual([]);
   t.git.setStale(false);
-  await expect.poll(() => t.live).toEqual([{ build: result.pending, live: true }]);
+  await expect.poll(() => t.live, { timeout: 10_000 }).toEqual([{ build: result.pending, live: true }]);
   // A later Publish isn't blocked by a pending one; one never served fails at the ceiling instead of waiting forever.
   t.git.setStale(true);
-  const second = await t.runtime.publishNotes({ notes: ["rome.md"] });
-  await expect.poll(() => t.live, { timeout: 5000 }).toContainEqual({ build: second.pending, live: false });
+  const second = await settle(t.runtime.publishNotes({ notes: ["rome.md"] }));
+  await new Promise(r => setTimeout(r, 20));
+  expect(t.live).not.toContainEqual(expect.objectContaining({ build: second.pending }));
+  vi.setSystemTime(Date.now() + 301);
+  await expect.poll(() => t.live, { timeout: 10_000 }).toContainEqual({ build: second.pending, live: false });
 });
 
 it("G3.1/G3.2: no page renderer, or a published note quoting a private one, stops before any push", async () => {

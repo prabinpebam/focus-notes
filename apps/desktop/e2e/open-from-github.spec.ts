@@ -80,7 +80,9 @@ async function projectChild(w: World, folder: string) {
     if (!existsSync(profiles)) return false;
     for (const name of readdirSync(profiles)) {
       const file = join(profiles, name, "project-folder.txt");
-      if (existsSync(file) && existsSync(folder) && realpathSync.native(readFileSync(file, "utf8").trim()) === realpathSync.native(folder)) profile = join(profiles, name);
+      // The profile's folder file may still be empty while it's being written; the next poll reads it.
+      const named = existsSync(file) ? readFileSync(file, "utf8").trim() : "";
+      if (named && existsSync(named) && existsSync(folder) && realpathSync.native(named) === realpathSync.native(folder)) profile = join(profiles, name);
     }
     return Boolean(profile) && existsSync(join(profile, "journey-owned-pid"));
   }, { timeout: 60_000, message: `A project window starts for ${folder}` }).toBe(true);

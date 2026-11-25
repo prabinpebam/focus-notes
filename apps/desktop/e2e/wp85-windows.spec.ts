@@ -6,7 +6,7 @@
  * first's text.
  */
 import { test, expect, type Page } from "./fixtures.ts";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { launch, quit } from "./helpers.ts";
 import { instance } from "./instance.ts";
@@ -91,23 +91,34 @@ test("DSK-06: Mod+Enter in Spotlight opens a note in a new window on its first t
   await page.keyboard.press(`${mod}+End`);
   await page.keyboard.type(" Typed in the first window.");
   await page.keyboard.press(`${mod}+S`);
-  await expect.poll(() => readFileSync(note, "utf8"), { timeout: 10_000 }).toContain("Typed in the first window.");
   await page3.keyboard.press(`${mod}+S`);
-  await page3.waitForTimeout(1500);
-  // The first window's words are never lost; the other window's are saved on top of them, or it says
-  // the note changed and keeps them until a choice is made.
-  const onDisk = readFileSync(note, "utf8");
-  expect(onDisk).toContain("Typed in the first window.");
-  if (!onDisk.includes("Typed in the other window.")) {
-    await expect(page3.locator("#toasts").getByText("“Welcome” changed outside Focus Notes. Your edits are kept here, and aren't saved over it until you choose.")).toBeVisible();
-    await expect(editor3).toContainText("Typed in the other window.");
-    // Keep both: the first window's text stays at the note, this one's goes next to it as a copy.
-    await page3.keyboard.press(`${mod}+S`);
-    const dialog = page3.getByRole("dialog", { name: "“Welcome” changed outside Focus Notes" });
+  // Which window saves first depends on its 400 ms autosave, so a slow runner may let the other window win.
+  // Either way neither window's words are lost: the second to save writes on top of the first's text, or it
+  // says the note changed and keeps its words until a choice is made.
+  const windows = [{ page, editor, text: "Typed in the first window." }, { page: page3, editor: editor3, text: "Typed in the other window." }];
+  const changed = (p: Page) => p.locator("#toasts").getByText("“Welcome” changed outside Focus Notes. Your edits are kept here, and aren't saved over it until you choose.");
+  let loser: (typeof windows)[number] | undefined;
+  await expect.poll(async () => {
+    const onDisk = readFileSync(note, "utf8");
+    if (windows.every((w) => onDisk.includes(w.text))) return "on top";
+    for (const w of windows) if (await changed(w.page).isVisible()) { loser = w; return "changed"; }
+    return "saving";
+  }, { timeout: 20_000, message: "Both windows' words are saved, or the second to save says the note changed" }).not.toBe("saving");
+  if (loser) {
+    const winner = windows.find((w) => w !== loser)!;
+    expect(readFileSync(note, "utf8")).toContain(winner.text);
+    expect(readFileSync(note, "utf8")).not.toContain(loser.text);
+    await expect(loser.editor).toContainText(loser.text);
+    // Keep both: the winner's text stays at the note, the loser's goes next to it as a copy.
+    await loser.page.keyboard.press(`${mod}+S`);
+    const dialog = loser.page.getByRole("dialog", { name: "“Welcome” changed outside Focus Notes" });
     await dialog.getByRole("button", { name: "Keep both" }).click();
     await expect(dialog).toHaveCount(0);
-    expect(readFileSync(note, "utf8")).toContain("Typed in the first window.");
+    expect(readFileSync(note, "utf8")).toContain(winner.text);
+    const notesDir = join(dirs.docs, "private", "notes");
+    await expect.poll(() => readdirSync(notesDir).filter((f) => f !== "welcome.md" && f.endsWith(".md")).some((f) => readFileSync(join(notesDir, f), "utf8").includes(loser!.text))).toBe(true);
   }
+  const kept = readFileSync(note, "utf8").includes("Typed in the first window.") ? "Typed in the first window." : "Typed in the other window.";
 
   // Closing a window for a note leaves the first one, and its note, as they were.
   for (const p of [page3, page2]) {
@@ -117,7 +128,8 @@ test("DSK-06: Mod+Enter in Spotlight opens a note in a new window on its first t
     else await app.evaluate(({ BrowserWindow }, url) => BrowserWindow.getAllWindows().find((w) => w.webContents.getURL() === url)!.close(), p.url());
     await closed;
   }
-  await expect(editor).toContainText("Typed in the first window.");
+  // The first window still shows the note as saved: its own words, or after Keep both the other window's.
+  await expect(editor).toContainText(kept);
   const state = JSON.parse(readFileSync(join(dirs.userData, "state.json"), "utf8")) as { lastNotePath?: string };
   expect(state.lastNotePath?.endsWith("welcome.md")).toBe(true);
   await quit(l);

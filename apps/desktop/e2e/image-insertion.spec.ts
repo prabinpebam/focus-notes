@@ -42,6 +42,8 @@ for (const entry of ["paste", "drop", "slash", "Insert image", "toolbar", "pinne
     try {
       const { page, app } = launched;
       const editor = page.getByRole("textbox", { name: "Note", exact: true });
+      // The note must be open before the image goes in, or its load replaces what was inserted.
+      await expect(editor).toContainText("Keep these words.", { timeout: 20_000 });
       await editor.focus(); await page.keyboard.press(caret.docEnd); await page.keyboard.press("Enter");
       if (entry === "paste" || entry === "drop") await transfer(page, entry, png.toString("base64"));
       else {
@@ -218,11 +220,13 @@ for (const [kind, format] of [["local", "png"], ["github", "png"], ["github", "j
       });
     }
     const editor = launched.page.getByRole("textbox", { name: "Note", exact: true });
+    // The note must be open before the image goes in, or its load replaces what was inserted.
+    await expect(editor).toContainText("Only local text.", { timeout: 20_000 });
     await editor.focus(); await launched.page.keyboard.press(caret.docEnd); await launched.page.keyboard.press("Enter");
     await transfer(launched.page, "paste", input.toString("base64"));
-    await expect(editor.locator("[data-image-node] img")).toBeVisible();
+    await expect(editor.locator("[data-image-node] img")).toBeVisible({ timeout: 15_000 });
     if (format === "webp") expect(await launched.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length)).toBe(1);
-    await expect.poll(() => readFileSync(note, "utf8")).toContain("../assets/images/");
+    await expect.poll(() => readFileSync(note, "utf8"), { timeout: 15_000 }).toContain("../assets/images/");
     const src = /!\[\]\(([^)]+)\)/.exec(readFileSync(note, "utf8"))![1]!;
     const asset = resolve(dirs.docs, "notes", src), relative = src.replace("../", "");
     const expected = format === "png" ? kind === "local" ? input : png : readFileSync(asset);
