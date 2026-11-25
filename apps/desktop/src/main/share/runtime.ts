@@ -54,6 +54,8 @@ export function sharingRuntime(deps: {
   temporary: string;
   /** Defaults to pushing the sealed artifact to the paired public site and waiting for Pages. */
   publisher?: SealedArtifactPublisher;
+  /** Publishes the emptied old separate site after its shares moved (D-429); defaults to its own Pages publisher. */
+  retirePublisher?: SealedArtifactPublisher;
   /** The deployed site's fetch, for the default publisher. */
   get?: DeployedSiteGet;
   /** A legacy pair's public source must be held through verified preservation and deployed removal. */
@@ -143,6 +145,17 @@ export function sharingRuntime(deps: {
       guard();
       return saved;
     };
+    /**
+     * The pairing sharing runs on now. In the Private + Public layout a pairing with any site but the project's own
+     * public repository is an older separate site (D-425): it isn't used, and the next Turn on moves its shares (D-429).
+     */
+    const current = async () => {
+      const saved = await read();
+      if (!saved || !layout.legacy) return saved;
+      const own = layout.publicDir ? await deps.repository(layout.publicDir) : undefined;
+      guard();
+      return own && own.toLowerCase() === `${saved.owner}/${saved.name}`.toLowerCase() ? saved : undefined;
+    };
     const publishedFile = join(privateDir, ".focus-notes", "published.json");
     const readPublished = async (): Promise<string[]> => {
       guard();
@@ -197,19 +210,27 @@ export function sharingRuntime(deps: {
       const before = selection ? "" : await inputs();
       deps.step?.("seal");
       const notes = empty || layout.legacy ? [] : selection?.notes ?? await presentPublished();
-      const reader = notes.length ? deps.reader?.() : undefined;
-      if (notes.length && (!reader || !layout.privateNotes)) throw new Error("sharing:unavailable");
+      // Private + Public layout (D-429): the project's own public repository is the site, so its published pages
+      // (every note in its public notes/) are built beside the sealed shares, even when sharing is turned off.
+      const publicNotes = layout.legacy && layout.publicDir ? join(layout.publicDir, "notes") : undefined;
+      const reader = notes.length || publicNotes ? deps.reader?.() : undefined;
+      if ((notes.length && (!reader || !layout.privateNotes)) || (publicNotes && !reader)) throw new Error("sharing:unavailable");
       const directory = await mkdtemp(join(deps.temporary, "sealed-site-"));
       const staging = notes.length ? await mkdtemp(join(deps.temporary, "public-notes-")) : undefined;
       try {
         const selected = staging ? await stagePublicSelection({ notesRoot: layout.privateNotes!, projectRoot: privateDir, selection: { ...selection, notes }, staging }) : undefined;
         guard();
-        // Removal deploys an empty site: no public notes, no vault and no share keyrings.
-        const artifact = await publish(empty ? { site: directory, owner: pairing.owner, siteUrl: pairing.site } : {
+        // Removal deploys an empty site: no public notes, no vault and no share keyrings. In the Private + Public
+        // layout it keeps the published pages, which were public before sharing was turned on (D-429).
+        const artifact = await publish(empty ? {
+          site: directory, owner: pairing.owner, siteUrl: pairing.site,
+          ...(publicNotes ? { notes: publicNotes, reader: reader! } : {}),
+        } : {
           private: privateDir, sealedMedia: sharedImageDestinations,
           // `published`: the confirmed notes are public on purpose; every other private note stays leak-checked.
-          // A legacy pair's public notes stay on its own repository's site: its paired site holds only sealed shares (D-425).
           ...(staging ? { notes: staging, published: [...notes], reader: reader!, publicMedia: selected?.media ?? [], publicMediaFrom: join(staging, ".media") } : {}),
+          // The project's public notes, leak-checked against every private note and share secret (D-429).
+          ...(publicNotes ? { notes: publicNotes, reader: reader! } : {}),
           site: directory, owner: pairing.owner, siteUrl: pairing.site,
         });
         guard();
@@ -246,7 +267,7 @@ export function sharingRuntime(deps: {
         if (staging) await rm(staging, { recursive: true, force: true });
       }
     };
-    return { root, layout, privateDir, guard, store, read, build, readPublished, presentPublished, writePublished };
+    return { root, layout, privateDir, guard, store, read, current, build, readPublished, presentPublished, writePublished };
   };
   const service = () => {
     const ctx = bound();
@@ -254,13 +275,17 @@ export function sharingRuntime(deps: {
     const setup = sharingSetup({
       api: async () => { ctx.guard(); const api = await deps.api(); ctx.guard(); return api; },
       project: async () => { ctx.guard(); const repo = await deps.repository(ctx.privateDir); ctx.guard(); return repo; },
+      // Private + Public layout: the project's own public repository is the one site; nothing is created (D-429).
+      ...(ctx.layout.legacy && ctx.layout.publicDir ? {
+        site: async () => { ctx.guard(); const repo = await deps.repository(ctx.layout.publicDir!); ctx.guard(); return repo; },
+      } : {}),
       read: ctx.read, write: ctx.store.write,
       initialize: async (pairing, step) => {
         ctx.guard();
         const api = await deps.api();
         if (!api) throw new Error("sharing:signedout");
         ctx.guard();
-        await configurePublicSite(api, pairing, step);
+        await configurePublicSite(api, pairing, step, { replaceManaged: ctx.layout.legacy });
         ctx.guard();
         step("pages");
         const pages = await api.pages(pairing.owner, pairing.name);
@@ -304,13 +329,53 @@ export function sharingRuntime(deps: {
   };
   return {
     describe: () => service().describe(),
-    enable: (name: string) => serial(() => service().enable(name)),
+    enable: (name: string) => serial(async () => {
+      const ctx = bound(), before = await ctx.read().catch(() => undefined);
+      const result = await service().enable(name);
+      // D-429: the shares moved into the public repository; the old separate site is emptied so its links stop, in the background.
+      if (before && before.phase !== "off" && result.from === `${before.owner}/${before.name}`) void retire(before).catch(() => {});
+      return result;
+    }),
     disable: () => serial(() => deps.removalLane ? deps.removalLane(() => service().disable()) : service().disable()),
-    async pairing(): Promise<SitePairing | undefined> { return bound().read(); },
+    async pairing(): Promise<SitePairing | undefined> { return bound().current(); },
     publish: (): Promise<void> => serial(async () => {
-      const ctx = bound(), saved = await ctx.read();
+      const ctx = bound(), saved = await ctx.current();
       if (!saved || saved.phase !== "ready") throw new Error("access:site.unavailable");
       try { await ctx.build(saved); } catch (error) { throw publishProblem(error); }
+    }),
+    /**
+     * Takes down whatever is no longer shared or published (D-428, D-429): rebuilds the project's one public site from
+     * the current records (access.json, published.json, or the public notes/ in the Private + Public layout) and pushes
+     * it in one non-forced commit, leak-checked, then waits for Pages. Remove the grant, the record or the file first.
+     */
+    takeDown: (): Promise<PublicDeploy> => serial(async () => {
+      const ctx = bound(), saved = await ctx.current();
+      if (!saved || saved.phase !== "ready") throw new Error("sharing:unconfigured");
+      try { return await ctx.build(saved); } catch (error) { throw publishProblem(error); }
+    }),
+    /** D-429: the old separate site (`owner/name`) whose shares moved into the public repository, until it's deleted on GitHub. */
+    async oldSite(): Promise<string | undefined> {
+      const saved = await bound().current();
+      return saved?.phase === "ready" ? saved.from : undefined;
+    },
+    /**
+     * D-429: the owner deletes the old site on GitHub (D-413's way, never from the app). It counts as gone only when
+     * GitHub answers 404 for it while the same session still reads the account; then the pairing forgets it.
+     */
+    checkOldSite: (): Promise<boolean> => serial(async () => {
+      const ctx = bound(), saved = await ctx.current();
+      if (!saved?.from) return true;
+      const api = await deps.api();
+      if (!api) throw new Error("sharing:signedout");
+      const [owner, name] = saved.from.split("/") as [string, string];
+      try {
+        if (await api.findRepo(owner, name)) return false;
+        await api.user();
+      } catch (error) { throw publishProblem(error); }
+      ctx.guard();
+      const { from: _, ...rest } = saved;
+      await ctx.store.write(rest);
+      return true;
     }),
     /** Notes on the current public site (G3). */
     published: async (): Promise<string[]> => bound().readPublished(),
@@ -342,11 +407,25 @@ export function sharingRuntime(deps: {
     /** Retry of a rename's deploy that failed or never went live: the recorded notes, at their current paths. */
     followRetry: () => deployFollow(lastFollow),
   };
+  /**
+   * D-429: after the shares moved, the old separate site (D-425) is published empty, so its share links stop and
+   * nothing there can be read again. It's the old site's own target; the owner deletes the repository on GitHub.
+   */
+  async function retire(old: SitePairing): Promise<void> {
+    const directory = await mkdtemp(join(deps.temporary, "retired-site-"));
+    try {
+      const artifact = await publish({ site: directory, owner: old.owner, siteUrl: old.site });
+      const push = deps.retirePublisher ?? (deps.publisher ? undefined : pagesArtifactPublisher({
+        api: deps.api, get, target: async project => project === old.project ? old : undefined,
+      }));
+      if (push) await push(old.project, { directory, build: artifact.build });
+    } finally { await rm(directory, { recursive: true, force: true }); }
+  }
   function deployFollow(paths: string[]): Promise<void> {
     lastFollow = paths;
     return serial(async () => {
       try {
-        const ctx = bound(), saved = await ctx.read();
+        const ctx = bound(), saved = await ctx.current();
         // Not set up (or turned off meanwhile): the record already follows, and there's no site to update.
         if (!saved || saved.phase !== "ready") return;
         const { pending } = await ctx.build(saved, false, { notes: await ctx.presentPublished() });
@@ -367,7 +446,7 @@ export function sharingRuntime(deps: {
       record: ctx.writePublished,
       // In the same lane as setup, removal and sharing pushes, so they never interleave on the site.
       deploy: (paths, selection) => serial(async () => {
-        const saved = await ctx.read();
+        const saved = await ctx.current();
         if (!saved || saved.phase !== "ready") throw new Error("sharing:unavailable");
         try { return await ctx.build(saved, false, { ...selection, notes: [...paths] }); }
         catch (error) { throw publishProblem(error); }

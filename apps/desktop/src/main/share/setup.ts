@@ -13,6 +13,8 @@ export interface SitePairing {
   intent: string;
   phase: SharingSetupPhase;
   site: string;
+  /** The separate site (`owner/name`) this pairing replaced when its shares moved into the project's own public repository (D-429). */
+  from?: string;
 }
 const fail = (code: string) => new Error(`sharing:${code}`);
 const DEFAULT_SITE = "notes-site";
@@ -31,8 +33,9 @@ export function parseSitePairing(raw: unknown): SitePairing {
   if (value.version !== 1 || typeof value.project !== "string" || !/^[A-Za-z0-9-]+\/[A-Za-z0-9._-]+$/.test(value.project) ||
     typeof value.owner !== "string" || !/^[A-Za-z0-9-]+$/.test(value.owner) || typeof value.name !== "string" || !isRepoName(value.name) ||
     typeof value.intent !== "string" || !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(value.intent) || !phase ||
-    typeof value.site !== "string" || value.site !== siteAddress(value.owner, value.name)) throw fail("record");
-  return { version: 1, project: value.project, owner: value.owner, name: value.name, intent: value.intent, phase, site: value.site };
+    typeof value.site !== "string" || value.site !== siteAddress(value.owner, value.name) ||
+    value.from !== undefined && (typeof value.from !== "string" || !/^[A-Za-z0-9-]+\/[A-Za-z0-9._-]+$/.test(value.from))) throw fail("record");
+  return { version: 1, project: value.project, owner: value.owner, name: value.name, intent: value.intent, phase, site: value.site, ...(value.from ? { from: value.from } : {}) };
 }
 
 export function siteAddress(owner: string, name: string): string {
@@ -86,6 +89,11 @@ export function sharingSetup(deps: {
   /** Publish removal and remove legacy private-reader credentials; never delete a repository. */
   remove(pairing: SitePairing): Promise<void>;
   step?(step: SharingSetupStep): void;
+  /**
+   * The project's own public repository (`owner/name`), in the Private + Public layout: its site is the one site,
+   * holding published pages and sealed shares side by side, and no other repository is ever made (D-429).
+   */
+  site?(): Promise<string | undefined>;
 }) {
   let pending: { key: string; promise: Promise<SitePairing> } | undefined;
   const step = (value: SharingSetupStep) => deps.step?.(value);
@@ -104,7 +112,11 @@ export function sharingSetup(deps: {
     const saved = await deps.read();
     const pairing = saved ? parseSitePairing(saved) : undefined;
     if (pairing && pairing.project !== project) throw fail("changed");
-    return { project, api, owner: user.login, pairing };
+    const site = deps.site ? await deps.site() : undefined;
+    if (deps.site && !site) throw fail("unlinked");
+    const fixed = site ? site.split("/") as [string, string] : undefined;
+    if (fixed && (fixed.length !== 2 || fixed[0].toLowerCase() !== owner.toLowerCase() || !isRepoName(fixed[1]))) throw fail("owner");
+    return { project, api, owner: user.login, pairing, fixed: fixed?.[1] };
   };
   const run = (key: string, action: () => Promise<SitePairing>) => {
     if (pending) return pending.key === key ? pending.promise : Promise.reject(fail("busy"));
@@ -112,18 +124,59 @@ export function sharingSetup(deps: {
     pending = { key, promise };
     return promise;
   };
+  /**
+   * Private + Public layout (D-429): the project's own public repository is the site. It must already exist, be
+   * public and be this account's to administer; nothing is ever created. A pairing with an older separate site
+   * (D-425) is replaced, remembering it in `from` so its shares can be taken down and its deletion offered.
+   */
+  const enableFixed = async (ctx: Awaited<ReturnType<typeof context>>, name: string): Promise<SitePairing> => {
+    const same = ctx.pairing && ctx.pairing.name.toLowerCase() === name.toLowerCase() ? ctx.pairing : undefined;
+    const moving = ctx.pairing && !same && ctx.pairing.phase !== "off" ? ctx.pairing : undefined;
+    let pairing = same;
+    if (pairing?.phase === "removing") throw fail("removing");
+    if (pairing?.phase === "ready") return pairing;
+    const repo = await ctx.api.findRepo(ctx.owner, name);
+    if (!repo) throw fail("missing");
+    if (repo.private || repo.template || !repo.canAdmin || !repo.canPush) throw fail("refused");
+    if (!pairing || pairing.phase === "reserved" || pairing.phase === "creating") {
+      const from = moving ? `${moving.owner}/${moving.name}` : pairing?.from ?? ctx.pairing?.from;
+      pairing = {
+        version: 1, project: ctx.project, owner: ctx.owner, name, intent: pairing?.intent ?? randomUUID(), phase: "created",
+        site: siteAddress(ctx.owner, name), ...(from ? { from } : {}),
+      };
+      await deps.write(pairing);
+    }
+    // Every share was withdrawn at Turn off, so building again can't republish one; the published pages come back.
+    step("prepare");
+    await deps.initialize(pairing, step);
+    step("pages");
+    const pages = await ctx.api.pages(pairing.owner, pairing.name);
+    if (!pages || pages.buildType !== "workflow") await ctx.api.usePagesWorkflow(pairing.owner, pairing.name, Boolean(pages));
+    pairing = { ...pairing, phase: "ready" };
+    await deps.write(pairing);
+    step("ready");
+    return pairing;
+  };
   return {
     async describe(): Promise<SharingSetupPreview> {
       try {
-        const { project, owner, pairing } = await context();
-        const name = pairing?.name ?? DEFAULT_SITE;
-        return { project, owner, name, site: pairing?.site ?? siteAddress(owner, name), phase: pairing?.phase ?? "unconfigured" };
+        const { project, owner, pairing, fixed } = await context();
+        // A pairing with another site in the Private + Public layout is the old separate site (D-425): it moves (D-429).
+        const current = pairing && (!fixed || pairing.name.toLowerCase() === fixed.toLowerCase()) ? pairing : undefined;
+        const name = fixed ?? pairing?.name ?? DEFAULT_SITE;
+        return {
+          project, owner, name, site: current?.site ?? siteAddress(owner, name), phase: current?.phase ?? "unconfigured",
+          ...(fixed ? { existing: true } : {}),
+          ...(pairing && !current ? { moveFrom: `${pairing.owner}/${pairing.name}` } : {}),
+        };
       } catch (error) { throw setupProblem(error); }
     },
-    enable(name: string): Promise<SitePairing> {
-      return run(`enable:${name.toLowerCase()}`, async () => {
-        if (!isRepoName(name)) throw fail("name");
+    enable(requested: string): Promise<SitePairing> {
+      return run(`enable:${requested.toLowerCase()}`, async () => {
+        if (!isRepoName(requested)) throw fail("name");
         const ctx = await context();
+        if (ctx.fixed) return enableFixed(ctx, ctx.fixed);
+        const name = requested;
         if (name.toLowerCase() === ctx.project.split("/")[1]!.toLowerCase()) throw fail("name");
         let pairing = ctx.pairing;
         if (pairing && pairing.name !== name) {

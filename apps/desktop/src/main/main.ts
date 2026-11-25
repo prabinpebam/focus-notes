@@ -353,7 +353,10 @@ function backedUp(): void {
   const r = record;
   const at = r?.kind === "github" ? backupToRecord(r.lastBackup, Date.now()) : undefined;
   if (r && at && r.folder === notesHome()) void saveRecord({ ...r, lastBackup: at }).catch(() => {});
+  afterBackup?.();
 }
+/** Set with sharing: keeps the Private + Public site's published pages in step with notes/ after a backup (D-429). */
+let afterBackup: (() => void) | undefined;
 /** Opened once the caret is ready, so Git never competes with the first frame (PRF-02, PRF-07). Again after the workspace changes. */
 const armGit = () => (gitSync = undefined, gitOpened = false, gitWaiting = [], lastWaiting = 0, gitOpening = new Promise<GitSync | undefined>((resolve) => {
   startGit = () => {
@@ -2174,6 +2177,18 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     return sharing.enable(name);
   });
   handle("sharing:setupDisable", () => sharing.disable());
+  // D-429: the old separate shares site, after its shares moved into the public repository. The owner deletes it on
+  // GitHub (D-413's way, never from the app); the app only opens its settings and checks it's gone.
+  handle("sharing:oldSite", () => sharing.oldSite());
+  handle("sharing:oldSiteOpen", async () => {
+    const old = await sharing.oldSite();
+    if (!old || !isRepoSlug(old)) throw new Error("sharing:unconfigured");
+    const url = `https://github.com/${old}/settings`;
+    if (!isWebLink(url)) throw new Error("sharing:failed");
+    if (journey) return void process.stdout.write(`[focus-notes] open-external ${url}\n`);
+    await shell.openExternal(url);
+  });
+  handle("sharing:oldSiteCheck", () => sharing.checkOldSite());
   // Publish and Unpublish (G3): notes-root-relative paths; staging re-validates each one.
   const notePaths = (value: unknown): string[] => {
     if (!Array.isArray(value) || value.length > 10_000 || value.some(p => typeof p !== "string")) throw new Error("sharing:scope");
@@ -2337,6 +2352,8 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     for (const op of ops as { op?: unknown; from?: unknown; to?: unknown }[]) {
       if (op?.op === "move" && typeof op.from === "string" && typeof op.to === "string") void sharing.followRename(op.from, op.to).catch(() => {});
     }
+    // Private + Public with sharing on: Publish and Unpublish move notes in or out of notes/, whose pages the app builds (D-429).
+    if (projectLayout().legacy) afterBackup?.();
     // The shell's own reference changes, so the open note follows them instead of saving old ones back.
     return rewrites.length ? { rewrites } : undefined;
   });
@@ -2452,6 +2469,29 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     if (attempt < 5) setTimeout(() => void redeployAfter(attempt + 1), 30_000).unref();
     return false;
   });
+  // D-429: in the Private + Public layout with sharing on, the app builds the project's public site, so a backup that
+  // changed the public notes (Publish and Unpublish move notes in and out of them) updates their pages too.
+  let publicNotesSeen: string | undefined;
+  const publicNotesSignature = async () => {
+    const dir = join(notesHome(), "notes"), parts: string[] = [];
+    const walk = async (d: string): Promise<void> => {
+      for (const e of await readdir(d, { withFileTypes: true }).catch(() => [])) {
+        if (e.name.startsWith(".")) continue;
+        const p = join(d, e.name);
+        if (e.isDirectory()) await walk(p);
+        else if (e.isFile()) { const s = await stat(p); parts.push(`${relative(dir, p)}:${s.size}:${s.mtimeMs}`); }
+      }
+    };
+    await walk(dir);
+    return parts.sort().join("\n");
+  };
+  afterBackup = () => void (async () => {
+    if (!projectLayout().legacy || (await sharing.pairing().catch(() => undefined))?.phase !== "ready") return;
+    const now = await publicNotesSignature();
+    if (now === publicNotesSeen) return;
+    publicNotesSeen = now;
+    await redeployAfter();
+  })().catch(() => {});
   handle("access:apply", async (change) => {
     if (!settingsAvailable()) throw new Error("access:failed");
     const result = await access.apply(change);

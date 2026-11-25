@@ -219,6 +219,8 @@ Settings → Sharing → **Preview site…** (D-337) fills the window with the p
 
 GitHub Pages is **purely a website** (D-292). No browser editor, IndexedDB notes, owner-vault unlock, demo-writing or eventual move-to-desktop funnel. [Browser retirement](../../architecture/web-app.md) must preserve old browser drafts before removing the old runtime. Plain download/help links remain.
 
+**One public repository in the Private + Public layout (D-429).** Sharing uses the project's own public repository: no other repository is created. Its site is the published notes (`n/`, the root home) with sealed shares and the share page at `s/`, built and leak-checked by the app and committed to `site/`. A New project keeps its separate public site repository, because its project repository is private (D-417).
+
 ## States and evidence
 
 | State | What the dialog shows; the draft is kept in every case |

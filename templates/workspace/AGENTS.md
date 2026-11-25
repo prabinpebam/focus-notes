@@ -11,7 +11,7 @@ private/                   Git submodule: the PRIVATE repository (added by the d
   access.json              share audiences and the vault's grant (secrets: never copy them anywhere)
   .focus-notes/            synced settings and custom themes
 .focus-notes/workspace.json  the workspace format (formatVersion); don't change it by hand
-.github/workflows/pages.yml  Deploy app: deploys the pinned, checksummed Focus Notes release
+.github/workflows/pages.yml  Publishes notes/ as the site with the pinned, checksummed publisher; never the app (D-429)
 AGENTS.md, README.md       these instructions
 ```
 

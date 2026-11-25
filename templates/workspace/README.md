@@ -1,14 +1,14 @@
 # My notes
 
-A [Focus Notes](https://github.com/prabinpebam/focus-notes) workspace: plain Markdown notes in my own GitHub account, with an app on my own GitHub Pages site.
+A [Focus Notes](https://github.com/prabinpebam/focus-notes) workspace: plain Markdown notes in my own GitHub account, published on my own GitHub Pages site.
 
-- **Public notes** are in `notes/` and are published on this repository's Pages site.
+- **Public notes** are in `notes/` and are published on this repository's Pages site. The site is only your published notes (an empty home until you publish one), never the Focus Notes app. When you turn on sharing in Focus Notes, encrypted shares sit beside them at `s/`, and no other repository is made (D-429).
 - **Private notes** are in a separate private repository, linked here at `private/`. They're published only as ciphertext, which the vault passphrase opens in a browser, read-only.
 
 ## Getting started
 
 1. Keep this repository public: GitHub Pages on free plans serves only public repositories.
-2. **Settings → Pages → Source: GitHub Actions**, then **Actions → Deploy app → Run workflow**. It deploys the released app at the version pinned in `.focus-notes/app.json`, after checking its checksum and attestation.
+2. **Settings → Pages → Source: GitHub Actions**, then **Actions → Deploy app → Run workflow**. It publishes `notes/` with the publisher of the release pinned in `.focus-notes/app.json`, after checking its checksum and attestation. Once sharing is on, Focus Notes builds the site itself and this workflow publishes what it built.
 3. Open `https://<your-username>.github.io/<this-repository>/`. Notes written there stay in that browser.
 4. To save notes to GitHub, use the Focus Notes desktop app from the [releases page](https://github.com/prabinpebam/focus-notes/releases/latest). Its setup makes the private repository, links it at `private/`, adds a read-only deploy key, and sets your vault passphrase.
 

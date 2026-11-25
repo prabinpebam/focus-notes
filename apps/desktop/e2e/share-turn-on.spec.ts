@@ -27,6 +27,7 @@ test("24 Nov: Turn on sharing when GitHub's Pages run fails shows the reason wit
   git(priv, "commit", "-qm", "Fixture notes");
   git(priv, "push", "-q", "origin", "main");
   git(priv, "remote", "add", "identity", "https://github.com/ada/book-private.git");
+  git(docs, "remote", "add", "identity", "https://github.com/ada/book.git");
   write(join(docs, "notes", "hello.md"), "# Hello\n\nPublic words.\n");
   git(docs, "add", "-A");
   git(docs, "commit", "-qm", "Fixture pointer");
@@ -35,6 +36,8 @@ test("24 Nov: Turn on sharing when GitHub's Pages run fails shows the reason wit
 
   const github = new FakeGitHub("focus-notes-local-candidate");
   github.add({ owner: "ada", name: "book-private", private: true, files: ["notes/diary.md"] });
+  // D-429: the project's own public repository is the site; no other repository is made.
+  github.add({ owner: "ada", name: "book", private: false, files: [".focus-notes/workspace.json"] });
   const fake = await serveFakeGitHub(github);
   let l: Launched | undefined;
   try {
@@ -81,7 +84,7 @@ test("24 Nov: Turn on sharing when GitHub's Pages run fails shows the reason wit
     // The confirmation in light, with More details as a disclosure; then dark.
     await scheme(page, "light");
     await openShare();
-    await expect(confirmation).toContainText("ada/notes-site", { timeout: 30_000 });
+    await expect(confirmation).toContainText("ada/book", { timeout: 30_000 });
     await shot(confirmation, "turn-on.light");
     const more = confirmation.getByRole("button", { name: "More details", exact: true });
     await expect(more).toHaveAttribute("aria-expanded", "false");
@@ -94,7 +97,7 @@ test("24 Nov: Turn on sharing when GitHub's Pages run fails shows the reason wit
     await expect(confirmation).toHaveCount(0);
     await scheme(page, "dark");
     await openShare();
-    await expect(confirmation).toContainText("ada/notes-site", { timeout: 30_000 });
+    await expect(confirmation).toContainText("ada/book", { timeout: 30_000 });
     await confirmation.getByRole("button", { name: "More details", exact: true }).click();
     await shot(confirmation, "turn-on-more.dark");
 
@@ -113,10 +116,10 @@ test("24 Nov: Turn on sharing when GitHub's Pages run fails shows the reason wit
     await expect(confirmation.getByText("Stopped at “GitHub puts your website up”. The steps before it are done and kept. GitHub couldn’t put your website up, even after trying twice. Your notes stay private. Retry in a minute.", { exact: true }))
       .toBeVisible({ timeout: 60_000 });
     expect(await marks()).toEqual(["Done", "Done", "Stopped here", "Not started yet"]);
-    const uploads = github.calls.filter(c => c.method === "PATCH" && c.path === "/repos/ada/notes-site/git/refs/heads/main").length;
+    const uploads = github.calls.filter(c => c.method === "PATCH" && c.path === "/repos/ada/book/git/refs/heads/main").length;
     const retry = confirmation.getByRole("button", { name: "Retry", exact: true });
     await expect(retry).toBeEnabled();
-    await expect(confirmation).toContainText("ada/notes-site");
+    await expect(confirmation).toContainText("ada/book");
     await expect(confirmation.getByRole("button", { name: "More details", exact: true })).toHaveAttribute("aria-expanded", "false");
     await keepsInset(confirmation);
     expect(github.calls.filter(c => c.method === "POST" && /\/actions\/runs\/\d+\/rerun-failed-jobs$/.test(c.path))).toHaveLength(1);
@@ -130,10 +133,10 @@ test("24 Nov: Turn on sharing when GitHub's Pages run fails shows the reason wit
     await expect.poll(marks, { timeout: 30_000 }).toEqual(["Done", "Done", "Working on this now", "Not started yet"]).catch(() => {});
     await expect(confirmation).toHaveCount(0, { timeout: 60_000 });
     expect(github.calls.filter(c => c.method === "POST" && /\/actions\/runs\/\d+\/rerun-failed-jobs$/.test(c.path))).toHaveLength(2);
-    expect(github.calls.filter(c => c.method === "PATCH" && c.path === "/repos/ada/notes-site/git/refs/heads/main")).toHaveLength(uploads);
+    expect(github.calls.filter(c => c.method === "PATCH" && c.path === "/repos/ada/book/git/refs/heads/main")).toHaveLength(uploads);
     await expect(page.getByRole("dialog", { name: "Share “Diary”", exact: true })).toBeVisible({ timeout: 30_000 });
-    expect(github.calls.filter(c => c.method === "POST" && c.path === "/user/repos")).toHaveLength(1);
-    expect(fake.git.site("ada/notes-site").has("focus-notes.json")).toBe(true);
+    expect(github.calls.filter(c => c.method === "POST" && c.path === "/user/repos")).toHaveLength(0);
+    expect(fake.git.site("ada/book").has("focus-notes.json")).toBe(true);
   } finally {
     try { if (l) await quit(l); } finally {
       if (l && process.platform === "win32") {

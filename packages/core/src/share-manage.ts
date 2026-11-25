@@ -65,6 +65,11 @@ export interface AccessBridge {
     enable(name: string): Promise<{ site: string; phase: SharingSetupPhase }>;
     disable(): Promise<{ site: string; phase: SharingSetupPhase }>;
     onStep?(listener: (step: SharingSetupStep) => void): () => void;
+    /** D-429: the old separate site whose shares moved into the public repository, until it's deleted on GitHub. */
+    oldSite?(): Promise<string | undefined>;
+    openOldSite?(): Promise<void>;
+    /** True once GitHub says the old site is gone (404 while the account still reads). */
+    checkOldSite?(): Promise<boolean>;
   };
   people?: {
     load(): Promise<ProjectPeople>;
@@ -101,6 +106,10 @@ import type { ShareProgress } from "./share-progress.ts";
 export type SharingSetupStep = "check" | "create" | "prepare" | "seal" | "push" | "deploy" | "slow" | "pages" | "preserve" | "remove" | "ready";
 export interface SharingSetupPreview {
   project: string; owner: string; name: string; site: string; phase: SharingSetupPhase | "unconfigured";
+  /** The old separate site (`owner/name`) whose shares move into this one, in the Private + Public layout (D-429). */
+  moveFrom?: string;
+  /** The site is the project's own public repository, already there: nothing is created (D-429). */
+  existing?: boolean;
 }
 
 // ---- the invite (SHR-09) ----
@@ -169,7 +178,9 @@ export interface ShareTemplateEditor {
 }
 export interface ShareManageState {
   settings: { filter: string; query: string; status: string; problem: string; problemRow: string; busy: boolean; dialog: string; id: string; off: boolean; more: boolean; resume: boolean;
-    setupPreview?: SharingSetupPreview; setupStep?: SharingSetupStep };
+    setupPreview?: SharingSetupPreview; setupStep?: SharingSetupStep;
+    /** D-429: the old separate site whose shares moved, until the owner deletes it on GitHub; what they typed to confirm. */
+    oldSite?: string; oldSiteTyped?: string };
   /** The running (or last failed) share or publish operation's steps (D-427): one at a time, as the desktop runs them. */
   progress?: ShareProgress;
   item: ItemShareState;
@@ -244,6 +255,9 @@ export function registerShareManage<St extends S>({ store, access, catalog, comm
     try {
       const listing = await tracker.section("sharing.list", "share.manage.loading", () => access.load(), "fn:sharing.list");
       set({ failed: false, ...(st().listing === previous ? { listing } : {}) });
+      // D-429: an old separate site left after its shares moved; offered for deletion in Settings → Sharing.
+      const oldSite = await access.setup?.oldSite?.().catch(() => undefined);
+      set({ settings: { ...st().settings, oldSite: listing.configured ? oldSite : undefined } });
     } catch (error) {
       console.warn("sharing.list", opErrorCode(error));
       set({ failed: true });

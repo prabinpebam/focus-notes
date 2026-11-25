@@ -82,7 +82,7 @@ export const dialogsAMocks = {
       instruction: "Describe the image in one sentence.", disclosure: "The image goes to Ollama on this computer.", error: "",
     },
     sharingSettings: {
-      firstOpen: true, repo: "prabin/notes-shared", setupSite: "prabin.github.io/notes", more: false, moreIcon: "chevronRight", busy: false,
+      firstOpen: true, repo: "prabin/notes-shared", targetLabel: "What's created", repoTitle: "Public copy on GitHub", moveText: "", oldSite: "", oldSiteOpen: false, oldSiteTyped: "", oldSiteReady: false, oldSiteName: "", setupSite: "prabin.github.io/notes", more: false, moreIcon: "chevronRight", busy: false,
       setupStatus: "", setupProblem: false, problem: "", firstAcceptLabel: "Turn on sharing",
     },
     shareProgress: { show: false, op: "", steps: [{ id: "site", label: "Make your notes site", state: "waiting", icon: "globe", tone: "neutral", busy: false, stateLabel: "Not started yet" }], line: "", still: "", failedStep: "" },

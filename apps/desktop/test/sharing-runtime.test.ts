@@ -87,7 +87,7 @@ it("places the share reader page on the sealed site, never on the emptied one af
   } finally { await rm(t.directory, { recursive: true, force: true }); }
 });
 
-it("D-425: pairs a legacy public+private project's private repository with a shares-only site, and turns it off without touching notes/", async () => {
+it("D-429: a Private + Public project shares through its own public repository: nothing created, published pages beside sealed shares, leak-checked", async () => {
   const t = await fixture();
   const legacy = join(t.directory, "legacy");
   await mkdir(join(legacy, "notes"), { recursive: true });
@@ -95,23 +95,106 @@ it("D-425: pairs a legacy public+private project's private repository with a sha
   await mkdir(join(legacy, "private", ".git"));
   await writeFile(join(legacy, "notes", "hello.md"), "# Hello\n\nAlready public words.\n");
   await writeFile(join(legacy, "private", "notes", "diary.md"), "# Diary\n\nNever publish this source.\n");
+  // A minimal page renderer: one page per public note, an index and an empty home.
+  const reader = join(t.directory, "reader");
+  await mkdir(join(reader, "assets"), { recursive: true });
+  await writeFile(join(reader, "assets", "page.css"), "body{}\n");
+  await writeFile(join(reader, "render.mjs"), [
+    "export const renderNotePage = ({ markdown, path }) => ({ file: `n/${path.replace(/\\.md$/, '')}/index.html`, html: `<p>${markdown}</p>`, title: path });",
+    "export const renderIndexPage = ({ notes }) => ({ file: 'n/index.html', html: notes.map(n => n.title).join(',') });",
+    "export const renderEmptyHome = () => ({ file: 'index.html', html: 'Nothing published here yet' });",
+  ].join("\n"));
+  t.github.add({ owner: "ada", name: "book-private", private: true, files: ["notes/diary.md"] });
+  t.github.repos.delete("ada/book");
+  const book = t.github.add({ owner: "ada", name: "book", private: false, files: [".github/workflows/pages.yml"] });
+  book.fileContents.set(".github/workflows/pages.yml", "name: Deploy app\nenv:\n  FOCUS_NOTES_SOURCE: prabinpebam/focus-notes\njobs: {}\n");
   t.switch(legacy);
-  const sites: string[][] = [];
-  const runtime = sharingRuntime({ ...t.deps, publisher: async (project, artifact) => {
-    sites.push((await readdir(artifact.directory, { recursive: true })).map(p => p.split("\\").join("/")));
-    const bytes = await Promise.all((await readdir(artifact.directory, { recursive: true, withFileTypes: true })).filter(e => e.isFile()).map(e => readFile(join(e.parentPath, e.name), "utf8")));
-    expect(bytes.join("\n")).not.toContain("Never publish this source.");
-    expect(bytes.join("\n")).not.toContain("Already public words.");
-    return t.deps.publisher(project, artifact);
-  } });
+  const sites: Map<string, string>[] = [];
+  const runtime = sharingRuntime({
+    ...t.deps, reader: () => reader,
+    repository: async (dir: string) => dir === join(legacy, "private") ? "ada/book-private" : "ada/book",
+    publisher: async (project, artifact) => {
+      expect(project).toBe("ada/book-private");
+      const files = (await readdir(artifact.directory, { recursive: true, withFileTypes: true })).filter(e => e.isFile());
+      const site = new Map(await Promise.all(files.map(async e => [join(e.parentPath, e.name).slice(artifact.directory.length + 1).split("\\").join("/"), await readFile(join(e.parentPath, e.name), "utf8")] as [string, string])));
+      for (const text of site.values()) { expect(text).not.toContain("Never publish this source."); expect(text).not.toContain("diary"); }
+      sites.push(site);
+      return { status: "published", commit: "a".repeat(40), pages: { status: "built", repository: "ada/book", build: artifact.build } };
+    },
+  });
   try {
-    await expect(runtime.enable("quiet-site")).resolves.toMatchObject({ phase: "ready", project: "ada/book" });
-    expect(JSON.parse(await readFile(join(legacy, "private", ".focus-notes", "site-pairing.json"), "utf8"))).toMatchObject({ phase: "ready" });
-    await runtime.publish();
+    expect(await runtime.describe()).toMatchObject({ name: "book", site: "https://ada.github.io/book/", existing: true });
+    await expect(runtime.enable("notes-site")).resolves.toMatchObject({ phase: "ready", project: "ada/book-private", name: "book" });
+    expect(t.github.calls.filter(c => c.method === "POST" && c.path === "/user/repos")).toEqual([]);
+    expect(book.fileContents.get(".github/workflows/pages.yml")).toMatch(/^name: Publish site$/m);
+    // The published page and the root that opens the published index, with no app shell.
+    expect(sites[0]!.get("n/hello/index.html")).toContain("Already public words.");
+    expect(sites[0]!.get("index.html")).toContain('url=n/');
+    await runtime.takeDown();
     await expect(runtime.disable()).resolves.toMatchObject({ phase: "off" });
-    expect(sites).toHaveLength(3);
+    // Turn off keeps the published pages: they were public before sharing was turned on.
+    expect(sites.at(-1)!.get("n/hello/index.html")).toContain("Already public words.");
     expect(await readFile(join(legacy, "notes", "hello.md"), "utf8")).toBe("# Hello\n\nAlready public words.\n");
     expect(await readFile(join(legacy, "private", "notes", "diary.md"), "utf8")).toBe("# Diary\n\nNever publish this source.\n");
+  } finally { await rm(t.directory, { recursive: true, force: true }); }
+});
+
+it("D-429: an old separate site's pairing isn't used; Turn on moves it, empties the old site, and it's forgotten only once GitHub says it's gone", async () => {
+  const t = await fixture();
+  const legacy = join(t.directory, "legacy");
+  await mkdir(join(legacy, "notes"), { recursive: true });
+  await mkdir(join(legacy, "private", "notes"), { recursive: true });
+  await mkdir(join(legacy, "private", ".git"));
+  await mkdir(join(legacy, "private", ".focus-notes"));
+  await writeFile(join(legacy, "private", ".focus-notes", "site-pairing.json"), JSON.stringify({
+    version: 1, project: "ada/book-private", owner: "ada", name: "notes-site", intent: "0b6f1c2e-3d4a-4b5c-8d9e-0f1a2b3c4d5e", phase: "ready", site: "https://ada.github.io/notes-site/",
+  }));
+  const reader = join(t.directory, "reader");
+  await mkdir(join(reader, "assets"), { recursive: true });
+  await writeFile(join(reader, "render.mjs"), "export const renderNotePage = () => ({ file: 'n/x/index.html', html: '', title: '' });\nexport const renderEmptyHome = () => ({ file: 'index.html', html: 'Nothing published here yet' });\n");
+  t.github.add({ owner: "ada", name: "book-private", private: true });
+  t.github.repos.delete("ada/book");
+  t.github.add({ owner: "ada", name: "book", private: false });
+  t.github.add({ owner: "ada", name: "notes-site", private: false });
+  t.switch(legacy);
+  const pushed: string[] = [], retired: string[] = [];
+  const runtime = sharingRuntime({
+    ...t.deps, reader: () => reader,
+    repository: async (dir: string) => dir === join(legacy, "private") ? "ada/book-private" : "ada/book",
+    publisher: async (_project, artifact) => { pushed.push(artifact.build); return { status: "published", commit: "a".repeat(40), pages: { status: "built", repository: "ada/book", build: artifact.build } }; },
+    retirePublisher: async (_project, artifact) => { retired.push(artifact.directory); return { status: "published", commit: "a".repeat(40), pages: { status: "built", repository: "ada/notes-site", build: artifact.build } }; },
+  });
+  try {
+    expect(await runtime.pairing()).toBeUndefined();
+    expect(await runtime.describe()).toMatchObject({ name: "book", moveFrom: "ada/notes-site", phase: "unconfigured" });
+    await expect(runtime.publish()).rejects.toThrow("access:site.unavailable");
+    expect(pushed).toEqual([]);
+    await expect(runtime.enable("book")).resolves.toMatchObject({ name: "book", from: "ada/notes-site", phase: "ready" });
+    await expect.poll(() => retired.length).toBe(1);
+    expect(await runtime.oldSite()).toBe("ada/notes-site");
+    await expect(runtime.checkOldSite()).resolves.toBe(false);
+    t.github.repos.delete("ada/notes-site");
+    await expect(runtime.checkOldSite()).resolves.toBe(true);
+    expect(await runtime.oldSite()).toBeUndefined();
+    expect(t.github.calls.filter(c => c.method === "DELETE" || (c.method === "POST" && c.path === "/user/repos"))).toEqual([]);
+  } finally { await rm(t.directory, { recursive: true, force: true }); }
+});
+
+it("D-429: in the Private + Public layout a missing or private public repository is never created or used", async () => {
+  const t = await fixture();
+  const legacy = join(t.directory, "legacy");
+  await mkdir(join(legacy, "notes"), { recursive: true });
+  await mkdir(join(legacy, "private", "notes"), { recursive: true });
+  await mkdir(join(legacy, "private", ".git"));
+  t.github.add({ owner: "ada", name: "book-private", private: true });
+  t.github.repos.delete("ada/book");
+  t.switch(legacy);
+  const runtime = sharingRuntime({ ...t.deps, repository: async (dir: string) => dir === join(legacy, "private") ? "ada/book-private" : "ada/book" });
+  try {
+    await expect(runtime.enable("book")).rejects.toThrow("sharing:missing");
+    t.github.add({ owner: "ada", name: "book", private: true });
+    await expect(runtime.enable("book")).rejects.toThrow("sharing:refused");
+    expect(t.github.calls.filter(c => c.method !== "GET")).toEqual([]);
   } finally { await rm(t.directory, { recursive: true, force: true }); }
 });
 

@@ -200,11 +200,12 @@ export class FakeGitHub {
     }
     if (method === "PUT" && file) {
       const path = decodeURIComponent(file[1]!);
-      if (repo.files.has(path)) return json(422, { message: "File already exists" });
+      // GitHub replaces a file only when given the version being replaced.
+      if (repo.files.has(path) && body?.sha !== "a".repeat(40)) return json(422, { message: "File already exists" });
       if (typeof body?.content !== "string") return json(422, { message: "Missing content" });
       repo.files.add(path);
       repo.fileContents.set(path, base64ToUtf8(body.content));
-      return json(201, { content: { path, sha: "a".repeat(40) } });
+      return json(repo.files.has(path) && body?.sha ? 200 : 201, { content: { path, sha: "a".repeat(40) } });
     }
     if (rest === "/invitations" && method === "GET") {
       const page = Number(query.get("page") ?? 1), size = Number(query.get("per_page") ?? 100);
