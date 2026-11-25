@@ -353,7 +353,10 @@ function backedUp(): void {
   const r = record;
   const at = r?.kind === "github" ? backupToRecord(r.lastBackup, Date.now()) : undefined;
   if (r && at && r.folder === notesHome()) void saveRecord({ ...r, lastBackup: at }).catch(() => {});
+  afterBackup?.();
 }
+/** Set with sharing: keeps the Private + Public site's published pages in step with notes/ after a backup (D-429). */
+let afterBackup: (() => void) | undefined;
 /** Opened once the caret is ready, so Git never competes with the first frame (PRF-02, PRF-07). Again after the workspace changes. */
 const armGit = () => (gitSync = undefined, gitOpened = false, gitWaiting = [], lastWaiting = 0, gitOpening = new Promise<GitSync | undefined>((resolve) => {
   startGit = () => {
@@ -2337,6 +2340,8 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     for (const op of ops as { op?: unknown; from?: unknown; to?: unknown }[]) {
       if (op?.op === "move" && typeof op.from === "string" && typeof op.to === "string") void sharing.followRename(op.from, op.to).catch(() => {});
     }
+    // Private + Public with sharing on: Publish and Unpublish move notes in or out of notes/, whose pages the app builds (D-429).
+    if (projectLayout().legacy) afterBackup?.();
     // The shell's own reference changes, so the open note follows them instead of saving old ones back.
     return rewrites.length ? { rewrites } : undefined;
   });
@@ -2452,6 +2457,29 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     if (attempt < 5) setTimeout(() => void redeployAfter(attempt + 1), 30_000).unref();
     return false;
   });
+  // D-429: in the Private + Public layout with sharing on, the app builds the project's public site, so a backup that
+  // changed the public notes (Publish and Unpublish move notes in and out of them) updates their pages too.
+  let publicNotesSeen: string | undefined;
+  const publicNotesSignature = async () => {
+    const dir = join(notesHome(), "notes"), parts: string[] = [];
+    const walk = async (d: string): Promise<void> => {
+      for (const e of await readdir(d, { withFileTypes: true }).catch(() => [])) {
+        if (e.name.startsWith(".")) continue;
+        const p = join(d, e.name);
+        if (e.isDirectory()) await walk(p);
+        else if (e.isFile()) { const s = await stat(p); parts.push(`${relative(dir, p)}:${s.size}:${s.mtimeMs}`); }
+      }
+    };
+    await walk(dir);
+    return parts.sort().join("\n");
+  };
+  afterBackup = () => void (async () => {
+    if (!projectLayout().legacy || (await sharing.pairing().catch(() => undefined))?.phase !== "ready") return;
+    const now = await publicNotesSignature();
+    if (now === publicNotesSeen) return;
+    publicNotesSeen = now;
+    await redeployAfter();
+  })().catch(() => {});
   handle("access:apply", async (change) => {
     if (!settingsAvailable()) throw new Error("access:failed");
     const result = await access.apply(change);
@@ -2464,6 +2492,17 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     if (!settingsAvailable() || (await sharing.pairing())?.phase !== "ready") return false;
     await deployAccess();
     return true;
+  });
+  // D-428 takedown (D-429's one public site): the deleted note's file is already out of the public notes, or its share
+  // already withdrawn; this saves, then rebuilds and pushes the site without it and waits for Pages.
+  handle("sharing:takeDown", async () => {
+    if (!settingsAvailable()) throw new Error("sharing:unavailable");
+    const g = await gitOpening;
+    if (g) {
+      const report = await g.request("save");
+      if (report.state === "problem") throw new Error(`sharing:${report.problem === "offline" ? "offline" : "failed"}`);
+    }
+    return sharing.takeDown();
   });
   // A secret goes to the window only for an open invite, and to the clipboard only from here, cleared after 90 s (review L1, L2).
   // Journeys copy into memory, so they never overwrite (or depend on) the computer's clipboard.

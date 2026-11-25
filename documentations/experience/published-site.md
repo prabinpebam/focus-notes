@@ -7,6 +7,8 @@ A public home, sections and articles, not the writing app on the web.
 
 ## What belongs on the site
 
+**The site is never the app (D-429).** A project's Pages address opens its published site: *Nothing published here yet* until something is published, then the published notes' index. The template's workflow publishes `notes/` without the Focus Notes app; in the Private + Public layout with sharing on, the app builds the site (published pages plus encrypted shares at `s/`) in the project's own public repository, and no separate site repository is made.
+
 Turning sharing off removes current shared and published content at the next successful publish, but keeps the repository and its Git history (D-274, accepted by the owner on 3 November).
 
 | Kind | Stored/output | Discoverable here? |

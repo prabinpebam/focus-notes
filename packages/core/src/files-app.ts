@@ -575,6 +575,8 @@ export function registerFiles(ctx: Ctx) {
     touched: string[]; moves?: { from: string; to: string }[]; deletes?: string[]; select?: string[]; done: string; failed: (why: string) => string; open?: string[];
     /** Puts it back: offered as the toast's Undo once the change is saved (DD-FB-01). */
     undo?: () => Promise<void>;
+    /** Says nothing when it's saved: a step of a longer operation that has its own outcome (D-428). */
+    quiet?: boolean;
   }): Promise<boolean> {
     const before = tree();
     const beforeFiles = files();
@@ -619,8 +621,10 @@ export function registerFiles(ctx: Ctx) {
         ctx.setNote({ path: undefined, saveState: "saved" });
         await ctx.load(await bridge.defaultNotePath());
       }
-      toast(withLinks(o.done, writes), o.undo ? { action: undoAction(o.undo) } : {});
-      announce(withLinks(o.done, writes));
+      if (!o.quiet) {
+        toast(withLinks(o.done, writes), o.undo ? { action: undoAction(o.undo) } : {});
+        announce(withLinks(o.done, writes));
+      }
       // Recently deleted is listed again the next time it opens.
       if (o.deletes?.length) {
         const isDeleted = (x: string) => o.deletes!.some((d) => x === d || x.startsWith(d + "/") || x.startsWith(d + "\\"));
@@ -765,33 +769,33 @@ export function registerFiles(ctx: Ctx) {
   /** What has to come down before these go (D-428), through the one takedown boundary: links, pages, and public notes' own pages. */
   const takedownOf = (paths: readonly string[]) => {
     const s = store.state;
-    const { grants, published } = takedown.find(paths);
+    const found = takedown.find(paths);
     // Public notes (a Private + Public project) are web pages themselves: deleting one takes its page down.
-    const publicPages = paths.filter((p) => rootOf(s.workspace.tree, p)?.id === "public").length;
-    return { grants, published, publicPages };
+    const pages = paths.filter((p) => rootOf(s.workspace.tree, p)?.id === "public").length;
+    return { ...found, pages };
   };
   const refreshShares = () => takedown.refresh();
-  function localDelete(paths: string[], done: string): Promise<boolean> {
+  function localDelete(paths: string[], done: string, quiet = false): Promise<boolean> {
     const plan = planDelete(tree(), paths);
     const what = whatOf(paths);
     if (plan.kind === "refused") { refused("files.deleteFailed", { what }, plan.reason); return Promise.resolve(false); }
     // Folders that go with it, parent first, so Undo can put notes back where they were.
     const folders = [...walk(tree())].filter((x) => x.node.kind === "folder" && paths.some((p) => isWithin(p, x.path))).map((x) => x.path).sort((a, b) => a.length - b.length);
     return perform(plan.tree, paths.map((path) => ({ op: "delete" as const, path })), {
-      touched: [], deletes: paths, done,
+      touched: [], deletes: paths, done, quiet,
       failed: (why) => catalog.format("files.deleteFailed", { what, reason: why }),
       // With Git, a delete is a commit, so Undo restores it from history (FIL-10).
       ...(canRestore(store.state) ? { undo: () => undelete(paths, folders, what) } : {}),
     });
   }
   function doDelete(paths: string[]): void {
-    const { grants, published } = takedownOf(paths);
+    const { grants, published, publicPages } = takedownOf(paths);
     const what = whatOf(paths);
-    if (!grants.length && !published.length) {
+    if (!grants.length && !published.length && !publicPages) {
       void localDelete(paths, catalog.format(bridge.platform === "web" ? "files.deleted" : "files.trashed", { what }));
       return;
     }
-    const job = newDeleteJob(paths, what, grants, published, Date.now());
+    const job = newDeleteJob(paths, what, grants, published, Date.now(), publicPages, paths.map((p) => nameOf(p)));
     setFiles((f) => ({ deleting: [...(f.deleting ?? []).filter((j) => j.id !== job.id), job] }));
     void runJob(job.id);
   }
@@ -804,10 +808,17 @@ export function registerFiles(ctx: Ctx) {
       withdraw: (grant) => takedown.withdraw(grant),
       redeploy: () => takedown.redeploy(),
       unpublish: (rels) => takedown.unpublish(rels),
-      deleteLocal: () => localDelete(get().paths, catalog.format(deleteDoneKey(get(), false))),
+      takeDown: () => takedown.takeDown(),
+      // A public note's page comes down after it's deleted (D-429): its outcome is said once, when the page is down.
+      deleteLocal: () => localDelete(get().paths, catalog.format(deleteDoneKey(get(), false)), get().publicPages > 0),
     });
     try {
       const ok = ctx.tracker ? await ctx.tracker.run("files.deleteTakedown", "files.deleting.mark", work, undefined, "fn:files.deleteTakedown", "none") : await work();
+      if (ok && get().publicPages) {
+        const done = catalog.format(deleteDoneKey(get(), false));
+        toast(done);
+        announce(done);
+      }
       if (ok) dropJob(id);
     } finally {
       off();
@@ -823,10 +834,10 @@ export function registerFiles(ctx: Ctx) {
   // The takedown stopped: the note is deleted here now, and its link or page stays up, as the card warned (D-428).
   commands.register({
     id: "files.deleteAnyway", title: "files.deleting.anyway",
-    enabled: () => Boolean(cardJob()?.failed && !cardJob()?.busy),
+    enabled: () => Boolean(cardJob()?.failed && !cardJob()?.busy && !cardJob()?.deleted),
     run: async () => {
       const j = cardJob();
-      if (!j?.failed || j.busy) return;
+      if (!j?.failed || j.busy || j.deleted) return;
       setJob(j.id, { busy: true });
       if (await localDelete(j.paths, catalog.format(deleteDoneKey(j, true)))) dropJob(j.id);
       else setJob(j.id, { busy: false });
@@ -865,7 +876,7 @@ export function registerFiles(ctx: Ctx) {
       await refreshShares();
       const t = takedownOf(paths);
       const shared = t.grants.length;
-      const published = t.published.length + t.publicPages;
+      const published = t.published.length + t.pages;
       setFiles(() => ({ confirm: { kind: "delete", paths, notes: plan.notes.length, name: what, shared, published } }));
     },
   });
@@ -1757,6 +1768,27 @@ export function registerFiles(ctx: Ctx) {
         ...(r.kind === "root" && (r.rootId === "private" || r.rootId === "public") ? { accessory: r.rootId === "private" ? 0 : 1 } : {}),
         };
       });
+      // D-428: a public note whose page is still coming down after it was deleted keeps its row until it's done.
+      const ghosts: { to: number; item: Record<string, unknown> }[] = [];
+      for (const job of f.deleting ?? []) {
+        if (!job.deleted) continue;
+        job.paths.forEach((path, k) => {
+          if (findNode(s.workspace.tree, path)) return;
+          const parentPath = dirOf(path);
+          const at = rows.findIndex((r) => r.path === parentPath && r.kind !== "note");
+          const parent = rows[at];
+          if (!parent || !parent.expanded) return;
+          const label = job.titles[k] || stemOf(path.split(/[\\/]/).pop() ?? path);
+          let to = at + 1;
+          while (to < rows.length && rows[to]!.level > parent.level && !(rows[to]!.level === parent.level + 1 && rows[to]!.label.localeCompare(label) > 0)) to++;
+          ghosts.push({ to, item: {
+            id: path, kind: "note", level: parent.level + 1, label, title: path, parent: parent.id, detail: "",
+            description: catalog.format(job.failed ? "files.deleting.stopped" : "files.deleting.mark"), deleting: job.failed ? "failed" : "pending",
+            expanded: false, hasChildren: false, selected: false, current: false, pending: false, readOnly: true, draggable: false, droppable: false, editing: false,
+          } });
+        });
+      }
+      for (const g of ghosts.sort((a, b) => b.to - a.to)) items.splice(g.to, 0, g.item);
       // A new folder's name field shows in place, first in its folder.
       if (f.edit?.kind === "newFolder") {
         const parentRow = rows.find((r) => (r.kind === "root" ? r.path === f.edit!.parent : r.id === f.edit!.parent));
@@ -1895,7 +1927,7 @@ export function registerFiles(ctx: Ctx) {
     id: "vm.deleting",
     schema: { type: "object", properties: {
       title: { type: "string" }, cardLabel: { type: "string" }, summary: { type: "string" }, icon: { type: "string" }, tone: { type: "string" },
-      line: { type: "string" }, still: { type: "string" }, failed: { type: "boolean" }, busy: { type: "boolean" }, problem: { type: "string" }, anywayWarning: { type: "string" },
+      line: { type: "string" }, still: { type: "string" }, failed: { type: "boolean" }, busy: { type: "boolean" }, problem: { type: "string" }, canAnyway: { type: "boolean" }, anywayWarning: { type: "string" },
       steps: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, icon: { type: "string" }, tone: { type: "string" }, busy: { type: "boolean" }, state: { type: "string" }, stateLabel: { type: "string" } } } },
     } },
     // The tracker's tasks tick every second while a delete runs, which moves the elapsed clock.

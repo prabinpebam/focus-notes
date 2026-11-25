@@ -197,19 +197,27 @@ export function sharingRuntime(deps: {
       const before = selection ? "" : await inputs();
       deps.step?.("seal");
       const notes = empty || layout.legacy ? [] : selection?.notes ?? await presentPublished();
-      const reader = notes.length ? deps.reader?.() : undefined;
-      if (notes.length && (!reader || !layout.privateNotes)) throw new Error("sharing:unavailable");
+      // Private + Public layout (D-429): the project's own public repository is the site, so its published pages
+      // (every note in its public notes/) are built beside the sealed shares, even when sharing is turned off.
+      const publicNotes = layout.legacy && layout.publicDir ? join(layout.publicDir, "notes") : undefined;
+      const reader = notes.length || publicNotes ? deps.reader?.() : undefined;
+      if ((notes.length && (!reader || !layout.privateNotes)) || (publicNotes && !reader)) throw new Error("sharing:unavailable");
       const directory = await mkdtemp(join(deps.temporary, "sealed-site-"));
       const staging = notes.length ? await mkdtemp(join(deps.temporary, "public-notes-")) : undefined;
       try {
         const selected = staging ? await stagePublicSelection({ notesRoot: layout.privateNotes!, projectRoot: privateDir, selection: { ...selection, notes }, staging }) : undefined;
         guard();
-        // Removal deploys an empty site: no public notes, no vault and no share keyrings.
-        const artifact = await publish(empty ? { site: directory, owner: pairing.owner, siteUrl: pairing.site } : {
+        // Removal deploys an empty site: no public notes, no vault and no share keyrings. In the Private + Public
+        // layout it keeps the published pages, which were public before sharing was turned on (D-429).
+        const artifact = await publish(empty ? {
+          site: directory, owner: pairing.owner, siteUrl: pairing.site,
+          ...(publicNotes ? { notes: publicNotes, reader: reader! } : {}),
+        } : {
           private: privateDir, sealedMedia: sharedImageDestinations,
           // `published`: the confirmed notes are public on purpose; every other private note stays leak-checked.
-          // A legacy pair's public notes stay on its own repository's site: its paired site holds only sealed shares (D-425).
           ...(staging ? { notes: staging, published: [...notes], reader: reader!, publicMedia: selected?.media ?? [], publicMediaFrom: join(staging, ".media") } : {}),
+          // The project's public notes, leak-checked against every private note and share secret (D-429).
+          ...(publicNotes ? { notes: publicNotes, reader: reader! } : {}),
           site: directory, owner: pairing.owner, siteUrl: pairing.site,
         });
         guard();
@@ -254,13 +262,17 @@ export function sharingRuntime(deps: {
     const setup = sharingSetup({
       api: async () => { ctx.guard(); const api = await deps.api(); ctx.guard(); return api; },
       project: async () => { ctx.guard(); const repo = await deps.repository(ctx.privateDir); ctx.guard(); return repo; },
+      // Private + Public layout: the project's own public repository is the one site; nothing is created (D-429).
+      ...(ctx.layout.legacy && ctx.layout.publicDir ? {
+        site: async () => { ctx.guard(); const repo = await deps.repository(ctx.layout.publicDir!); ctx.guard(); return repo; },
+      } : {}),
       read: ctx.read, write: ctx.store.write,
       initialize: async (pairing, step) => {
         ctx.guard();
         const api = await deps.api();
         if (!api) throw new Error("sharing:signedout");
         ctx.guard();
-        await configurePublicSite(api, pairing, step);
+        await configurePublicSite(api, pairing, step, { replaceManaged: ctx.layout.legacy });
         ctx.guard();
         step("pages");
         const pages = await api.pages(pairing.owner, pairing.name);
@@ -311,6 +323,16 @@ export function sharingRuntime(deps: {
       const ctx = bound(), saved = await ctx.read();
       if (!saved || saved.phase !== "ready") throw new Error("access:site.unavailable");
       try { await ctx.build(saved); } catch (error) { throw publishProblem(error); }
+    }),
+    /**
+     * Takes down whatever is no longer shared or published (D-428, D-429): rebuilds the project's one public site from
+     * the current records (access.json, published.json, or the public notes/ in the Private + Public layout) and pushes
+     * it in one non-forced commit, leak-checked, then waits for Pages. Remove the grant, the record or the file first.
+     */
+    takeDown: (): Promise<PublicDeploy> => serial(async () => {
+      const ctx = bound(), saved = await ctx.read();
+      if (!saved || saved.phase !== "ready") throw new Error("sharing:unconfigured");
+      try { return await ctx.build(saved); } catch (error) { throw publishProblem(error); }
     }),
     /** Notes on the current public site (G3). */
     published: async (): Promise<string[]> => bound().readPublished(),

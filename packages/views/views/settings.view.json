@@ -5704,7 +5704,7 @@
                     "type": "Text",
                     "props": {
                       "value": {
-                        "t": "share.first.created"
+                        "get": "vm.sharingSettings.targetLabel"
                       },
                       "role": "label"
                     }
@@ -5713,7 +5713,7 @@
                     "type": "ItemCard",
                     "props": {
                       "title": {
-                        "t": "share.first.repo"
+                        "get": "vm.sharingSettings.repoTitle"
                       },
                       "detail": {
                         "get": "vm.sharingSettings.repo"

@@ -50,7 +50,7 @@ const steps = (ids: string[], at: number, failed = false) => ids.map((id, i) => 
 const rows = (deleting?: "pending" | "failed") => panel.files.items.map((i) => i.id === "journal/weekly-review.md" && deleting
   ? { ...i, description: deleting === "failed" ? "Stopped" : "Deleting…", deleting } : i);
 const closed = { open: false, title: "", message: "", confirmLabel: "", danger: true, icon: "delete", tone: "danger", shared: false, sharedText: "", published: false, publishedText: "" };
-const idle = { title: "", cardLabel: "", summary: "", icon: "delete", tone: "neutral", steps: steps(["note"], 0), line: "", still: "", failed: false, busy: false, problem: "", anywayWarning: "" };
+const idle = { title: "", cardLabel: "", summary: "", icon: "delete", tone: "neutral", steps: steps(["note"], 0), line: "", still: "", failed: false, busy: false, problem: "", canAnyway: false, anywayWarning: "" };
 const model = (deleting: "pending" | "failed" | undefined, card: Node, confirmModel: Node = closed) => ({
   ...panel, files: { ...panel.files, focusId: "journal/weekly-review.md", items: rows(deleting) }, deleting: card, confirm: confirmModel,
   syncAlert: {
@@ -66,11 +66,11 @@ const running = {
   icon: "delete", tone: "neutral", steps: steps(["link", "page", "site", "note"], 2),
   line: "GitHub is updating your website. This usually takes 1–2 minutes. 1:48",
   still: "Still working… GitHub is taking longer than usual. Nothing is lost: you can keep working.",
-  failed: false, busy: true, problem: "", anywayWarning: "",
+  failed: false, busy: true, problem: "", canAnyway: false, anywayWarning: "",
 };
 const stopped = {
   ...running, summary: "The note isn't deleted yet. Nothing is lost.", icon: "error", tone: "danger", steps: steps(["link", "page", "site", "note"], 2, true), line: "", still: "",
-  failed: true, busy: false,
+  failed: true, busy: false, canAnyway: true,
   problem: "Stopped at “Update your website”. The steps before it are done and kept. GitHub couldn’t update your website. Retry in a minute.",
   anywayWarning: "Delete anyway deletes the note now, but its link keeps working and its web page stays up.",
 };

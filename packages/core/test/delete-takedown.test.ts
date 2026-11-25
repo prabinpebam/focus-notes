@@ -17,11 +17,12 @@ describe("the order of a delete (D-428)", () => {
       withdraw: async (id) => { order.push(`withdraw ${id}`); return {}; },
       redeploy: async () => { order.push("redeploy"); return true; },
       unpublish: async () => { order.push("unpublish"); },
+      takeDown: async () => { order.push("takeDown"); },
       deleteLocal: async () => { order.push("delete"); return true; },
       ...deps,
     };
     const wrap = <K extends keyof TakedownDeps>(k: K) => ((...a: unknown[]) => (all[k] as (...x: unknown[]) => unknown)(...a)) as TakedownDeps[K];
-    const run = () => runDelete(() => j, (p) => { j = { ...j, ...p }; }, { withdraw: wrap("withdraw"), redeploy: wrap("redeploy"), unpublish: wrap("unpublish"), deleteLocal: wrap("deleteLocal") }, () => 0);
+    const run = () => runDelete(() => j, (p) => { j = { ...j, ...p }; }, { withdraw: wrap("withdraw"), redeploy: wrap("redeploy"), unpublish: wrap("unpublish"), takeDown: wrap("takeDown"), deleteLocal: wrap("deleteLocal") }, () => 0);
     return { run, order, job: () => j, set: (d: Partial<TakedownDeps>) => Object.assign(all, d) };
   };
 
@@ -51,6 +52,23 @@ describe("the order of a delete (D-428)", () => {
     h.set({ unpublish: async () => { h.order.push("unpublish"); } });
     expect(await h.run()).toBe(true);
     expect(h.order).toEqual(["withdraw g1", "unpublish", "delete"]);
+  });
+
+  it("Private + Public (D-429): the link goes first, then the notes, then the site is rebuilt without the public page", async () => {
+    const h = harness(newDeleteJob(["p/a.md", "pub/b.md"], "2 items", ["g1"], [], 0, 1), {});
+    expect(h.job().steps).toEqual(["link", "note", "page", "site"]);
+    expect(await h.run()).toBe(true);
+    expect(h.order).toEqual(["withdraw g1", "delete", "takeDown"]);
+  });
+
+  it("Private + Public: a failed rebuild after the delete keeps only Retry, which rebuilds without deleting again", async () => {
+    const h = harness(newDeleteJob(["pub/b.md"], "“B”", [], [], 0, 1), { takeDown: async () => { throw new Error("sharing:offline"); } });
+    expect(h.job().steps).toEqual(["note", "page", "site"]);
+    expect(await h.run()).toBe(false);
+    expect(h.job()).toMatchObject({ failed: true, deleted: true, at: 1, problem: "files.deleting.problem.page" });
+    h.set({ takeDown: async () => { h.order.push("takeDown"); } });
+    expect(await h.run()).toBe(true);
+    expect(h.order).toEqual(["delete", "takeDown"]);
   });
 
   it("a note with nothing to take down is only deleted", () => {

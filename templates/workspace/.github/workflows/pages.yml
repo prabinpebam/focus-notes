@@ -1,7 +1,10 @@
-# Deploy app (D-87, D-48, D-98): deploys the released Focus Notes web app, at the version pinned
-# below, to this repository's own GitHub Pages, with the public notes in notes/ and, when the
-# private repository at private/ and the read-only deploy key PRIVATE_CONTENT_KEY are set up, the
-# private notes sealed as the vault. The leak check fails the deploy if any private text or file
+# Deploy app (D-87, D-48, D-98, D-429): publishes this repository's public notes in notes/ to its own
+# GitHub Pages as plain pages, with the publisher of the Focus Notes release pinned below. The site is
+# only the published notes (a home that says nothing is published yet, or their index), never the
+# Focus Notes app. Once sharing is turned on, Focus Notes builds the site itself (published pages and
+# encrypted shares side by side) and replaces this workflow with one that publishes what it built.
+# When the private repository at private/ and the read-only deploy key PRIVATE_CONTENT_KEY are set
+# up, the private notes are sealed too. The leak check fails the deploy if any private text or file
 # name would reach the site (SEC-06).
 #
 # The release to deploy is pinned in .focus-notes/app.json, a version and the bundle's SHA-256. The
@@ -90,11 +93,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh attestation verify "$RUNNER_TEMP/bundle.tgz" --repo "$FOCUS_NOTES_SOURCE" --cert-identity "https://github.com/$FOCUS_NOTES_SOURCE/.github/workflows/release.yml@refs/tags/v$FOCUS_NOTES_VERSION" --source-ref "refs/tags/v$FOCUS_NOTES_VERSION" --deny-self-hosted-runners
-      - name: Unpack the app
+      # Only the publisher and its page renderer are used: the site is your published notes, never the app (D-429).
+      - name: Unpack the publisher
         run: |
           mkdir -p "$RUNNER_TEMP/bundle" _site
           tar -xzf "$RUNNER_TEMP/bundle.tgz" -C "$RUNNER_TEMP/bundle"
-          cp -r "$RUNNER_TEMP/bundle/app/." _site/
           touch _site/.nojekyll
       # Only now, after every downloaded step, is private plaintext on the runner.
       - name: Check out the private repository with the read-only deploy key
@@ -125,6 +128,14 @@ jobs:
           if [ -d private ]; then args="$args --private private"; fi
           node "$RUNNER_TEMP/bundle/publish/cli.mjs" publish $args
           rm -rf private
+      # The site's address opens the published notes' index, or says nothing is published yet (D-419, D-421).
+      - name: Give the site its home page
+        run: |
+          if [ -f _site/n/index.html ]; then
+            printf '%s\n' '<!doctype html>' '<meta charset="utf-8">' '<meta http-equiv="refresh" content="0; url=n/">' '<link rel="canonical" href="n/">' '<title>Published notes</title>' '<a href="n/">Published notes</a>' > _site/index.html
+          else
+            printf '%s\n' '<!doctype html>' '<html lang="en">' '<meta charset="utf-8">' '<meta name="viewport" content="width=device-width, initial-scale=1">' '<title>Nothing published here yet</title>' '<h1>Nothing published here yet</h1>' '<p>Notes published from Focus Notes appear here.</p>' '</html>' > _site/index.html
+          fi
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: _site
