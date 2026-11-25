@@ -138,6 +138,8 @@ describe("PRJ-23, D-413: deleting a linked project on GitHub web with automatic 
     expect(t.vm()).toMatchObject({ open: true, step: "consequences", kind: "linked", problem: "", repo: "ada/field-notes", siteNotes: 12, privateCount: 3 });
     expect(t.calls).not.toContain("open:ada/field-notes");
     // No typed name for a linked project: GitHub asks for it on the web (D-413, owner 24 Nov).
+    // Only the public one (D-429): its private repository stays, so its notes are kept.
+    await t.run("project.deleteScope", { value: "public" });
     await t.run("project.deleteContinue");
     expect(t.vm()).toMatchObject({ step: "github", repos: [{ id: "ada/field-notes", canOpen: false, waiting: true, deleted: false }] });
     expect(t.calls.some((c) => c.startsWith("deleteLocal"))).toBe(false);
@@ -299,6 +301,25 @@ describe("PRJ-23, D-413: deleting a linked project on GitHub web with automatic 
 });
 
 describe("PRJ-23: what stops a deletion, and its recovery (DD-PROJ-17)", () => {
+  it("D-429: a Private + Public project deletes both repositories by default, or only the public or only the private one", async () => {
+    const both = await started({ useFakeTimers: true, status: (repo: string) => (repo === "ada/field-notes" ? { state: "exists", owner: "ada", admin: true, organization: false } : { state: "gone" }) });
+    expect(both.vm()).toMatchObject({ scope: "both", private: true, scopes: [{ id: "both" }, { id: "public" }, { id: "private" }] });
+    expect(both.vm().scopeDetail).toContain("ada/field-notes-private");
+    await both.run("project.deleteContinue");
+    expect(both.vm().repos.map((r: { id: string }) => r.id)).toEqual(["ada/field-notes", "ada/field-notes-private"]);
+    // The private one is gone, the public one isn't yet: this computer's copy stays.
+    await both.run("project.deleteRetry");
+    expect(both.calls.some((c) => c.startsWith("deleteLocal"))).toBe(false);
+
+    const priv = await started({ useFakeTimers: true, status: [{ state: "exists", owner: "ada", admin: true, organization: false }, { state: "gone" }] });
+    await priv.run("project.deleteScope", { value: "private" });
+    expect(priv.vm().scopeDetail).toContain("stays on GitHub");
+    await priv.run("project.deleteContinue");
+    expect(priv.vm().repos.map((r: { id: string }) => r.id)).toEqual(["ada/field-notes-private"]);
+    expect(priv.runVm().steps.find((s: { target: string; kind: string }) => s.target === "ada/field-notes" && s.kind === "repo").state).toBe("skipped");
+    await priv.run("project.deleteRetry");
+    expect(priv.calls).toContain("deleteLocal:keepPrivate=false");
+  });
   it("not an admin: names the owner and offers Remove from this computer instead", async () => {
     const t = await started({ status: [{ state: "exists", owner: "grace", admin: false, organization: false }] });
     expect(t.vm()).toMatchObject({ problem: "notAdmin", otherOwner: "@grace" });
@@ -315,6 +336,7 @@ describe("PRJ-23: what stops a deletion, and its recovery (DD-PROJ-17)", () => {
     expect((await started({ status: [{ state: "offline" }] })).vm().problem).toBe("offline");
     const gone = await started({ useFakeTimers: true, status: [{ state: "gone" }] });
     expect(gone.vm().problem).toBe("gone");
+    await gone.run("project.deleteScope", { value: "public" });
     await gone.run("project.deleteContinue");
     expect(gone.vm()).toMatchObject({ step: "github", problem: "" });
     // Fresh check confirms gone and finishes locally.

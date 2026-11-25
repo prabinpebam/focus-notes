@@ -617,7 +617,8 @@ export interface WorkspaceBridge {
    * (DD-PROJ-15). With `keepPrivate`, `private/` is moved beside the folder first, and nothing is
    * recycled if that fails. Resolves `deleted` (the window then shows Open) or why not.
    */
-  deleteLocal?(opts: { keepPrivate: boolean }): Promise<DeletionResult>;
+  /** `scope`, in a Private + Public project, says which repositories the person chose to delete on GitHub (D-429). */
+  deleteLocal?(opts: { keepPrivate: boolean; scope?: "both" | "public" | "private" }): Promise<DeletionResult>;
   /**
    * The resumable record of a delete that has started to remove something (proposed, D-pending): only
    * the targets' identities and the completed steps, never credentials or note content. Kept in the

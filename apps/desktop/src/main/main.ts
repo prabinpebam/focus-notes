@@ -2696,7 +2696,9 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
       try { return JSON.parse(await readFile(direct, "utf8")) as { owner?: string; name?: string; phase?: string }; } catch { return undefined; }
     };
     const [repo, priv, pairing] = await Promise.all([notesRepo().catch(() => undefined), privateRepo().catch(() => undefined), readPairing()]);
-    const siteRepo = pairing && pairing.phase && pairing.phase !== "off" && pairing.owner && pairing.name ? `${pairing.owner}/${pairing.name}` : undefined;
+    // A separate site repository: New project's paired site, or an old one whose shares moved into the public repository (D-429).
+    const moved = pairing && "from" in pairing && typeof pairing.from === "string" ? pairing.from : undefined;
+    const siteRepo = moved ?? (pairing && pairing.phase && pairing.phase !== "off" && pairing.owner && pairing.name ? `${pairing.owner}/${pairing.name}` : undefined);
     return deletionCheck(setupRunner, notesHome(), { repo, siteRepo, privateRepo: priv });
   };
   let deletionFolder: { folder: string; identity: Awaited<ReturnType<typeof deletionFolderIdentity>> } | undefined;
@@ -2769,12 +2771,18 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   });
   handle("workspace:deleteLocal", async (opts: unknown) => {
     if (!opts || typeof opts !== "object" || !("keepPrivate" in opts) || typeof opts.keepPrivate !== "boolean") throw new Error("Invalid local deletion");
+    const scope = "scope" in opts ? opts.scope : undefined;
+    if (scope !== undefined && scope !== "both" && scope !== "public" && scope !== "private") throw new Error("Invalid local deletion");
     const c = await deletion();
     if (c.problem) return { state: "refused" as const };
     if (!(await preservedDeletion(c))) return { state: "refused" as const };
-    if (c.kind === "linked" && (!remoteDeletion.confirmed(c.repo) || (c.siteRepo && !remoteDeletion.confirmed(c.siteRepo)) || (!opts.keepPrivate && c.privateRepo && !remoteDeletion.confirmed(c.privateRepo)))) return { state: "refused" as const };
+    // The local copy goes only once every repository the person chose is confirmed deleted on GitHub (D-413, D-429).
+    const chosen = c.kind !== "linked" ? [] : c.privateRepo && scope === "private" ? [c.privateRepo]
+      : [c.repo, ...(c.siteRepo ? [c.siteRepo] : []), ...(!opts.keepPrivate && c.privateRepo ? [c.privateRepo] : [])];
+    if (scope === "private" && opts.keepPrivate) return { state: "refused" as const };
+    if (chosen.some((repo) => !remoteDeletion.confirmed(repo))) return { state: "refused" as const };
     const generation = deleteGeneration;
-    const expected = c.kind === "linked" ? remoteDeletion.account(c.repo) : undefined;
+    const expected = c.kind === "linked" ? remoteDeletion.account(chosen[0]!) : undefined;
     return deleteLocalProject(opts.keepPrivate, async () => await preservedDeletion(await deletion()) && generation === deleteGeneration && notesHome() === c.folder && (!expected || deleteIntent(c.folder, expected.id, expected.login)));
   });
   handle("firstRun:identity", () => account.identity());

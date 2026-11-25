@@ -67,7 +67,7 @@ const withPill = (root: unknown, layer: unknown): unknown => {
   return { ...r, children: r.children.map((c, i) => (i === first ? { ...c, children: [...c.children, layer] } : c)) };
 };
 /** Delete (approved 5 November; updated D-413): the built dialog itself, its state in the mock's locals and its facts in fake data, actions left out. */
-const STATE = /^vm\.projectDelete\.(open|step|kind|problem|typed|private|exported|busy|checking|canBackFromGithub)\b/;
+const STATE = /^vm\.projectDelete\.(open|step|kind|problem|typed|private|scope|exported|busy|checking|canBackFromGithub)\b/;
 const delOf = (node: unknown): unknown => {
   if (Array.isArray(node)) return node.map(delOf);
   if (!node || typeof node !== "object") return typeof node === "string" ? (STATE.test(node) ? node.replace(/^vm\.projectDelete\./, "local.") : node.replace(/^vm\.projectDelete\b/, "vm.pnwDel")) : node;
@@ -108,7 +108,7 @@ export const projectMocks = {
       local: { section: "file", kind: "md" },
       root: dialog("vm.pnw.fileSections", { ...others, file: home.file }),
     },
-    delete: { id: "gallery.mock.pnw.delete", focus: "projectDelete", local: { open: true, step: "consequences", kind: "linked", problem: "", typed: "", private: true, exported: false, busy: false, checking: false, canBackFromGithub: true }, root: del },
+    delete: { id: "gallery.mock.pnw.delete", focus: "projectDelete", local: { open: true, step: "consequences", kind: "linked", problem: "", typed: "", private: true, scope: "both", exported: false, busy: false, checking: false, canBackFromGithub: true }, root: del },
     deleted: {
       ...openView,
       id: "gallery.mock.pnw.deleted",

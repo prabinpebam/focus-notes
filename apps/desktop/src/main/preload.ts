@@ -254,7 +254,7 @@ contextBridge.exposeInMainWorld("focusNotes", {
     cancelDelete: () => ipcRenderer.invoke("workspace:cancelDelete"),
     openRepoSettings: (repo: string) => ipcRenderer.invoke("workspace:openRepoSettings", repo),
     exportUnsynced: () => ipcRenderer.invoke("workspace:exportUnsynced"),
-    deleteLocal: (opts: { keepPrivate: boolean }) => ipcRenderer.invoke("workspace:deleteLocal", opts),
+    deleteLocal: (opts: { keepPrivate: boolean; scope?: "both" | "public" | "private" }) => ipcRenderer.invoke("workspace:deleteLocal", opts),
     onChange: (listener: (changes: unknown[]) => void) => {
       const handler = (_e: unknown, changes: unknown[]) => listener(changes);
       ipcRenderer.on("workspace:changed", handler);

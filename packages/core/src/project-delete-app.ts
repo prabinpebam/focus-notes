@@ -15,6 +15,11 @@ import type { MessageCatalog } from "./messages.ts";
 import type { TaskTracker } from "./tasks.ts";
 
 export type DeleteStep = "consequences" | "unsynced" | "github" | "progress" | "done" | "stopped";
+/**
+ * A Private + Public project has two repositories (D-429): deleting is complete only when both go, so both is the
+ * default; the person may delete only the public one (published pages and shares) or only the private one.
+ */
+export type DeleteScope = "both" | "public" | "private";
 export type DeleteProblem = "" | "offline" | "signin" | "notAdmin" | "policy" | "rateLimit" | "window" | "gone" | "error" | "partialLocal";
 /** One repository on GitHub's side: waiting for deletion on GitHub, or confirmed deleted. */
 type RepoPhase = "waiting" | "deleted";
@@ -48,7 +53,7 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
   const ws = bridge.workspace;
   const t = timers ?? { set: (run: () => void, ms: number) => setTimeout(run, ms), clear: (h: unknown) => clearTimeout(h as ReturnType<typeof setTimeout>), now: () => Date.now() };
   const blank = () => ({
-    open: false, step: "consequences" as DeleteStep, problem: "" as DeleteProblem, typed: "", private: false, exported: false, exportPath: "",
+    open: false, step: "consequences" as DeleteStep, problem: "" as DeleteProblem, typed: "", private: false, scope: "both" as DeleteScope, exported: false, exportPath: "",
     busy: false, checking: false, owner: "", org: "", retryAt: 0, lockedFile: "", privateHistoryFailed: false, localRefused: false, site: "", links: 0,
   });
   let state = blank();
@@ -67,10 +72,15 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
   const set = (patch: Partial<typeof state>) => { state = { ...state, ...patch }; changed(); };
   const name = () => check?.name ?? "";
   const linked = () => check?.kind === "linked";
-  /** The repositories deleted on GitHub: the notes repository, any paired public site repository, and the private one if chosen. */
-  const targets = () => (linked()
-    ? [check!.repo, ...(check!.siteRepo ? [check!.siteRepo] : []), ...(state.private && check!.privateRepo ? [check!.privateRepo] : [])]
-    : []);
+  /** Whether the chosen scope deletes the private repository; without one there's nothing to choose. */
+  const withPrivate = () => Boolean(check?.privateRepo) && state.scope !== "public";
+  /** The repositories deleted on GitHub, by the chosen scope (D-429): the public one and any old site, the private one, or both. */
+  const targets = () => {
+    if (!linked()) return [];
+    const publicSide = [check!.repo, ...(check!.siteRepo ? [check!.siteRepo] : [])];
+    if (!check!.privateRepo) return publicSide;
+    return state.scope === "private" ? [check!.privateRepo] : state.scope === "public" ? publicSide : [...publicSide, check!.privateRepo];
+  };
   const stopPolling = () => { if (poll !== undefined) t.clear(poll); poll = undefined; };
   const resetBackoff = () => { pollDelay = DELETE_POLL_MS; };
   const nextBackoff = () => {
@@ -89,7 +99,7 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
     const record: DeletionRecord = {
       version: 1, name: name(), folder: check.folder, kind: check.kind,
       repos: targets().map((id) => ({ id, deleted: repos.get(id) === "deleted" })),
-      keepPrivate: Boolean(check.privateRepo) && !state.private, local,
+      keepPrivate: Boolean(check.privateRepo) && !withPrivate(), local,
     };
     pending = undefined;
     await rec.save(record);
@@ -110,7 +120,7 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
       for (const id of [c.repo, ...(c.siteRepo ? [c.siteRepo] : []), ...(c.privateRepo ? [c.privateRepo] : [])]) {
         const phase = repos.get(id);
         let s: RunState = "waiting";
-        if (id === c.privateRepo && !state.private) s = "skipped";
+        if (!targets().includes(id)) s = "skipped";
         else if (phase === "deleted") s = "done";
         else if (phase && state.step === "stopped") s = "paused";
         else if (phase && state.step === "github") {
@@ -242,7 +252,10 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
     await commands.run("workspace.remove");
   });
   reg<{ value?: unknown }>("project.deleteType", "project.delete.confirm.button", ({ value }) => set({ typed: typeof value === "string" ? value : "" }));
-  reg<{ value?: unknown }>("project.deletePrivate", "project.delete.private.switch", ({ value }) => set({ private: value === true }));
+  reg<{ value?: unknown }>("project.deletePrivate", "project.delete.private.switch", ({ value }) => set({ scope: value === true ? "both" : "public" }));
+  reg<{ value?: unknown }>("project.deleteScope", "project.delete.scope.label", ({ value }) => {
+    if (value === "both" || value === "public" || value === "private") set({ scope: value });
+  });
   reg("project.deleteBack", "project.back", () => {
     if (state.step === "github" && !targets().some((r) => repos.get(r) === "deleted")) {
       stopPolling();
@@ -365,9 +378,9 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
     if (mine !== run || !state.open) return;
     stopPolling();
     set({ step: "progress", busy: true, problem: "", lockedFile: "", privateHistoryFailed: false, localRefused: false });
-    const keepPrivate = Boolean(check.privateRepo) && !state.private;
+    const keepPrivate = Boolean(check.privateRepo) && !withPrivate();
     await persist(true);
-    const go = () => ws.deleteLocal!({ keepPrivate });
+    const go = () => ws.deleteLocal!({ keepPrivate, ...(check!.privateRepo && linked() ? { scope: state.scope } : {}) });
     const r = await (tracker ? tracker.run("project.delete", "task.deleting", go, undefined, "fn:project.deleteLocal") : go()).catch(() => ({ state: "failed" as const, reason: undefined, file: undefined, privateKept: undefined }));
     if (mine !== run || !state.open) return;
     if (r.state === "deleted") {
@@ -430,7 +443,9 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
       toast(catalog.format("project.delete.unavailable"), { tone: "error" });
       return;
     }
-    set({ typed: name(), private: !r.keepPrivate && Boolean(c.privateRepo) });
+    // The scope the earlier session chose, read from what it was deleting.
+    const had = new Set(r.repos.map((x) => x.id));
+    set({ typed: name(), scope: c.privateRepo && had.has(c.privateRepo) ? (had.has(c.repo) ? "both" : "private") : "public" });
     if (c.kind === "offline") { resuming = false; await finish(); return; }
     // Offline, signed out or not an admin: the problem shows with Retry, which resumes again.
     if (state.problem && state.problem !== "gone" && state.problem !== "policy") return;
@@ -451,12 +466,12 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
   viewModels.register({
     id: "vm.projectDelete",
     reads: "*",
-    setters: { typed: "project.deleteType", private: "project.deletePrivate" },
+    setters: { typed: "project.deleteType", private: "project.deletePrivate", scope: "project.deleteScope" },
     schema: {
       type: "object",
       properties: {
         open: bool, step: { type: "string", enum: ["consequences", "unsynced", "github", "progress", "done", "stopped"] }, kind: { type: "string", enum: ["linked", "offline"] },
-        problem: text, typed: text, private: bool, exported: bool, exportPath: text, unsyncedProceedLabel: text, busy: bool, checking: bool, canBackFromGithub: bool,
+        problem: text, typed: text, private: bool, scope: text, scopes: { type: "array", items: { type: "object", properties: { id: text, label: text } } }, scopeDetail: text, exported: bool, exportPath: text, unsyncedProceedLabel: text, busy: bool, checking: bool, canBackFromGithub: bool,
         name: text, repo: text, siteRepo: text, privateRepo: text, otherRepo: text, otherOwner: text, org: text, orgRepo: text,
         site: text, siteNotes: num, links: num, peopleCount: num, peopleNames: text, privateCount: num,
         unsyncedCount: num, backupUnknown: bool, unsynced: { type: "array", items: { type: "object", properties: { id: text, label: text, description: text } } },
@@ -469,7 +484,9 @@ export function registerProjectDelete({ store, bridge, catalog, commands, viewMo
       const detail: Record<RepoPhase, string> = { waiting: "project.delete.github.waiting", deleted: "project.delete.github.deleted" };
       const targetList = targets();
       return {
-        open: state.open, step: state.step, kind: c?.kind ?? "linked", problem: state.problem, typed: state.typed, private: state.private,
+        open: state.open, step: state.step, kind: c?.kind ?? "linked", problem: state.problem, typed: state.typed, private: withPrivate(),
+        scope: state.scope, scopes: (["both", "public", "private"] as const).map((id) => ({ id, label: catalog.format(`project.delete.scope.${id}`) })),
+        scopeDetail: catalog.format(`project.delete.scope.${state.scope}.detail`, { repo: c?.repo ?? "", privateRepo: c?.privateRepo ?? "" }),
         exported: state.exported, exportPath: state.exportPath,
         unsyncedProceedLabel: catalog.format(state.exported ? "project.delete.continue" : "project.delete.unsynced.skipSave"),
         busy: state.busy || (state.checking && state.step !== "github"), checking: state.checking,

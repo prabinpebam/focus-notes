@@ -4,9 +4,9 @@
  * GET /repos/{owner}/{repo} === 404 AND GET /user === 200). Fakes only: never touches real GitHub.
  */
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import { join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import type { Page } from "@playwright/test";
 import { test, expect } from "./fixtures.ts";
 import { launch, quit, tempDirs, type Launched } from "./helpers.ts";
@@ -112,6 +112,8 @@ test("D-pending: a project whose GitHub repository was never made, its remote al
 
 async function startLinkedProject(opts: {
   siteRepo?: string;
+  /** Private + Public (D-429): a `private/` submodule whose own repository is ada/notes-private. */
+  pair?: boolean;
   handler: (req: IncomingMessage, res: ServerResponse, send: (status: number, body: unknown, headers?: Record<string, string>) => void) => void;
 }) {
   const dirs = newProject();
@@ -121,6 +123,21 @@ async function startLinkedProject(opts: {
   mkdirSync(join(remotes, "ada"), { recursive: true });
   const remote = join(remotes, "ada", "notes.git");
   execFileSync("git", ["init", "-q", "--bare", remote]);
+  if (opts.pair) {
+    const privateRemote = join(remotes, "ada", "notes-private.git");
+    execFileSync("git", ["init", "-q", "--bare", "-b", "main", privateRemote]);
+    const seed = join(dirs.userData, "seed-private");
+    mkdirSync(join(seed, "notes"), { recursive: true });
+    git(seed, "init", "-q", "-b", "main");
+    // CRLF, so a checkout with or without core.autocrlf leaves it byte-identical (never "changed since GitHub").
+    writeFileSync(join(seed, "notes", "secret.md"), "# Secret\r\n\r\nPrivate words.\r\n");
+    git(seed, "add", "-A");
+    git(seed, "commit", "-qm", "Private notes");
+    git(seed, "push", "-q", privateRemote, "main");
+    git(dirs.docs, "-c", "protocol.file.allow=always", "submodule", "add", "-q", "-b", "main", privateRemote, "private");
+    git(join(dirs.docs, "private"), "checkout", "-q", "main");
+    git(dirs.docs, "commit", "-qm", "Add private notes");
+  }
   if (opts.siteRepo) {
     const [owner, name] = opts.siteRepo.split("/");
     mkdirSync(join(dirs.docs, ".focus-notes"), { recursive: true });
@@ -425,3 +442,83 @@ test("D-413: unsynced notes warn with optional Save a copy and allow Delete with
     expect(existsSync(join(fx.recycle, "Draft.md"))).toBe(true);
   } finally { await fx.close(); }
 });
+
+/**
+ * D-429: a Private + Public project has two repositories, and deleting it is complete only when both are deleted. Both
+ * is the default; Only the public one and Only the private one are each explained. The local copy goes only after the
+ * chosen repositories are confirmed deleted on GitHub, which the person does there (D-413); the app never deletes one.
+ */
+for (const scope of ["Both", "Only the public one", "Only the private one"] as const) {
+  test(`D-429: Private + Public delete, ${scope}: only the chosen repositories, then this computer`, async () => {
+    const gone = new Set<string>();
+    const fx = await startLinkedProject({
+      pair: true,
+      handler: (req, _res, send) => {
+        if (req.url === "/user") return send(200, { id: 1, login: "ada", name: "Ada" });
+        const repo = /^\/repos\/(ada\/notes(?:-private)?)$/.exec(req.url ?? "")?.[1];
+        if (repo && req.method === "GET") {
+          return gone.has(repo) ? send(404, { message: "Not Found" }) : send(200, { id: repo.length, owner: { login: "ada", type: "User" }, name: repo.split("/")[1], default_branch: "main", permissions: { admin: true, push: true } });
+        }
+        send(404, { message: "Not Found" });
+      },
+    });
+    try {
+      const { page } = fx.l;
+      await expect(page.getByRole("textbox", { name: "Note", exact: true })).toBeVisible();
+      await page.keyboard.press("Control+,");
+      const settings = page.getByRole("dialog", { name: "Settings", exact: true });
+      await settings.getByRole("tab", { name: "Project", exact: true }).click();
+      await settings.getByRole("button", { name: "Delete project…", exact: true }).click();
+      const dialog = page.getByRole("dialog", { name: /^Delete .+\?$/ });
+      const choice = dialog.getByRole("radiogroup", { name: "Delete on GitHub", exact: true });
+      await expect(choice).toBeVisible({ timeout: 15_000 });
+      // Both is the default, and each choice says what it deletes and what stays.
+      await expect(choice.getByRole("radio", { name: "Both", exact: true })).toBeChecked();
+      await expect(dialog).toContainText("The project is gone only when both are.");
+      if (scope !== "Both") await choice.getByText(scope, { exact: true }).click();
+      await expect(dialog).toContainText(scope === "Only the public one" ? "your published pages and shares go offline" : scope === "Only the private one" ? "stays on GitHub, with your published pages and shares" : "and ada/notes-private (your private notes)");
+      await dialog.getByRole("button", { name: "Continue", exact: true }).click();
+      // Notes not on GitHub yet, if Git counts any: saving a copy is optional (D-413).
+      const skipSave = dialog.getByRole("button", { name: "Delete without saving", exact: true });
+      const github = dialog.getByRole("heading", { name: "Delete on GitHub", exact: true });
+      await expect(github.or(skipSave)).toBeVisible();
+      if (await skipSave.isVisible()) await skipSave.click();
+      await expect(github).toBeVisible();
+      const chosen = scope === "Both" ? ["ada/notes", "ada/notes-private"] : scope === "Only the public one" ? ["ada/notes"] : ["ada/notes-private"];
+      for (const repo of ["ada/notes", "ada/notes-private"]) {
+        if (chosen.includes(repo)) await expect(dialog.getByText(repo, { exact: true }).first()).toBeVisible();
+      }
+      const checkAgain = dialog.locator("[data-icon-layout-actions]").getByRole("button", { name: "Check again", exact: true });
+      // A repository not chosen going away changes nothing; the first chosen one alone keeps this computer's copy when there are two.
+      gone.add(chosen[0]!);
+      await checkAgain.click();
+      if (chosen.length > 1) {
+        await expect(dialog).toContainText("Waiting for deletion on GitHub…");
+        expect(existsSync(fx.dirs.docs)).toBe(true);
+        gone.add(chosen[1]!);
+        // The automatic check (on focus and every few seconds) notices the second one.
+      }
+      const deletedHeading = dialog.getByRole("heading", { name: "Project deleted", exact: true });
+      // Windows may hold a file in the folder for a moment: the dialog says so, and its Retry finishes (DD-PROJ-17).
+      const retry = dialog.getByRole("button", { name: "Retry", exact: true });
+      for (let i = 0; i < 3; i++) {
+        await expect(deletedHeading.or(retry)).toBeVisible({ timeout: 15_000 });
+        if (await deletedHeading.isVisible()) break;
+        await retry.click();
+      }
+      await expect(deletedHeading).toBeVisible({ timeout: 15_000 });
+      expect(existsSync(fx.dirs.docs)).toBe(false);
+      expect(existsSync(join(fx.recycle, "Welcome.md"))).toBe(true);
+      // Only the public one keeps the private notes beside the folder; the others recycle them with it.
+      const kept = readdirSync(dirname(fx.dirs.docs)).filter(name => name.startsWith(`${basename(fx.dirs.docs)} (private notes`));
+      if (scope === "Only the public one") {
+        expect(kept).toHaveLength(1);
+        expect(readFileSync(join(dirname(fx.dirs.docs), kept[0]!, "notes", "secret.md"), "utf8")).toContain("Private words.");
+      } else {
+        expect(kept).toEqual([]);
+        expect(existsSync(join(fx.recycle, "private", "notes", "secret.md"))).toBe(true);
+      }
+      expect(fx.requests.filter(r => r.startsWith("DELETE "))).toEqual([]);
+    } finally { await fx.close(); }
+  });
+}
