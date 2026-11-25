@@ -3351,7 +3351,8 @@
                     "label": {
                       "get": "vm.confirm.confirmLabel"
                     },
-                    "variant": "danger"
+                    "variant": "danger",
+                    "autoFocus": true
                   },
                   "on": {
                     "press": {
