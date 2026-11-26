@@ -230,7 +230,7 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
       { id: "new:", kind: "folder", level: 2, label: "bold", parent: "root:private", editing: true },
       { id: "spec-ideas.md", kind: "note", level: 2, label: "Spec ideas", parent: "root:private" },
     ],
-    // D-431: shared, published, and both, marked at the row's end; one plain row for comparison.
+    // D-431: shared, published, and both, as badges on the file icon; one plain row for comparison.
     treeMarks: [
       { id: "root:private", kind: "section", level: 1, label: "Private", expanded: true, hasChildren: true },
       { id: "trip.md", kind: "note", level: 2, label: "Trip plans", parent: "root:private", title: "trip.md", shared: true, siteLabel: "Shared" },

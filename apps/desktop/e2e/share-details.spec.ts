@@ -73,7 +73,7 @@ test("D-431: a shared note is marked in Files; Share details… copies its link 
     await page.keyboard.press("Escape");
     await expect(share).toHaveCount(0);
 
-    // The mark: visible at the row's end, read with its name and shown as its tooltip.
+    // The mark: a badge on the file icon, read with its name and shown as its tooltip.
     await files();
     await expect(rome).toHaveAccessibleName(/^Rome, Shared\b/);
     const mark = rome.locator("[data-site-marks]");

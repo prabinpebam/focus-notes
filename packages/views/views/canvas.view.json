@@ -4926,12 +4926,18 @@
               "items": { "get": "vm.opened.items" },
               "menu": { "get": "vm.opened.menu" },
               "menuLabel": { "t": "files.opened.menu" },
-              "closeLabel": { "t": "files.opened.close" }
+              "closeLabel": { "t": "files.opened.close" },
+              "tabMenu": { "get": "vm.files.menu" },
+              "tabMenuLabel": { "get": "vm.files.menuLabel" },
+              "tabMenuFor": { "get": "vm.files.focusId" },
+              "closeTabLabel": { "t": "files.opened.closeTab" }
             },
             "on": {
               "activate": { "run": "files.activateOpened", "args": { "id": { "get": "event.id" } } },
               "close": { "run": "files.closeOpened", "args": { "id": { "get": "event.id" } } },
-              "menuAction": { "run": "command.run", "args": { "id": { "get": "event.id" } } }
+              "menuAction": { "run": "command.run", "args": { "id": { "get": "event.id" } } },
+              "tabMenu": { "run": "files.selectShortcut", "args": { "id": { "get": "event.id" } } },
+              "tabMenuAction": { "run": "command.run", "args": { "id": { "get": "event.id" } } }
             }
           },
           {
