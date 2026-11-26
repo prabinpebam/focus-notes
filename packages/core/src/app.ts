@@ -1583,8 +1583,9 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
           items: (bridge.projects?.local && g.id === "note" ? ["local.import", "note.print", "print.pageNumbers"] : g.items)
             .filter((e) => typeof e !== "string" || (!s.toolbarPinned.includes(e) && (e !== "note.share" || shareShown(s))
               && (e !== PUBLISH_STATUS_COMMAND || commands.describe(e).title !== PUBLISH_STATUS_TITLE)
-              // Share details… only on a shared note (D-431).
-              && (e !== SHARE_DETAILS_COMMAND || commands.describe(e).enabled))),
+              // A shared note offers Share details… instead of Share… (D-431).
+              && (e !== SHARE_DETAILS_COMMAND || commands.describe(e).enabled)
+              && (e !== "note.share" || !commands.describe(SHARE_DETAILS_COMMAND).enabled))),
         })),
       ].filter((g) => g.items.length).map((g) => (g.id === "theme" && s.settingsSync !== "unavailable" ? { ...g, items: [...g.items, "settings.sync"] } : g)).map((g) => ({
         id: g.id, label: catalog.format(g.label),

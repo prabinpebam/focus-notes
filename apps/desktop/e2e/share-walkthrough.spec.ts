@@ -158,9 +158,9 @@ test("Share walk-through: turn on, share a folder with link and access code, rec
 
     // 7. Withdraw: confirm, then readers stop after the next publication.
     await files();
-    await page.getByRole("treeitem", { name: /^trips(, Shared)?$/ }).click({ button: "right" });
-    // D-431: Share… on a shared item opens its Share details.
-    await page.getByRole("menuitem", { name: "Share…", exact: true }).click();
+    await page.getByRole("treeitem", { name: "trips, Shared", exact: true }).click({ button: "right" });
+    // D-431: a shared item's menu offers Share details… instead of Share….
+    await page.getByRole("menuitem", { name: "Share details…", exact: true }).click();
     const details = page.getByRole("dialog", { name: "Share details", exact: true });
     await details.getByRole("button", { name: "Withdraw", exact: true }).first().click();
     const withdraw = page.getByRole("dialog", { name: "Withdraw this share?", exact: true });

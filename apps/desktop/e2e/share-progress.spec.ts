@@ -135,12 +135,12 @@ test("D-427: Turn on, Share, Withdraw, Publish and Turn off show their real step
 
     // 3. Withdraw, where GitHub's build fails twice: the failed step is named, earlier steps stay ticked, and the
     // same press carries on from that step: GitHub builds the same upload again, with no second upload.
-    // Share… on the now-shared folder opens its Share details (D-431), where Withdraw is.
+    // The now-shared folder's menu offers Share details… (D-431), where Withdraw is.
     await share.press("Escape");
     await expect(share).toHaveCount(0);
     await files();
-    await page.getByRole("treeitem", { name: /^trips(, Shared)?$/ }).click({ button: "right" });
-    await page.getByRole("menuitem", { name: "Share…", exact: true }).click();
+    await page.getByRole("treeitem", { name: "trips, Shared", exact: true }).click({ button: "right" });
+    await page.getByRole("menuitem", { name: "Share details…", exact: true }).click();
     const details = page.getByRole("dialog", { name: "Share details", exact: true });
     await details.getByRole("button", { name: "Withdraw", exact: true }).first().click();
     const withdraw = page.getByRole("dialog", { name: "Withdraw this share?", exact: true });

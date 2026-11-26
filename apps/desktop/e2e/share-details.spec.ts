@@ -98,7 +98,8 @@ test("D-431: a shared note is marked in Files; Share details… copies its link 
     await expect(details).toHaveCount(0);
     await files();
     await rome.click({ button: "right" });
-    await page.getByRole("menuitem", { name: "Share…", exact: true }).click();
+    await expect(page.getByRole("menuitem", { name: "Share…", exact: true })).toHaveCount(0);
+    await page.getByRole("menuitem", { name: "Share details…", exact: true }).click();
     await expect(details).toBeVisible();
     await expect(page.getByRole("dialog", { name: "Share “Rome”", exact: true })).toHaveCount(0);
 

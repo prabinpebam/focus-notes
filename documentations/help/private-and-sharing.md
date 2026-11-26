@@ -33,7 +33,7 @@ On Windows, choose **Copy share information**, **Copy link**, or **Copy access c
 
 **Deleting a shared or published note.** Focus Notes always asks before it deletes a note, and says if its link or web page goes too. It turns the link off and takes the page down first, then deletes the note. Until that's done, the note stays in Files marked *Deleting…*; point to it to see the steps. If a step stops, choose **Retry**, or **Delete anyway** to delete the note now and leave its link or page up.
 
-Retrying a failed publication in the same dialog reuses the saved share. Opening **Share…** again starts an independent share; it does not replace the earlier link. With **Include notes added later** off, a folder share includes only the reviewed note identities, not another note later created at the same path.
+Retrying a failed publication in the same dialog reuses the saved share. Once an item is shared, its menus offer **Share details…** instead of **Share…**; **Share again…** there starts an independent share and doesn't replace the earlier link. With **Include notes added later** off, a folder share includes only the reviewed note identities, not another note later created at the same path.
 
 **Not available yet:** first-site setup from this dialog and full review of very large folders. Change… and template editing aren't part of this dialog. **Settings → Sharing** holds the share settings (your site, **Share information**, **Turn off sharing…**) and **Site appearance**.
 

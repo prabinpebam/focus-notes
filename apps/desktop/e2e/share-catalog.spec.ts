@@ -250,9 +250,10 @@ for (const theme of ["light", "dark"] as const) {
       await expect(share.getByText("Share information copied.", { exact: true })).toBeVisible({ timeout: 30_000 });
       await shot(l, theme, "17-share-information-copied");
       await page.keyboard.press("Escape");
-      await menu();
-      // D-431: Share… on a shared item opens its Share details.
-      await page.getByRole("menuitem", { name: "Share…", exact: true }).click();
+      await page.keyboard.press("Control+Shift+E");
+      await page.getByRole("treeitem", { name: "trips, Shared", exact: true }).click({ button: "right" });
+      // D-431: a shared item's menu offers Share details… instead of Share….
+      await page.getByRole("menuitem", { name: "Share details…", exact: true }).click();
       const details = page.getByRole("dialog", { name: "Share details", exact: true });
       await expect(details).toBeVisible();
       await page.waitForTimeout(800);
@@ -269,8 +270,8 @@ for (const theme of ["light", "dark"] as const) {
         await page.getByRole("treeitem", { name: /^trips(, Shared)?$/ }).click();
         await page.keyboard.press("ArrowRight");
         await expect(page.getByRole("treeitem", { name: "New travel", exact: true })).toBeVisible();
-        await page.getByRole("treeitem", { name: /^trips(, Shared)?$/ }).click({ button: "right" });
-        await page.getByRole("menuitem", { name: "Share…", exact: true }).click();
+        await page.getByRole("treeitem", { name: "trips, Shared", exact: true }).click({ button: "right" });
+        await page.getByRole("menuitem", { name: "Share details…", exact: true }).click();
         await expect(details.getByText("1 newer note isn't shared", { exact: true }).first()).toBeVisible();
         await shot(l!, theme, "20-share-newer-note-not-shared");
         await details.getByRole("button", { name: "Add them", exact: true }).first().click();

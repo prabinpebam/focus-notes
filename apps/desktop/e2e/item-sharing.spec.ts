@@ -162,10 +162,10 @@ test("SHR-16: first copy waits for a real deployed share; both methods work and 
     }, { site, origin });
     const { page } = l;
     await expect(page.getByRole("textbox", { name: "Note" })).toBeVisible();
-    const open = async () => {
+    const open = async (item = "Share…") => {
       await page.keyboard.press(process.platform === "darwin" ? "Meta+Shift+E" : "Control+Shift+E");
-      await page.getByRole("treeitem", { name: /^trips(, Shared)?$/ }).click({ button: "right" });
-      await page.getByRole("menuitem", { name: "Share…", exact: true }).click();
+      await page.getByRole("treeitem", { name: item === "Share…" ? /^trips(, Shared)?$/ : "trips, Shared" }).click({ button: "right" });
+      await page.getByRole("menuitem", { name: item, exact: true }).click();
     };
     await open();
     const share = page.getByRole("dialog", { name: "Share “trips”", exact: true });
@@ -197,8 +197,8 @@ test("SHR-16: first copy waits for a real deployed share; both methods work and 
     await share.getByRole("button", { name: "Copy link", exact: true }).first().click();
     expect(access().grants.filter((g) => !g.owner)).toHaveLength(1);
     await page.keyboard.press("Escape");
-    // D-431: Share… on a shared item opens its Share details; Share again… makes another, independent share.
-    await open();
+    // D-431: a shared item's menu offers Share details… (not Share…); Share again… makes another, independent share.
+    await open("Share details…");
     const details = page.getByRole("dialog", { name: "Share details", exact: true });
     await expect(details).toBeVisible();
     await expect(share).toHaveCount(0);
@@ -215,8 +215,9 @@ test("SHR-16: first copy waits for a real deployed share; both methods work and 
     await page.getByRole("treeitem", { name: /^trips(, Shared)?$/ }).click();
     await page.keyboard.press("ArrowRight");
     await expect(page.getByRole("treeitem", { name: "New travel", exact: true })).toBeVisible();
-    await page.getByRole("treeitem", { name: /^trips(, Shared)?$/ }).click({ button: "right" });
-    await page.getByRole("menuitem", { name: "Share…", exact: true }).click();
+    await page.getByRole("treeitem", { name: "trips, Shared", exact: true }).click({ button: "right" });
+    await expect(page.getByRole("menuitem", { name: "Share…", exact: true })).toHaveCount(0);
+    await page.getByRole("menuitem", { name: "Share details…", exact: true }).click();
     await expect(details.getByText("1 newer note isn't shared", { exact: true }).first()).toBeVisible();
     await details.getByRole("button", { name: "Add them", exact: true }).first().click();
     await expect(details.getByText("Reviewed notes added to these shares.", { exact: true })).toBeVisible({ timeout: 30_000 });

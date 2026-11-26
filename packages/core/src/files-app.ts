@@ -1688,7 +1688,8 @@ export function registerFiles(ctx: Ctx) {
       importFiles: Boolean(ws?.chooseImport && ws.readImport && ctx.htmlToMarkdown),
     });
     // Share… for every item, private or published (D-424); the dialog guides when sharing can't start yet.
-    if (bridge.access && focus.kind !== "root" && acted.length <= 1) sections.splice(1, 0, ["files.share", ...(liveSharesOf(s, focus.path).length ? ["files.shareDetails"] : [])]);
+    // A shared item offers only Share details…, whose Share again… makes another share (D-431).
+    if (bridge.access && focus.kind !== "root" && acted.length <= 1) sections.splice(1, 0, [liveSharesOf(s, focus.path).length ? "files.shareDetails" : "files.share"]);
     // One Publish and one Unpublish (D-424): the site's Publish… / Unpublish when sharing is live, else moving
     // between private and public notes, which the owner calls publishing too.
     if (focus.kind !== "root") {

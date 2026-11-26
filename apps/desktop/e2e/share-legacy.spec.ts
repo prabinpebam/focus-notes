@@ -154,12 +154,12 @@ test("D-425: public+private layout: Share… on a private note turns sharing on,
     expect(git(docs, "rev-parse", "HEAD:notes")).toBe(publicHead);
     expect(github.calls.filter(c => c.method !== "GET" && /\/repos\/ada\/book-private\b/.test(c.path) && !/pages/.test(c.path))).toEqual([]);
 
-    // 7. Withdraw from Share details (Share… on a shared note opens it, D-431): readers stop after the next deploy.
+    // 7. Withdraw from Share details (a shared note's menu offers it, D-431): readers stop after the next deploy.
     await page.keyboard.press("Escape");
     await expect(share).toHaveCount(0);
     if (!(await tree.isVisible())) await page.keyboard.press(process.platform === "darwin" ? "Meta+Shift+E" : "Control+Shift+E");
     await tree.getByRole("treeitem", { name: "Diary, Shared diary.md", exact: true }).click({ button: "right" });
-    await page.getByRole("menuitem", { name: "Share…", exact: true }).click();
+    await page.getByRole("menuitem", { name: "Share details…", exact: true }).click();
     const details = page.getByRole("dialog", { name: "Share details", exact: true });
     await details.getByRole("button", { name: "Withdraw", exact: true }).first().click();
     const withdraw = page.getByRole("dialog", { name: "Withdraw this share?", exact: true });

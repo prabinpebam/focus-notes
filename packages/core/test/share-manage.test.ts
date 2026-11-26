@@ -988,9 +988,13 @@ describe("D-431: shared and published marks in Files, and Share details…", () 
     for (const r of marked) expect(r).toMatchObject({ shared: true, published: false, siteLabel: "Shared" });
     expect(rowsOf(t).find((r) => r.id === "/w/private/notes/diary.md")?.shared).toBeFalsy();
     await t.run("files.reveal");
+    // A shared item offers Share details… instead of Share… (D-431).
     expect(menuIds(t)).toContain("files.shareDetails");
+    expect(menuIds(t)).not.toContain("files.share");
     expect(t.app.commands.describe("note.shareDetails").enabled).toBe(true);
-    expect(t.vm("vm.toolbar").more.flatMap((g: { items: { id: string }[] }) => g.items).map((i: { id: string }) => i.id)).toContain("note.shareDetails");
+    const more = t.vm("vm.toolbar").more.flatMap((g: { items: { id: string }[] }) => g.items).map((i: { id: string }) => i.id);
+    expect(more).toContain("note.shareDetails");
+    expect(more).not.toContain("note.share");
     await t.run("files.shareDetails");
     const details = t.vm("vm.shareDetails");
     expect(details).toMatchObject({ open: true, name: "Rome" });
@@ -1026,6 +1030,7 @@ describe("D-431: shared and published marks in Files, and Share details…", () 
     expect(rowsOf(t).filter((r) => r.id === rome && r.shared)).toEqual([]);
     await t.run("files.reveal");
     expect(menuIds(t)).not.toContain("files.shareDetails");
+    expect(menuIds(t)).toContain("files.share");
     expect(t.app.commands.describe("note.shareDetails").enabled).toBe(false);
   });
   it("Add them in Share details adds a folder's newer notes to that share, with the folder's whole contents", async () => {
