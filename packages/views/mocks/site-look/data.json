@@ -1,0 +1,26 @@
+{
+  "project": { "name": "Field notes" },
+  "sharingSettings": { "on": true, "off": false, "canSetup": true, "site": "prabin.github.io/field-notes" },
+  "sharingPreview": { "busy": false },
+  "themes": [
+    { "id": "paper", "label": "Paper" },
+    { "id": "sepia", "label": "Sepia" },
+    { "id": "ink", "label": "Ink" },
+    { "id": "dusk", "label": "Dusk" }
+  ],
+  "fonts": [
+    { "id": "serif", "label": "Serif" },
+    { "id": "sans", "label": "Sans" },
+    { "id": "hyperlegible", "label": "Hyperlegible" }
+  ],
+  "sampleBlocks": [
+    { "type": "heading", "attrs": { "level": 2 }, "content": [{ "type": "text", "text": "On focus" }] },
+    { "type": "paragraph", "attrs": { "level": 0 }, "content": [{ "type": "text", "text": "Writing needs room to think. A quiet page, one paragraph at a time, and nothing asking for attention." }] }
+  ],
+  "steps": {
+    "labels": ["Give your website its new look", "Upload your notes site", "GitHub updates your website", "Your website has its new look"],
+    "icons": ["color", "cloudUp", "sync", "globe"]
+  },
+  "line": "GitHub is updating your website. This usually takes 1–2 minutes. 0:38",
+  "problem": "Stopped at “GitHub updates your website”. The steps before it are done and kept. Your website keeps its old look until this finishes. Retry in a minute."
+}

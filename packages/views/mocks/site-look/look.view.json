@@ -1,0 +1,90 @@
+{
+  "focus": "siteLookTheme",
+  "root": {
+    "type": "Surface",
+    "props": { "variant": "canvas", "scroll": true },
+    "children": [
+      {
+        "type": "Center",
+        "props": { "maxWidth": "wideContent" },
+        "children": [
+          {
+            "type": "Stack",
+            "props": { "gap": "stackSection", "padding": "insetLg" },
+            "children": [
+              { "type": "Heading", "props": { "level": "2", "value": { "t": "settings.section.sharing" } } },
+              { "type": "Section", "children": [{ "mock": "siteCard" }] },
+              {
+                "type": "Section",
+                "slots": {
+                  "heading": [{ "type": "Heading", "props": { "level": "3", "value": { "t": "site.look.title" } } }]
+                },
+                "children": [
+                  {
+                    "type": "Stack",
+                    "props": { "gap": "stackGroup" },
+                    "children": [
+                      { "type": "Text", "props": { "value": { "t": "site.look.detail" }, "tone": "muted", "role": "secondary" } },
+                      {
+                        "type": "Inline",
+                        "props": { "gap": "inlineGroup", "wrap": true, "align": "end" },
+                        "children": [
+                          {
+                            "type": "SegmentedControl",
+                            "id": "siteLookTheme",
+                            "props": {
+                              "label": { "t": "site.look.theme" },
+                              "options": { "get": "vm.siteLook.themes" },
+                              "value": { "bind": "vm.siteLook.theme" },
+                              "readOnly": { "get": "vm.siteLook.busy" }
+                            }
+                          },
+                          {
+                            "type": "SegmentedControl",
+                            "props": {
+                              "label": { "t": "site.look.font" },
+                              "options": { "get": "vm.siteLook.fonts" },
+                              "value": { "bind": "vm.siteLook.font" },
+                              "readOnly": { "get": "vm.siteLook.busy" }
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "ProjectScope",
+                        "props": { "theme": { "get": "vm.siteLook.theme" }, "font": { "get": "vm.siteLook.font" }, "part": "window" },
+                        "children": [
+                          {
+                            "type": "Stack",
+                            "props": { "padding": "insetLg" },
+                            "children": [{ "type": "NoteContent", "props": { "blocks": { "get": "vm.siteLook.sampleBlocks" } } }]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "Stack",
+                        "props": { "gap": "stackItem" },
+                        "children": [
+                          { "use": "share.steps" },
+                          {
+                            "type": "StatusRow",
+                            "when": { "get": "vm.siteLook.failed" },
+                            "props": {
+                              "message": { "get": "vm.siteLook.problem" },
+                              "tone": "danger",
+                              "actionLabel": { "t": "commit.retry" }
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
