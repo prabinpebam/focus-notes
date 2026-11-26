@@ -248,6 +248,10 @@
     "iconS": {
       "$value": "{ref.size.16}"
     },
+    "iconBadge": {
+      "$value": "{ref.size.10}",
+      "$description": "A badge on an icon's corner (a file's shared or published mark, D-431): small enough to leave the icon readable."
+    },
     "iconM": {
       "$value": "{ref.size.20}"
     },

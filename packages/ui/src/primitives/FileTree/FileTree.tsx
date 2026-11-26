@@ -5,7 +5,7 @@ import * as menuStyles from "../MenuButton/MenuButton.css.ts";
 import { useWindowBoundary } from "../../layouts/AppRoot/in-window.tsx";
 import { Icon } from "../Icon/Icon.tsx";
 import { IconButton } from "../IconButton/IconButton.tsx";
-import { SiteMarks } from "./SiteMarks.tsx";
+import { FileGlyph, SiteMarksName } from "./SiteMarks.tsx";
 import { Spinner } from "../Spinner/Spinner.tsx";
 import { BorderProgress } from "../CommitMark/BorderProgress.tsx";
 import * as popoverStyles from "../PopoverPanel/PopoverPanel.css.ts";
@@ -376,7 +376,7 @@ export function FileTree({ label, items, focusId, focusRequest, windowed = false
             aria-expanded={folder ? item.expanded : undefined}
             aria-busy={item.pending || item.deleting === "pending" ? true : undefined}
             tabIndex={item.id === focused && !item.editing ? 0 : -1}
-            title={item.deleting ? undefined : item.title || undefined}
+            title={item.deleting ? undefined : [item.title, marked ? item.siteLabel : ""].filter(Boolean).join("\n") || undefined}
             className={`${s.row} ${item.kind === "section" ? s.section : ""}`}
             data-current={item.current ? "" : undefined}
             data-deleting={item.deleting}
@@ -414,7 +414,7 @@ export function FileTree({ label, items, focusId, focusRequest, windowed = false
             ) : <span className={s.chevron} aria-hidden="true" />}
             {item.kind !== "section" ? (
               <span className={s.icon}>
-                <span className={item.pinLabel && !item.editing ? s.typeIcon : undefined} data-file-icon={item.pinned ? "pin" : folder ? "folder" : "document"} aria-hidden="true"><Icon name={item.pinned ? "pin" : folder ? "folder" : "document"} size="s" /></span>
+                <span className={item.pinLabel && !item.editing ? s.typeIcon : undefined} data-file-icon={item.pinned ? "pin" : folder ? "folder" : "document"} aria-hidden="true"><FileGlyph item={item}><Icon name={item.pinned ? "pin" : folder ? "folder" : "document"} size="s" /></FileGlyph></span>
                 {item.pinLabel && !item.editing ? (
                   <span className={s.pinControl} data-pin-commit={item.pinCommit}
                     data-key-scope="filesSection" data-key-scope-stop=""
@@ -457,7 +457,7 @@ export function FileTree({ label, items, focusId, focusRequest, windowed = false
             {/* The name is the row's text: "About, public" (Files → Accessibility). */}
             {item.description && !item.editing ? <span id={descriptionId} className={s.description}> {item.description}</span> : null}
             {item.detail && !item.editing ? <span id={detailId} className={s.description}> {item.detail}</span> : null}
-            {marked ? <SiteMarks item={item} lead="" trail={item.description ? "," : ""} {...(marksId ? { nameId: marksId } : {})} /> : null}
+            {marked ? <SiteMarksName item={item} lead="" trail={item.description ? "," : ""} {...(marksId ? { nameId: marksId } : {})} /> : null}
             {item.pending ? <span className={s.pending}><Spinner size="s" /></span> : null}
             {item.deleting ? <BorderProgress state={item.deleting} /> : null}
             {end ? (
