@@ -278,7 +278,7 @@ describe("item-first sharing (SHR-13 to SHR-16, SHR-24)", () => {
     expect(t.vm("vm.shareItem")).toMatchObject({ loadFailed: false, retrying: false, expiry: "90d", open: true });
     expect(shareGrants(t.access())).toHaveLength(0);
   });
-  it("keeps acknowledged sharing history through a failed refresh and ignores a closed item's late read", async () => {
+  it("keeps the draft through a failed refresh and ignores a closed item's late read", async () => {
     const t = shell();
     await t.app.start();
     await settle();
@@ -291,10 +291,10 @@ describe("item-first sharing (SHR-13 to SHR-16, SHR-24)", () => {
     }] };
     t.bridge.access!.load = async () => saved;
     await t.run("share.item.reload");
-    expect(t.vm("vm.shareItem")).toMatchObject({ hasHistory: true, historyCount: 1 });
+    expect(t.vm("vm.shareItem")).toMatchObject({ open: true, loadFailed: false });
     t.bridge.access!.load = async () => { throw new Error("private-path-and-token"); };
     await t.run("share.item.reload");
-    expect(t.vm("vm.shareItem")).toMatchObject({ hasHistory: true, historyCount: 1, loadFailed: true, preparingVisible: false });
+    expect(t.vm("vm.shareItem")).toMatchObject({ open: true, loadFailed: true, preparingVisible: false });
     let finish!: (value: typeof listing) => void;
     t.bridge.access!.load = () => new Promise(resolve => { finish = resolve; });
     const old = t.run("share.item.reload");
@@ -303,7 +303,7 @@ describe("item-first sharing (SHR-13 to SHR-16, SHR-24)", () => {
     await t.run("share.item.open", { path: "/w/private/notes/trips/rome.md" });
     finish(saved);
     await old;
-    expect(t.vm("vm.shareItem")).toMatchObject({ name: "Rome", hasHistory: false, loadFailed: false });
+    expect(t.vm("vm.shareItem")).toMatchObject({ name: "Rome", loadFailed: false });
   });
   it("waits for word preparation before any action or draft mutation", async () => {
     const t = shell();
@@ -341,36 +341,36 @@ describe("item-first sharing (SHR-13 to SHR-16, SHR-24)", () => {
     expect(shareGrants(t.access())).toHaveLength(1);
     expect(t.copied).toHaveLength(2);
   });
-  it("lists only this item's history, copies without creating a grant, and confirms withdrawal without changing notes", async () => {
+  it("D-431: Share… on an already-shared item opens Share details; Share again makes an independent share", async () => {
     const t = shell();
     await t.app.start();
     await settle();
     await t.run("share.item.open", { path: "/w/private/notes/trips" });
     await t.run("share.item.action", { what: "link" });
-    const id = shareGrants(t.access())[0]!.id;
+    const first = shareGrants(t.access())[0]!.id;
     await t.run("share.item.setOpen", { open: false });
+    // Never shared: the Share… form.
     await t.run("share.item.open", { path: "/w/private/notes/diary.md" });
-    expect(t.vm("vm.shareItem").history).toHaveLength(0);
+    expect(t.vm("vm.shareItem")).toMatchObject({ dialogOpen: true });
+    expect(t.vm("vm.shareDetails").open).toBe(false);
+    await t.run("share.item.setOpen", { open: false });
+    // Shared: the one dialog for it, Share details.
     await t.run("share.item.open", { path: "/w/private/notes/trips" });
-    expect(t.vm("vm.shareItem")).toMatchObject({ hasHistory: true, historyOpen: true });
-    expect(t.vm("vm.shareItem").history).toEqual([expect.objectContaining({ id, active: true, link: true })]);
-    await t.run("share.item.row", { id, what: "link" });
-    expect(shareGrants(t.access())).toHaveLength(1);
-    await t.run("share.item.row", { id, what: "withdraw" });
-    expect(t.vm("vm.shareItem").confirmOpen).toBe(true);
-    expect(catalog.format("share.withdraw.text")).toContain("This cannot be undone.");
-    expect(catalog.format("share.withdraw.text")).toContain("Sharing again creates a new link.");
-    expect(shareGrants(t.access())[0]!.revokedAt).toBeUndefined();
-    await t.run("share.item.setConfirmOpen", { open: false });
-    expect(shareGrants(t.access())[0]!.revokedAt).toBeUndefined();
-    await t.run("share.item.row", { id, what: "withdraw" });
-    await t.run("share.item.withdraw");
-    expect(shareGrants(t.access())[0]!.revokedAt).toBeTruthy();
-    expect(t.vm("vm.shareItem")).toMatchObject({ open: true, confirmOpen: false, hasHistory: true });
-    expect(t.vm("vm.shareItem").history[0].active).toBe(false);
+    expect(t.vm("vm.shareItem").dialogOpen).toBe(false);
+    expect(t.vm("vm.shareDetails")).toMatchObject({ open: true, name: "trips", againLabel: "Share again…" });
+    expect(t.vm("vm.shareDetails").rows.map((r: { id: string }) => r.id)).toEqual([first]);
+    await t.run("share.details.again");
+    expect(t.vm("vm.shareDetails").open).toBe(false);
+    expect(t.vm("vm.shareItem")).toMatchObject({ dialogOpen: true, name: "trips", id: "" });
+    await t.run("share.item.action", { what: "link" });
+    expect(shareGrants(t.access()).map((g) => g.id)).toEqual([first, expect.not.stringMatching(first)]);
+    await t.run("share.item.setOpen", { open: false });
+    await t.run("note.share");
+    expect(t.vm("vm.shareDetails").open).toBe(false);
+    await t.run("share.item.open", { path: "/w/private/notes/trips" });
+    expect(t.vm("vm.shareDetails").rows).toHaveLength(2);
     expect(t.app.store.state.note.path).toBe("/w/private/notes/trips/rome.md");
-  });
-  it("refuses draft commands during creation and after saving, including regenerated words", async () => {
+  });  it("refuses draft commands during creation and after saving, including regenerated words", async () => {
     const t = shell();
     let finish!: () => void;
     t.bridge.access!.ready = async () => new Promise<void>((resolve) => { finish = resolve; });
@@ -455,7 +455,9 @@ describe("item-first sharing (SHR-13 to SHR-16, SHR-24)", () => {
     await t.run("share.item.action", { what: "link" });
     expect(shareGrants(t.access())).toHaveLength(1);
     await t.run("share.item.setOpen", { open: false });
+    // Shared now: Share… opens Share details, whose Share again starts an independent share (D-431).
     await t.run("share.item.open", { path: "/w/private/notes/trips" });
+    await t.run("share.details.again");
     await t.run("share.item.action", { what: "primary" });
     expect(shareGrants(t.access())).toHaveLength(2);
   });
@@ -1026,7 +1028,24 @@ describe("D-431: shared and published marks in Files, and Share details…", () 
     expect(menuIds(t)).not.toContain("files.shareDetails");
     expect(t.app.commands.describe("note.shareDetails").enabled).toBe(false);
   });
-  it("names a shared and published note once: Shared and published", () => {
+  it("Add them in Share details adds a folder's newer notes to that share, with the folder's whole contents", async () => {
+    const t = shell();
+    await t.app.start();
+    await settle();
+    await t.run("share.item.open", { path: "/w/private/notes/trips" });
+    await t.run("share.item.action", { what: "link" });
+    await t.run("share.item.setOpen", { open: false });
+    const id = shareGrants(t.access())[0]!.id;
+    const load = t.bridge.access!.load;
+    t.bridge.access!.load = async () => { const l = await load(); return { ...l, grants: l.grants.map((g) => (g.id === id ? { ...g, unsharedNotes: ["trips/later.md"] } : g)) }; };
+    const apply = vi.spyOn(t.bridge.access!, "apply");
+    await t.run("share.item.open", { path: "/w/private/notes/trips" });
+    await settle();
+    expect(t.vm("vm.shareDetails").rows[0]).toMatchObject({ hasNewer: true, newer: "1 newer note isn't shared" });
+    await t.run("share.details.addThem", { id });
+    expect(apply).toHaveBeenCalledWith({ op: "addItemNotes", id, notes: ["trips/rome.md"] });
+    expect(t.vm("vm.shareDetails")).toMatchObject({ open: true, busy: false, status: "Reviewed notes added to these shares." });
+  });  it("names a shared and published note once: Shared and published", () => {
     const tree = { roots: [{ id: "private" as const, path: "/w/p", readOnly: false, children: [] }] };
     const grant = { id: "g1", name: "", link: true, passcode: false, createdAt: "2026-11-01T00:00:00.000Z", item: { path: "a.md", label: "A", folder: false } };
     const state = (grants: unknown[], published: string[]) => ({ workspace: { tree }, ui: { share: { listing: { available: true, vault: false, grants }, publication: { published, publishing: [] } } } }) as never;

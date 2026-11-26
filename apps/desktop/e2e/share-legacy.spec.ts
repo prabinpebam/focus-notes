@@ -154,15 +154,23 @@ test("D-425: public+private layout: Share… on a private note turns sharing on,
     expect(git(docs, "rev-parse", "HEAD:notes")).toBe(publicHead);
     expect(github.calls.filter(c => c.method !== "GET" && /\/repos\/ada\/book-private\b/.test(c.path) && !/pages/.test(c.path))).toEqual([]);
 
-    // 7. Withdraw: readers stop after the next deploy.
-    await share.getByRole("button", { name: "Withdraw", exact: true }).first().click();
+    // 7. Withdraw from Share details (Share… on a shared note opens it, D-431): readers stop after the next deploy.
+    await page.keyboard.press("Escape");
+    await expect(share).toHaveCount(0);
+    if (!(await tree.isVisible())) await page.keyboard.press(process.platform === "darwin" ? "Meta+Shift+E" : "Control+Shift+E");
+    await tree.getByRole("treeitem", { name: "Diary, Shared diary.md", exact: true }).click({ button: "right" });
+    await page.getByRole("menuitem", { name: "Share…", exact: true }).click();
+    const details = page.getByRole("dialog", { name: "Share details", exact: true });
+    await details.getByRole("button", { name: "Withdraw", exact: true }).first().click();
     const withdraw = page.getByRole("dialog", { name: "Withdraw this share?", exact: true });
     await withdraw.getByRole("button", { name: "Withdraw share", exact: true }).click();
     await expect.poll(() => access().grants.find(g => g.id === grant.id)?.revokedAt).toBeTruthy();
     await expect.poll(async () => (await Promise.allSettled([reader().openLinkSession(grant.id, grant.link!.secret)]))[0]!.status, { timeout: 60_000 }).toBe("rejected");
     for (const text of [SECRET, UNRELATED]) expect(siteText()).not.toContain(text);
     expect(readFileSync(join(priv, "notes", "other.md"), "utf8")).toBe(`# Other\n\n${UNRELATED}\n`);
-    await page.keyboard.press("Escape");
+    await expect(withdraw).toHaveCount(0, { timeout: 60_000 });
+    await details.press("Escape");
+    await expect(details).toHaveCount(0);
 
     // 8. Publish in this layout is still the move to public notes/ (D-424), never the paired site's Publish….
     await rowMenu("Other other.md");

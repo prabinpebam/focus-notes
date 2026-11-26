@@ -197,7 +197,13 @@ test("SHR-16: first copy waits for a real deployed share; both methods work and 
     await share.getByRole("button", { name: "Copy link", exact: true }).first().click();
     expect(access().grants.filter((g) => !g.owner)).toHaveLength(1);
     await page.keyboard.press("Escape");
+    // D-431: Share… on a shared item opens its Share details; Share again… makes another, independent share.
     await open();
+    const details = page.getByRole("dialog", { name: "Share details", exact: true });
+    await expect(details).toBeVisible();
+    await expect(share).toHaveCount(0);
+    await details.getByRole("button", { name: "Share again…", exact: true }).click();
+    await expect(details).toHaveCount(0);
     await share.getByRole("button", { name: "Copy link", exact: true }).first().click();
     await expect(share.getByText("Link copied.", { exact: true })).toBeVisible({ timeout: 20_000 });
     expect(access().grants.filter((g) => !g.owner)).toHaveLength(2);
@@ -211,9 +217,9 @@ test("SHR-16: first copy waits for a real deployed share; both methods work and 
     await expect(page.getByRole("treeitem", { name: "New travel", exact: true })).toBeVisible();
     await page.getByRole("treeitem", { name: /^trips(, Shared)?$/ }).click({ button: "right" });
     await page.getByRole("menuitem", { name: "Share…", exact: true }).click();
-    await expect(share.getByText("1 newer note isn't shared", { exact: true })).toBeVisible();
-    await share.getByRole("button", { name: "Add them", exact: true }).click();
-    await expect(share.getByText("Reviewed notes added to these shares.", { exact: true })).toBeVisible({ timeout: 30_000 });
+    await expect(details.getByText("1 newer note isn't shared", { exact: true }).first()).toBeVisible();
+    await details.getByRole("button", { name: "Add them", exact: true }).first().click();
+    await expect(details.getByText("Reviewed notes added to these shares.", { exact: true })).toBeVisible({ timeout: 30_000 });
     expect(access().grants.filter((g) => !g.owner)).toHaveLength(2);
     const expanded = access().grants.find((g) => g.id === first.id)!;
     expect(expanded.link).toEqual(first.link);
@@ -221,18 +227,18 @@ test("SHR-16: first copy waits for a real deployed share; both methods work and 
     expect((await reader().openLinkSession(first.id, first.link!.secret)).share.notes).toHaveLength(2);
     expect((await reader().openAccessCode(`${first.shareCode} ${first.passcode!.value}`)).share.notes).toHaveLength(2);
     const noteBeforeWithdrawal = readFileSync(join(priv, "notes", "trips", "rome.md"), "utf8");
-    await share.getByRole("button", { name: "Withdraw", exact: true }).first().click();
+    await details.getByRole("button", { name: "Withdraw", exact: true }).first().click();
     const confirm = page.getByRole("dialog", { name: "Withdraw this share?", exact: true });
     await expect(confirm.getByRole("button", { name: "Cancel", exact: true })).toBeFocused();
     await expect(confirm).toContainText("This cannot be undone.");
     await expect(confirm).toContainText("Sharing again creates a new link.");
     await confirm.getByRole("button", { name: "Cancel", exact: true }).click();
     expect(access().grants.find((g) => g.id === first.id)!.revokedAt).toBeUndefined();
-    await share.getByRole("button", { name: "Withdraw", exact: true }).first().click();
+    await details.getByRole("button", { name: "Withdraw", exact: true }).first().click();
     await confirm.getByRole("button", { name: "Withdraw share", exact: true }).click();
     await expect(confirm).not.toBeVisible();
     await expect.poll(() => access().grants.find((g) => g.id === first.id)?.revokedAt).toBeTruthy();
-    await expect(share).toContainText("Its readers stop working after the next successful publication.");
+    await expect(details).toContainText("Withdrawn. It stops working after the next publish.");
     await expect(page.getByRole("region", { name: "Notifications", exact: true }).getByRole("button", { name: "Undo", exact: true })).toHaveCount(0);
     expect(readFileSync(join(priv, "notes", "trips", "rome.md"), "utf8")).toBe(noteBeforeWithdrawal);
     await expect(reader().openLinkSession(first.id, first.link!.secret)).rejects.toThrow();

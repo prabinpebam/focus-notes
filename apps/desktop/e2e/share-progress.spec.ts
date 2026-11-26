@@ -100,8 +100,8 @@ test("D-427: Turn on, Share, Withdraw, Publish and Turn off show their real step
       await settings.getByRole("tab", { name: tab, exact: true }).click();
     };
     const files = async () => {
-      if (!(await page.getByRole("treeitem", { name: "trips", exact: true }).isVisible())) await page.keyboard.press("Control+Shift+E");
-      await expect(page.getByRole("treeitem", { name: "trips", exact: true })).toBeVisible();
+      if (!(await page.getByRole("treeitem", { name: /^trips(, Shared)?$/ }).isVisible())) await page.keyboard.press("Control+Shift+E");
+      await expect(page.getByRole("treeitem", { name: /^trips(, Shared)?$/ })).toBeVisible();
     };
     await expect(page.getByRole("textbox", { name: "Note", exact: true })).toContainText("Synthetic diary line.");
     await scheme(page, "dark");
@@ -121,7 +121,7 @@ test("D-427: Turn on, Share, Withdraw, Publish and Turn off show their real step
 
     // 2. Share a folder: Lock the note → Upload it → GitHub updates your website → Get the link ready.
     await files();
-    await page.getByRole("treeitem", { name: "trips", exact: true }).click({ button: "right" });
+    await page.getByRole("treeitem", { name: /^trips(, Shared)?$/ }).click({ button: "right" });
     await page.getByRole("menuitem", { name: "Share…", exact: true }).click();
     const share = page.getByRole("dialog", { name: "Share “trips”", exact: true });
     await expect(share).toBeVisible();
@@ -135,7 +135,14 @@ test("D-427: Turn on, Share, Withdraw, Publish and Turn off show their real step
 
     // 3. Withdraw, where GitHub's build fails twice: the failed step is named, earlier steps stay ticked, and the
     // same press carries on from that step: GitHub builds the same upload again, with no second upload.
-    await share.getByRole("button", { name: "Withdraw", exact: true }).first().click();
+    // Share… on the now-shared folder opens its Share details (D-431), where Withdraw is.
+    await share.press("Escape");
+    await expect(share).toHaveCount(0);
+    await files();
+    await page.getByRole("treeitem", { name: /^trips(, Shared)?$/ }).click({ button: "right" });
+    await page.getByRole("menuitem", { name: "Share…", exact: true }).click();
+    const details = page.getByRole("dialog", { name: "Share details", exact: true });
+    await details.getByRole("button", { name: "Withdraw", exact: true }).first().click();
     const withdraw = page.getByRole("dialog", { name: "Withdraw this share?", exact: true });
     fake.git.failPagesRuns(2);
     const before = reruns();
@@ -153,13 +160,13 @@ test("D-427: Turn on, Share, Withdraw, Publish and Turn off show their real step
     await expect(withdraw).toHaveCount(0, { timeout: 60_000 });
     expect(reruns()).toBe(before + 2);
     expect(uploads()).toBe(uploaded);
-    await share.press("Escape");
-    await expect(share).toHaveCount(0);
+    await details.press("Escape");
+    await expect(details).toHaveCount(0);
 
     // 4. Publish a note: Prepare the notes → Upload them → GitHub updates your website.
     await files();
     const lisbon = page.getByRole("treeitem", { name: /^Lisbon/ });
-    if (!(await lisbon.isVisible())) { await page.getByRole("treeitem", { name: "trips", exact: true }).click(); await page.keyboard.press("ArrowRight"); }
+    if (!(await lisbon.isVisible())) { await page.getByRole("treeitem", { name: /^trips(, Shared)?$/ }).click(); await page.keyboard.press("ArrowRight"); }
     await lisbon.click();
     await lisbon.press("Enter");
     await expect(page.getByRole("textbox", { name: "Note", exact: true })).toContainText("Tram 28");

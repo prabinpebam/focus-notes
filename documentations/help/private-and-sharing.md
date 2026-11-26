@@ -35,17 +35,20 @@ On Windows, choose **Copy share information**, **Copy link**, or **Copy access c
 
 Retrying a failed publication in the same dialog reuses the saved share. Opening **Share…** again starts an independent share; it does not replace the earlier link. With **Include notes added later** off, a folder share includes only the reviewed note identities, not another note later created at the same path.
 
-**Not available yet:** shared-before actions, adding newer notes to an earlier share, first-site setup from this dialog and full review of very large folders. Change… and template editing aren't part of this dialog. **Settings → Sharing** holds the share settings (your site, **Share information**, **Turn off sharing…**) and **Site appearance**.
+**Not available yet:** first-site setup from this dialog and full review of very large folders. Change… and template editing aren't part of this dialog. **Settings → Sharing** holds the share settings (your site, **Share information**, **Turn off sharing…**) and **Site appearance**.
 
 ## See what's shared and copy it again
 
 In **Files**, a shared note or folder shows a share icon at the end of its row, and a published note shows a globe. A note that's both shows both. Point to the icons to see their name. They show in **Opened files**, **Pinned**, **Recent** and the list of notes.
 
-To copy a share again, open the shared item's row menu and choose **Share details…**. For the note you're writing, use **⋯ → Note → Share details…**. The dialog lists each of its shares that still works:
+To copy a share again, open the shared item's row menu and choose **Share details…** or **Share…**: on a shared item, both open the same dialog. For the note you're writing, use **⋯ → Note → Share details…**. The dialog lists each of its shares that still works:
 
 - **Copy** copies its link, its access code or its share information.
 - **Extend** gives it 7, 30 or 90 more days, or no end.
 - **Withdraw** turns it off after you confirm. Its icon goes once nothing shares the item.
+- **Add them** shows on a folder's share when notes were added to the folder after you shared it. Choose it to add them to that share.
+
+To make another, separate share of the same item, choose **Share again…**.
 
 Only shared items offer **Share details…**. For a published note, use **Copy public link** and **Unpublish** in the same menus.
 

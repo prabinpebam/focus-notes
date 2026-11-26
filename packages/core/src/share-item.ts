@@ -9,7 +9,8 @@ import type { ViewModelRegistry } from "./view-models.ts";
 import { sharingAvailable, type AccessBridge } from "./share-manage.ts";
 import { findNode, joinPath, rootOf, stemOf, type TreeNode } from "./workspace.ts";
 import { publicLinkOf } from "./public-link-app.ts";
-import { audienceState, expiryFrom, expiryUntil, itemInviteText, passcodeProblem, type Audience, type ExpiryChoice } from "@focus-notes/seal/access";
+import { liveSharesOf } from "./share-details.ts";
+import { expiryFrom, expiryUntil, itemInviteText, passcodeProblem, type ExpiryChoice } from "@focus-notes/seal/access";
 
 interface ReviewRow {
   id: string;
@@ -56,8 +57,6 @@ export interface ItemShareState {
   accessCode: string;
   templateInvalid: boolean;
   reviewFocus: string;
-  historyOpen: boolean;
-  confirmId: string;
   signedOut: boolean;
   resumeAction: string;
   startedAt: number;
@@ -76,7 +75,7 @@ export const ITEM_SHARE_CLOSED: ItemShareState = {
   later: false, expiry: "30d", until: "", mode: "generate", own: "",
   reviewOpen: false, expanded: [], counting: false, preparing: false, loadFailed: false, notes: 0, folders: 0, contents: [], problem: "",
   id: "", busy: false, ready: false, generated: "", wordsId: "", wordsBusy: false, status: "", information: "", accessCode: "", templateInvalid: false, reviewFocus: "",
-  historyOpen: true, confirmId: "", signedOut: false, resumeAction: "", startedAt: 0, step: 0, totalSteps: 4, waitingId: "",
+  signedOut: false, resumeAction: "", startedAt: 0, step: 0, totalSteps: 4, waitingId: "",
   published: false, publicUrl: "", setup: "",
 };
 
@@ -106,12 +105,6 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
   let wordsGeneration = 0;
   const editable = () => state().open && !state().busy && !state().wordsBusy && !state().id;
   const edit = (patch: Partial<ItemShareState>) => { if (editable()) set(patch); };
-  const matchesItem = (s: AppState, g: Audience) => {
-    const d = s.ui.share.item, root = rootOf(s.workspace.tree, d.path);
-    const relative = root ? d.path.slice(root.path.length).split(/[\\/]/).filter(Boolean).join("/") : "";
-    return Boolean(g.item && g.item.path === relative && g.item.folder === d.folder);
-  };
-  const row = (id: string) => store.state.ui.share.listing?.grants.find((g) => g.id === id && matchesItem(store.state, g));
   const progress = shareProgress(store);
   /** Moves the stepper (D-427) with the desktop's phases while `work` runs. */
   const withSteps = async <T>(work: () => Promise<T>): Promise<T> => {
@@ -201,11 +194,13 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
     }
   };
 
-  reg<{ path?: string }>("share.item.open", async ({ path }) => {
+  reg<{ path?: string; again?: boolean }>("share.item.open", async ({ path, again }) => {
     const tree = store.state.workspace.tree;
     const target = path ?? store.state.note.path;
     const node = target ? findNode(tree, target)?.node : undefined;
     if (!target || !node) throw new Error(catalog.format("share.state.deleted"));
+    // D-431: an item that's already shared has one dialog, Share details…; its Share again comes back here.
+    if (!again && liveSharesOf(store.state, target).length) { await commands.run("share.details.open", { path: target }); return; }
     const current = ++generation;
     const pending = state().waitingId;
     if (pending && access?.cancelReady) await access.cancelReady(pending);
@@ -282,68 +277,6 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
   reg("share.item.review", () => set({ reviewOpen: true }));
   reg<{ id: string }>("share.item.focusReview", ({ id }) => set({ reviewFocus: id }));
   reg("share.item.newWords", prepareWords);
-  reg("share.item.toggleHistory", () => set({ historyOpen: !state().historyOpen }));
-  reg("share.item.addThem", async () => {
-    const d = state(), current = generation, root = rootOf(store.state.workspace.tree, d.path);
-    if (!d.open || d.busy || d.preparing || d.loadFailed || d.wordsBusy || d.counting || !access?.ready || root?.id !== "private") return;
-    const grants = (store.state.ui.share.listing?.grants ?? []).filter((g) => matchesItem(store.state, g) && g.unsharedNotes?.length);
-    const notes = d.contents.filter((r) => !r.folder).map((r) => r.id.slice(root.path.length).split(/[\\/]/).filter(Boolean).join("/"));
-    set({ busy: true, problem: "", status: catalog.format("share.item.adding"), startedAt: Date.now(), step: 1, totalSteps: 2 });
-    try {
-      if (!(await flush()) || current !== generation) throw new Error("access:save.failed");
-      for (const g of grants) {
-        if (current !== generation) return;
-        const listing = await tracker.run("share.item.addNotes", "share.item.adding", () => access.apply({ op: "addItemNotes", id: g.id, notes }));
-        if (current !== generation) return;
-        store.update((s) => ({ ...s, ui: { ...s.ui, share: { ...s.ui.share, listing } } }));
-        set({ step: 2, waitingId: g.id });
-        await tracker.run("share.item.publish", "share.item.publishing", () => access.ready!(g.id));
-      }
-      if (current === generation) set({ status: catalog.format("share.item.added") });
-    } catch (error) { if (current === generation) fail(error); }
-    finally { if (current === generation) set({ busy: false, waitingId: "" }); }
-  });
-  reg<{ id: string; what: string }>("share.item.row", async ({ id, what }) => {
-    const g = row(id), current = generation;
-    if (!state().open || state().busy || state().preparing || state().loadFailed || state().wordsBusy || !g) return;
-    if (what === "withdraw") { set({ confirmId: id }); return; }
-    if (what !== "link" || !g.link || !access?.ready) throw new Error(catalog.format("share.item.methodUnavailable"));
-    set({ busy: true, problem: "", status: catalog.format("share.item.publishing"), startedAt: Date.now(), step: 1, totalSteps: 2, waitingId: id });
-    try {
-      await tracker.run("share.item.publish", "share.item.publishing", () => access.ready!(id));
-      if (current !== generation) return;
-      set({ step: 2 });
-      await tracker.run("share.item.handoff", "share.item.handingOff", () => current === generation ? access.copy(id, "link") : Promise.resolve());
-      if (current === generation) set({ status: catalog.format("share.item.copied.link") });
-    } catch (error) { if (current === generation) fail(error); }
-    finally { if (current === generation) set({ busy: false, waitingId: "" }); }
-  });
-  reg<{ open: boolean }>("share.item.setConfirmOpen", ({ open }) => { if (!open && !state().busy) set({ confirmId: "" }); });
-  reg("share.item.withdraw", async () => {
-    const id = state().confirmId, current = generation;
-    if (!access || state().busy || !row(id)) return;
-    set({ busy: true, problem: "" });
-    progress.start("withdraw");
-    progress.step("save");
-    try {
-      const listing = await tracker.run("share.item.withdraw", "share.item.withdrawing", () => withSteps(async () => {
-        // A Retry after the website update failed carries on from there: the share is already stopped.
-        const done = row(id) && audienceState(row(id)!) !== "active" && access.redeploy ? { ...store.state.ui.share.listing!, id, deployed: await access.redeploy() } : await access.apply({ op: "withdraw", id });
-        if (done.deployed === false) {
-          // Saved here already: the list shows it withdrawn, so Retry only updates the website.
-          const { id: _, deployed: __, ...saved } = done;
-          if (current === generation) store.update((s) => ({ ...s, ui: { ...s.ui, share: { ...s.ui.share, listing: saved } } }));
-          throw new Error("sharing:pages");
-        }
-        return done;
-      }));
-      progress.done();
-      if (current !== generation) return;
-      store.update((s) => ({ ...s, ui: { ...s.ui, share: { ...s.ui.share, listing } } }));
-      set({ confirmId: "", ...(id === state().id ? { ready: false, information: "" } : {}), status: catalog.format("share.item.withdrawn") });
-    } catch (error) { if (current === generation) fail(error); }
-    finally { if (current === generation) set({ busy: false }); }
-  });
   reg("share.item.restore", async () => {
     if (!commands.describe("files.showDeleted").enabled) {
       set({ problem: catalog.format("share.item.restoreUnavailable") });
@@ -475,10 +408,8 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
       open: BOOL, title: STR, name: STR, folder: BOOL, icon: STR, detail: STR, badge: STR,
       id: STR, busy: BOOL, ready: BOOL, generated: STR, wordsId: STR, wordsBusy: BOOL, status: STR, information: STR, controlsLocked: BOOL,
       primaryLabel: STR, macos: BOOL, reviewFocus: STR,
-      dialogOpen: BOOL, publishedOpen: BOOL, publicUrl: STR, copyDisabled: BOOL, copyReason: STR, setupVisible: BOOL, setupMessage: STR, setupAction: STR, setupFixable: BOOL, historyOpen: BOOL, hasHistory: BOOL, historyCount: NUM, confirmOpen: BOOL, signedOut: BOOL, progress: STR, withdrawLabel: STR,
-      newerCount: NUM, hasNewer: BOOL,
+      dialogOpen: BOOL, publishedOpen: BOOL, publicUrl: STR, copyDisabled: BOOL, copyReason: STR, setupVisible: BOOL, setupMessage: STR, setupAction: STR, setupFixable: BOOL, signedOut: BOOL, progress: STR,
       restoreDisabled: BOOL, restoreReason: STR,
-      history: { type: "array", items: { type: "object", properties: { id: STR, methods: STR, detail: STR, badge: STR, link: BOOL, active: BOOL } } },
       lines: { type: "array", items: { type: "object", properties: { id: STR, text: STR, lead: STR, code: STR, hasCode: BOOL } } },
       templateInvalid: BOOL,
       actionsDisabled: BOOL, actionReason: STR, controlReason: STR,
@@ -500,16 +431,7 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
       const blockedReason = deleted ? catalog.format("share.state.deleted") : d.setup ? catalog.format(`share.item.setup.${d.setup}`) : root?.id !== "private" ? catalog.format("share.item.privateOnly")
         : !d.link && !d.passcode ? catalog.format("share.dialog.keepOne") : d.counting ? catalog.format("share.dialog.counting") : "";
       const expanded = new Set(d.expanded);
-      const history = (s.ui.share.listing?.grants ?? []).filter((g) => matchesItem(s, g)).map((g) => {
-        const status = audienceState(g);
-        const date = (value: string) => new Intl.DateTimeFormat("en", { day: "numeric", month: "short" }).format(new Date(value));
-        return { id: g.id, methods: catalog.format(`share.manage.ways.${g.link && g.passcode ? "both" : g.link ? "link" : g.passcode ? "passcode" : "none"}`),
-          detail: catalog.format(g.expiresAt ? "share.item.historyDetail" : "share.item.historyNoExpiry", { created: date(g.createdAt), expires: g.expiresAt ? date(g.expiresAt) : "" }),
-          badge: catalog.format(`share.item.history.${status}`), link: g.link,
-          active: status === "active" || status === "soon" };
-      });
       const elapsed = d.startedAt ? Math.floor((Date.now() - d.startedAt) / 1000) : 0;
-      const newerCount = new Set((s.ui.share.listing?.grants ?? []).filter((g) => matchesItem(s, g)).flatMap((g) => g.unsharedNotes ?? [])).size;
       const visible: ReviewRow[] = [];
       let hiddenBelow = Number.POSITIVE_INFINITY;
       for (const row of d.contents) {
@@ -531,18 +453,15 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
       }) : [];
       return {
         ...d, lines,
-        dialogOpen: d.open && !d.published && !d.confirmId && !s.ui.share.template.open, confirmOpen: Boolean(d.confirmId),
-        history, hasHistory: history.length > 0, historyCount: history.length,
-        newerCount, hasNewer: newerCount > 0,
+        dialogOpen: d.open && !d.published && !s.ui.share.template.open,
         restoreDisabled: !commands.describe("files.showDeleted").enabled, restoreReason: catalog.format("share.item.restoreUnavailable"),
-        withdrawLabel: catalog.format(d.problem && progress.get().op === "withdraw" && progress.get().failed ? "commit.retry" : "share.withdraw.confirm"),
         progress: d.busy && elapsed >= 3 ? catalog.format("share.item.progress", { step: d.step, total: d.totalSteps, seconds: elapsed }) : "",
         controlsLocked: d.busy || d.wordsBusy || Boolean(d.id), macos: platform === "macos",
         controlReason: catalog.format(d.id ? "share.item.controlsSaved" : d.wordsBusy ? "share.item.wordsPreparing" : "share.item.creating"),
         actionsDisabled: d.busy || d.preparing || d.loadFailed || d.wordsBusy || Boolean(blockedReason),
         actionReason: d.preparing ? catalog.format("share.item.preparing") : d.loadFailed ? catalog.format("share.item.unavailable") : d.busy ? catalog.format("share.item.publishing") : d.wordsBusy ? catalog.format("share.item.wordsPreparing") : blockedReason,
         retrying: d.preparing && d.loadFailed,
-        preparingVisible: d.preparing && !d.loadFailed && !history.length && s.tasks.findLast(t => t.target === "share.item.prepare")?.phase === "on",
+        preparingVisible: d.preparing && !d.loadFailed && s.tasks.findLast(t => t.target === "share.item.prepare")?.phase === "on",
         primaryLabel: catalog.format("share.dialog.primary", { system: platform }),
         title: catalog.format("share.item.title", { name: d.name }),
         countingVisible: d.counting && s.tasks.some((t) => t.target === "share.item.count" && t.phase === "on"),

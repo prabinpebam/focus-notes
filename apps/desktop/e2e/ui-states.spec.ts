@@ -678,7 +678,7 @@ test("Files distinguishes collapsed content from no matches and replaces known-e
   } finally { await closeTestApp(l); }
 });
 
-test("Share item delays its own section, retains choices and history through failed reads and scoped Retry", async () => {
+test("Share item delays its own section, retains choices through failed reads and scoped Retry", async () => {
   const { dirs } = instance();
   await configureSharing(dirs);
   const note = join(dirs.docs, "private", "notes", "welcome.md");
@@ -707,11 +707,8 @@ test("Share item delays its own section, retains choices and history through fai
         await new Promise(resolve => setTimeout(resolve, 1100));
         if ([1, 2, 4, 5].includes(request)) throw new Error("private-path-and-token");
         const listing = await original(event, ...args);
-        return { ...listing, available: true, localReview: false, site: "https://sharing.test/", vault: true, grants: [{
-          id: "ghistory001", name: "Welcome", scope: { all: false, notes: ["welcome.md"], folders: [] },
-          createdAt: "2026-10-01T00:00:00.000Z", link: true, passcode: false, generated: false,
-          item: { path: "welcome.md", label: "Welcome", folder: false, includeLater: false },
-        }] };
+        // Never shared: Share… stays the form (a shared item opens Share details instead, D-431).
+        return { ...listing, available: true, localReview: false, site: "https://sharing.test/", vault: true, grants: [] };
       });
     });
     const open = async () => {
@@ -745,7 +742,7 @@ test("Share item delays its own section, retains choices and history through fai
     expect(await error.evaluate(el => el === Reflect.get(globalThis, "uiStatesRetainedShareError"))).toBe(true);
     expect(await outcomes()).not.toContain("Didn't finish");
     await error.getByRole("button", { name: "Retry", exact: true }).click();
-    const history = share.getByRole("button", { name: "Shared before · 1", exact: true });
+    const history = share.getByRole("radiogroup", { name: "Expires in", exact: true });
     await expect(history).toBeVisible();
     await expect(error).toHaveCount(0);
     await l.page.keyboard.press("Escape");

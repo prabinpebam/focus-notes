@@ -522,7 +522,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   let sitePublishedUrl: ((path: string) => string | undefined) | undefined;
   registerItemShare({ store, catalog, commands, viewModels, tracker, access: bridge.access, platform: bridge.platform, flush, toast, publishedUrl: (path) => sitePublishedUrl?.(path), ...(bridge.copyText ? { copyText: (text: string) => bridge.copyText!(text) } : {}) });
   registerSharingSettings({ store, catalog, commands, viewModels, tracker, access: bridge.access });
-  registerShareDetails({ store, catalog, commands, viewModels });
+  registerShareDetails({ store, catalog, commands, viewModels, tracker, access: bridge.access, flush });
   registerShareProgressView(viewModels, catalog);
   const siteAppearance = registerSiteAppearance({ store, catalog, commands, viewModels, tracker, access: bridge.access, toast });
   registerSharingPeople({ store, catalog, commands, viewModels, tracker, access: bridge.access });

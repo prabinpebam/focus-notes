@@ -181,7 +181,7 @@ export const MEASURE_NAMES: readonly string[] = [
   ...["history.restore", "history.undo", "sharing.publishDraft", "sharing.preview", "sharing.previewSave", "sharing.invite", "sharing.change",
     "project.create", "project.open", "project.pin", "project.reveal", "project.delete", "project.deleteExport", "project.deleteCheck",
     "share.item.words", "share.item.count", "share.item.addNotes", "share.item.publish", "share.item.handoff",
-    "share.item.withdraw", "share.item.create", "share.item.reveal"].map(t => `focus-notes:${t}`),
+    "share.item.create", "share.item.reveal"].map(t => `focus-notes:${t}`),
   ...["note.save", "note.convert", "conflict", "import.confirm", "notes.export", "unlock.remember", "unlock.submit", "account.signOut", "workspace.remove", "files.copyItem", "files.import", "repoBackup.private", "repoBackup.public", "feedback.send", "note.print"].map((t) => `focus-notes:${t}`),
   // The first run's waits (PRF-13, D-149): FIRST_RUN_WAITS in first-run-app.ts.
   ...["git", "prepare", "account", "signIn", "identity", "findNotes", "folder", "chooseFolder", "clone", "create", "open", "strength", "copies", "useCopy"].map((t) => `focus-notes:firstRun.${t}`),

@@ -200,7 +200,7 @@ for (const theme of ["light", "dark"] as const) {
       await scheme(page, theme);
       const menu = async (name = "trips") => {
         await page.keyboard.press("Control+Shift+E");
-        await page.getByRole("treeitem", { name, exact: true }).click({ button: "right" });
+        await page.getByRole("treeitem", { name: new RegExp(`^${name}(, Shared)?$`) }).click({ button: "right" });
         await expect(page.getByRole("menuitem", { name: "Share…", exact: true })).toBeVisible();
       };
       await menu();
@@ -251,36 +251,39 @@ for (const theme of ["light", "dark"] as const) {
       await shot(l, theme, "17-share-information-copied");
       await page.keyboard.press("Escape");
       await menu();
+      // D-431: Share… on a shared item opens its Share details.
       await page.getByRole("menuitem", { name: "Share…", exact: true }).click();
-      await expect(share).toBeVisible();
+      const details = page.getByRole("dialog", { name: "Share details", exact: true });
+      await expect(details).toBeVisible();
       await page.waitForTimeout(800);
-      await shot(l, theme, "18-share-dialog-already-shared");
-      await share.getByRole("button", { name: "Copy link", exact: true }).first().click();
-      await expect(share.getByText("Link copied.", { exact: true })).toBeVisible({ timeout: 30_000 });
+      await shot(l, theme, "18-share-details-already-shared");
+      await details.getByRole("button", { name: "Copy", exact: true }).first().click();
+      await page.getByRole("menuitem", { name: "Copy link", exact: true }).click();
+      await expect(details.getByText("Copied.", { exact: true })).toBeVisible({ timeout: 30_000 });
       await shot(l, theme, "19-share-link-copied");
       await page.keyboard.press("Escape");
       await step("20 newer note not shared", async () => {
         write(join(priv, "notes", "trips", "New travel.md"), "# New travel\n\nA later sample note.\n");
         git(priv, "add", "-A"); git(priv, "commit", "-qm", "Add later note");
         await page.keyboard.press("Control+Shift+E");
-        await page.getByRole("treeitem", { name: "trips", exact: true }).click();
+        await page.getByRole("treeitem", { name: /^trips(, Shared)?$/ }).click();
         await page.keyboard.press("ArrowRight");
         await expect(page.getByRole("treeitem", { name: "New travel", exact: true })).toBeVisible();
-        await page.getByRole("treeitem", { name: "trips", exact: true }).click({ button: "right" });
+        await page.getByRole("treeitem", { name: /^trips(, Shared)?$/ }).click({ button: "right" });
         await page.getByRole("menuitem", { name: "Share…", exact: true }).click();
-        await expect(share.getByText("1 newer note isn't shared", { exact: true })).toBeVisible();
+        await expect(details.getByText("1 newer note isn't shared", { exact: true }).first()).toBeVisible();
         await shot(l!, theme, "20-share-newer-note-not-shared");
-        await share.getByRole("button", { name: "Add them", exact: true }).click();
-        await expect(share.getByText("Reviewed notes added to these shares.", { exact: true })).toBeVisible({ timeout: 30_000 });
+        await details.getByRole("button", { name: "Add them", exact: true }).first().click();
+        await expect(details.getByText("Reviewed notes added to these shares.", { exact: true })).toBeVisible({ timeout: 30_000 });
         await shot(l!, theme, "21-share-notes-added");
       });
       await step("22 withdraw", async () => {
-        await share.getByRole("button", { name: "Withdraw", exact: true }).first().click();
+        await details.getByRole("button", { name: "Withdraw", exact: true }).first().click();
         const confirm = page.getByRole("dialog", { name: "Withdraw this share?", exact: true });
         await expect(confirm).toBeVisible();
         await shot(l!, theme, "22-withdraw-confirm");
         await confirm.getByRole("button", { name: "Withdraw share", exact: true }).click();
-        await expect(share).toContainText("Its readers stop working after the next successful publication.");
+        await expect(details).toContainText("Withdrawn. It stops working after the next publish.");
         await shot(l!, theme, "23-share-withdrawn");
       });
       await page.keyboard.press("Escape");
@@ -296,7 +299,7 @@ for (const theme of ["light", "dark"] as const) {
         await l!.app.evaluate(() => { Reflect.set(globalThis, "shareOffline", true); });
         const rome = page.getByRole("treeitem", { name: /^Rome/ }).first();
         if (!(await rome.isVisible())) await page.keyboard.press("Control+Shift+E");
-        if (!(await rome.isVisible())) { await page.getByRole("treeitem", { name: "trips", exact: true }).click(); await page.keyboard.press("ArrowRight"); }
+        if (!(await rome.isVisible())) { await page.getByRole("treeitem", { name: /^trips(, Shared)?$/ }).click(); await page.keyboard.press("ArrowRight"); }
         await rome.click({ button: "right" });
         await page.getByRole("menuitem", { name: "Share…", exact: true }).click();
         const one = page.getByRole("dialog", { name: /^Share “Rome/ });

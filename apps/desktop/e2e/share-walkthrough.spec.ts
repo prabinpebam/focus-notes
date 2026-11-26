@@ -159,16 +159,18 @@ test("Share walk-through: turn on, share a folder with link and access code, rec
     // 7. Withdraw: confirm, then readers stop after the next publication.
     await files();
     await page.getByRole("treeitem", { name: /^trips(, Shared)?$/ }).click({ button: "right" });
+    // D-431: Share… on a shared item opens its Share details.
     await page.getByRole("menuitem", { name: "Share…", exact: true }).click();
-    await share.getByRole("button", { name: "Withdraw", exact: true }).first().click();
+    const details = page.getByRole("dialog", { name: "Share details", exact: true });
+    await details.getByRole("button", { name: "Withdraw", exact: true }).first().click();
     const withdraw = page.getByRole("dialog", { name: "Withdraw this share?", exact: true });
     await withdraw.getByRole("button", { name: "Withdraw share", exact: true }).click();
     await expect.poll(() => access().grants.find(g => g.id === grant.id)?.revokedAt).toBeTruthy();
     await expect.poll(async () => (await Promise.allSettled([reader().openLinkSession(grant.id, grant.link!.secret)]))[0]!.status, { timeout: 60_000 }).toBe("rejected");
-    // The confirmation must be gone before Escape, or the key lands outside Share and the dialog stays over Files.
+    // The confirmation must be gone before Escape, or the key lands outside Share details and the dialog stays over Files.
     await expect(withdraw).toHaveCount(0);
-    await share.press("Escape");
-    await expect(share).toHaveCount(0);
+    await details.press("Escape");
+    await expect(details).toHaveCount(0);
 
     // 8. Publish a note, then Unpublish it.
     await files();
