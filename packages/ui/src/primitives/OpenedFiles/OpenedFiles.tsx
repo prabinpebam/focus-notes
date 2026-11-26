@@ -87,7 +87,7 @@ export function OpenedFiles({ label, items, menu = [], menuLabel = "", closeLabe
     openTabMenu(itemId, true, e.clientX - r.left, e.clientY - r.top);
   };
   const menuItem = menuAt ? items.find((i) => i.id === menuAt.id) : undefined;
-  const sections: MenuSection[] = menuItem ? [...(tabMenuFor === menuItem.id ? tabMenu : []), { id: "openedTab", items: [{ id: CLOSE_TAB, label: closeTabLabel, icon: "dismiss" }] }] : [];
+  const sections: MenuSection[] = menuItem ? [...(tabMenuFor === menuItem.id ? tabMenu : []), { id: "openedTab", items: [{ id: CLOSE_TAB, label: closeTabLabel }] }] : [];
   const headerId = `${id}-header`;
   return (
     <section className={s.root} aria-labelledby={headerId} id={id} data-opened-files="">
