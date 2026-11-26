@@ -1,10 +1,11 @@
-import { audienceState } from "@focus-notes/seal/access";
+import { audienceState, expiryFrom, itemInviteText, type ExpiryChoice } from "@focus-notes/seal/access";
 import type { AppState } from "./app.ts";
 import type { CommandRegistry } from "./commands.ts";
 import type { MessageCatalog } from "./messages.ts";
 import type { Store } from "./store.ts";
 import type { TaskTracker } from "./tasks.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
+import { defaultItemShareTemplate } from "./share-item.ts";
 import { sharingAvailable, type AccessBridge, type ShareManageState } from "./share-manage.ts";
 import { opErrorCode } from "./bridge.ts";
 import { shareProgress, shareProgressView, type ShareOperation } from "./share-progress.ts";
@@ -136,6 +137,46 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
       set({ problem: op ? `${shareProgressView(progress.get(), catalog, 0).failedStep} ${failed}` : failed });
     } finally { off?.(); set({ busy: false }); }
   };
+  reg<{ id: string; action: string; useDefault?: boolean }>("sharing.copy", async ({ id, action, useDefault }) => {
+    const grant = store.state.ui.share.listing?.grants.find(g => g.id === id && g.item);
+    if (!access || !grant || audienceState(grant) !== "active") throw new Error(catalog.format("share.item.notReady"));
+    const what = action === "link" ? "link" : action === "accessCode" ? "accessCode" : "information";
+    const template = (!useDefault && store.state.ui.share.listing?.itemTemplate) || defaultItemShareTemplate(catalog);
+    if (what === "information") {
+      if (!useDefault && store.state.ui.share.listing?.itemTemplateInvalid) {
+        set({ problemRow: id, status: "", problem: "" });
+        return;
+      }
+      try {
+        itemInviteText(template, {
+          title: grant.item?.label || "Note",
+          ...(grant.link ? { link: "https://check.invalid/#x" } : {}),
+          ...(grant.passcode ? { site: "https://check.invalid/s/", accessCode: "AAAA-BBBB check" } : {}),
+          ...(grant.expiresAt ? { expires: "1 January 2030" } : {}),
+        });
+      } catch (err) {
+        const code = /access:([A-Za-z.]+)/.exec(err instanceof Error ? err.message : "")?.[1];
+        if (code?.startsWith("template.")) {
+          set({ problemRow: id, status: "", problem: "" });
+          return;
+        }
+      }
+    }
+    set({ problemRow: "" });
+    await work(async () => {
+      if (access.ready) await access.ready(id);
+      await access.copy(id, what, { template, ...(useDefault ? { useDefault: true } : {}) });
+    }, what === "information" && useDefault ? "copiedDefault" : "copied");
+  });
+  const expiries: ExpiryChoice[] = ["7d", "30d", "90d", "never"];
+  reg<{ id: string; action: string }>("sharing.extend", async ({ id, action }) => {
+    const expiry = expiries.find(value => value === action);
+    if (!access || !expiry) throw new Error(catalog.format("share.item.expiryInvalid"));
+    await work(async () => {
+      const { id: _, ...listing } = await access.apply({ op: "update", id, expiresAt: expiryFrom(expiry) });
+      store.update(s => ({ ...s, ui: { ...s.ui, share: { ...s.ui.share, listing } } }));
+    }, "extended");
+  });
   reg<Record<string, never>>("sharing.confirm", async () => {
     const { dialog, id } = state();
     if (dialog === "turnOff") {
