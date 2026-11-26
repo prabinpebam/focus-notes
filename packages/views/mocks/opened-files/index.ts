@@ -67,23 +67,37 @@ const modelFor = (open: Item[]) => {
     },
   };
 };
+// D-431 (owner, 26 November): shared, published and both as badges on the file icon, wherever the file shows.
+const MARKS: Record<string, Item> = {
+  "spec-ideas.md": { shared: true, siteLabel: "Shared" },
+  "public:garden.md": { published: true, siteLabel: "Published" },
+  "journal/weekly-review.md": { shared: true, published: true, siteLabel: "Shared and published" },
+  "roadmap.md": { shared: true, siteLabel: "Shared" },
+  "ideas/naming.md": { published: true, siteLabel: "Published" },
+} as unknown as Record<string, Item>;
+const marked = <T extends { id: string }>(items: T[]) => items.map((i) => ({ ...i, ...MARKS[i.id] }));
+const marksOpen = marked(data.opened.few.slice(0, 1).concat([data.opened.many[5]!, data.opened.many[4]!, data.opened.few[2]!]));
+const marksBase = modelFor(marksOpen);
+const marks = { ...marksBase, files: { ...marksBase.files, shortcuts: marked(marksBase.files.shortcuts as Item[]), items: marked(marksBase.files.items as Item[]) } };
 const before = { ...modelFor([]), files: { ...modelFor([]).files, shortcuts: [...section("pinned", "Pinned", data.pinned), ...section("recent", "Recent", data.recent)], items: data.files.items } };
 
 export const openedFilesMocks = {
   id: "openedFiles",
   label: "Mocks: Opened files (23 November, D-410)",
-  models: { ofBefore: before, ofAfter: modelFor(data.opened.few), ofMany: modelFor(data.opened.many), ofNone: modelFor(data.opened.none) },
+  models: { ofBefore: before, ofAfter: modelFor(data.opened.few), ofMany: modelFor(data.opened.many), ofNone: modelFor(data.opened.none), ofMarks: marks },
   views: {
     before: view("ofBefore", false, "openedFiles.beforeDoc"),
     after: view("ofAfter", true, "openedFiles.afterDoc"),
     many: view("ofMany", true, "openedFiles.manyDoc"),
     // With nothing open the component renders nothing (its "nothing open" fixture); an empty list has no item schema to check here.
     none: view("ofNone", false, "openedFiles.noneDoc"),
+    marks: view("ofMarks", true, "openedFiles.marksDoc"),
   },
   entries: [
     { id: "openedFiles.before", label: "0. Before: today's Files panel (open notes listed in Recent)", view: "before" },
     { id: "openedFiles.after", label: "1. Opened files above Pinned, the active one; Recent without them (hover, focus and ⋯ here)", view: "after" },
     { id: "openedFiles.many", label: "2. Many open, a long name truncated", view: "many" },
     { id: "openedFiles.none", label: "3. Nothing open: no section", view: "none" },
+    { id: "openedFiles.marks", label: "4. Shared, published and both: badges on the file icon (26 November, D-431)", view: "marks" },
   ] as Entry[],
 };

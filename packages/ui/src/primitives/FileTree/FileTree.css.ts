@@ -76,10 +76,24 @@ export const label = style({ flexGrow: 1, minWidth: 0, overflow: "hidden", textO
 // It gives way after the label, ending in an ellipsis, so the row keeps its end inset in a narrow window (spacing SP-4).
 export const description = style({ flexShrink: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: t.textMuted, fontSize: t.captionSize, fontWeight: t.weight, textTransform: "none" });
 globalStyle(`${row}[aria-selected="true"] :is(${chevron}, ${icon}, ${description})`, { color: t.selectionTextMuted });
-/** D-431: a file's shared and published icons at the row's end; muted like the description, never a chip. */
-export const siteMarks = style({ display: "inline-flex", flexShrink: 0, alignItems: "center", color: t.textMuted });
-export const siteIcons = style({ display: "inline-flex", alignItems: "center", gap: t.markGap });
-globalStyle(`${row}[aria-selected="true"] ${siteMarks}`, { color: t.selectionTextMuted });
+/**
+ * D-431 (owner, 26 November): the shared and published badges on the file icon's bottom-right corner.
+ * The icon is masked away around each badge by the knockout, so no border or fill separates them.
+ */
+export const glyph = style({ position: "relative", display: "inline-flex" });
+export const badges = style({ position: "absolute", inset: 0 });
+export const badge = style({
+  position: "absolute", display: "inline-flex", right: 0, bottom: `calc(-1 * ${t.iconBadgeOverhang})`,
+  selectors: { [`${glyph}[data-site-badges="shared published"] &[data-badge="published"]`]: { bottom: "auto", top: `calc(-1 * ${t.iconBadgeOverhang})` } },
+});
+globalStyle(`${badge} svg`, { display: "block", width: t.iconBadgeSize, height: t.iconBadgeSize });
+const badgeX = `calc(${t.iconSize} - ${t.iconBadgeSize} / 2)`;
+const badgeAt = `calc(${t.iconSize} + ${t.iconBadgeOverhang} - ${t.iconBadgeSize} / 2)`;
+const badgeTop = `calc(${t.iconBadgeSize} / 2 - ${t.iconBadgeOverhang})`;
+const knockout = `calc(${t.iconBadgeSize} / 2 + ${t.iconBadgeKnockout})`;
+const hole = (y: string) => `radial-gradient(circle at ${badgeX} ${y}, ${t.transparent} ${knockout}, ${t.iconBadgeKeep} ${knockout})`;
+globalStyle(`${glyph}[data-site-badges] > svg`, { maskImage: hole(badgeAt) });
+globalStyle(`${glyph}[data-site-badges="shared published"] > svg`, { maskImage: `${hole(badgeAt)}, ${hole(badgeTop)}`, maskComposite: "intersect" });
 /** The saving sign appears only after the wait sign's delay (Waits), so quick writes show nothing. */
 const appear = keyframes({ to: { visibility: "visible" } });
 export const pending = style({

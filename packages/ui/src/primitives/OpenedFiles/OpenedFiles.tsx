@@ -3,7 +3,7 @@ import { Button as AriaButton } from "react-aria-components";
 import { Icon } from "../Icon/Icon.tsx";
 import { MenuButton } from "../MenuButton/MenuButton.tsx";
 import { Tooltip } from "../Tooltip/Tooltip.tsx";
-import { SiteMarks } from "../FileTree/SiteMarks.tsx";
+import { FileGlyph, SiteMarksName } from "../FileTree/SiteMarks.tsx";
 import type { MenuSection, TreeItem } from "../../data.ts";
 import * as s from "./OpenedFiles.css.ts";
 
@@ -56,9 +56,9 @@ export function OpenedFiles({ label, items, menu = [], menuLabel = "", closeLabe
                 aria-labelledby={marked ? `${nameId} ${marksId}` : nameId}
                 onPress={() => onActivate?.({ id: item.id })}
               >
-                <span className={s.icon} aria-hidden="true"><Icon name="document" size="s" /></span>
+                <FileGlyph item={item} className={s.icon}><Icon name="document" size="s" /></FileGlyph>
                 <span className={s.name} id={nameId} dir="auto" title={item.title || item.label}>{item.label}</span>
-                {marked ? <SiteMarks item={item} nameId={marksId} /> : null}
+                {marked ? <SiteMarksName item={item} nameId={marksId} /> : null}
               </AriaButton>
               <Tooltip label={closeLabel}>
                 <AriaButton className={s.close} id={closeId} aria-label={closeLabel} aria-labelledby={`${closeId} ${nameId}`} onPress={() => onClose?.({ id: item.id })}>

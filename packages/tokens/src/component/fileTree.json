@@ -18,10 +18,25 @@
         "$type": "dimension",
         "$value": "{space.inlinePair}"
       },
-      "markGap": {
+      "iconBadgeSize": {
+        "$type": "dimension",
+        "$value": "{size.iconBadge}",
+        "$description": "A file's shared (person) or published (globe) badge on its icon's bottom-right corner (owner, 26 November; D-431). A file that's both has the globe above the person on the icon's end edge."
+      },
+      "iconBadgeOverhang": {
         "$type": "dimension",
         "$value": "{space.scale.xxs}",
-        "$description": "D-431: between a row's shared and published icons, tighter than the row's gap so the two read as one mark."
+        "$description": "How far a badge sits past its icon's bottom edge (the globe past the top when both), so it covers less of the icon; it stays inside the end edge, clear of the name."
+      },
+      "iconBadgeKnockout": {
+        "$type": "dimension",
+        "$value": "{border.hairline}",
+        "$description": "The ring cut out of the icon around a badge: a separation cue made of the surface itself (a mask), never a border or fill, so it holds on every row fill."
+      },
+      "iconBadgeKeep": {
+        "$type": "color",
+        "$value": "{color.text}",
+        "$description": "The opaque part of the icon's knockout mask: only its alpha is read."
       },
       "rowGap": {
         "$type": "dimension",

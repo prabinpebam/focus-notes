@@ -69,7 +69,8 @@ import { CloudCheckmark20Regular } from "@fluentui/react-icons/headless/svg/clou
 import { CloudOff20Regular } from "@fluentui/react-icons/headless/svg/cloud-off";
 import { ArrowDownload20Regular } from "@fluentui/react-icons/headless/svg/arrow-download";
 import { Circle20Regular } from "@fluentui/react-icons/headless/svg/circle";
-import { Globe20Regular } from "@fluentui/react-icons/headless/svg/globe";
+import { Globe20Regular, Globe12Filled } from "@fluentui/react-icons/headless/svg/globe";
+import { Person12Filled } from "@fluentui/react-icons/headless/svg/person";
 import { CalendarLtr20Regular } from "@fluentui/react-icons/headless/svg/calendar-ltr";
 import { Mail20Regular } from "@fluentui/react-icons/headless/svg/mail";
 import { Pin20Regular, Pin20Filled } from "@fluentui/react-icons/headless/svg/pin";
@@ -119,7 +120,7 @@ export const ICONS: Record<IconName, ComponentType<SVGProps<SVGSVGElement>>> = {
   // The save state (D-132): saved here, backing up, backed up, offline.
   cloud: Cloud20Regular, cloudUp: CloudArrowUp20Regular, cloudCheck: CloudCheckmark20Regular, cloudOff: CloudOff20Regular,
   // Setup (D-142): an app to install, a step not reached yet, a website.
-  download: ArrowDownload20Regular, circle: Circle20Regular, globe: Globe20Regular,
+  download: ArrowDownload20Regular, circle: Circle20Regular, globe: Globe20Regular, personBadge: Person12Filled, globeBadge: Globe12Filled,
   // Pinning Files open (D-161).
   pin: Pin20Regular, pinOff: PinOff20Regular, pinFilled: Pin20Filled, documentText: DocumentText20Regular,
   // Send feedback (D-203): the feedback itself, and that it was sent.
