@@ -23,7 +23,9 @@ test("D-431: a shared note is marked in Files; Share details… copies its link 
   git(priv, "add", "-A"); git(priv, "commit", "-qm", "Add fixture plan");
   let revision = "";
   let building: Promise<unknown> | undefined;
+  let requests = 0;
   const server = createServer(async (req, res) => {
+    requests++;
     try {
       const current = readFileSync(join(priv, "access.json"), "utf8");
       if (revision !== current) {
@@ -87,10 +89,16 @@ test("D-431: a shared note is marked in Files; Share details… copies its link 
     await expect(details.getByText("Rome", { exact: true })).toBeVisible();
     const grant = access().grants.find((g) => !g.owner)!;
     await l.app.evaluate(() => { const box = (globalThis as { memoryClipboard?: { text: string } }).memoryClipboard; if (box) box.text = ""; });
+    // D-433: Copy on an existing share is local: the clipboard has the link at once, the website is never read, and
+    // only Copy's own control could ever show pending (here none does).
+    const commits = git(priv, "rev-list", "--count", "HEAD").toString().trim(), seen = requests;
     await details.getByRole("button", { name: "Copy", exact: true }).click();
     await page.getByRole("menuitem", { name: "Copy link", exact: true }).click();
-    await expect(details.getByText("Copied.", { exact: true })).toBeVisible({ timeout: 30_000 });
-    expect(await copied()).toBe(`${site}s/#${grant.id}.${grant.link!.secret}`);
+    await expect.poll(copied, { timeout: 1_000 }).toBe(`${site}s/#${grant.id}.${grant.link!.secret}`);
+    await expect(details.getByText("Copied.", { exact: true })).toBeVisible({ timeout: 1_000 });
+    await expect(details.locator("[aria-busy='true']")).toHaveCount(0);
+    expect(requests).toBe(seen);
+    expect(git(priv, "rev-list", "--count", "HEAD").toString().trim()).toBe(commits);
     await expect(page.getByRole("dialog", { name: "Settings", exact: true })).toHaveCount(0);
 
     // Share… on the shared note opens the same dialog, never a second one.

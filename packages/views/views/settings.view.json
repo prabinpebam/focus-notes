@@ -883,9 +883,9 @@
                                     }
                                   },
                                   "children": [
-                                    { "type": "Button", "when": { "get": "p.pending" }, "props": { "label": { "t": "share.invite.cancelInvite" }, "size": "s", "busy": { "get": "vm.sharingPeople.busy" } }, "on": { "press": { "run": "sharing.inviteCancel", "args": { "id": { "get": "p.id" } } } } },
-                                    { "type": "Button", "when": { "get": "p.again" }, "props": { "label": { "t": "share.invite.again" }, "size": "s", "busy": { "get": "vm.sharingPeople.busy" } }, "on": { "press": { "run": "sharing.inviteAgain", "args": { "login": { "get": "p.login" }, "role": { "get": "p.role" } } } } },
-                                    { "type": "Button", "when": { "get": "p.revoked" }, "props": { "label": { "t": "share.invite.dismiss" }, "variant": "subtle", "size": "s", "busy": { "get": "vm.sharingPeople.busy" } }, "on": { "press": { "run": "sharing.inviteDismiss", "args": { "login": { "get": "p.login" } } } } }
+                                    { "type": "Button", "when": { "get": "p.pending" }, "props": { "label": { "t": "share.invite.cancelInvite" }, "size": "s", "busy": { "get": "p.cancelBusy" } }, "on": { "press": { "run": "sharing.inviteCancel", "args": { "id": { "get": "p.id" } } } } },
+                                    { "type": "Button", "when": { "get": "p.again" }, "props": { "label": { "t": "share.invite.again" }, "size": "s", "busy": { "get": "p.againBusy" } }, "on": { "press": { "run": "sharing.inviteAgain", "args": { "login": { "get": "p.login" }, "role": { "get": "p.role" } } } } },
+                                    { "type": "Button", "when": { "get": "p.revoked" }, "props": { "label": { "t": "share.invite.dismiss" }, "variant": "subtle", "size": "s", "busy": { "get": "p.dismissBusy" } }, "on": { "press": { "run": "sharing.inviteDismiss", "args": { "login": { "get": "p.login" } } } } }
                                   ],
                                   "on": {
                                     "titlePress": {
@@ -3915,9 +3915,9 @@
         "slots": {
           "footer": [{ "type": "Inline", "props": { "justify": "end", "gap": "inlineItem", "wrap": true }, "children": [
             { "type": "Button", "props": { "label": { "t": "remove.cancel" }, "variant": "secondary" }, "on": { "press": { "run": "workspace.setRemoveOpen", "args": { "open": false } } } },
-            { "type": "Button", "when": { "get": "vm.removeWorkspace.cleanupFailed" }, "props": { "label": { "t": "command.account.retryCleanup" }, "variant": "secondary", "busy": { "get": "vm.removeWorkspace.busy" } }, "on": { "press": { "run": "account.retryCleanup" } } },
-            { "type": "Button", "when": { "get": "vm.removeWorkspace.canRemove" }, "props": { "label": { "get": "vm.removeWorkspace.label" }, "variant": "danger", "busy": { "get": "vm.removeWorkspace.busy" } }, "on": { "press": { "run": "workspace.removeConfirm" } } },
-            { "type": "Button", "when": { "get": "vm.removeWorkspace.canSync" }, "props": { "label": { "t": "command.workspace.removeSync" }, "variant": "primary", "busy": { "get": "vm.removeWorkspace.busy" } }, "on": { "press": { "run": "workspace.removeSync" } } }
+            { "type": "Button", "when": { "get": "vm.removeWorkspace.cleanupFailed" }, "props": { "label": { "t": "command.account.retryCleanup" }, "variant": "secondary", "busy": { "get": "vm.removeWorkspace.cleanupBusy" } }, "on": { "press": { "run": "account.retryCleanup" } } },
+            { "type": "Button", "when": { "get": "vm.removeWorkspace.canRemove" }, "props": { "label": { "get": "vm.removeWorkspace.label" }, "variant": "danger", "busy": { "get": "vm.removeWorkspace.removeBusy" } }, "on": { "press": { "run": "workspace.removeConfirm" } } },
+            { "type": "Button", "when": { "get": "vm.removeWorkspace.canSync" }, "props": { "label": { "t": "command.workspace.removeSync" }, "variant": "primary", "busy": { "get": "vm.removeWorkspace.syncBusy" } }, "on": { "press": { "run": "workspace.removeSync" } } }
           ] }]
         },
         "children": [

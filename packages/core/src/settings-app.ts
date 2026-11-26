@@ -36,7 +36,7 @@ export interface SettingsState {
   /** Sign out of GitHub?, and whether Git's sign-in goes too (FRE-07). */
   signOut: { open: boolean; git: boolean; busy: boolean; drafts?: number; cleanupPending?: string[]; cleanupIssues?: CleanupIssue[] };
   /** Remove this workspace from this computer (FRE-07, PRV-02). */
-  remove: { open: boolean; busy: boolean; check?: RemovalCheck; drafts?: number };
+  remove: { open: boolean; busy: boolean; check?: RemovalCheck; drafts?: number; /** The pressed control while busy (D-356). */ pending?: "remove" | "cleanup" | "sync" };
   /** About's diagnostics: the report's preview (QLT-04). */
   diagnostics: DiagnosticsState;
   /** What takes focus when Settings opens: its categories, or Send feedback when that dialog closes back to it (D-203). */
@@ -193,20 +193,20 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
   reg("account.retryCleanup", async () => {
     if (!fr?.retryCleanup || state().signOut.busy || state().remove.busy) return;
     setSignOut({ busy: true });
-    if (state().remove.open) setRemove({ busy: true });
+    if (state().remove.open) setRemove({ busy: true, pending: "cleanup" });
     try {
       const status = await (tracker ? tracker.run("account.signOut", "task.cleanup", () => fr.retryCleanup!(), undefined, "fn:auth.signOut") : fr.retryCleanup());
       const pending = status.cleanupPending;
       setSignOut({ busy: false, ...status, open: !state().remove.open && pending.length > 0 });
       const removal = state().remove.check;
-      if (removal) setRemove({ busy: false, check: { ...removal, ...status } });
+      if (removal) setRemove({ busy: false, pending: undefined, check: { ...removal, ...status } });
       if (pending.length) return;
-      setRemove({ open: false, busy: false });
+      setRemove({ open: false, busy: false, pending: undefined });
       await checkAccount();
       toast(catalog.format("toast.cleanupCleared"));
     } catch {
       setSignOut({ busy: false });
-      setRemove({ busy: false });
+      setRemove({ busy: false, pending: undefined });
       toast(catalog.format("toast.cleanupFailed"), { tone: "error" });
     }
   });
@@ -243,7 +243,7 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
     if (!ws?.removal) return;
     setRemove({ busy: true });
     const c = await ws.removal().catch((): RemovalCheck => ({ state: "failed", waiting: 0, folder: store.state.workspace.folder ?? "", repositories: [] }));
-    setRemove({ busy: false, check: c });
+    setRemove({ busy: false, pending: undefined, check: c });
   };
   reg("workspace.remove", async () => {
     set({ open: false, remove: { open: true, busy: true } });
@@ -254,21 +254,21 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
   }, () => Boolean(ws?.removal));
   reg<{ open: boolean }>("workspace.setRemoveOpen", ({ open }) => { if (!open && !state().remove.busy) setRemove({ open: false }); });
   reg("workspace.removeSync", async () => {
-    setRemove({ busy: true });
+    setRemove({ busy: true, pending: "sync" });
     await commands.run("sync.now");
     await check();
   });
   reg("workspace.removeConfirm", async () => {
     const r = state().remove;
     if (!ws?.remove || r.busy || r.check?.state !== "ready") return;
-    setRemove({ busy: true });
+    setRemove({ busy: true, pending: "remove" });
     // The app's own part first: the recent note, and the first run at Your notes when the window starts again.
     const before = appState();
     await persistAppState({ firstRun: "notes", ...(Object.fromEntries(RECENT_STATE_KEYS.map((k) => [k, undefined])) as Partial<AppStateFile>) });
     const done = await (tracker ? tracker.run("workspace.remove", "task.removing", () => ws.remove!(), undefined, "fn:workspace.remove") : ws.remove()).catch((): RemovalCheck => ({ ...r.check!, state: "failed" }));
     if (done.state === "removed") return; // The window starts again.
     if (!done.cleanupPending?.length) await persistAppState({ firstRun: before.firstRun, ...Object.fromEntries(RECENT_STATE_KEYS.map((k) => [k, before[k]])) });
-    setRemove({ busy: false, check: done });
+    setRemove({ busy: false, pending: undefined, check: done });
   });
 
   // ---- view models ----
@@ -400,7 +400,7 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
     schema: {
       type: "object",
       properties: {
-        open: { type: "boolean" }, busy: { type: "boolean" }, state: { type: "string", enum: ["checking", "ready", "unpushed", "notGit", "notWorkspace", "failed", "removed"] },
+        open: { type: "boolean" }, busy: { type: "boolean" }, removeBusy: { type: "boolean" }, cleanupBusy: { type: "boolean" }, syncBusy: { type: "boolean" }, state: { type: "string", enum: ["checking", "ready", "unpushed", "notGit", "notWorkspace", "failed", "removed"] },
         message: { type: "string" }, canRemove: { type: "boolean" }, canSync: { type: "boolean" }, checking: { type: "boolean" }, label: { type: "string" },
         drafts: { type: "string" }, hasDrafts: { type: "boolean" },
         cleanupFailed: { type: "boolean" }, cleanupMessage: { type: "string" }, cleanupScopes: { type: "string" },
@@ -417,7 +417,7 @@ export function registerSettings<St extends S>({ store, bridge, catalog, command
           : st === "ready" ? catalog.format("remove.ready", { repos: repos.length > 1 ? catalog.format("remove.repos", { first: repos[0]!, second: repos[1]! }) : repos[0] ?? "", folder: c!.folder })
             : catalog.format(`remove.${st}`);
       return {
-        open: r.open, busy: r.busy, state: st, message, canRemove: st === "ready", canSync: st === "unpushed", checking: st === "checking", label: waitLabel(s, "workspace.remove", "command.workspace.removeConfirm"),
+        open: r.open, busy: r.busy, removeBusy: r.busy && r.pending === "remove", cleanupBusy: r.busy && r.pending === "cleanup", syncBusy: r.busy && r.pending === "sync", state: st, message, canRemove: st === "ready", canSync: st === "unpushed", checking: st === "checking", label: waitLabel(s, "workspace.remove", "command.workspace.removeConfirm"),
         cleanupFailed: Boolean(c?.cleanupPending?.length), cleanupMessage: cleanupMessage(c?.cleanupPending, c?.cleanupIssues), cleanupScopes: c?.cleanupPending?.join(", ") ?? "",
         // Said once it can be removed: then it's part of what Remove deletes.
         ...dropsDrafts(r.drafts, st === "ready"),

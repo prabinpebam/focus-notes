@@ -316,14 +316,14 @@
                 "children": [
                   { "type": "Inline", "when": { "get": "row.hasNewer" }, "props": { "gap": "inlineItem", "wrap": true }, "children": [
                     { "type": "StatusRow", "props": { "message": { "get": "row.newer" }, "tone": "info", "icon": "info" } },
-                    { "type": "Button", "props": { "label": { "t": "share.dialog.addThem" }, "size": "s", "busy": { "get": "vm.shareDetails.busy" } }, "on": { "press": { "run": "share.details.addThem", "args": { "id": { "get": "row.id" } } } } }
+                    { "type": "Button", "props": { "label": { "t": "share.dialog.addThem" }, "size": "s", "busy": { "get": "row.addBusy" } }, "on": { "press": { "run": "share.details.addThem", "args": { "id": { "get": "row.id" } } } } }
                   ] },
                   { "type": "Inline", "props": { "gap": "inlinePair", "wrap": true }, "children": [
-                    { "type": "MenuButton", "props": { "variant": "text", "label": { "t": "shareDetails.copy" }, "text": { "get": "vm.shareDetails.copyLabel" }, "sections": { "get": "row.copyMenu" }, "placement": "bottom end", "busy": { "get": "vm.shareDetails.busy" } },
+                    { "type": "MenuButton", "props": { "variant": "text", "label": { "t": "shareDetails.copy" }, "text": { "get": "vm.shareDetails.copyLabel" }, "sections": { "get": "row.copyMenu" }, "placement": "bottom end", "busy": { "get": "row.copyBusy" } },
                       "on": { "action": { "run": "sharing.copy", "args": { "id": { "get": "row.id" }, "action": { "get": "event.id" } } } } },
-                    { "type": "MenuButton", "props": { "variant": "text", "label": { "t": "share.settings.extend" }, "text": { "get": "vm.shareDetails.extendLabel" }, "sections": { "get": "row.extendMenu" }, "placement": "bottom end", "busy": { "get": "vm.shareDetails.busy" } },
+                    { "type": "MenuButton", "props": { "variant": "text", "label": { "t": "share.settings.extend" }, "text": { "get": "vm.shareDetails.extendLabel" }, "sections": { "get": "row.extendMenu" }, "placement": "bottom end", "busy": { "get": "row.extendBusy" } },
                       "on": { "action": { "run": "sharing.extend", "args": { "id": { "get": "row.id" }, "action": { "get": "event.id" } } } } },
-                    { "type": "Button", "props": { "label": { "t": "share.row.withdraw" }, "size": "s", "busy": { "get": "vm.shareDetails.busy" }, "feedback": "border" },
+                    { "type": "Button", "props": { "label": { "t": "share.row.withdraw" }, "size": "s", "busy": { "get": "row.withdrawBusy" }, "feedback": "border" },
                       "on": { "press": { "run": "sharing.confirmOpen", "args": { "kind": "withdraw", "id": { "get": "row.id" } } } } }
                   ] }
                 ]

@@ -96,13 +96,14 @@ it("G2.3: a push Pages doesn't serve yet never stores readiness; Retry deploys a
   } finally { await rm(t.directory, { recursive: true, force: true }); }
 });
 
-it("24 Nov: a failed first Pages run is re-run once and setup finishes; it reports the deploy wait after the push", async () => {
+it("24/26 Nov: a failed Pages run starts once more as a fresh run (never a re-run in place) and setup finishes; it reports the deploy wait after the push", async () => {
   const t = await fixture();
   try {
     t.git.failPagesRuns(1);
     const runtime = fastRuntime(t);
     await expect(runtime.enable("notes-site")).resolves.toMatchObject({ phase: "ready" });
-    expect(t.github.calls.filter(c => /rerun-failed-jobs$/.test(c.path))).toHaveLength(1);
+    expect(t.github.calls.filter(c => /\/actions\/workflows\/pages\.yml\/dispatches$/.test(c.path))).toHaveLength(1);
+    expect(t.github.calls.filter(c => /rerun-failed-jobs$/.test(c.path))).toHaveLength(0);
     expect(t.steps.indexOf("deploy")).toBeGreaterThan(t.steps.indexOf("push"));
   } finally { await rm(t.directory, { recursive: true, force: true }); }
 });

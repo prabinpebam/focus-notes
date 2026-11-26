@@ -88,5 +88,5 @@
     ]
   },
   "line": "GitHub is updating your website. This usually takes 1–2 minutes. 0:38",
-  "problem": "Stopped at “GitHub updates your website”. The steps before it are done and kept. GitHub couldn’t update your website, even after trying twice. Your website keeps its old look until this finishes. Retry in a minute."
+  "problem": "Stopped at “GitHub updates your website”. The steps before it are done and kept. GitHub’s build of your website failed twice. Your website keeps its old look until it builds. Retry."
 }

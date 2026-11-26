@@ -73,9 +73,9 @@
           { "type": "Text", "when": { "get": "vm.share.error" }, "props": { "value": { "t": "share.reader.error" }, "tone": "danger", "announce": true } },
           { "type": "Text", "when": { "get": "vm.share.empty" }, "props": { "value": { "t": "share.reader.error.empty" }, "tone": "danger", "announce": true } },
           { "type": "Inline", "props": { "gap": "inlineItem", "wrap": true }, "children": [
-            { "type": "Button", "id": "open", "props": { "label": { "t": "share.reader.open" }, "variant": "primary", "busy": { "get": "vm.share.busy" } },
+            { "type": "Button", "id": "open", "props": { "label": { "t": "share.reader.open" }, "variant": "primary", "busy": { "get": "vm.share.openBusy" } },
               "on": { "press": [{ "run": "share.submit", "args": { "value": { "get": "local.accessCode" }, "name": { "get": "local.name" }, "passcode": { "get": "local.passcode" } } }, { "set": "local.passcode", "to": "" }, { "set": "local.accessCode", "to": "" }] } },
-            { "type": "Button", "id": "openRemember", "props": { "label": { "t": "share.reader.openRemember" }, "busy": { "get": "vm.share.busy" } },
+            { "type": "Button", "id": "openRemember", "props": { "label": { "t": "share.reader.openRemember" }, "busy": { "get": "vm.share.rememberBusy" } },
               "on": { "press": [{ "run": "share.submit", "args": { "value": { "get": "local.accessCode" }, "name": { "get": "local.name" }, "passcode": { "get": "local.passcode" }, "remember": true } }, { "set": "local.passcode", "to": "" }, { "set": "local.accessCode", "to": "" }] } }
           ] },
           { "type": "Button", "when": { "expr": { "!": { "get": "vm.share.legacy" } } }, "props": { "label": { "t": "share.reader.legacy" }, "variant": "subtle" },

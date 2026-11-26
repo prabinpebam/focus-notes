@@ -321,7 +321,7 @@ contextBridge.exposeInMainWorld("focusNotes", {
         return () => ipcRenderer.removeListener("sharing:setupStep", handler);
       },
     },
-    copy: (id: string, what: string, invite?: unknown) => ipcRenderer.invoke("access:copy", id, what, invite),
+    copy: (id: string, what: string, invite?: unknown, options?: unknown) => ipcRenderer.invoke("access:copy", id, what, invite, options),
   },
   // Publish and Unpublish (G3): the main process stages, seals, leak-checks, pushes and waits for the exact deploy.
   publishing: {

@@ -49,6 +49,9 @@ export interface ShareState extends Record<string, unknown> {
   /** Open was pressed with a field left empty. */
   empty: boolean;
   busy: boolean;
+  /** Which of Open and Open and remember is pending while busy (D-356); the other stays at rest. */
+  openBusy: boolean;
+  rememberBusy: boolean;
   legacy: boolean;
   remember: boolean;
   /** Signed out on this device, by this tab or another. */
@@ -70,6 +73,8 @@ export const SHARE_VIEW_MODEL: { id: string; schema: JsonSchema & { type: "objec
       error: { type: "boolean" },
       empty: { type: "boolean" },
       busy: { type: "boolean" },
+      openBusy: { type: "boolean" },
+      rememberBusy: { type: "boolean" },
       legacy: { type: "boolean" },
       remember: { type: "boolean" },
       signedOut: { type: "boolean" },
@@ -156,7 +161,7 @@ export interface ShareReaderOptions {
 export function createShareReader(o: ShareReaderOptions) {
   const now = o.now ?? Date.now;
   const setTimer = o.setTimer ?? ((fn, ms) => { const t = setTimeout(fn, ms); return () => clearTimeout(t); });
-  let state: ShareState = { phase: "opening", error: false, empty: false, busy: false, legacy: false, remember: false, signedOut: false, multiple: false, list: EMPTY, note: EMPTY, focus: 0 };
+  let state: ShareState = { phase: "opening", error: false, empty: false, busy: false, openBusy: false, rememberBusy: false, legacy: false, remember: false, signedOut: false, multiple: false, list: EMPTY, note: EMPTY, focus: 0 };
   const listeners = new Set<() => void>();
   const set = (patch: Partial<ShareState>) => {
     state = { ...state, ...patch };
@@ -169,7 +174,7 @@ export function createShareReader(o: ShareReaderOptions) {
     open = undefined;
     stopTimer();
     // The name field takes focus when the gate replaces what had it; a failed try leaves focus on Open.
-    set({ phase: "gate", busy: false, empty: false, multiple: false, list: EMPTY, note: EMPTY, focus: state.phase === "gate" ? state.focus : state.focus + 1, ...patch });
+    set({ phase: "gate", busy: false, openBusy: false, rememberBusy: false, empty: false, multiple: false, list: EMPTY, note: EMPTY, focus: state.phase === "gate" ? state.focus : state.focus + 1, ...patch });
   };
   /** Any failure: forget the session everywhere and show the one generic error. */
   const fail = () => {
@@ -194,7 +199,7 @@ export function createShareReader(o: ShareReaderOptions) {
     // Already past its expiry: the gate shows the generic error, and the share never shows (review I8).
     if (open !== share) return;
     const list = sharedListModel(o.format("share.reader.list.title"), share.notes);
-    set({ error: false, empty: false, busy: false, signedOut: false, multiple: share.notes.length > 1, list });
+    set({ error: false, empty: false, busy: false, openBusy: false, rememberBusy: false, signedOut: false, multiple: share.notes.length > 1, list });
     const wanted = hash === undefined ? undefined : sharedNoteFromHash(hash);
     await showNote(wanted);
   };
@@ -260,13 +265,13 @@ export function createShareReader(o: ShareReaderOptions) {
     async submit(name: string, passcode: string, remember = false): Promise<void> {
       if (state.busy) return;
       if (!name.trim() || !passcode.trim()) { set({ empty: true, error: false, focus: state.focus + 1 }); return; }
-      set({ busy: true, empty: false, error: false });
+      set({ busy: true, openBusy: !remember, rememberBusy: remember, empty: false, error: false });
       await opened(o.source.openPasscode(name, passcode), remember);
     },
     async submitCode(value: string, remember = false): Promise<void> {
       if (state.busy) return;
       if (!value) { set({ empty: true, error: false, focus: state.focus + 1 }); return; }
-      set({ busy: true, empty: false, error: false });
+      set({ busy: true, openBusy: !remember, rememberBusy: remember, empty: false, error: false });
       await opened(Promise.resolve().then(() => {
         if (!o.source.openAccessCode) throw new Error("Access-code reader unavailable");
         return o.source.openAccessCode(value);

@@ -37,6 +37,20 @@ export function gitData(github: FakeGitHub) {
   const json = (status: number, body?: unknown) => new Response(body === undefined ? null : JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
   const fetch = async (input: string, init?: RequestInit): Promise<Response> => {
     const url = new URL(input);
+    const dispatch = /^\/repos\/([^/]+)\/([^/]+)\/actions\/workflows\/([^/]+)\/dispatches$/.exec(url.pathname);
+    if (!github.offline && dispatch && (init?.method ?? "GET") === "POST") {
+      const key = `${dispatch[1]}/${dispatch[2]}`;
+      github.calls.push({ method: "POST", path: url.pathname });
+      const planned = github.failures.get(`POST ${url.pathname}`)?.shift();
+      if (planned) return json(planned.status, { message: planned.message });
+      const head = heads.get(key);
+      if (!head || dispatch[3] !== "pages.yml") return json(404, { message: "Not Found" });
+      // A fresh run of the branch head: its own artifact, unlike a re-run of the failed one.
+      const conclusion = conclude();
+      runs.set(key, [...runs.get(key) ?? [], { id: nextRun++, head_sha: head, status: "completed", conclusion, run_attempt: 1 }]);
+      if (conclusion === "success") served.delete(key);
+      return json(204);
+    }
     const actions = /^\/repos\/([^/]+)\/([^/]+)\/actions\/runs(?:\/(\d+)\/rerun-failed-jobs)?$/.exec(url.pathname);
     if (!github.offline && actions) {
       const key = `${actions[1]}/${actions[2]}`, method = init?.method ?? "GET";
@@ -48,8 +62,8 @@ export function gitData(github: FakeGitHub) {
       const run = list.find(r => r.id === Number(actions[3]));
       if (method !== "POST" || !run || run.conclusion === "success") return json(403, { message: "This workflow run cannot be rerun" });
       run.run_attempt++;
-      run.conclusion = conclude();
-      if (run.conclusion === "success" && run.head_sha === heads.get(key)) served.delete(key);
+      // 26 Nov: a re-run in place keeps the failed attempt's github-pages artifact, so deploy-pages finds two and fails.
+      run.conclusion = "failure";
       return json(201, {});
     }
     const m = /^\/repos\/([^/]+)\/([^/]+)\/git\/(.+)$/.exec(url.pathname);

@@ -373,6 +373,31 @@ describe("the window's view of access.json", () => {
       expect(JSON.stringify(await t.s.load())).not.toContain(created.passcode.value);
     } finally { rmSync(t.dir, { recursive: true, force: true }); }
   });
+  it("D-433: an existing share's Copy hands over the known link and code with no website check; never a withdrawn one", async () => {
+    let publishes = 0;
+    const t = store(undefined, async () => SITE, {
+      publish: async () => { publishes++; throw new Error("access:site.unavailable"); },
+      getSite: () => async () => { throw new Error("no network in Copy"); },
+    });
+    try {
+      mkdirSync(join(t.dir, "notes"));
+      writeFileSync(join(t.dir, "notes", "one.md"), "# One\n");
+      const { id } = await t.s.apply({
+        op: "createItem", item: { path: "one.md", label: "One", folder: false, includeLater: false },
+        notes: ["one.md"], link: true, passcode: { generate: true }, expiresAt: null,
+      });
+      const sent: string[] = [];
+      // Without `known` a code is never handed out before `ready` proved it live (the Share… flow).
+      await expect(t.s.handoff(id, "accessCode", undefined, text => { sent.push(text); })).rejects.toThrow("access:notReady");
+      for (const what of ["link", "accessCode"]) await t.s.handoff(id, what, undefined, text => { sent.push(text); }, true);
+      const g = t.file().grants[0];
+      expect(sent).toEqual([expect.stringContaining(`#${id}.${g.link.secret}`), `${displayShareCode(g.shareCode)} ${g.passcode.value}`]);
+      expect(publishes).toBe(0);
+      await t.s.apply({ op: "withdraw", id });
+      await expect(t.s.handoff(id, "link", undefined, text => { sent.push(text); }, true)).rejects.toThrow("access:notReady");
+      expect(sent).toHaveLength(2);
+    } finally { rmSync(t.dir, { recursive: true, force: true }); }
+  });
   it("Turn off withdraws every active share, keeping records and the vault, so re-enabling republishes none (UC-SHARE-12)", async () => {
     const published = () => join(t.dir, "published");
     const t = store(undefined, async () => SITE, {

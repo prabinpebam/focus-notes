@@ -113,7 +113,7 @@ test("24 Nov: Turn on sharing when GitHub's Pages run fails shows the reason wit
     const order = await Promise.all(steps.map(label => confirmation.getByText(label, { exact: true }).boundingBox().then(b => b!.y)));
     expect([...order].sort((a, b) => a - b)).toEqual(order);
     await shot(confirmation, "turn-on-busy.dark");
-    await expect(confirmation.getByText("Stopped at “GitHub puts your website up”. The steps before it are done and kept. GitHub couldn’t put your website up, even after trying twice. Your notes stay private. Retry in a minute.", { exact: true }))
+    await expect(confirmation.getByText("Stopped at “GitHub puts your website up”. The steps before it are done and kept. GitHub’s build of your website failed twice, so it isn’t up yet. Your notes stay private. Retry.", { exact: true }))
       .toBeVisible({ timeout: 60_000 });
     expect(await marks()).toEqual(["Done", "Done", "Stopped here", "Not started yet"]);
     const uploads = github.calls.filter(c => c.method === "PATCH" && c.path === "/repos/ada/book/git/refs/heads/main").length;
@@ -122,7 +122,7 @@ test("24 Nov: Turn on sharing when GitHub's Pages run fails shows the reason wit
     await expect(confirmation).toContainText("ada/book");
     await expect(confirmation.getByRole("button", { name: "More details", exact: true })).toHaveAttribute("aria-expanded", "false");
     await keepsInset(confirmation);
-    expect(github.calls.filter(c => c.method === "POST" && /\/actions\/runs\/\d+\/rerun-failed-jobs$/.test(c.path))).toHaveLength(1);
+    expect(github.calls.filter(c => c.method === "POST" && /\/actions\/workflows\/pages\.yml\/dispatches$/.test(c.path))).toHaveLength(1);
     await shot(confirmation, "turn-on-error.dark");
     await scheme(page, "light").then(() => shot(confirmation, "turn-on-error.light"), () => {});
     await expect(confirmation).toBeVisible();
@@ -132,7 +132,7 @@ test("24 Nov: Turn on sharing when GitHub's Pages run fails shows the reason wit
     await retry.click();
     await expect.poll(marks, { timeout: 30_000 }).toEqual(["Done", "Done", "Working on this now", "Not started yet"]).catch(() => {});
     await expect(confirmation).toHaveCount(0, { timeout: 60_000 });
-    expect(github.calls.filter(c => c.method === "POST" && /\/actions\/runs\/\d+\/rerun-failed-jobs$/.test(c.path))).toHaveLength(2);
+    expect(github.calls.filter(c => c.method === "POST" && /\/actions\/workflows\/pages\.yml\/dispatches$/.test(c.path))).toHaveLength(2);
     expect(github.calls.filter(c => c.method === "PATCH" && c.path === "/repos/ada/book/git/refs/heads/main")).toHaveLength(uploads);
     await expect(page.getByRole("dialog", { name: "Share “Diary”", exact: true })).toBeVisible({ timeout: 30_000 });
     expect(github.calls.filter(c => c.method === "POST" && c.path === "/user/repos")).toHaveLength(0);

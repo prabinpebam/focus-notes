@@ -10,6 +10,8 @@ import type { SitePairing } from "./setup.ts";
 export type DeployedSiteGet = (url: string) => Promise<string | undefined>;
 
 const SITE_DIR = "site";
+/** The paired site's Pages workflow, as `site.ts` writes it. */
+const PAGES_WORKFLOW = "pages.yml";
 const FAILED_RUN = new Set(["failure", "timed_out", "cancelled", "startup_failure"]);
 const fail = (code: string) => new Error(`sharing:${code}`);
 /** Waits between upload attempts when the site's branch moved or GitHub answered 5xx (D-432): four tries in about 7 s. */
@@ -108,24 +110,29 @@ export function pagesArtifactPublisher(deps: {
     if (repo.private || repo.template || !repo.canPush) throw fail("refused");
     return { target, api, owner, name, repo };
   };
-  /** Waits until Pages serves `build`; a failed run is re-run once, and a second failure is the answer. */
-  const watch = async (api: GitHubApi, project: string, owner: string, name: string, site: string, commit: string, build: string): Promise<ArtifactPublication> => {
+  /**
+   * Waits until Pages serves `build`. A failed run is started once more as a fresh run of the site's workflow (never a
+   * re-run in place, whose leftover artifact fails the deploy again); a second failed run is the answer.
+   */
+  const watch = async (api: GitHubApi, project: string, owner: string, name: string, branch: string, site: string, commit: string, build: string): Promise<ArtifactPublication> => {
     const get = deps.get ?? fetchDeployedSite;
     const started = Date.now(), until = started + (deps.timeoutMs ?? 600_000);
     let status: "built" | "building" = "building";
-    let rerunOf = 0, slow = false;
+    let slow = false, restarted = false;
+    const failedRuns = new Set<number>();
     while (true) {
       // An earlier or partial deployment: keep waiting for this build.
       if (await servedBuild(get, site) === build) { status = "built"; break; }
       if (Date.now() >= until) break;
       if (!slow && Date.now() - started >= (deps.slowAfterMs ?? 120_000)) { slow = true; deps.slow?.(); }
-      // The commit's Pages run failed: no amount of waiting will serve it. A brand-new site's first deploy can lose
-      // its artifact on GitHub's side (24 Nov), so its failed jobs run once more; a second failure is the answer.
+      // The commit's Pages run failed: no amount of waiting will serve it. GitHub can lose a run's artifact (24 and
+      // 26 Nov), so a fresh run starts once; until it shows up the failed one stays newest and is passed over.
       const run = (await api.workflowRuns(owner, name, commit).catch(() => []))[0];
-      if (run?.status === "completed" && run.conclusion && FAILED_RUN.has(run.conclusion) && run.attempt > rerunOf) {
-        if (rerunOf) { deps.failed?.({ project, commit, build }); throw fail("pages"); }
-        try { await api.rerunFailedJobs(owner, name, run.id); } catch { deps.failed?.({ project, commit, build }); throw fail("pages"); }
-        rerunOf = run.attempt;
+      if (run?.status === "completed" && run.conclusion && FAILED_RUN.has(run.conclusion) && !failedRuns.has(run.id)) {
+        failedRuns.add(run.id);
+        if (restarted) { deps.failed?.({ project, commit, build }); throw fail("pages"); }
+        try { await api.dispatchWorkflow(owner, name, PAGES_WORKFLOW, branch); } catch { deps.failed?.({ project, commit, build }); throw fail("pages"); }
+        restarted = true;
       }
       await delay(Math.min(deps.delayMs ?? 5000, Math.max(1, until - Date.now())));
     }
@@ -188,7 +195,7 @@ export function pagesArtifactPublisher(deps: {
       }
     }
     deps.pushed?.();
-    return watch(api, project, owner, name, target.site, commit, artifact.build);
+    return watch(api, project, owner, name, repo.defaultBranch, target.site, commit, artifact.build);
   };
   return Object.assign(publisher, {
     async resume(failed: FailedBuild): Promise<ArtifactPublication | undefined> {
@@ -196,7 +203,7 @@ export function pagesArtifactPublisher(deps: {
       // Anything uploaded since means this build is no longer what the site should serve: upload afresh.
       if (await api.head(owner, name, repo.defaultBranch) !== failed.commit) return undefined;
       deps.pushed?.();
-      return watch(api, failed.project, owner, name, target.site, failed.commit, failed.build);
+      return watch(api, failed.project, owner, name, repo.defaultBranch, target.site, failed.commit, failed.build);
     },
   });
 }

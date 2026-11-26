@@ -107,7 +107,8 @@ export interface AccessBridge {
    * Copies the link, the passcode, or the invite: the shell fills in the invite's link, passcode, and
    * site itself, and clears the clipboard after 90 s (review L1).
    */
-  copy(id: string, what: "invite" | "link" | "passcode" | "accessCode" | "information", invite?: { template: string; values?: InviteValues; useDefault?: boolean }): Promise<void>;
+  /** `known`: an existing share's Copy (D-433), local only; without it, a code is handed out only after `ready` proved it live. */
+  copy(id: string, what: "invite" | "link" | "passcode" | "accessCode" | "information", invite?: { template: string; values?: InviteValues; useDefault?: boolean }, options?: { known?: boolean }): Promise<void>;
 }
 
 /** D-430: the website's look, chosen from the app's own themes and bundled fonts. */
@@ -191,6 +192,8 @@ export interface ShareTemplateEditor {
 }
 export interface ShareManageState {
   settings: { filter: string; query: string; status: string; problem: string; problemRow: string; busy: boolean; dialog: string; id: string; off: boolean; more: boolean; resume: boolean;
+    /** The one control that's pending while `busy` (D-356): `<share id>:copy|extend|withdraw`; the others stay at rest. */
+    pending?: string;
     setupPreview?: SharingSetupPreview; setupStep?: SharingSetupStep;
     /** D-429: the old separate site whose shares moved, until the owner deletes it on GitHub; what they typed to confirm. */
     oldSite?: string; oldSiteTyped?: string };
@@ -214,7 +217,7 @@ export interface ShareManageState {
   /** The paired site's published notes and the Publish in flight (G3, D-422): the one source for Unpublish and every publish status. */
   publication: SitePublication;
   /** Share details… for one shared file (D-431): its live shares, copied, extended or withdrawn there. */
-  details: { open: boolean; path: string; busy?: boolean; status?: string; problem?: string };
+  details: { open: boolean; path: string; busy?: boolean; status?: string; problem?: string; pending?: string };
 }
 const EDITOR_CLOSED: ShareEditor = { open: false, name: "", link: true, passcode: true, mode: "generate", renew: false, own: "", notes: [], folders: [], filter: "", expiry: DEFAULT_EXPIRY, until: "", busy: false };
 export const SHARE_MANAGE_CLOSED: ShareManageState = {

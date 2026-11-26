@@ -122,9 +122,9 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
       if (current()) set({ busy: false });
     }
   });
-  const work = async (action: () => Promise<void>, status: string, op?: ShareOperation) => {
+  const work = async (action: () => Promise<void>, status: string, op?: ShareOperation, pending = "") => {
     if (state().busy) return;
-    set({ busy: true, problem: "", status: "" });
+    set({ busy: true, pending, problem: "", status: "" });
     // D-427: a long change streams its steps in its confirmation; Retry carries on from a failed one.
     const off = op ? (progress.start(op), access?.setup?.onStep?.(step => progress.step(step))) : undefined;
     try {
@@ -137,7 +137,7 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
       if (op) progress.fail();
       const failed = catalog.format(siteProblemKey(error) ?? (pages ? "share.item.websiteFailed" : "share.item.failed"));
       set({ problem: op ? `${shareProgressView(progress.get(), catalog, 0).failedStep} ${failed}` : failed });
-    } finally { off?.(); set({ busy: false }); }
+    } finally { off?.(); set({ busy: false, pending: "" }); }
   };
   reg<{ id: string; action: string; useDefault?: boolean }>("sharing.copy", async ({ id, action, useDefault }) => {
     const grant = store.state.ui.share.listing?.grants.find(g => g.id === id && g.item);
@@ -165,10 +165,13 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
       }
     }
     set({ problemRow: "" });
-    await work(async () => {
-      if (access.ready) await access.ready(id);
-      await access.copy(id, what, { template, ...(useDefault ? { useDefault: true } : {}) });
-    }, what === "information" && useDefault ? "copiedDefault" : "copied");
+    // D-433: an existing share's link and code are already known here; copying is local and instant: no GitHub, no
+    // website, no task, nothing pending.
+    if (state().busy) return;
+    try {
+      await access.copy(id, what, { template, ...(useDefault ? { useDefault: true } : {}) }, { known: true });
+      set({ status: what === "information" && useDefault ? "copiedDefault" : "copied", problem: "", dialog: "" });
+    } catch { set({ status: "", problem: catalog.format("share.item.failed") }); }
   });
   const expiries: ExpiryChoice[] = ["7d", "30d", "90d", "never"];
   reg<{ id: string; action: string }>("sharing.extend", async ({ id, action }) => {
@@ -177,7 +180,7 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
     await work(async () => {
       const { id: _, ...listing } = await access.apply({ op: "update", id, expiresAt: expiryFrom(expiry) });
       store.update(s => ({ ...s, ui: { ...s.ui, share: { ...s.ui.share, listing } } }));
-    }, "extended");
+    }, "extended", undefined, `${id}:extend`);
   });
   reg<Record<string, never>>("sharing.confirm", async () => {
     const { dialog, id } = state();
@@ -210,7 +213,7 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
       // Saved even when the website update after it failed, so Retry only updates the website.
       store.update(s => ({ ...s, ui: { ...s.ui, share: { ...s.ui.share, listing } } }));
       if (deployed === false) throw new Error("sharing:pages");
-    }, withdraw ? "withdrawn" : "deleted", withdraw ? "withdraw" : undefined);
+    }, withdraw ? "withdrawn" : "deleted", withdraw ? "withdraw" : undefined, `${id}:${dialog}`);
   });
   const str = { type: "string" as const }, bool = { type: "boolean" as const };
   const menuSchema = { type: "array" as const, items: { type: "object" as const, properties: {

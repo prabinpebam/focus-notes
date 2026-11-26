@@ -70,7 +70,7 @@ export const shareProgressMocks = {
     still: model({ busy: true, at: 2, line: "GitHub is putting your website up. This usually takes 1–2 minutes. 2:37",
       still: "Still working… GitHub is taking longer than usual. Nothing is lost: you can keep waiting, or close this and you’ll be told when it’s done." }),
     failed: model({ busy: false, at: 2, failed: true,
-      problem: "Stopped at “GitHub puts your website up”. The steps before it are done and kept. GitHub couldn’t put your website up, even after trying twice. Your notes stay private. Retry in a minute." }),
+      problem: "Stopped at “GitHub puts your website up”. The steps before it are done and kept. GitHub’s build of your website failed twice, so it isn’t up yet. Your notes stay private. Retry." }),
   } },
   views: { working: page(dialog("working")), still: page(dialog("still")), failed: page(dialog("failed")) },
   entries: [

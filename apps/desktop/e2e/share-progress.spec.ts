@@ -47,7 +47,7 @@ test("D-427: Turn on, Share, Withdraw, Publish and Turn off show their real step
   const fake = await serveFakeGitHub(github);
   const access = (): AccessFile => JSON.parse(readFileSync(join(root, "access.json"), "utf8"));
   const uploads = () => github.calls.filter(c => c.method === "PATCH" && c.path === "/repos/ada/notes-site/git/refs/heads/main").length;
-  const reruns = () => github.calls.filter(c => c.method === "POST" && /\/actions\/runs\/\d+\/rerun-failed-jobs$/.test(c.path)).length;
+  const reruns = () => github.calls.filter(c => c.method === "POST" && /\/actions\/workflows\/pages\.yml\/dispatches$/.test(c.path)).length;
   let l: Launched | undefined;
   try {
     l = await launch(dirs, {
@@ -147,7 +147,7 @@ test("D-427: Turn on, Share, Withdraw, Publish and Turn off show their real step
     fake.git.failPagesRuns(2);
     const before = reruns();
     await withdraw.getByRole("button", { name: "Withdraw share", exact: true }).click();
-    await expect(withdraw.getByText("Stopped at “GitHub updates your website”. The steps before it are done and kept. GitHub couldn’t update your website, even after trying twice. Your notes stay private. Retry in a minute.", { exact: true }))
+    await expect(withdraw.getByText("Stopped at “GitHub updates your website”. The steps before it are done and kept. GitHub’s build of your website failed twice. Your notes stay private. Retry.", { exact: true }))
       .toBeVisible({ timeout: 60_000 });
     expect(await marks(withdraw)).toEqual(["Done", "Done", "Stopped here"]);
     expect(access().grants.find(g => g.id === grant.id)?.revokedAt).toBeTruthy();

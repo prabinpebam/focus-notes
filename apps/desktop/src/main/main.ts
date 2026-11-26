@@ -2542,7 +2542,8 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     if (!settingsAvailable()) throw new Error("access:failed");
     return access.setItemTemplate(template);
   });
-  handle("access:copy", async (id, what, invite) => access.handoff(id, what, invite, (text) => secretCopy.write(text)));
+  handle("access:copy", async (id, what, invite, options) => access.handoff(id, what, invite, (text) => secretCopy.write(text),
+    Boolean(options && typeof options === "object" && (options as { known?: unknown }).known === true)));
   handleFrom("access:systemShare", async (e, id, invite) => {
     if (process.platform !== "darwin") throw new Error("access:sheet.unavailable");
     const window = BrowserWindow.fromWebContents(e.sender);

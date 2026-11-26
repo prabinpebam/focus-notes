@@ -90,7 +90,7 @@ export function registerShareDetails({ store, catalog, commands, viewModels, tra
       const d = store.state.ui.share.details;
       const g = liveSharesOf(store.state, d.path).find((x) => x.id === id);
       if (!d.open || d.busy || !g?.unsharedNotes?.length || !access?.ready) return;
-      patch({ busy: true, status: catalog.format("share.item.adding"), problem: "" });
+      patch({ busy: true, pending: id, status: catalog.format("share.item.adding"), problem: "" });
       store.update((s) => ({ ...s, ui: { ...s.ui, share: { ...s.ui.share, settings: { ...s.ui.share.settings, status: "", problem: "", problemRow: "" } } } }));
       try {
         if (!(await flush())) throw new Error("access:save.failed");
@@ -103,7 +103,7 @@ export function registerShareDetails({ store, catalog, commands, viewModels, tra
         patch({ status: catalog.format("share.item.added") });
       } catch {
         patch({ status: "", problem: catalog.format("share.item.failed") });
-      } finally { patch({ busy: false }); }
+      } finally { patch({ busy: false, pending: "" }); }
     },
   });
   commands.register({
@@ -121,7 +121,8 @@ export function registerShareDetails({ store, catalog, commands, viewModels, tra
     id: "vm.shareDetails",
     schema: { type: "object", properties: {
       open: bool, name: str, busy: bool, status: str, hasStatus: bool, problem: str, hasProblem: bool, copyLabel: str, extendLabel: str, againLabel: str,
-      rows: { type: "array", items: { type: "object", properties: { id: str, methods: str, detail: str, badge: str, newer: str, hasNewer: bool, copyMenu: menuSchema, extendMenu: menuSchema } } },
+      rows: { type: "array", items: { type: "object", properties: { id: str, methods: str, detail: str, badge: str, newer: str, hasNewer: bool, copyMenu: menuSchema, extendMenu: menuSchema,
+        copyBusy: bool, extendBusy: bool, withdrawBusy: bool, addBusy: bool } } },
     } },
     reads: ["ui.share.details", "ui.share.listing", "ui.share.settings", "workspace.tree"],
     select: (s) => {
@@ -140,6 +141,9 @@ export function registerShareDetails({ store, catalog, commands, viewModels, tra
           newer: g.unsharedNotes?.length ? catalog.format("share.dialog.newer", { count: g.unsharedNotes.length }) : "", hasNewer: Boolean(g.unsharedNotes?.length),
           copyMenu: menu([...(g.link ? ["link"] : []), ...(g.passcode ? ["accessCode"] : []), "information"], "sharing.copy"),
           extendMenu: menu(EXPIRIES, "share.manage.expiry"),
+          // D-356: only the pressed control shows pending; the row's other actions stay at rest.
+          copyBusy: m.busy && m.pending === `${g.id}:copy`, extendBusy: m.busy && m.pending === `${g.id}:extend`,
+          withdrawBusy: m.busy && m.pending === `${g.id}:withdraw`, addBusy: Boolean(d.busy) && d.pending === g.id,
         };
       }) : [];
       // The latest outcome: a Copy, Extend or Withdraw (Settings' state, cleared by Add them) or Add them's own.

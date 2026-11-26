@@ -339,9 +339,12 @@ export class GitHubApi {
     return (r.workflow_runs ?? []).map(x => ({ id: x.id, status: x.status, conclusion: x.conclusion, attempt: x.run_attempt ?? 1 }));
   }
 
-  /** Runs a finished run's failed jobs again (a new attempt of the same run). */
-  async rerunFailedJobs(owner: string, repo: string, id: number): Promise<void> {
-    await this.request("POST", `/repos/${owner}/${repo}/actions/runs/${id}/rerun-failed-jobs`);
+  /**
+   * Starts a fresh run of a workflow on a branch. A Pages deploy that failed is started afresh this way, never re-run in
+   * place: a re-run keeps the failed attempt's `github-pages` artifact, so deploy-pages then finds two and fails (26 Nov).
+   */
+  async dispatchWorkflow(owner: string, repo: string, workflow: string, ref: string): Promise<void> {
+    await this.request("POST", `/repos/${owner}/${repo}/actions/workflows/${encodeURIComponent(workflow)}/dispatches`, { ref });
   }
 
   /** The commit a branch points at, or undefined for an empty repository. */

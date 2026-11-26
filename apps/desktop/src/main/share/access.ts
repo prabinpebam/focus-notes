@@ -184,19 +184,21 @@ export function accessStore(o: AccessStoreOptions) {
   const authorization = async (g: Grant, dir: string) => authorizationRevision(g, await Promise.all(
     (await itemNotes(undefined, dir)).map(async (path) => ({ path, id: noteId(await readFile(join(dir, "notes", ...path.split("/")), "utf8")) })),
   ));
-  const secret = async (id: unknown, what: unknown, invite?: unknown): Promise<string> => {
+  const secret = async (id: unknown, what: unknown, invite?: unknown, known = false): Promise<string> => {
     const dir = o.dir(), epoch = mutations;
     const g = await grant(id, dir), fingerprint = JSON.stringify(g);
     const token = ready.get(g.id);
+    // An existing share's Copy (D-433) is local: its link and code are what access.json already holds, so no proof
+    // of the website is needed; a new share's code is handed out only once `ready` saw it live.
+    const proven = !g.shareCode || known;
     const check = () => {
-      if (o.dir() !== dir || mutations !== epoch || g.shareCode &&
-        (!isActive(g, (o.now ?? (() => new Date()))().getTime()) || !token || ready.get(g.id) !== token ||
-          token.fingerprint !== fingerprint || token.dir !== dir)) throw new Error("access:notReady");
+      if (o.dir() !== dir || mutations !== epoch || g.shareCode && !isActive(g, (o.now ?? (() => new Date()))().getTime()) ||
+        !proven && (!token || ready.get(g.id) !== token || token.fingerprint !== fingerprint || token.dir !== dir)) throw new Error("access:notReady");
     };
     check();
     const s = await secrets(g);
     if (JSON.stringify(await grant(id, dir)) !== fingerprint) throw new Error("access:notReady");
-    if (g.shareCode && (await o.site() !== token!.site || g.item && await authorization(g, dir) !== token!.authorization)) {
+    if (!proven && (await o.site() !== token!.site || g.item && await authorization(g, dir) !== token!.authorization)) {
       ready.delete(g.id);
       throw new Error("access:notReady");
     }
@@ -368,11 +370,11 @@ export function accessStore(o: AccessStoreOptions) {
     /** What to put on the clipboard: the link, the passcode, or the invite with its secrets filled in here. */
     secret,
     /** Linearize the actual native handoff with mutations, not just secret construction. */
-    handoff: (id: unknown, what: unknown, invite: unknown, send: (text: string) => void): Promise<void> => {
+    handoff: (id: unknown, what: unknown, invite: unknown, send: (text: string) => void, known = false): Promise<void> => {
       const epoch = mutations;
       const cancelled = cancellations;
       const run = async () => {
-        const text = await secret(id, what, invite);
+        const text = await secret(id, what, invite, known);
         if (mutations !== epoch || cancellations !== cancelled) throw new Error("access:notReady");
         send(text);
       };

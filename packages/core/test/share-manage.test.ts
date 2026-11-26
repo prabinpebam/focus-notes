@@ -1033,6 +1033,37 @@ describe("D-431: shared and published marks in Files, and Share details…", () 
     expect(menuIds(t)).toContain("files.share");
     expect(t.app.commands.describe("note.shareDetails").enabled).toBe(false);
   });
+  it("D-433: Copy on an existing share is local (no website check, no task, never pending); Extend pends only Extend (D-356)", async () => {
+    const t = shell();
+    await t.app.start();
+    await settle();
+    const rome = "/w/private/notes/trips/rome.md";
+    await t.run("share.item.open", { path: rome });
+    await t.run("share.item.action", { what: "link" });
+    await t.run("share.item.setOpen", { open: false });
+    await t.run("share.details.open", { path: rome });
+    const id = t.vm("vm.shareDetails").rows[0].id;
+    const ready = vi.spyOn(t.bridge.access!, "ready" as never), copy = vi.spyOn(t.bridge.access!, "copy");
+    const tasks = () => t.app.store.state.tasks;
+    const before = JSON.stringify(tasks());
+    const copying = t.run("sharing.copy", { id, action: "link" });
+    expect(t.vm("vm.shareDetails").rows[0]).toMatchObject({ copyBusy: false, extendBusy: false, withdrawBusy: false });
+    await copying;
+    expect(ready).not.toHaveBeenCalled();
+    expect(copy).toHaveBeenCalledWith(id, "link", expect.anything(), { known: true });
+    expect(JSON.stringify(tasks())).toBe(before);
+    expect(t.vm("vm.shareDetails")).toMatchObject({ busy: false, status: "Copied." });
+
+    let release!: () => void;
+    const apply = t.bridge.access!.apply;
+    t.bridge.access!.apply = async (change) => { await new Promise<void>((r) => { release = r; }); return apply(change); };
+    const extending = t.run("sharing.extend", { id, action: "30d" });
+    await settle();
+    expect(t.vm("vm.shareDetails").rows[0]).toMatchObject({ copyBusy: false, extendBusy: true, withdrawBusy: false });
+    release();
+    await extending;
+    expect(t.vm("vm.shareDetails").rows[0]).toMatchObject({ copyBusy: false, extendBusy: false, withdrawBusy: false });
+  });
   it("Add them in Share details adds a folder's newer notes to that share, with the folder's whole contents", async () => {
     const t = shell();
     await t.app.start();
