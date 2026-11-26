@@ -45,6 +45,7 @@
 - **Only one entry per shared file (Coordinator10, 26 November 13:14).** A shared file's right-click and row ⋯ menus and ⋯ More show only **Share details…**, not Share…, since both would open the same dialog; *Share again…* in it covers a new share. Never-shared files keep **Share…**. A pinned Share… and the File menu's Share… still open Share details for a shared note.
 
 - **Landed (26 November):** `1f224b6f` (marks and Share details…), `4e8249f1` (Share… on a shared file opens Share details; Shared before retired) and `bdade9fe` (a shared item's menus offer only Share details…; SHR-18 and G6.2) on `main` at `bdade9fe` after exact-head Windows CI [45778323177](https://github.com/prabinpebam/focus-notes/actions/runs/45778323177), 7/7 after one rerun of shard 4 (PRF-14 window drag timing, unrelated).
+- **Landed (26 November, evening):** the file-icon badges with the stacked Both mark and the Opened files tab context menu (option D) on `main` at `61b629c7` after exact-head Windows CI [45842972805](https://github.com/prabinpebam/focus-notes/actions/runs/45842972805), 7/7 first time.
 
 **Affects:** [Files](../design/views/files.html), [Files and sharing](../experience/files-and-sharing.md), [Sharing](../design/views/sharing.md), D-408, D-422, D-424, D-430.
 
