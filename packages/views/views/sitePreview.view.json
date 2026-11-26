@@ -173,6 +173,9 @@
                               },
                               {
                                 "type": "SegmentedControl",
+                                "when": {
+                                  "get": "vm.sharingPreview.sizeShown"
+                                },
                                 "props": {
                                   "label": {
                                     "t": "site.preview.size"
@@ -194,7 +197,7 @@
                             "type": "Text",
                             "props": {
                               "value": {
-                                "t": "site.preview.note"
+                                "get": "vm.sharingPreview.note"
                               },
                               "tone": "muted",
                               "role": "secondary"

@@ -51,6 +51,7 @@ import { registerShareProgressView } from "./share-progress.ts";
 import { registerSharingSettings } from "./sharing-settings.ts";
 import { registerSharingPeople } from "./sharing-people.ts";
 import { registerSharingPreview } from "./sharing-preview.ts";
+import { registerSiteAppearance } from "./site-appearance.ts";
 import { PUBLISH_STATUS_COMMAND, PUBLISH_STATUS_TITLE } from "./publish-status.ts";
 import { registerWindow, initialWindow, type WindowState } from "./window-app.ts";
 import { registerTextMenu, TEXT_MENU_CLOSED, type TextMenuState } from "./text-menu-app.ts";
@@ -521,8 +522,9 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   registerItemShare({ store, catalog, commands, viewModels, tracker, access: bridge.access, platform: bridge.platform, flush, toast, publishedUrl: (path) => sitePublishedUrl?.(path), ...(bridge.copyText ? { copyText: (text: string) => bridge.copyText!(text) } : {}) });
   registerSharingSettings({ store, catalog, commands, viewModels, tracker, access: bridge.access });
   registerShareProgressView(viewModels, catalog);
+  const siteAppearance = registerSiteAppearance({ store, catalog, commands, viewModels, tracker, access: bridge.access, toast });
   registerSharingPeople({ store, catalog, commands, viewModels, tracker, access: bridge.access });
-  sitePublishedUrl = registerSharingPreview({ store, catalog, commands, viewModels, tracker, appState: () => appState, persistAppState, readNote: path => bridge.readNote(path), toast,
+  sitePublishedUrl = registerSharingPreview({ store, catalog, commands, viewModels, tracker, appState: () => appState, persistAppState, readNote: path => bridge.readNote(path), toast, siteAppearance,
     ...(bridge.publishing ? { publishing: bridge.publishing } : {}), ...(bridge.copyText ? { copyText: (text: string) => bridge.copyText!(text) } : {}) }).publishedUrl;
   const workspace = registerWorkspaceFeatures({
     store, commands, viewModels, catalog, bridge, tracker, toast, setNote, persistAppState, afterWrites, ...(options.workspaceFormat ? { format: options.workspaceFormat } : {}),

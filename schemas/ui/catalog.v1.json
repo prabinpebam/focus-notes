@@ -7553,6 +7553,7 @@
       "viewModels": [
         "vm.settings",
         "vm.shareProgress",
+        "vm.siteAppearance",
         "vm.signOut",
         "vm.removeWorkspace",
         "vm.shareManage",

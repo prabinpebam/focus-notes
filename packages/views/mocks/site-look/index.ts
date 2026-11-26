@@ -1,11 +1,9 @@
 /**
- * Website look (owner, 26 November; D-430): one theme and font for the project's website, used by both its
- * published pages (n/) and its shared notes' reader page (s/). Proposed in Settings → Sharing, below the real
- * site card (taken from settings.view.json), with a live sample in the chosen look. A change rebuilds the site
- * with D-427's steps; a failure keeps the choice and offers Retry. Strict design: fake data, nothing wired.
+ * Site appearance (owner, 26 November; D-430, D-431): the real Settings → Sharing pane from settings.view.json over
+ * fake data: Share settings (the site card) and Site appearance (theme, font, a live sample). A change rebuilds the
+ * site with D-427's steps; a failure keeps the choice and offers Retry.
  */
 import settings from "../../views/settings.view.json" with { type: "json" };
-import look from "./look.view.json" with { type: "json" };
 import data from "./data.json" with { type: "json" };
 import { compose } from "../../src/compose.ts";
 
@@ -32,11 +30,19 @@ function remap(v: unknown, state: string): unknown {
   return out;
 }
 
-const siteCard = find(compose(settings), (n) => n.type === "ItemCard" && isNode(n.props) && n.props.icon === "globe" && isNode(n.when) && n.when.get === "vm.sharingSettings.on");
-if (!siteCard) throw new Error("site-look mock: no site card in Settings → Sharing");
-const withCard = (v: unknown): unknown => Array.isArray(v) ? v.map(withCard)
-  : !isNode(v) ? v : v.mock === "siteCard" ? siteCard : Object.fromEntries(Object.entries(v).map(([k, c]) => [k, withCard(c)]));
-const page = (state: string) => remap(withCard(compose(look)), state) as Node;
+const pane = find(compose(settings), (n) => Array.isArray(n.children) && n.children.some((c) => isNode(c) && c.id === "siteAppearance"));
+if (!pane) throw new Error("site-look mock: no Site appearance in Settings → Sharing");
+const page = (state: string) => ({
+  focus: "siteAppearanceTheme",
+  root: { type: "Surface", props: { variant: "canvas", scroll: true }, children: [
+    { type: "Center", props: { maxWidth: "wideContent" }, children: [
+      { type: "Stack", props: { gap: "stackSection", padding: "insetLg" }, children: [
+        { type: "Heading", props: { level: "2", value: { t: "settings.section.sharing" } } },
+        remap(pane, state),
+      ] },
+    ] },
+  ] },
+});
 
 const STATE = { done: "Done", running: "Working on this now", waiting: "Not started yet", failed: "Stopped here" } as const;
 const steps = (at: number, failed = false) => data.steps.labels.map((label, i) => {
@@ -50,20 +56,18 @@ const steps = (at: number, failed = false) => data.steps.labels.map((label, i) =
 const model = (o: { theme: string; font: string; busy?: boolean; at?: number; failed?: boolean }) => ({
   project: data.project,
   sharingSettings: data.sharingSettings,
-  sharingPreview: { busy: Boolean(o.busy) },
-  siteLook: {
-    themes: data.themes, fonts: data.fonts, theme: o.theme, font: o.font, busy: Boolean(o.busy),
-    sampleBlocks: data.sampleBlocks, failed: Boolean(o.failed), problem: o.failed ? data.problem : "",
+  sharingPreview: { busy: false, showProgress: false, stepped: false, parts: [{ id: "0", label: "", icon: "document", tone: "neutral", busy: false }], progress: 0, progressLabel: "", elapsed: "",
+    failed: false, problem: "", stillPublishing: false, cancelled: false, cancelLabel: "", canCancel: false, cancelReason: "" },
+  siteAppearance: {
+    show: true, themes: data.themes, fonts: data.fonts, theme: o.theme, font: o.font, busy: Boolean(o.busy),
+    sampleBlocks: data.sampleBlocks, failed: Boolean(o.failed), problem: o.failed ? data.problem : "", progress: o.at !== undefined,
   },
-  shareProgress: {
-    show: o.at !== undefined, steps: steps(o.at ?? 0, o.failed),
-    line: o.busy ? data.line : "", still: "",
-  },
+  shareProgress: { show: o.at !== undefined, op: o.at === undefined ? "" : "look", steps: steps(o.at ?? 0, o.failed), line: o.busy ? data.line : "", still: "", failedStep: "" },
 });
 
 export const siteLookMocks = {
   id: "sitelook",
-  label: "Mocks: website look (D-430)",
+  label: "Mocks: site appearance (D-430)",
   models: { siteLookMock: {
     current: model({ theme: "paper", font: "serif" }),
     changing: model({ theme: "dusk", font: "sans", busy: true, at: 2 }),
@@ -71,7 +75,7 @@ export const siteLookMocks = {
   } },
   views: { current: page("current"), changing: page("changing"), failed: page("failed") },
   entries: [
-    { id: "sitelook.current", label: "1. Settings → Sharing → Website look: the current look", view: "current" },
+    { id: "sitelook.current", label: "1. Settings → Sharing: Share settings and Site appearance", view: "current" },
     { id: "sitelook.changing", label: "2. Changed to Dusk and Sans: the website is updating", view: "changing" },
     { id: "sitelook.failed", label: "3. Stopped at a step: the choice is kept, Retry carries on", view: "failed" },
   ],

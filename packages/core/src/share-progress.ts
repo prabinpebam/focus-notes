@@ -10,7 +10,7 @@ interface WithProgress { ui: { share: { progress?: ShareProgress } }; tasks: rea
  * phases (`sharing:setupStep`, `sharing:publishStep`) that belong to it; the index never moves backwards, so a
  * resumed or repeated earlier phase never unticks a done step.
  */
-export type ShareOperation = "turnOn" | "share" | "publish" | "unpublish" | "withdraw" | "turnOff";
+export type ShareOperation = "turnOn" | "share" | "publish" | "unpublish" | "withdraw" | "turnOff" | "look";
 
 export const SHARE_STEPS: Readonly<Record<ShareOperation, readonly { id: string; icon: string; from: readonly string[]; end?: true }[]>> = {
   turnOn: [
@@ -45,6 +45,13 @@ export const SHARE_STEPS: Readonly<Record<ShareOperation, readonly { id: string;
     { id: "empty", icon: "delete", from: ["remove", "seal", "push"] },
     { id: "update", icon: "sync", from: ["deploy"] },
     { id: "off", icon: "cloudOff", from: ["off"], end: true },
+  ],
+  // D-430: a new website look, rebuilt and pushed like any other site change.
+  look: [
+    { id: "prepare", icon: "color", from: ["save", "seal"] },
+    { id: "upload", icon: "cloudUp", from: ["push"] },
+    { id: "update", icon: "sync", from: ["deploy"] },
+    { id: "live", icon: "globe", from: ["ready"], end: true },
   ],
 };
 

@@ -90,6 +90,10 @@ export interface AccessBridge {
    * public notes folder) and pushes it, so whatever was removed first leaves the site. Rejects with `sharing:<problem>`.
    */
   takeDown?(): Promise<{ commit: string; pending?: string }>;
+  /** D-430: the website's saved look, or undefined while none is chosen (the site then follows the reader's light or dark). */
+  siteAppearance?(): Promise<SiteAppearance | undefined>;
+  /** D-430: saves the look and rebuilds the one public site with it (published pages and the share page). Rejects with `sharing:<problem>`. */
+  setSiteAppearance?(look: SiteAppearance): Promise<{ commit: string; pending?: string }>;
   /** Saves the invite template to `private/access-message.json`, or with null goes back to the default (D-143). */
   setTemplate(template: string | null): Promise<AccessListing>;
   setItemTemplate?(template: string | null): Promise<AccessListing>;
@@ -105,6 +109,10 @@ export interface AccessBridge {
    */
   copy(id: string, what: "invite" | "link" | "passcode" | "accessCode" | "information", invite?: { template: string; values?: InviteValues; useDefault?: boolean }): Promise<void>;
 }
+
+/** D-430: the website's look, chosen from the app's own themes and bundled fonts. */
+export interface SiteAppearance { theme: string; font: string }
+export interface SiteAppearanceState extends SiteAppearance { busy: boolean; problem: string; loaded: string }
 
 export type SharingSetupPhase = "reserved" | "creating" | "created" | "ready" | "removing" | "off";
 import type { ShareProgress } from "./share-progress.ts";
@@ -188,6 +196,8 @@ export interface ShareManageState {
     oldSite?: string; oldSiteTyped?: string };
   /** The running (or last failed) share or publish operation's steps (D-427): one at a time, as the desktop runs them. */
   progress?: ShareProgress;
+  /** D-430: the website's look (theme and font), for its published pages and shared notes alike. */
+  appearance?: SiteAppearanceState;
   item: ItemShareState;
   listing?: AccessListing;
   loading: boolean;

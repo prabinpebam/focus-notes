@@ -1,13 +1,11 @@
-import { audienceState, expiryFrom, itemInviteText, type ExpiryChoice } from "@focus-notes/seal/access";
+import { audienceState } from "@focus-notes/seal/access";
 import type { AppState } from "./app.ts";
 import type { CommandRegistry } from "./commands.ts";
 import type { MessageCatalog } from "./messages.ts";
 import type { Store } from "./store.ts";
 import type { TaskTracker } from "./tasks.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
-import { defaultItemShareTemplate } from "./share-item.ts";
 import { sharingAvailable, type AccessBridge, type ShareManageState } from "./share-manage.ts";
-import { joinPath, findNode } from "./workspace.ts";
 import { opErrorCode } from "./bridge.ts";
 import { shareProgress, shareProgressView, type ShareOperation } from "./share-progress.ts";
 
@@ -21,13 +19,6 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
   }));
   const reg = <A extends Record<string, unknown>>(id: string, run: (args: A) => void | Promise<void>) =>
     commands.register<A>({ id, title: "share.settings.title", run });
-  reg<{ value: string }>("sharing.filter", ({ value }) => set({ filter: value }));
-  reg<{ value: string }>("sharing.query", ({ value }) => set({ query: value }));
-  reg<Record<string, never>>("sharing.emptyAction", async () => {
-    if (store.state.ui.share.loading || store.state.ui.share.failed || !store.state.ui.share.listing) return;
-    if (state().query.trim() || state().filter !== "all") set({ query: "", filter: "all" });
-    else await commands.run("sharing.previewFiles");
-  });
   const settingsOpen = (open: boolean) => store.update(s => ({ ...s, ui: { ...s.ui, settings: { ...s.ui.settings, open, section: "sharing" } } }));
   reg<{ id?: string; kind: string }>("sharing.confirmOpen", ({ id = "", kind }) => { set({ dialog: kind, id, problem: "" }); settingsOpen(false); });
   reg<Record<string, never>>("sharing.confirmClose", () => { if (!state().busy) { set({ dialog: "" }); progress.clear(); settingsOpen(true); } });
@@ -145,46 +136,6 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
       set({ problem: op ? `${shareProgressView(progress.get(), catalog, 0).failedStep} ${failed}` : failed });
     } finally { off?.(); set({ busy: false }); }
   };
-  reg<{ id: string; action: string; useDefault?: boolean }>("sharing.copy", async ({ id, action, useDefault }) => {
-    const grant = store.state.ui.share.listing?.grants.find(g => g.id === id && g.item);
-    if (!access || !grant || audienceState(grant) !== "active") throw new Error(catalog.format("share.item.notReady"));
-    const what = action === "link" ? "link" : action === "accessCode" ? "accessCode" : "information";
-    const template = (!useDefault && store.state.ui.share.listing?.itemTemplate) || defaultItemShareTemplate(catalog);
-    if (what === "information") {
-      if (!useDefault && store.state.ui.share.listing?.itemTemplateInvalid) {
-        set({ problemRow: id, status: "", problem: "" });
-        return;
-      }
-      try {
-        itemInviteText(template, {
-          title: grant.item?.label || "Note",
-          ...(grant.link ? { link: "https://check.invalid/#x" } : {}),
-          ...(grant.passcode ? { site: "https://check.invalid/s/", accessCode: "AAAA-BBBB check" } : {}),
-          ...(grant.expiresAt ? { expires: "1 January 2030" } : {}),
-        });
-      } catch (err) {
-        const code = /access:([A-Za-z.]+)/.exec(err instanceof Error ? err.message : "")?.[1];
-        if (code?.startsWith("template.")) {
-          set({ problemRow: id, status: "", problem: "" });
-          return;
-        }
-      }
-    }
-    set({ problemRow: "" });
-    await work(async () => {
-      if (access.ready) await access.ready(id);
-      await access.copy(id, what, { template, ...(useDefault ? { useDefault: true } : {}) });
-    }, what === "information" && useDefault ? "copiedDefault" : "copied");
-  });
-  const expiries: ExpiryChoice[] = ["7d", "30d", "90d", "never"];
-  reg<{ id: string; action: string }>("sharing.extend", async ({ id, action }) => {
-    const expiry = expiries.find(value => value === action);
-    if (!access || !expiry) throw new Error(catalog.format("share.item.expiryInvalid"));
-    await work(async () => {
-      const { id: _, ...listing } = await access.apply({ op: "update", id, expiresAt: expiryFrom(expiry) });
-      store.update(s => ({ ...s, ui: { ...s.ui, share: { ...s.ui.share, listing } } }));
-    }, "extended");
-  });
   reg<Record<string, never>>("sharing.confirm", async () => {
     const { dialog, id } = state();
     if (dialog === "turnOff") {
@@ -225,41 +176,15 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
   viewModels.register({
     id: "vm.sharingSettings",
     schema: { type: "object", properties: {
-      project: str, site: str, on: bool, off: bool, offDetail: str, localReview: bool, busy: bool, status: str, problem: str, copyLabel: str, extendLabel: str, templateBadge: str,
-      empty: bool, waiting: bool, failed: bool, retrying: bool, emptyTitle: str, emptyDetail: str, emptyAction: str, loadProblem: str,
-      filter: str, query: str, dialog: str, confirmOpen: bool, confirmTitle: str, confirmText: str, confirmLabel: str,
+      project: str, site: str, on: bool, off: bool, offDetail: str, localReview: bool, busy: bool, status: str, problem: str, templateBadge: str,
+      dialog: str, confirmOpen: bool, confirmTitle: str, confirmText: str, confirmLabel: str,
       firstOpen: bool, more: bool, moreIcon: str, repo: str, targetLabel: str, repoTitle: str, moveText: str, canSetup: bool, setupSite: str, setupProblem: bool, setupStatus: str, firstAcceptLabel: str,
       oldSite: str, oldSiteOpen: bool, oldSiteTyped: str, oldSiteReady: bool, oldSiteName: str,
-      filters: { type: "array", items: { type: "object", properties: { id: str, label: str } } },
-      rows: { type: "array", items: { type: "object", properties: {
-        id: str, item: str, detail: str, badge: str, icon: str, live: bool, hasTemplateProblem: bool, copyMenu: menuSchema, extendMenu: menuSchema,
-      } } },
     } },
-    setters: { filter: "sharing.filter", query: "sharing.query", oldSiteTyped: "sharing.oldSiteType" },
+    setters: { oldSiteTyped: "sharing.oldSiteType" },
     reads: "*",
     select: s => {
       const m = s.ui.share.settings, listing = s.ui.share.listing;
-      const filtered = Boolean(m.query.trim()) || m.filter !== "all";
-      const root = s.workspace.tree.roots.find(r => r.id === "private");
-      const filters = ["all", "active", "soon", "expired", "withdrawn"];
-      const menu = (ids: string[], prefix: string) => [{ id: "actions", items: ids.map(id => ({ id, label: catalog.format(`${prefix}.${id}`) })) }];
-      const rows = (listing?.grants ?? []).filter(g => g.item).map(g => {
-        const item = g.item!;
-        const node = root ? findNode(s.workspace.tree, joinPath(root.path, item.path))?.node : undefined;
-        const active = audienceState(g) === "active";
-        const soon = active && Boolean(g.expiresAt && Date.parse(g.expiresAt) - Date.now() < 7 * 86400000);
-        const stateId = active ? soon ? "soon" : "active" : audienceState(g);
-        const title = node?.kind === "note" ? node.title || item.label : node?.name ?? item.label;
-        const date = g.expiresAt ? new Intl.DateTimeFormat(catalog.locale, { day: "numeric", month: "short" }).format(new Date(g.expiresAt)) : "";
-        return {
-          id: g.id, item: title, stateId,
-          detail: catalog.format("sharing.row.detail", { ways: catalog.format(`share.manage.ways.${g.link && g.passcode ? "both" : g.link ? "link" : "passcode"}`), expiry: date ? catalog.format("sharing.expires", { date }) : catalog.format("share.manage.expiry.never") }),
-          badge: catalog.format(!node ? "sharing.state.deleted" : `sharing.state.${stateId}`),
-          icon: item.folder ? "folder" : "document", live: active, hasTemplateProblem: m.problemRow === g.id,
-          copyMenu: menu([...(g.link ? ["link"] : []), ...(g.passcode ? ["accessCode"] : []), "information"], "sharing.copy"),
-          extendMenu: menu(expiries, "share.manage.expiry"),
-        };
-      }).filter(r => (m.filter === "all" || r.stateId === m.filter) && r.item.toLocaleLowerCase().includes(m.query.trim().toLocaleLowerCase()));
       const kind = m.dialog === "turnOff" ? "off" : m.dialog === "delete" ? "delete" : "withdraw";
       const projectName = viewModels.select("vm.project", s).name;
       return {
@@ -267,16 +192,8 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
         site: listing?.site ?? s.workspace.site ?? "", on: sharingAvailable(s), off: !sharingAvailable(s),
         offDetail: catalog.format(listing?.localReview || listing?.setupAvailable || listing?.site && (listing.configured || listing.vault) ? "share.settings.offDetail" : "share.item.setup.unlinked"),
         localReview: Boolean(listing?.localReview), busy: m.busy, status: m.status === "off" ? catalog.format("share.settings.offDone") : m.status ? catalog.format("share.settings.status", { status: m.status }) : "",
-        copyLabel: catalog.format("share.settings.copyAgain"), extendLabel: catalog.format("share.settings.extend"),
         templateBadge: catalog.format(listing?.itemTemplate ? "share.manage.template.edited" : "share.manage.template.default"),
-        problem: m.problem, filter: m.filter, query: m.query, dialog: m.dialog, confirmOpen: ["withdraw", "delete", "turnOff"].includes(m.dialog),
-        empty: Boolean(listing) && !s.ui.share.loading && !s.ui.share.failed && !rows.length,
-        waiting: s.ui.share.loading && !s.ui.share.failed && !listing && s.tasks.findLast(t => t.target === "sharing.list")?.phase === "on",
-        failed: s.ui.share.failed, retrying: s.ui.share.loading && s.ui.share.failed,
-        emptyTitle: catalog.format(filtered ? "uiStates.empty.matches" : "uiStates.empty.shares"),
-        emptyDetail: catalog.format(filtered ? "uiStates.empty.sharesFilteredDetail" : "uiStates.empty.sharesDetail"),
-        emptyAction: catalog.format(filtered ? "uiStates.empty.clearFilters" : "uiStates.empty.openFiles"),
-        loadProblem: catalog.format("sharing.listFailed"),
+        problem: m.problem, dialog: m.dialog, confirmOpen: ["withdraw", "delete", "turnOff"].includes(m.dialog),
         firstOpen: m.dialog === "first", more: m.more,
         repo: m.setupPreview ? `${m.setupPreview.owner}/${m.setupPreview.name}` : listing?.localReview ? s.workspace.repo ?? listing.site ?? "" : "",
         // The Private + Public layout uses the project's own public repository; nothing is created there (D-429).
@@ -293,7 +210,6 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
         moreIcon: m.more ? "chevronDown" : "chevronRight",
         confirmTitle: kind === "off" ? catalog.format("sharing.off.title", { project: typeof projectName === "string" ? projectName : "" }) : catalog.format(`share.${kind}.title`), confirmText: catalog.format(kind === "off" ? "share.off.history" : `share.${kind}.text`),
         confirmLabel: catalog.format(m.problem && s.ui.share.progress?.failed && ["withdraw", "turnOff"].includes(s.ui.share.progress.op) ? "commit.retry" : `share.${kind}.confirm`),
-        filters: filters.map(id => ({ id, label: catalog.format(`sharing.filter.${id}`) })), rows,
       };
     },
   });

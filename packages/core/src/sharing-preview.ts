@@ -51,6 +51,8 @@ export function registerSharingPreview(ctx: {
   appState: () => AppStateFile; persistAppState: (patch: Partial<AppStateFile>) => Promise<void>;
   readNote: (path: string) => Promise<string>; toast: (message: string, opts?: { tone?: "info" | "error" | "success" | "warning"; action?: { command: string; label: string; args?: Record<string, unknown> } }) => unknown;
   publishing?: PublishingBridge; copyText?: (text: string) => Promise<void>;
+  /** D-430: the live website's look; Preview site opens with it and its Apply goes to the website through it. */
+  siteAppearance?: { appearance(): { theme: string; font: string }; live(): boolean };
 }) {
   const { store, commands, viewModels, catalog, tracker } = ctx;
   const state = {
@@ -75,7 +77,8 @@ export function registerSharingPreview(ctx: {
    * publishes by moving notes there, to its own repository's site; its paired site carries only shares (D-425).
    */
   const live = () => !local() && Boolean(ctx.publishing && store.state.ui.share.listing?.configured) && !store.state.workspace.tree.roots.some(r => r.id === "public");
-  const requireLocal = () => { if (!local()) throw new Error(catalog.format("share.item.unavailable")); };
+  /** Preview site works on a local review draft, or on the live site's look once sharing is on (D-430). */
+  const requirePreview = () => { if (!local() && !ctx.siteAppearance?.live()) throw new Error(catalog.format("share.item.unavailable")); };
   const requirePublish = () => { if (!local() && !live()) throw new Error(catalog.format("share.item.unavailable")); };
   /** A tree path relative to its private notes root, or undefined outside one. */
   const relativeOf = (path: string) => publishPathOf(store.state.workspace.tree, path);
@@ -361,7 +364,7 @@ export function registerSharingPreview(ctx: {
   });
   reg<Record<string, never>>("sharing.preview", async () => {
     if (state.busy) return;
-    requireLocal();
+    requirePreview();
     const tree = store.state.workspace.tree;
     const publicRoot = tree.roots.find(r => r.id === "public");
     const publicNotes = publicRoot?.children.flatMap(n => leaves(n, joinPath(publicRoot.path, n.name))) ?? [];
@@ -392,7 +395,8 @@ export function registerSharingPreview(ctx: {
       }
       start(notes.length);
       articles = next;
-      set({ open: true, page: "home", section: "", article: "", theme: draft().theme ?? "paper", font: draft().font ?? "serif", size: String(draft().size ?? 18), readerTheme: "system", readerFocus: false });
+      const look = local() ? { theme: draft().theme ?? "paper", font: draft().font ?? "serif" } : ctx.siteAppearance!.appearance();
+      set({ open: true, page: "home", section: "", article: "", ...look, size: String(local() ? draft().size ?? 18 : 18), readerTheme: "system", readerFocus: false });
       settings(false);
       completed(notes.length);
     });
@@ -406,7 +410,14 @@ export function registerSharingPreview(ctx: {
   });
   reg<Record<string, never>>("sharing.previewApply", async () => {
     if (state.busy) return;
-    requireLocal();
+    requirePreview();
+    // The live site (D-430): the look goes to the website through Site appearance, with its steps in Settings → Sharing.
+    if (!local()) {
+      const look = { theme: state.theme, font: state.font };
+      set({ open: false }); settings(true);
+      await commands.run("sharing.appearanceApply", look);
+      return;
+    }
     await busy("sharing.previewApply", "apply", "sharing.preview.saving", "fn:site.settings",
       [catalog.format("sharing.operation.appearance"), catalog.format("sharing.operation.saveSettings")], async () => {
       start(0);
@@ -443,7 +454,7 @@ export function registerSharingPreview(ctx: {
       showProgress: bool, stepped: bool, failed: bool, stillPublishing: bool, recovery: bool, canCancel: bool, cancelRequested: bool, cancelled: bool, appearanceLocked: bool,
       completed: { type: "number" }, total: { type: "number" }, progress: { type: "number" }, progressLabel: str, elapsed: str, cancelLabel: str, cancelReason: str,
       parts: { type: "array", items: { type: "object", properties: { id: str, label: str, icon: str, tone: str, busy: bool } } },
-      theme: str, scopeTheme: str, font: str, size: str, contentSize: { type: "number" }, scheme: str, readerTheme: str, readerFocus: bool, page: str,
+      theme: str, scopeTheme: str, font: str, size: str, sizeShown: bool, note: str, contentSize: { type: "number" }, scheme: str, readerTheme: str, readerFocus: bool, page: str,
       themes: { type: "array", items: option }, fonts: { type: "array", items: option }, sizes: { type: "array", items: option }, readerThemes: { type: "array", items: option },
       sections: { type: "array", items: card }, articles: { type: "array", items: card }, homeArticles: { type: "array", items: card },
       section: str, sectionTitle: str, count: str, articleTitle: str, titleBlocks: BLOCK_LIST_SCHEMA, updated: str, blocks: BLOCK_LIST_SCHEMA,
@@ -479,7 +490,7 @@ export function registerSharingPreview(ctx: {
         icon: state.folder ? "folder" : "document", publishText: catalog.format(live() ? "sharing.publish.liveText" : "sharing.publish.text", { title: state.name }),
         scheme: state.readerTheme === "system" ? (["ink", "dusk"].includes(state.theme) ? "dark" : "light") : state.readerTheme,
         scopeTheme: dark ? warm ? "dusk" : "ink" : warm ? "sepia" : "paper",
-        contentSize: Number(state.size), sections, articles: list, homeArticles: articles.filter(a => !a.section),
+        contentSize: Number(state.size), sizeShown: local(), note: catalog.format(local() ? "site.preview.note" : "site.preview.noteLive"), sections, articles: list, homeArticles: articles.filter(a => !a.section),
         sectionTitle: state.section, count: catalog.format("site.preview.count", { count: list.length }),
         articleTitle: article?.title ?? "", titleBlocks: article?.titleBlocks ?? [], updated: article?.updated ? catalog.format("sharing.preview.updated", { date: article.updated }) : "", blocks: article?.blocks ?? [],
         themes: choices.theme.map(id => ({ id, label: catalog.format(`sharing.theme.${id}`) })),
