@@ -1,5 +1,6 @@
 import { globalStyle, style } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
+import { siteMarks } from "../FileTree/FileTree.css.ts";
 
 const t = tokens.cmp.openedFiles;
 
@@ -70,4 +71,4 @@ export const close = style({
 });
 globalStyle(`${tab}:has([data-focus-visible]) ${close}`, { visibility: "visible" });
 globalStyle(`${tab}:hover ${close}`, { "@media": { "(hover: hover)": { visibility: "visible" } } });
-globalStyle(`${tab}[data-current] ${icon}, ${tab}[data-current] ${close}`, { "@media": { "(forced-colors: active)": { color: t.forcedCurrentText } } });
+globalStyle(`${tab}[data-current] ${icon}, ${tab}[data-current] ${close}, ${tab}[data-current] ${siteMarks}`, { "@media": { "(forced-colors: active)": { color: t.forcedCurrentText } } });

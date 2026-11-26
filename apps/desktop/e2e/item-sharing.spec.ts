@@ -53,7 +53,7 @@ test("Share New words is icon-only, aligned and keeps pending feedback on its ow
     const { page } = l;
     await expect(page.getByRole("textbox", { name: "Note" })).toBeVisible();
     await page.keyboard.press(process.platform === "darwin" ? "Meta+Shift+E" : "Control+Shift+E");
-    await page.getByRole("treeitem", { name: "trips", exact: true }).click({ button: "right" });
+    await page.getByRole("treeitem", { name: /^trips(, Shared)?$/ }).click({ button: "right" });
     await page.getByRole("menuitem", { name: "Share…", exact: true }).click();
     const share = page.getByRole("dialog", { name: "Share “trips”", exact: true });
     await share.getByText("Passcode", { exact: true }).click();
@@ -164,7 +164,7 @@ test("SHR-16: first copy waits for a real deployed share; both methods work and 
     await expect(page.getByRole("textbox", { name: "Note" })).toBeVisible();
     const open = async () => {
       await page.keyboard.press(process.platform === "darwin" ? "Meta+Shift+E" : "Control+Shift+E");
-      await page.getByRole("treeitem", { name: "trips", exact: true }).click({ button: "right" });
+      await page.getByRole("treeitem", { name: /^trips(, Shared)?$/ }).click({ button: "right" });
       await page.getByRole("menuitem", { name: "Share…", exact: true }).click();
     };
     await open();
@@ -206,10 +206,10 @@ test("SHR-16: first copy waits for a real deployed share; both methods work and 
     write(join(priv, "notes", "trips", "New travel.md"), "# New travel\n\nNot in either snapshot yet.\n");
     git(priv, "add", "-A"); git(priv, "commit", "-qm", "Add unshared fixture note");
     await page.keyboard.press(process.platform === "darwin" ? "Meta+Shift+E" : "Control+Shift+E");
-    await page.getByRole("treeitem", { name: "trips", exact: true }).click();
+    await page.getByRole("treeitem", { name: /^trips(, Shared)?$/ }).click();
     await page.keyboard.press("ArrowRight");
     await expect(page.getByRole("treeitem", { name: "New travel", exact: true })).toBeVisible();
-    await page.getByRole("treeitem", { name: "trips", exact: true }).click({ button: "right" });
+    await page.getByRole("treeitem", { name: /^trips(, Shared)?$/ }).click({ button: "right" });
     await page.getByRole("menuitem", { name: "Share…", exact: true }).click();
     await expect(share.getByText("1 newer note isn't shared", { exact: true })).toBeVisible();
     await share.getByRole("button", { name: "Add them", exact: true }).click();
@@ -293,7 +293,7 @@ test("G6.3 / SHR-19: share information template edit, live preview, and reset", 
     await expect(page.getByRole("textbox", { name: "Note" })).toBeVisible();
     // Create one link-only share ("Rome") and one link+access-code share ("Paris").
     await page.keyboard.press(process.platform === "darwin" ? "Meta+Shift+E" : "Control+Shift+E");
-    await page.getByRole("treeitem", { name: "trips", exact: true }).click();
+    await page.getByRole("treeitem", { name: /^trips(, Shared)?$/ }).click();
     await page.keyboard.press("ArrowRight");
     await page.getByRole("treeitem", { name: "Rome rome.md", exact: true }).click({ button: "right" });
     await page.getByRole("menuitem", { name: "Share…", exact: true }).click();
@@ -374,7 +374,7 @@ test("SHR-13/14/15/24: Share… opens a fixed item, reviews contents and preserv
     const { page } = l;
     await expect(page.getByRole("textbox", { name: "Note" })).toBeVisible();
     await page.keyboard.press(process.platform === "darwin" ? "Meta+Shift+E" : "Control+Shift+E");
-    const trips = page.getByRole("treeitem", { name: "trips", exact: true });
+    const trips = page.getByRole("treeitem", { name: /^trips(, Shared)?$/ });
     await expect(trips).toBeVisible();
     await trips.click({ button: "right" });
     await page.getByRole("menuitem", { name: "Share…", exact: true }).click();

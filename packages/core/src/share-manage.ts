@@ -213,6 +213,8 @@ export interface ShareManageState {
   from: "settings" | "note" | "shareItem";
   /** The paired site's published notes and the Publish in flight (G3, D-422): the one source for Unpublish and every publish status. */
   publication: SitePublication;
+  /** Share details… for one shared file (D-431): its live shares, copied, extended or withdrawn there. */
+  details: { open: boolean; path: string };
 }
 const EDITOR_CLOSED: ShareEditor = { open: false, name: "", link: true, passcode: true, mode: "generate", renew: false, own: "", notes: [], folders: [], filter: "", expiry: DEFAULT_EXPIRY, until: "", busy: false };
 export const SHARE_MANAGE_CLOSED: ShareManageState = {
@@ -220,6 +222,7 @@ export const SHARE_MANAGE_CLOSED: ShareManageState = {
   item: ITEM_SHARE_CLOSED,
   loading: false, failed: false, editor: EDITOR_CLOSED, invite: { open: false }, confirm: { open: false, kind: "withdraw", busy: false },
   template: { open: false, value: "", failed: false, busy: false }, note: { open: false }, from: "settings", publication: NO_PUBLICATION,
+  details: { open: false, path: "" },
 };
 
 interface S {

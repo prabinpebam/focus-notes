@@ -184,7 +184,7 @@ test("D-422: the Files row shows publishing… then live, ⋯ shows the status l
     await expect(page.getByRole("textbox", { name: "Note", exact: true })).toContainText("harbour wall");
     await status("Not published yet");
     await showTrip();
-    await expect(trip).not.toContainText(/live|publishing/);
+    await expect(trip).not.toContainText(/Published|publishing/);
     const dialog = await openPublish(l);
     await dialog.getByRole("button", { name: "Publish", exact: true }).click();
     await expect.poll(() => fake.git.pushes.length, { timeout: 30_000 }).toBe(1);
@@ -197,13 +197,13 @@ test("D-422: the Files row shows publishing… then live, ⋯ shows the status l
     fake.git.setStale(false);
     await expect(page.getByRole("status").filter({ hasText: "Published “Trip to the coast”" })).toHaveCount(1, { timeout: 30_000 });
     await showTrip();
-    await expect(trip).toHaveAccessibleName(/^Trip to the coast, live/);
+    await expect(trip).toHaveAccessibleName(/^Trip to the coast, Published/);
     await status("Live on your site");
     await more();
     await page.getByRole("menuitem", { name: "Unpublish", exact: true }).click();
     await expect(page.getByRole("status").filter({ hasText: "Removed “Trip to the coast” from your site." })).toHaveCount(1, { timeout: 30_000 });
     await showTrip();
-    await expect(trip).not.toContainText(/live|publishing/);
+    await expect(trip).not.toContainText(/Published|publishing/);
     await status("Not published yet");
   } finally {
     await closeApp(l);

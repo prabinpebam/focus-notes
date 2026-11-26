@@ -20,7 +20,8 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
   }));
   const reg = <A extends Record<string, unknown>>(id: string, run: (args: A) => void | Promise<void>) =>
     commands.register<A>({ id, title: "share.settings.title", run });
-  const settingsOpen = (open: boolean) => store.update(s => ({ ...s, ui: { ...s.ui, settings: { ...s.ui.settings, open, section: "sharing" } } }));
+  // Share details… (D-431) stays the place a copy, extension or withdrawal returns to; Settings doesn't open over it.
+  const settingsOpen = (open: boolean) => { if (open && store.state.ui.share.details?.open) return; store.update(s => ({ ...s, ui: { ...s.ui, settings: { ...s.ui.settings, open, section: "sharing" } } })); };
   reg<{ id?: string; kind: string }>("sharing.confirmOpen", ({ id = "", kind }) => { set({ dialog: kind, id, problem: "" }); settingsOpen(false); });
   reg<Record<string, never>>("sharing.confirmClose", () => { if (!state().busy) { set({ dialog: "" }); progress.clear(); settingsOpen(true); } });
   let setupGeneration = 0;

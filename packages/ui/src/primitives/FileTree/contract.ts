@@ -31,13 +31,14 @@ export const contract = defineContract({
   // Controls at a section row's trailing end, by its `accessory` index: each section's repository backup (D-191).
   // `rowCard`: what a deleting row's hover or focus card shows (D-428): its steps, elapsed time and Retry.
   slots: { sectionEnd: { accepts: ["PopoverPanel"] }, rowCard: { accepts: ["IconLayout"] } },
-  states: ["rest", "hover", "focusVisible", "selected", "current", "multiSelected", "editing", "invalid", "dropTarget", "pending", "readOnly", "menuOpen", "pinAvailable", "pinPending", "pinConfirmed", "pinFailed", "deleting", "deleteFailed"],
+  states: ["rest", "hover", "focusVisible", "selected", "current", "multiSelected", "editing", "invalid", "dropTarget", "pending", "readOnly", "menuOpen", "pinAvailable", "pinPending", "pinConfirmed", "pinFailed", "deleting", "deleteFailed", "siteMarked"],
   tokens: "cmp.fileTree.*",
   a11y: { pattern: "tree (multi-selectable) with type-ahead", name: "label" },
   uncovered: { hover: GAP.hover, focusVisible: GAP.focusVisible, dropTarget: GAP.drag, menuOpen: GAP.open },
   fixtures: [
     { name: "same-slot pin action and acknowledged outcomes", covers: ["pinAvailable", "pinPending", "pinConfirmed", "pinFailed"], props: { label: { t: "files.tree" }, items: { get: "vm.gallery.treePins" } } },
     { name: "deleting rows: the border arc, and the failed outline", covers: ["deleting", "deleteFailed"], props: { label: { t: "files.tree" }, items: { get: "vm.gallery.treeDeleting" } } },
+    { name: "shared and published marks (D-431)", covers: ["siteMarked"], props: { label: { t: "files.tree" }, items: { get: "vm.gallery.treeMarks" } } },
     { name: "sections, folders, the current note, and a multiple selection", covers: ["rest", "selected", "current", "multiSelected", "pending", "readOnly"], props: { label: { t: "files.tree" }, items: { get: "vm.gallery.tree" }, focusId: { get: "vm.gallery.treeFocus" } } },
     { name: "naming a folder, with an error", covers: ["editing", "invalid"], props: { label: { t: "files.tree" }, items: { get: "vm.gallery.treeEditing" }, editValue: { get: "vm.gallery.query" }, editLabel: { get: "vm.gallery.treeEditLabel" }, editError: { get: "vm.gallery.treeEditError" } } },
   ],

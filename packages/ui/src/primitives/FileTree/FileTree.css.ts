@@ -76,6 +76,10 @@ export const label = style({ flexGrow: 1, minWidth: 0, overflow: "hidden", textO
 // It gives way after the label, ending in an ellipsis, so the row keeps its end inset in a narrow window (spacing SP-4).
 export const description = style({ flexShrink: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: t.textMuted, fontSize: t.captionSize, fontWeight: t.weight, textTransform: "none" });
 globalStyle(`${row}[aria-selected="true"] :is(${chevron}, ${icon}, ${description})`, { color: t.selectionTextMuted });
+/** D-431: a file's shared and published icons at the row's end; muted like the description, never a chip. */
+export const siteMarks = style({ display: "inline-flex", flexShrink: 0, alignItems: "center", color: t.textMuted });
+export const siteIcons = style({ display: "inline-flex", alignItems: "center", gap: t.markGap });
+globalStyle(`${row}[aria-selected="true"] ${siteMarks}`, { color: t.selectionTextMuted });
 /** The saving sign appears only after the wait sign's delay (Waits), so quick writes show nothing. */
 const appear = keyframes({ to: { visibility: "visible" } });
 export const pending = style({

@@ -118,6 +118,7 @@ export const NOT_IN_MENU_BAR: readonly { why: string; ids: RegExp }[] = [
   { why: "panel retry, reading preview and local-note reveal controls", ids: /^(files\.retryDeleted|history\.retry|reading\.preview|note\.revealLocal)$/ },
   { why: "New note picker and Spotlight keep-open key", ids: /^(newNote\.(dismiss|query|next|prev|accept|select|expand|newFolder|create)|spotlight\.runKeep)$/ },
   { why: "fixed-item sharing dialog and Files row menu", ids: /^(share\.item\..+|files\.share)$/ },
+  { why: "Share details… on a shared file's row menu and in ⋯ (D-431), and its dialog", ids: /^(share\.details\..+|note\.shareDetails|files\.shareDetails)$/ },
   // Settings → AI's fields and the Rewrite dialog's own steps, and the editor's answers to it.
   { why: "AI settings and the Rewrite dialog", ids: /^(ai\.(load|edit|save|openSettings|add|cancel|provider|change|remove|writer|test|discover|discoverCancel|useFound|models|model|privacy)|rewrite\.(captured|dismiss|prompt|preset|generate|began|cancel|deselected|keepPrompt|discardPrompt|writer))$/ },
   // What views, the editor, and the shell send as things change: values, events, and their own steps.

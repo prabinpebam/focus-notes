@@ -12,6 +12,7 @@ import type { AccessFile } from "@focus-notes/seal";
 import { createApp, initials, inviteTemplate, inviteText, MessageCatalog, shareables, type AccessListing, type PlatformBridge } from "../src/index.ts";
 import en from "../../views/messages/en.json" with { type: "json" };
 import { menuBarModel } from "../src/menu-bar.ts";
+import { siteMarksOf } from "../src/share-details.ts";
 
 const catalog = new MessageCatalog("en", en);
 const SITE = "https://ada.github.io/notes/";
@@ -958,5 +959,79 @@ describe("after the security review of 8a6627c (D-143)", () => {
     await t.run("share.manage.submit");
     const at = new Date(shareGrants(t.access())[0]!.expiresAt!);
     expect([at.getFullYear(), at.getMonth(), at.getDate()]).toEqual([latest.getFullYear(), latest.getMonth(), latest.getDate()]);
+  });
+});
+
+describe("D-431: shared and published marks in Files, and Share details…", () => {
+  const rowsOf = (t: ReturnType<typeof shell>) => [...t.vm("vm.files").items, ...t.vm("vm.files").shortcuts, ...t.vm("vm.opened").items] as { id: string; shared?: boolean; published?: boolean; siteLabel?: string }[];
+  const menuIds = (t: ReturnType<typeof shell>) => t.vm("vm.files").menu.flatMap((g: { items: { id: string }[] }) => g.items).map((i: { id: string }) => i.id);
+  it("marks a shared note in the tree and Opened files, offers Share details… only there, and copies its link from it", async () => {
+    const t = shell();
+    await t.app.start();
+    await settle();
+    await t.run("files.reveal");
+    const rome = "/w/private/notes/trips/rome.md";
+    expect(rowsOf(t).filter((r) => r.id === rome && r.shared)).toEqual([]);
+    await t.run("files.reveal");
+    expect(menuIds(t)).toContain("files.share");
+    expect(menuIds(t)).not.toContain("files.shareDetails");
+    expect(t.app.commands.describe("note.shareDetails").enabled).toBe(false);
+    await t.run("share.item.open", { path: rome });
+    await t.run("share.item.action", { what: "link" });
+    await t.run("share.item.setOpen", { open: false });
+    await t.run("files.reveal");
+    // Both the tree row and the open note's tab: the icon, named once.
+    const marked = rowsOf(t).filter((r) => r.id === rome);
+    expect(marked.length).toBeGreaterThanOrEqual(2);
+    for (const r of marked) expect(r).toMatchObject({ shared: true, published: false, siteLabel: "Shared" });
+    expect(rowsOf(t).find((r) => r.id === "/w/private/notes/diary.md")?.shared).toBeFalsy();
+    await t.run("files.reveal");
+    expect(menuIds(t)).toContain("files.shareDetails");
+    expect(t.app.commands.describe("note.shareDetails").enabled).toBe(true);
+    expect(t.vm("vm.toolbar").more.flatMap((g: { items: { id: string }[] }) => g.items).map((i: { id: string }) => i.id)).toContain("note.shareDetails");
+    await t.run("files.shareDetails");
+    const details = t.vm("vm.shareDetails");
+    expect(details).toMatchObject({ open: true, name: "Rome" });
+    expect(details.rows).toHaveLength(1);
+    expect(details.rows[0].copyMenu[0].items.map((i: { id: string }) => i.id)).toContain("link");
+    const before = t.copied.length;
+    await t.run("sharing.copy", { id: details.rows[0].id, action: "link" });
+    expect(t.copied.slice(before)).toEqual([expect.stringMatching(/^https:\/\/ada\.github\.io\/notes\/s\/#/)]);
+    // The dialog stays, saying so; Settings doesn't open over it.
+    expect(t.vm("vm.shareDetails")).toMatchObject({ open: true, hasStatus: true, status: "Copied." });
+    expect(t.app.store.state.ui.settings.open).toBe(false);
+  });
+  it("Withdraw from Share details… takes the mark and the menu item away, and comes back to the dialog", async () => {
+    const t = shell();
+    await t.app.start();
+    await settle();
+    await t.run("files.reveal");
+    const rome = "/w/private/notes/trips/rome.md";
+    await t.run("share.item.open", { path: rome });
+    await t.run("share.item.action", { what: "link" });
+    await t.run("share.item.setOpen", { open: false });
+    await t.run("files.reveal");
+    await t.run("share.details.open", { path: rome });
+    const id = t.vm("vm.shareDetails").rows[0].id;
+    await t.run("sharing.confirmOpen", { kind: "withdraw", id });
+    expect(t.vm("vm.shareDetails").open).toBe(false);
+    expect(t.vm("vm.sharingSettings").confirmOpen).toBe(true);
+    await t.run("sharing.confirm");
+    expect(t.vm("vm.shareDetails")).toMatchObject({ open: true, rows: [], status: expect.stringContaining("Withdrawn") });
+    expect(t.app.store.state.ui.settings.open).toBe(false);
+    await t.run("share.details.setOpen", { open: false });
+    await t.run("files.reveal");
+    expect(rowsOf(t).filter((r) => r.id === rome && r.shared)).toEqual([]);
+    await t.run("files.reveal");
+    expect(menuIds(t)).not.toContain("files.shareDetails");
+    expect(t.app.commands.describe("note.shareDetails").enabled).toBe(false);
+  });
+  it("names a shared and published note once: Shared and published", () => {
+    const tree = { roots: [{ id: "private" as const, path: "/w/p", readOnly: false, children: [] }] };
+    const grant = { id: "g1", name: "", link: true, passcode: false, createdAt: "2026-11-01T00:00:00.000Z", item: { path: "a.md", label: "A", folder: false } };
+    const state = (grants: unknown[], published: string[]) => ({ workspace: { tree }, ui: { share: { listing: { available: true, vault: false, grants }, publication: { published, publishing: [] } } } }) as never;
+    expect(siteMarksOf(state([grant], ["a.md"]), "/w/p/a.md", catalog)).toEqual({ shared: true, published: true, siteLabel: "Shared and published" });
+    expect(siteMarksOf(state([], ["a.md"]), "/w/p/a.md", catalog)).toEqual({ shared: false, published: true, siteLabel: "Published" });
+    expect(siteMarksOf(state([{ ...grant, revokedAt: "2026-11-02T00:00:00.000Z" }], []), "/w/p/a.md", catalog)).toEqual({});
   });
 });

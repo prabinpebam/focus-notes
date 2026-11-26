@@ -6757,7 +6757,8 @@
         "pinConfirmed",
         "pinFailed",
         "deleting",
-        "deleteFailed"
+        "deleteFailed",
+        "siteMarked"
       ],
       "tokens": "cmp.fileTree.*",
       "a11y": {
@@ -6800,6 +6801,20 @@
             },
             "items": {
               "get": "vm.gallery.treeDeleting"
+            }
+          }
+        },
+        {
+          "name": "shared and published marks (D-431)",
+          "covers": [
+            "siteMarked"
+          ],
+          "props": {
+            "label": {
+              "t": "files.tree"
+            },
+            "items": {
+              "get": "vm.gallery.treeMarks"
             }
           }
         },
@@ -11347,6 +11362,7 @@
         "rest",
         "current",
         "truncated",
+        "siteMarked",
         "hover",
         "pressed",
         "focusVisible",
@@ -11366,11 +11382,12 @@
       },
       "fixtures": [
         {
-          "name": "open notes, the active one, a long name",
+          "name": "open notes, the active one, a long name, shared and published marks",
           "covers": [
             "rest",
             "current",
-            "truncated"
+            "truncated",
+            "siteMarked"
           ],
           "props": {
             "label": {

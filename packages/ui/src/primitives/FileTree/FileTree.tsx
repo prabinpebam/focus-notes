@@ -5,6 +5,7 @@ import * as menuStyles from "../MenuButton/MenuButton.css.ts";
 import { useWindowBoundary } from "../../layouts/AppRoot/in-window.tsx";
 import { Icon } from "../Icon/Icon.tsx";
 import { IconButton } from "../IconButton/IconButton.tsx";
+import { SiteMarks } from "./SiteMarks.tsx";
 import { Spinner } from "../Spinner/Spinner.tsx";
 import { BorderProgress } from "../CommitMark/BorderProgress.tsx";
 import * as popoverStyles from "../PopoverPanel/PopoverPanel.css.ts";
@@ -349,9 +350,11 @@ export function FileTree({ label, items, focusId, focusRequest, windowed = false
         const folder = item.kind !== "note";
         // A section's own control (its repository's backup, D-191); the row is then named by its label alone.
         const end = item.kind === "section" && item.accessory !== undefined ? sectionEnd[item.accessory] : undefined;
-        const labelId = !item.editing && (end || item.detail || item.pinLabel) ? `${treeRowId(id, item.id)}-label` : undefined;
+        const marked = Boolean(item.siteLabel && (item.shared || item.published) && !item.editing);
+        const labelId = !item.editing && (end || item.detail || item.pinLabel || marked) ? `${treeRowId(id, item.id)}-label` : undefined;
         const descriptionId = labelId && item.description && !end ? `${treeRowId(id, item.id)}-description` : undefined;
         const detailId = item.detail && !item.editing ? `${treeRowId(id, item.id)}-detail` : undefined;
+        const marksId = labelId && marked ? `${treeRowId(id, item.id)}-marks` : undefined;
         return (
           <Fragment key={item.id}>
           {bounded ? spacer(`before-${item.id}`, index - (indices[n - 1] ?? -1) - 1) : null}
@@ -364,7 +367,7 @@ export function FileTree({ label, items, focusId, focusRequest, windowed = false
               if (el && cardId === item.id) cardAnchor.current = el;
             }}
             role="treeitem"
-            aria-labelledby={labelId ? [labelId, descriptionId, detailId].filter(Boolean).join(" ") : undefined}
+            aria-labelledby={labelId ? [labelId, marksId, descriptionId, detailId].filter(Boolean).join(" ") : undefined}
             aria-description={detailId ? item.title || undefined : undefined}
             aria-level={item.level}
             aria-posinset={bounded ? siblings.get(index)?.position : undefined}
@@ -449,11 +452,12 @@ export function FileTree({ label, items, focusId, focusRequest, windowed = false
                 {editError ? <span id={errorId} className={s.error}>{editError}</span> : null}
               </span>
             ) : (
-              <span className={s.label} id={labelId} dir="auto">{item.label}{item.description ? <span className={s.srOnly}>,</span> : null}</span>
+              <span className={s.label} id={labelId} dir="auto">{item.label}{item.description || marked ? <span className={s.srOnly}>,</span> : null}</span>
             )}
             {/* The name is the row's text: "About, public" (Files → Accessibility). */}
             {item.description && !item.editing ? <span id={descriptionId} className={s.description}> {item.description}</span> : null}
             {item.detail && !item.editing ? <span id={detailId} className={s.description}> {item.detail}</span> : null}
+            {marked ? <SiteMarks item={item} lead="" trail={item.description ? "," : ""} {...(marksId ? { nameId: marksId } : {})} /> : null}
             {item.pending ? <span className={s.pending}><Spinner size="s" /></span> : null}
             {item.deleting ? <BorderProgress state={item.deleting} /> : null}
             {end ? (

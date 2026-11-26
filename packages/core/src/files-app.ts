@@ -20,6 +20,7 @@ import {
 } from "./files.ts";
 import { copyPublicLink, publicLinkReason } from "./public-link-app.ts";
 import { publishPathOf, publishStatus } from "./publish-status.ts";
+import { liveSharesOf, siteMarksOf } from "./share-details.ts";
 import { deleteCardView, deleteDoneKey, deletePhase, newDeleteJob, runDelete, type DeleteJob } from "./delete-takedown.ts";
 import { siteTakedown, type SiteTakedown } from "./site-takedown.ts";
 import {
@@ -496,6 +497,16 @@ export function registerFiles(ctx: Ctx) {
     run: async () => {
       const row = rowById(files().selection.focus);
       if (row) await commands.run("share.item.open", { path: row.path });
+    },
+  });
+  // D-431: a shared file's own shares, from its menu; only shared files offer it.
+  commands.register({
+    id: "files.shareDetails", title: "command.note.shareDetails", icon: "share",
+    enabled: (s) => { const row = rowById(s.ui.files.selection.focus); return Boolean(row) && liveSharesOf(s, row!.path).length > 0; },
+    disabledReason: "command.note.shareDetails.reason",
+    run: async () => {
+      const row = rowById(files().selection.focus);
+      if (row) await commands.run("share.details.open", { path: row.path });
     },
   });
 
@@ -1119,11 +1130,9 @@ export function registerFiles(ctx: Ctx) {
   // A public note held out of Git says so (D-158): not backed up yet, or kept on this computer.
   const publicDescription = (s: AppState, path: string) =>
     catalog.format(s.ui.held.held.waiting.includes(path) ? "held.pill.waiting" : s.ui.held.held.local.includes(path) ? "held.pill.local" : "files.public");
-  /** A note's mark on the paired site (D-422): live or publishing…; nothing while it isn't published, which would be noise. */
-  const siteMark = (s: AppState, path: string) => {
-    const status = publishStatus(publishPathOf(s.workspace.tree, path), s.ui.share.publication);
-    return status === "live" || status === "publishing" ? catalog.format(`files.publish.${status}`) : "";
-  };
+  /** D-422's mark while a Publish runs; once live, the row's published icon says it instead (D-431). */
+  const siteMark = (s: AppState, path: string) =>
+    publishStatus(publishPathOf(s.workspace.tree, path), s.ui.share.publication) === "publishing" ? catalog.format("files.publish.publishing") : "";
   const visibilityTargets = (s: AppState): string[] => {
     const f = s.ui.files;
     const t = s.workspace.tree;
@@ -1596,6 +1605,9 @@ export function registerFiles(ctx: Ctx) {
       ...["id", "label", "description", "detail", "title", "parent", "pinLabel"].map((k) => [k, { type: "string" as const }]),
       ["pinCommit", { type: "string" as const, enum: ["rest", "pending", "confirmed", "failed"] }],
       ["deleting", { type: "string" as const, enum: ["pending", "failed"] }],
+      ["shared", { type: "boolean" as const }],
+      ["published", { type: "boolean" as const }],
+      ["siteLabel", { type: "string" as const }],
       ["kind", { type: "string" as const, enum: ["section", "folder", "note"] }],
       ["level", { type: "number" as const }],
       ["accessory", { type: "number" as const }],
@@ -1676,7 +1688,7 @@ export function registerFiles(ctx: Ctx) {
       importFiles: Boolean(ws?.chooseImport && ws.readImport && ctx.htmlToMarkdown),
     });
     // Share… for every item, private or published (D-424); the dialog guides when sharing can't start yet.
-    if (bridge.access && focus.kind !== "root" && acted.length <= 1) sections.splice(1, 0, ["files.share"]);
+    if (bridge.access && focus.kind !== "root" && acted.length <= 1) sections.splice(1, 0, ["files.share", ...(liveSharesOf(s, focus.path).length ? ["files.shareDetails"] : [])]);
     // One Publish and one Unpublish (D-424): the site's Publish… / Unpublish when sharing is live, else moving
     // between private and public notes, which the owner calls publishing too.
     if (focus.kind !== "root") {
@@ -1715,7 +1727,7 @@ export function registerFiles(ctx: Ctx) {
     },
     setters: { filter: "files.setFilter", editValue: "files.setEditValue" },
     // The tree, the open note, and whether the workspace can be written (PRF-11). Cheap while closed.
-    reads: ["ui.files", "workspace", "note.path", "ui.held", "account.login", "commits", "tasks", "ui.share.publication"],
+    reads: ["ui.files", "workspace", "note.path", "ui.held", "account.login", "commits", "tasks", "ui.share.publication", "ui.share.listing"],
     shows: (s) => (s.ui.files.open ? [{ kind: "tree" }] : []),
     select: (s) => {
       const f = s.ui.files;
@@ -1740,7 +1752,7 @@ export function registerFiles(ctx: Ctx) {
           if (!found || (section === "recent" && found.node.kind !== "note")) return [];
           const label = titleOfNode(found.node);
           if (f.filter && !label.toLocaleLowerCase().includes(f.filter.toLocaleLowerCase())) return [];
-          return [{ id: path, kind: found.node.kind, label, level: 2, parent: id, ...pinState(path, label),
+          return [{ id: path, kind: found.node.kind, label, level: 2, parent: id, ...pinState(path, label), ...siteMarksOf(s, path, catalog),
             detail: dirOf(path).slice(found.root.path.length).replace(/^[\\/]+/, "") || catalog.format("files.location.root"), description: "", title: path,
             selected: selected.has(path), current: path === s.note.path, expanded: false, hasChildren: false }];
         });
@@ -1762,6 +1774,7 @@ export function registerFiles(ctx: Ctx) {
         expanded: r.expanded, hasChildren: r.hasChildren, selected: selected.has(r.id), current: r.path === s.note.path && r.kind === "note",
         pending: pending.has(r.id), readOnly: r.readOnly,
         ...(r.kind !== "root" ? pinState(r.id, r.label) : {}),
+        ...(r.kind !== "root" && !job ? siteMarksOf(s, r.path, catalog) : {}),
         draggable: writable && !r.readOnly && r.kind !== "root" && !job, droppable: writable && !r.readOnly && r.kind !== "note" && !job,
         editing: f.edit?.kind === "rename" && f.edit.id === r.id,
         // Private and Public each carry their repository's backup at the trailing end (D-191).
@@ -1836,7 +1849,7 @@ export function registerFiles(ctx: Ctx) {
         menu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, items: { type: "array", items: ctx.itemSchema } } } },
       },
     },
-    reads: ["ui.files.open", "ui.files.opened", "ui.files.filter", "workspace.tree", "note.path"],
+    reads: ["ui.files.open", "ui.files.opened", "ui.files.filter", "workspace.tree", "note.path", "ui.share.listing", "ui.share.publication"],
     select: (s) => {
       const f = s.ui.files;
       if (!f.open || f.opened.length === 0) return { items: [], menu: [] };
@@ -1854,6 +1867,7 @@ export function registerFiles(ctx: Ctx) {
           description: "", detail: "", parent: "",
           expanded: false, hasChildren: false, selected: false,
           pending: false, readOnly: false, draggable: false, droppable: false, editing: false, pinned: false,
+          ...(found ? siteMarksOf(s, path, catalog) : {}),
         }];
       });
       const menu = items.length > 0

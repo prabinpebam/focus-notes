@@ -230,6 +230,14 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
       { id: "new:", kind: "folder", level: 2, label: "bold", parent: "root:private", editing: true },
       { id: "spec-ideas.md", kind: "note", level: 2, label: "Spec ideas", parent: "root:private" },
     ],
+    // D-431: shared, published, and both, marked at the row's end; one plain row for comparison.
+    treeMarks: [
+      { id: "root:private", kind: "section", level: 1, label: "Private", expanded: true, hasChildren: true },
+      { id: "trip.md", kind: "note", level: 2, label: "Trip plans", parent: "root:private", title: "trip.md", shared: true, siteLabel: "Shared" },
+      { id: "garden.md", kind: "note", level: 2, label: "Garden notes", parent: "root:private", title: "garden.md", published: true, siteLabel: "Published" },
+      { id: "recipes.md", kind: "note", level: 2, label: "Recipes", parent: "root:private", title: "recipes.md", shared: true, published: true, siteLabel: "Shared and published", selected: true },
+      { id: "ideas.md", kind: "note", level: 2, label: "Ideas", parent: "root:private", title: "ideas.md" },
+    ],
     treeEditLabel: "Folder name",
     treeEditError: "That name is taken here.",
     versionBlocks: [
@@ -240,9 +248,9 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
     ],
     versionEmpty: [],
     openedFiles: [
-      { id: "spec-ideas.md", kind: "note", level: 1, label: "Spec ideas", title: "spec-ideas.md", current: true },
+      { id: "spec-ideas.md", kind: "note", level: 1, label: "Spec ideas", title: "spec-ideas.md", current: true, shared: true, siteLabel: "Shared" },
       { id: "journal/2026-10-13.md", kind: "note", level: 1, label: "2026-10-13", title: "journal/2026-10-13.md" },
-      { id: "essays/long.md", kind: "note", level: 1, label: "What a calm writing app owes the person who opens it every morning", title: "essays/long.md" },
+      { id: "essays/long.md", kind: "note", level: 1, label: "What a calm writing app owes the person who opens it every morning", title: "essays/long.md", shared: true, published: true, siteLabel: "Shared and published" },
     ],
     openedFilesNone: [],
     openedFilesMenu: [{ id: "opened", items: [{ id: "files.closeAllOpened", label: "Close all" }] }],
@@ -331,6 +339,7 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
         tree: { type: "array", items: TREE_ITEM },
         treePins: { type: "array", items: TREE_ITEM },
         treeDeleting: { type: "array", items: TREE_ITEM },
+        treeMarks: { type: "array", items: TREE_ITEM },
         treeFocus: { type: "string" },
         treeEditing: { type: "array", items: TREE_ITEM },
         treeEditLabel: { type: "string" },

@@ -89,6 +89,12 @@ export interface TreeItem {
    * pending arc, or the failed outline when a step stopped; hovering or focusing it shows the tree's `rowCard`.
    */
   deleting?: "pending" | "failed";
+  /** D-431: shared by link or access code; shows the share icon at the row's end. */
+  shared?: boolean;
+  /** D-431: live on the project's website; shows the globe icon at the row's end. */
+  published?: boolean;
+  /** D-431: the marks' name and tooltip: "Shared", "Published", "Shared and published". Required with either mark. */
+  siteLabel?: string;
 }
 
 /**

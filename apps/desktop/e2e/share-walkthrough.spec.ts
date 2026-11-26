@@ -77,8 +77,8 @@ test("Share walk-through: turn on, share a folder with link and access code, rec
     const note = page.getByRole("textbox", { name: "Note", exact: true });
     await expect(note).toContainText(SECRET);
     const files = async () => {
-      if (!(await page.getByRole("treeitem", { name: "trips", exact: true }).isVisible())) await page.keyboard.press(process.platform === "darwin" ? "Meta+Shift+E" : "Control+Shift+E");
-      await expect(page.getByRole("treeitem", { name: "trips", exact: true })).toBeVisible();
+      if (!(await page.getByRole("treeitem", { name: /^trips(, Shared)?$/ }).isVisible())) await page.keyboard.press(process.platform === "darwin" ? "Meta+Shift+E" : "Control+Shift+E");
+      await expect(page.getByRole("treeitem", { name: /^trips(, Shared)?$/ })).toBeVisible();
     };
     const settings = page.getByRole("dialog", { name: "Settings", exact: true });
     const openSettings = async (tab: string) => {
@@ -88,7 +88,7 @@ test("Share walk-through: turn on, share a folder with link and access code, rec
 
     // 1. Not set up: Share… is already in Files (it starts with turning sharing on, D-418); Settings → Sharing offers Turn on sharing….
     await files();
-    await page.getByRole("treeitem", { name: "trips", exact: true }).click({ button: "right" });
+    await page.getByRole("treeitem", { name: /^trips(, Shared)?$/ }).click({ button: "right" });
     await expect(page.getByRole("menuitem", { name: "Share…", exact: true })).toBeVisible();
     await page.keyboard.press("Escape");
     await openSettings("Sharing");
@@ -106,7 +106,7 @@ test("Share walk-through: turn on, share a folder with link and access code, rec
 
     // 3. Share a folder: Files → right-click → Share…; link on, passcode on, access code with Copy.
     await files();
-    await page.getByRole("treeitem", { name: "trips", exact: true }).click({ button: "right" });
+    await page.getByRole("treeitem", { name: /^trips(, Shared)?$/ }).click({ button: "right" });
     await page.getByRole("menuitem", { name: "Share…", exact: true }).click();
     const share = page.getByRole("dialog", { name: "Share “trips”", exact: true });
     await expect(share).toBeVisible();
@@ -158,7 +158,7 @@ test("Share walk-through: turn on, share a folder with link and access code, rec
 
     // 7. Withdraw: confirm, then readers stop after the next publication.
     await files();
-    await page.getByRole("treeitem", { name: "trips", exact: true }).click({ button: "right" });
+    await page.getByRole("treeitem", { name: /^trips(, Shared)?$/ }).click({ button: "right" });
     await page.getByRole("menuitem", { name: "Share…", exact: true }).click();
     await share.getByRole("button", { name: "Withdraw", exact: true }).first().click();
     const withdraw = page.getByRole("dialog", { name: "Withdraw this share?", exact: true });
@@ -173,7 +173,7 @@ test("Share walk-through: turn on, share a folder with link and access code, rec
     // 8. Publish a note, then Unpublish it.
     await files();
     const lisbon = page.getByRole("treeitem", { name: /^Lisbon/ });
-    if (!(await lisbon.isVisible())) { await page.getByRole("treeitem", { name: "trips", exact: true }).click(); await page.keyboard.press("ArrowRight"); }
+    if (!(await lisbon.isVisible())) { await page.getByRole("treeitem", { name: /^trips(, Shared)?$/ }).click(); await page.keyboard.press("ArrowRight"); }
     await lisbon.click();
     await lisbon.press(process.platform === "darwin" ? "Meta+ArrowDown" : "Enter");
     await expect(note).toContainText("Tram 28");

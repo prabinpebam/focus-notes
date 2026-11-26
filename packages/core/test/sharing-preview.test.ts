@@ -336,7 +336,9 @@ const fileMenuStatus = (t: Awaited<ReturnType<typeof liveFixture>>) =>
 const rowMark = (t: Awaited<ReturnType<typeof liveFixture>>) => {
   const s = t.app.store.state;
   const open = { ...s, ui: { ...s.ui, files: { ...s.ui.files, open: true } } };
-  return ((t.app.viewModels.select("vm.files", open) as { items: { id: string; description: string }[] }).items.find(i => i.id === "/w/notes/a.md"))?.description;
+  // D-431: a live note carries the published icon, named "Published"; publishing… stays a text mark.
+  const row = (t.app.viewModels.select("vm.files", open) as { items: { id: string; description: string; published?: boolean; siteLabel?: string }[] }).items.find(i => i.id === "/w/notes/a.md");
+  return row && (row.description || (row.published ? row.siteLabel : ""));
 };
 
 it("D-422: publishStatus derives Live, Publishing… and Not published yet from the site set and the Publish in flight", () => {
@@ -364,12 +366,12 @@ it("D-422: the Files row shows publishing… then live, the ⋯ and File status 
   expect(statusLine(t)).toMatchObject({ label: "Publishing…" });
   t.settle();
   await task;
-  expect(rowMark(t)).toBe("live");
+  expect(rowMark(t)).toBe("Published");
   expect(statusLine(t)).toMatchObject({ label: "Live on your site" });
   expect(fileMenuStatus(t)).toMatchObject({ label: "Live on your site" });
   const removal = t.app.commands.run("note.unpublish");
   await Promise.resolve(); await Promise.resolve();
-  expect(rowMark(t)).toBe("live");
+  expect(rowMark(t)).toBe("Published");
   t.settle(undefined, []);
   await removal;
   expect(rowMark(t)).toBe("");
@@ -379,14 +381,14 @@ it("D-422: the Files row shows publishing… then live, the ⋯ and File status 
 it("D-422: a failed Publish leaves the previous status, and no status line shows where there's no live site", async () => {
   const t = await liveFixture(["a.md"]);
   await t.app.commands.run("files.open");
-  expect(rowMark(t)).toBe("live");
+  expect(rowMark(t)).toBe("Published");
   await t.app.commands.run("note.publish");
   const task = t.app.commands.run("sharing.publish");
   await Promise.resolve();
   expect(rowMark(t)).toBe("publishing…");
   t.settle(new Error("sharing:offline"));
   await task;
-  expect(rowMark(t)).toBe("live");
+  expect(rowMark(t)).toBe("Published");
   t.app.store.update(s => ({ ...s, ui: { ...s.ui, share: { ...s.ui.share, listing: undefined } } }));
   expect(rowMark(t)).toBe("");
   expect(statusLine(t)).toBeUndefined();

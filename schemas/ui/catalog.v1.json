@@ -2619,7 +2619,8 @@
         "pinConfirmed",
         "pinFailed",
         "deleting",
-        "deleteFailed"
+        "deleteFailed",
+        "siteMarked"
       ],
       "tokens": "cmp.fileTree.*",
       "a11y": {
@@ -2629,6 +2630,7 @@
       "fixtures": [
         "same-slot pin action and acknowledged outcomes",
         "deleting rows: the border arc, and the failed outline",
+        "shared and published marks (D-431)",
         "sections, folders, the current note, and a multiple selection",
         "naming a folder, with an error"
       ]
@@ -4527,6 +4529,7 @@
         "rest",
         "current",
         "truncated",
+        "siteMarked",
         "hover",
         "pressed",
         "focusVisible",
@@ -4539,7 +4542,7 @@
         "name": "label"
       },
       "fixtures": [
-        "open notes, the active one, a long name",
+        "open notes, the active one, a long name, shared and published marks",
         "nothing open: not there"
       ]
     },
@@ -7585,7 +7588,8 @@
       "ia": "IA-VIEW-SHARE",
       "viewModels": [
         "vm.shareItem",
-        "vm.shareProgress"
+        "vm.shareProgress",
+        "vm.shareDetails"
       ]
     },
     {

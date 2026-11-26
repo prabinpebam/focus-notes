@@ -18,6 +18,11 @@
         "$type": "dimension",
         "$value": "{space.inlinePair}"
       },
+      "markGap": {
+        "$type": "dimension",
+        "$value": "{space.scale.xxs}",
+        "$description": "D-431: between a row's shared and published icons, tighter than the row's gap so the two read as one mark."
+      },
       "rowGap": {
         "$type": "dimension",
         "$value": "{space.scale.xxs}"

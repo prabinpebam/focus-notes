@@ -18,12 +18,12 @@ export const contract = defineContract({
     menuAction: { payload: { id: "text" } },
   },
   slots: {},
-  states: ["rest", "current", "truncated", "hover", "pressed", "focusVisible", "menuOpen", "empty"],
+  states: ["rest", "current", "truncated", "siteMarked", "hover", "pressed", "focusVisible", "menuOpen", "empty"],
   tokens: "cmp.openedFiles.*",
   a11y: { pattern: "labelled list of buttons, the active one aria-current", name: "label" },
   uncovered: { hover: GAP.hover, pressed: GAP.pressed, focusVisible: GAP.focusVisible, menuOpen: GAP.open },
   fixtures: [
-    { name: "open notes, the active one, a long name", covers: ["rest", "current", "truncated"], props: { label: { t: "files.opened.heading" }, items: { get: "vm.gallery.openedFiles" }, menu: { get: "vm.gallery.openedFilesMenu" }, menuLabel: { t: "files.opened.menu" }, closeLabel: { t: "files.opened.close" } } },
+    { name: "open notes, the active one, a long name, shared and published marks", covers: ["rest", "current", "truncated", "siteMarked"], props: { label: { t: "files.opened.heading" }, items: { get: "vm.gallery.openedFiles" }, menu: { get: "vm.gallery.openedFilesMenu" }, menuLabel: { t: "files.opened.menu" }, closeLabel: { t: "files.opened.close" } } },
     { name: "nothing open: not there", covers: ["empty"], props: { label: { t: "files.opened.heading" }, items: { get: "vm.gallery.openedFilesNone" }, closeLabel: { t: "files.opened.close" } } },
   ],
 });
