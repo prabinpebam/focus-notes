@@ -51,6 +51,8 @@ import { createRunner, whenGitIdle, type GitRunner } from "./git/run.ts";
 import { bundleEnv, gitBundle } from "./git/bundle.ts";
 import { passphraseStrength } from "@focus-notes/seal";
 import { accessStore, siteFromGitConfig } from "./share/access.ts";
+import { sharedNoteUpdates, sharedNotesSignature } from "./share/share-updates.ts";
+import { audienceState } from "@focus-notes/seal/access";
 import { invitationsFile, projectPeople } from "./share/people.ts";
 import { projectSharingLayout } from "./share/layout.ts";
 import { sharingRuntime } from "./share/runtime.ts";
@@ -1071,6 +1073,7 @@ const writer = new NoteWriter({
   },
   // A write hands its result straight to the snapshot: the next read doesn't touch the disk (PRF-10).
   written: async (path, content) => {
+    noteWritten?.();
     if (isText(path)) { texts.written(path, content); return; }
     if (!isMarkdown(path)) return;
     const st = await stat(path).catch(() => undefined);
@@ -1078,6 +1081,8 @@ const writer = new NoteWriter({
   },
 });
 const writeQueues = writer.queues;
+/** Set with sharing: a saved note may be a shared one, whose shares then update once the notes are idle (D-433). */
+let noteWritten: (() => void) | undefined;
 const atomicWrite = (path: string, content: string, expected?: string) => writer.write(path, content, expected);
 
 /** Renames, retrying while Windows sync clients and antivirus briefly lock a file they just saw. */
@@ -2425,7 +2430,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     if (repository !== current.repository) throw new Error("invite:changed");
     await shell.openExternal(`https://github.com/${current.repository}/settings/access`);
   });
-  const deployAccess = async () => {
+  const deploySite = async () => {
     const g = await gitOpening;
     if (!g) throw new Error("access:site.unavailable");
     const report = await g.request("save");
@@ -2439,6 +2444,13 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
       if (code === "signedout") throw new Error("access:signedOut");
       throw error;
     }
+  };
+  // Every site build seals the shared notes as they are now, so D-433's automatic update has nothing older left.
+  let shareUpdates: ReturnType<typeof sharedNoteUpdates> | undefined;
+  const deployAccess = async () => {
+    const before = await shareUpdates?.snapshot();
+    await deploySite();
+    shareUpdates?.built(before);
   };
   const access = accessStore({
     dir: privateDir,
@@ -2467,6 +2479,25 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     },
   });
   handle("access:load", async () => (settingsAvailable() ? access.load() : { available: false, vault: false, grants: [] }));
+  // D-433: saving a shared note updates its existing shares (same link, code and expiry) after the backup, once idle.
+  shareUpdates = sharedNoteUpdates({
+    current: async () => {
+      if (!settingsAvailable() || (await sharing.pairing().catch(() => undefined))?.phase !== "ready") return undefined;
+      const items = (await access.load()).grants
+        .filter((g) => g.item && ["active", "soon"].includes(audienceState(g)))
+        .map((g) => ({ path: g.item!.path, folder: Boolean(g.item!.folder) }));
+      return items.length ? { key: privateDir(), signature: await sharedNotesSignature(join(privateDir(), "notes"), items) } : undefined;
+    },
+    deploy: deploySite,
+    report: (event) => {
+      if (event.status === "failed") logLine(`Sharing: updating shares after a save failed (${event.problem})`);
+      sendSharing("sharing:sharesUpdated", event);
+    },
+    idleMs: Number(process.env.FOCUS_NOTES_SHARE_UPDATE_MS) || undefined,
+  });
+  void Promise.resolve(gitOpening).then(() => shareUpdates?.prime(), () => {});
+  noteWritten = () => shareUpdates?.changed();
+  handle("sharing:sharesRetry", () => shareUpdates?.retry());
   // A withdrawal, expiry change or removal reaches readers only when the paired site is deployed again (G6.2):
   // deploy now; if that fails, the change stays recorded and the deploy retries in the background.
   const redeployAfter = (attempt = 0): Promise<boolean> => deployAccess().then(() => true, (error: unknown) => {
@@ -2491,6 +2522,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     return parts.sort().join("\n");
   };
   afterBackup = () => void (async () => {
+    shareUpdates?.changed();
     if (!projectLayout().legacy || (await sharing.pairing().catch(() => undefined))?.phase !== "ready") return;
     const now = await publicNotesSignature();
     if (now === publicNotesSeen) return;

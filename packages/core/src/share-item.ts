@@ -195,13 +195,13 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
     }
   };
 
-  reg<{ path?: string; again?: boolean }>("share.item.open", async ({ path, again }) => {
+  reg<{ path?: string }>("share.item.open", async ({ path }) => {
     const tree = store.state.workspace.tree;
     const target = path ?? store.state.note.path;
     const node = target ? findNode(tree, target)?.node : undefined;
     if (!target || !node) throw new Error(catalog.format("share.state.deleted"));
-    // D-431: an item that's already shared has one dialog, Share details…; its Share again comes back here.
-    if (!again && liveSharesOf(store.state, target).length) { await commands.run("share.details.open", { path: target }); return; }
+    // D-431: an item that's already shared has one dialog, Share details… (D-433: saving it updates the share).
+    if (liveSharesOf(store.state, target).length) { await commands.run("share.details.open", { path: target }); return; }
     const current = ++generation;
     const pending = state().waitingId;
     if (pending && access?.cancelReady) await access.cancelReady(pending);

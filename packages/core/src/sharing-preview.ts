@@ -7,6 +7,7 @@ import { findNode, joinPath, rootOf, type NoteNode, type TreeNode } from "./work
 import type { SharingDraft } from "./sharing-people.ts";
 import type { PMNode } from "@focus-notes/markdown";
 import { shareProgress, shareProgressView } from "./share-progress.ts";
+import { siteProblemKey } from "./site-problem.ts";
 import { NO_PUBLICATION, PUBLISH_STATUS_COMMAND, PUBLISH_STATUS_TITLE, publishPathOf, publishStatus, type SitePublication } from "./publish-status.ts";
 
 interface Article { id: string; title: string; titleBlocks: PMNode[]; section: string; excerpt: string; updated: string; blocks: PMNode[] }
@@ -36,6 +37,10 @@ export interface PublishingBridge {
   onRenameFollowed?(listener: (event: { paths: string[]; status: string; build?: string; problem?: string }) => void): () => void;
   /** Deploys the recorded notes at their current paths again, after a rename's deploy failed. */
   followRetry?(): Promise<void>;
+  /** D-433: the automatic update of a shared note's shares after a save: `updated`, or `failed` with its `sharing:`/`access:` code. */
+  onSharesUpdated?(listener: (event: { status: string; problem?: string }) => void): () => void;
+  /** Runs that update again at once. */
+  sharesRetry?(): Promise<void>;
 }
 const PUBLISH_PROBLEMS = ["offline", "signedout", "refused", "media", "scope", "unavailable", "busy", "unacknowledged", "notlive", "pages"];
 /** The plain problem for a failed Publish or Unpublish: never the note's text, a path or a secret (G3.2). */
@@ -201,6 +206,15 @@ export function registerSharingPreview(ctx: {
     }
   });
   reg<Record<string, never>>("sharing.followRetry", async () => { await ctx.publishing?.followRetry?.(); });
+  // D-433: saving a shared note updates its shares quietly. Only a failure says so, once, with its cause and Retry
+  // (auto-dismiss: the next backup tries again by itself, and the share keeps its last version meanwhile).
+  ctx.publishing?.onSharesUpdated?.(({ status, problem }) => {
+    if (status !== "failed") return;
+    const cause = siteProblemKey(problem ?? "");
+    ctx.toast(`${catalog.format("sharing.sharesUpdate.failed")}${cause ? ` ${catalog.format(cause)}` : ""}`,
+      { tone: "error", action: { command: "sharing.sharesRetry", label: catalog.format("commit.retry") } });
+  });
+  reg<Record<string, never>>("sharing.sharesRetry", async () => { await ctx.publishing?.sharesRetry?.(); });
   const steps = shareProgress(store);
   const liveTask = async (command: string, operation: "publishSite" | "unpublishSite", message: string, labels: string[], work: () => Promise<void>) => {
     if (state.busy) return;

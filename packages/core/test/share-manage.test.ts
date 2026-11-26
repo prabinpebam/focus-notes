@@ -341,7 +341,7 @@ describe("item-first sharing (SHR-13 to SHR-16, SHR-24)", () => {
     expect(shareGrants(t.access())).toHaveLength(1);
     expect(t.copied).toHaveLength(2);
   });
-  it("D-431: Share… on an already-shared item opens Share details; Share again makes an independent share", async () => {
+  it("D-431: Share… on an already-shared item opens Share details; D-433: it has no Share again", async () => {
     const t = shell();
     await t.app.start();
     await settle();
@@ -357,18 +357,11 @@ describe("item-first sharing (SHR-13 to SHR-16, SHR-24)", () => {
     // Shared: the one dialog for it, Share details.
     await t.run("share.item.open", { path: "/w/private/notes/trips" });
     expect(t.vm("vm.shareItem").dialogOpen).toBe(false);
-    expect(t.vm("vm.shareDetails")).toMatchObject({ open: true, name: "trips", againLabel: "Share again…" });
+    expect(t.vm("vm.shareDetails")).toMatchObject({ open: true, name: "trips" });
+    expect(t.vm("vm.shareDetails")).not.toHaveProperty("againLabel");
+    expect(t.app.commands.has("share.details.again")).toBe(false);
     expect(t.vm("vm.shareDetails").rows.map((r: { id: string }) => r.id)).toEqual([first]);
-    await t.run("share.details.again");
-    expect(t.vm("vm.shareDetails").open).toBe(false);
-    expect(t.vm("vm.shareItem")).toMatchObject({ dialogOpen: true, name: "trips", id: "" });
-    await t.run("share.item.action", { what: "link" });
-    expect(shareGrants(t.access()).map((g) => g.id)).toEqual([first, expect.not.stringMatching(first)]);
-    await t.run("share.item.setOpen", { open: false });
-    await t.run("note.share");
-    expect(t.vm("vm.shareDetails").open).toBe(false);
-    await t.run("share.item.open", { path: "/w/private/notes/trips" });
-    expect(t.vm("vm.shareDetails").rows).toHaveLength(2);
+    expect(shareGrants(t.access()).map((g) => g.id)).toEqual([first]);
     expect(t.app.store.state.note.path).toBe("/w/private/notes/trips/rome.md");
   });  it("refuses draft commands during creation and after saving, including regenerated words", async () => {
     const t = shell();
@@ -455,11 +448,10 @@ describe("item-first sharing (SHR-13 to SHR-16, SHR-24)", () => {
     await t.run("share.item.action", { what: "link" });
     expect(shareGrants(t.access())).toHaveLength(1);
     await t.run("share.item.setOpen", { open: false });
-    // Shared now: Share… opens Share details, whose Share again starts an independent share (D-431).
+    // Shared now: Share… opens Share details, never a second share (D-431, D-433).
     await t.run("share.item.open", { path: "/w/private/notes/trips" });
-    await t.run("share.details.again");
-    await t.run("share.item.action", { what: "primary" });
-    expect(shareGrants(t.access())).toHaveLength(2);
+    expect(t.vm("vm.shareDetails").open).toBe(true);
+    expect(shareGrants(t.access())).toHaveLength(1);
   });
 
   it("preserves the draft and saved grant after offline failure; retry never creates twice", async () => {

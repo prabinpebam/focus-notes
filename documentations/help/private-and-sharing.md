@@ -3,7 +3,7 @@
 Keep notes private, publish them as web pages, and share any note with a link, a passcode or both.
 
 > [!NOTE]
-> **TL;DR.** **Share…** starts with the private note or folder you chose. Review its contents, choose how it opens, then copy its share information. Copying waits until the published encrypted share can actually be opened. Opening or cancelling the draft leaves existing shares unchanged. In Files, shared and published notes carry an icon, and **Share details…** copies, extends or withdraws a share.
+> **TL;DR.** **Share…** starts with the private note or folder you chose. Review its contents, choose how it opens, then copy its share information. Copying waits until the published encrypted share can actually be opened. Opening or cancelling the draft leaves existing shares unchanged. In Files, shared and published notes carry an icon, and **Share details…** copies, extends or withdraws a share. Editing a shared note updates its share by itself, with the same link and code.
 
 ## Review a note or folder
 
@@ -33,7 +33,7 @@ On Windows, choose **Copy share information**, **Copy link**, or **Copy access c
 
 **Deleting a shared or published note.** Focus Notes always asks before it deletes a note, and says if its link or web page goes too. It turns the link off and takes the page down first, then deletes the note. Until that's done, the note stays in Files marked *Deleting…*; point to it to see the steps. If a step stops, choose **Retry**, or **Delete anyway** to delete the note now and leave its link or page up.
 
-Retrying a failed publication in the same dialog reuses the saved share. Once an item is shared, its menus offer **Share details…** instead of **Share…**; **Share again…** there starts an independent share and doesn't replace the earlier link. With **Include notes added later** off, a folder share includes only the reviewed note identities, not another note later created at the same path.
+Retrying a failed publication in the same dialog reuses the saved share. Once an item is shared, its menus offer **Share details…** instead of **Share…**. With **Include notes added later** off, a folder share includes only the reviewed note identities, not another note later created at the same path.
 
 **Not available yet:** first-site setup from this dialog and full review of very large folders. Change… and template editing aren't part of this dialog. **Settings → Sharing** holds the share settings (your site, **Share information**, **Turn off sharing…**) and **Site appearance**.
 
@@ -43,12 +43,12 @@ In **Files**, a shared note or folder shows a share icon at the end of its row, 
 
 To copy a share again, open the shared item's row menu and choose **Share details…** or **Share…**: on a shared item, both open the same dialog. For the note you're writing, use **⋯ → Note → Share details…**. The dialog lists each of its shares that still works:
 
-- **Copy** copies its link, its access code or its share information.
+- **Copy** copies its link, its access code or its share information, at once: nothing is uploaded.
 - **Extend** gives it 7, 30 or 90 more days, or no end.
 - **Withdraw** turns it off after you confirm. Its icon goes once nothing shares the item.
 - **Add them** shows on a folder's share when notes were added to the folder after you shared it. Choose it to add them to that share.
 
-To make another, separate share of the same item, choose **Share again…**.
+**Your changes reach your share by themselves.** When you edit a shared note, Focus Notes updates its share a few seconds after you stop typing, once your backup has run. The link, the access code and the expiry stay the same, and nothing else is shared. If the update can't happen (offline, for example), a notification says why, with **Retry**; it also tries again after your next change, and until then the share shows the previous version.
 
 Only shared items offer **Share details…**. For a published note, use **Copy public link** and **Unpublish** in the same menus.
 

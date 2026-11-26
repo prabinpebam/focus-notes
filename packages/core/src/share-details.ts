@@ -73,16 +73,6 @@ export function registerShareDetails({ store, catalog, commands, viewModels, tra
     id: "share.details.setOpen", title: "command.note.shareDetails",
     run: ({ open: next }) => { if (!next && !store.state.ui.share.settings.busy && !store.state.ui.share.details.busy) setDetails({ open: false, path: "" }); },
   });
-  // Another share of the same item: the Share… form, never this dialog again.
-  commands.register({
-    id: "share.details.again", title: "command.note.shareDetails",
-    run: async () => {
-      const path = store.state.ui.share.details.path;
-      if (!path || store.state.ui.share.details.busy) return;
-      setDetails({ open: false, path: "" });
-      await commands.run("share.item.open", { path, again: true });
-    },
-  });
   // A folder share's newer notes (not in its snapshot) join it, then the website is updated (SHR-24).
   commands.register<{ id: string }>({
     id: "share.details.addThem", title: "command.note.shareDetails",
@@ -120,7 +110,7 @@ export function registerShareDetails({ store, catalog, commands, viewModels, tra
   viewModels.register({
     id: "vm.shareDetails",
     schema: { type: "object", properties: {
-      open: bool, name: str, busy: bool, status: str, hasStatus: bool, problem: str, hasProblem: bool, copyLabel: str, extendLabel: str, againLabel: str,
+      open: bool, name: str, busy: bool, status: str, hasStatus: bool, problem: str, hasProblem: bool, copyLabel: str, extendLabel: str,
       rows: { type: "array", items: { type: "object", properties: { id: str, methods: str, detail: str, badge: str, newer: str, hasNewer: bool, copyMenu: menuSchema, extendMenu: menuSchema,
         copyBusy: bool, extendBusy: bool, withdrawBusy: bool, addBusy: bool } } },
     } },
@@ -152,7 +142,7 @@ export function registerShareDetails({ store, catalog, commands, viewModels, tra
       return {
         open: shown, name: node ? node.kind === "note" ? node.title || stemOf(node.name) : node.name : "",
         busy: m.busy || Boolean(d.busy), status, hasStatus: Boolean(status), problem, hasProblem: Boolean(problem),
-        copyLabel: catalog.format("shareDetails.copy"), extendLabel: catalog.format("share.settings.extend"), againLabel: catalog.format("shareDetails.again"), rows,
+        copyLabel: catalog.format("shareDetails.copy"), extendLabel: catalog.format("share.settings.extend"), rows,
       };
     },
   });

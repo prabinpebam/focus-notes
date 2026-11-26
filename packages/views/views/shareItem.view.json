@@ -302,10 +302,7 @@
         "props": { "title": { "t": "shareDetails.title" }, "closeLabel": { "t": "dialog.close" }, "open": { "get": "vm.shareDetails.open" }, "size": "s", "height": "content" },
         "on": { "openChange": { "run": "share.details.setOpen", "args": { "open": { "get": "event.open" } } } },
         "slots": {
-          "visual": [{ "type": "StepMark", "props": { "icon": "share", "tone": "accent", "size": "compact" } }],
-          "footer": [{ "type": "Inline", "props": { "gap": "inlineItem", "justify": "end" }, "children": [
-            { "type": "Button", "props": { "label": { "get": "vm.shareDetails.againLabel" }, "variant": "secondary" }, "on": { "press": { "run": "share.details.again" } } }
-          ] }]
+          "visual": [{ "type": "StepMark", "props": { "icon": "share", "tone": "accent", "size": "compact" } }]
         },
         "children": [
           { "type": "Stack", "props": { "gap": "stackGroup" }, "children": [

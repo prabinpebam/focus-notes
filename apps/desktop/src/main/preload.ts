@@ -344,6 +344,15 @@ contextBridge.exposeInMainWorld("focusNotes", {
       return () => ipcRenderer.removeListener("sharing:publishLive", handler);
     },
     followRetry: () => ipcRenderer.invoke("sharing:followRetry"),
+    sharesRetry: () => ipcRenderer.invoke("sharing:sharesRetry"),
+    onSharesUpdated: (listener: (event: { status: string; problem?: string }) => void) => {
+      const handler = (_event: unknown, value: unknown) => {
+        const v = value as { status?: unknown; problem?: unknown } | null;
+        if (v && typeof v.status === "string") listener({ status: v.status, ...(typeof v.problem === "string" ? { problem: v.problem } : {}) });
+      };
+      ipcRenderer.on("sharing:sharesUpdated", handler);
+      return () => ipcRenderer.removeListener("sharing:sharesUpdated", handler);
+    },
     onRenameFollowed: (listener: (event: { paths: string[]; status: string; build?: string; problem?: string }) => void) => {
       const handler = (_event: unknown, value: unknown) => {
         const v = value as { paths?: unknown; status?: unknown; build?: unknown; problem?: unknown } | null;

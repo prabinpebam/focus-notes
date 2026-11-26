@@ -197,17 +197,13 @@ test("SHR-16: first copy waits for a real deployed share; both methods work and 
     await share.getByRole("button", { name: "Copy link", exact: true }).first().click();
     expect(access().grants.filter((g) => !g.owner)).toHaveLength(1);
     await page.keyboard.press("Escape");
-    // D-431: a shared item's menu offers Share details… (not Share…); Share again… makes another, independent share.
+    // D-431: a shared item's menu offers Share details… (not Share…); D-433: it has no Share again…, since saving
+    // the note updates its share.
     await open("Share details…");
     const details = page.getByRole("dialog", { name: "Share details", exact: true });
     await expect(details).toBeVisible();
     await expect(share).toHaveCount(0);
-    await details.getByRole("button", { name: "Share again…", exact: true }).click();
-    await expect(details).toHaveCount(0);
-    await share.getByRole("button", { name: "Copy link", exact: true }).first().click();
-    await expect(share.getByText("Link copied.", { exact: true })).toBeVisible({ timeout: 20_000 });
-    expect(access().grants.filter((g) => !g.owner)).toHaveLength(2);
-    expect(access().grants.find((g) => g.id === first.id)).toEqual(first);
+    await expect(details.getByRole("button", { name: "Share again…", exact: true })).toHaveCount(0);
     await page.keyboard.press("Escape");
     write(join(priv, "notes", "trips", "New travel.md"), "# New travel\n\nNot in either snapshot yet.\n");
     git(priv, "add", "-A"); git(priv, "commit", "-qm", "Add unshared fixture note");
@@ -221,7 +217,7 @@ test("SHR-16: first copy waits for a real deployed share; both methods work and 
     await expect(details.getByText("1 newer note isn't shared", { exact: true }).first()).toBeVisible();
     await details.getByRole("button", { name: "Add them", exact: true }).first().click();
     await expect(details.getByText("Reviewed notes added to these shares.", { exact: true })).toBeVisible({ timeout: 30_000 });
-    expect(access().grants.filter((g) => !g.owner)).toHaveLength(2);
+    expect(access().grants.filter((g) => !g.owner)).toHaveLength(1);
     const expanded = access().grants.find((g) => g.id === first.id)!;
     expect(expanded.link).toEqual(first.link);
     expect(expanded.passcode).toEqual(first.passcode);
