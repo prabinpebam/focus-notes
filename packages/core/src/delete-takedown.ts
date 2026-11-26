@@ -94,7 +94,7 @@ export class TakedownStop extends Error {
 const siteProblem = (error: unknown, otherwise: string) => {
   const cause = siteProblemKey(error);
   if (cause && cause !== "site.problem.offline") return cause;
-  return /sharing:pages|sharing:notlive/.test(error instanceof Error ? error.message : "") ? "files.deleting.problem.site" : otherwise;
+  return /sharing:pages|sharing:notlive/.test(error instanceof Error ? error.message : "") ? "files.deleting.problem.pages" : otherwise;
 };
 
 /**
@@ -219,5 +219,6 @@ export function deleteMessageKeys(): string[] {
     "files.deleting.summary.failed", "files.deleting.summary.failedAfter", "files.deleting.summary.pageAfter", "files.confirm.shared", "files.confirm.sharedMany", "files.confirm.published", "files.confirm.publishedMany"];
   for (const w of ["link", "page", "both"]) keys.push(`files.deleting.summary.${w}`, `files.deleting.done.${w}`, `files.deleting.doneAnyway.${w}`, `files.deleting.anywayWarning.${w}`);
   for (const s of ["link", "page", "site", "note"] as const) keys.push(`files.deleting.step.${s}.label`, `files.deleting.step.${s}.line`, `files.deleting.problem.${s}`);
+  keys.push("files.deleting.problem.pages");
   return keys;
 }

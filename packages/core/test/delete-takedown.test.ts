@@ -44,6 +44,14 @@ describe("the order of a delete (D-428)", () => {
     expect(h.order).toEqual(["withdraw g1", "redeploy", "delete"]);
   });
 
+  it("D-433: GitHub's build failing names that cause, never \"Retry in a minute\"", async () => {
+    const h = harness(newDeleteJob(["p/a.md"], "“A”", [], ["a.md"], 0), { unpublish: async () => { throw new Error("sharing:pages"); } });
+    expect(await h.run()).toBe(false);
+    expect(h.job()).toMatchObject({ failed: true, problem: "files.deleting.problem.pages" });
+    expect(messages["files.deleting.problem.pages"]).toBe("GitHub’s build of your website failed. Retry.");
+    expect(Object.values(messages).filter((m) => /in a minute/i.test(m))).toEqual([]);
+  });
+
   it("a failed takedown never deletes the note; Retry carries on from the failed step", async () => {
     const h = harness(newDeleteJob(["p/a.md"], "“A”", ["g1"], ["a.md"], 0), { unpublish: async () => { throw new Error("sharing:offline"); } });
     expect(await h.run()).toBe(false);

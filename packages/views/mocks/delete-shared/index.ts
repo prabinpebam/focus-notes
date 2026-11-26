@@ -71,7 +71,7 @@ const running = {
 const stopped = {
   ...running, summary: "The note isn't deleted yet. Nothing is lost.", icon: "error", tone: "danger", steps: steps(["link", "page", "site", "note"], 2, true), line: "", still: "",
   failed: true, busy: false, canAnyway: true,
-  problem: "Stopped at “Update your website”. The steps before it are done and kept. GitHub couldn’t update your website. Retry in a minute.",
+  problem: "Stopped at “Update your website”. The steps before it are done and kept. GitHub’s build of your website failed. Retry.",
   anywayWarning: "Delete anyway deletes the note now, but its link keeps working and its web page stays up.",
 };
 const ask = (shared: boolean, published: boolean) => ({
