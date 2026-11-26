@@ -261,6 +261,14 @@ Each local app run used invisible E2E windows and recorded main PIDs, followed b
 
 ## Summary
 
+### D-430 and D-431, 26 November
+
+| Head | Exact-head run | Landed |
+| --- | --- | --- |
+| `000f1039` | [45770114148](https://github.com/prabinpebam/focus-notes/actions/runs/45770114148) | D-430, Site appearance (theme and font for published pages and the share page) and Settings → Sharing in two groups (`56365613`); the share walk-through (`000f1039`). |
+| `c5ae38e3` | [45773681664](https://github.com/prabinpebam/focus-notes/actions/runs/45773681664) | The per-share copy and extend commands and strings kept for Share details (D-431). |
+| `bdade9fe` | [45778323177](https://github.com/prabinpebam/focus-notes/actions/runs/45778323177): attempt 1, 6/7; attempt 2, 7/7 | D-431, shared and published marks in Files and Share details… (`1f224b6f`, `4e8249f1`), a shared item's menus offering only Share details… (`bdade9fe`). Attempt 1 failed only on shard 4's PRF-14 window drag timing (`m5-snappy.spec.ts:358`), unrelated to sharing; the failed job was rerun once. Locally: `pnpm check`, typecheck, 69 sharing unit tests, and journeys share-details, item-sharing, share-walkthrough, share-legacy, share-progress, g3-publish, site-appearance and ui-states, 55/55 (share-legacy failed once under load, then 4/4). |
+
 ### Batches 10–12, 25 November
 
 **Landed on `main` in two fast-forwards, each after its own exact-head Windows CI was seven of seven green.** All runtime evidence uses fakes; no real repository, share, Pages deployment or deletion was made. The owner's real-account checks stay theirs ([Roadmap → Current state](roadmap.md#current-state)).
