@@ -43,6 +43,7 @@ import { BUNDLE_MAX_BYTES, parseBundle, planImport, safeWorkspacePath, type Bund
 import { parseSettings } from "@focus-notes/core/settings";
 import { restorePlace, titleOrName } from "@focus-notes/core/history";
 import { GitSync, NO_GIT } from "./git/sync.ts";
+import { pushGate } from "./git/push-gate.ts";
 import { remoteRepo, TemplateGuard } from "./git/template-guard.ts";
 import { HeldFile, excludeFileOf } from "./git/held.ts";
 import { changedChars, type BackupPolicy } from "./git/cadence.ts";
@@ -357,6 +358,8 @@ function backedUp(): void {
 }
 /** Set with sharing: keeps the Private + Public site's published pages in step with notes/ after a backup (D-429). */
 let afterBackup: (() => void) | undefined;
+/** One queue per repository for the backup's pushes and the website's uploads (D-432). */
+const repoPushGate = pushGate();
 /** Opened once the caret is ready, so Git never competes with the first frame (PRF-02, PRF-07). Again after the workspace changes. */
 const armGit = () => (gitSync = undefined, gitOpened = false, gitWaiting = [], lastWaiting = 0, gitOpening = new Promise<GitSync | undefined>((resolve) => {
   startGit = () => {
@@ -376,6 +379,8 @@ const armGit = () => (gitSync = undefined, gitOpened = false, gitWaiting = [], l
       // Never pushed to a template repository (D-157).
       checkRemote: (url) => templateGuard.checkRemote(url),
       beforeSync: () => syncAlert.checkBeforeSync(),
+      // A push never lands between a website upload's head read and its ref update on the same repository (D-432).
+      pushGate: repoPushGate,
       // After the window closes, the final sync on quit still runs; there's just no one to tell.
       onReport: (r) => {
         if (r.git && r.state === "idle" && r.waiting === 0 && lastWaiting > 0) backedUp();
@@ -2146,7 +2151,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   // The Pages site the public root publishes to (SHR-03, D-139): setup's, or the notes repository's origin on github.com.
   const sendSharing = (channel: string, value: unknown) => { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send(channel, value); };
   const sharing = sharingRuntime({
-    root: notesHome, layout: projectLayout, api: projectGitHub, repository: githubRepo,
+    root: notesHome, layout: projectLayout, api: projectGitHub, repository: githubRepo, pushGate: repoPushGate,
     write: async (file, text) => { await assertWritable(file); await atomicWrite(file, text); },
     written: file => withGit(g => g.written(file)), temporary: app.getPath("userData"),
     step: step => sendSharing("sharing:setupStep", step),

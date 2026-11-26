@@ -7,6 +7,7 @@ import { FakeGitHub } from "../../../packages/github/test/fake-github.ts";
 import { projectSharingLayout } from "../src/main/share/layout.ts";
 import { sharingRuntime } from "../src/main/share/runtime.ts";
 import { pagesArtifactPublisher } from "../src/main/share/site-publish.ts";
+import { pushGate } from "../src/main/git/push-gate.ts";
 import { gitData } from "./fake-pages.ts";
 
 const PRIVATE_TEXT = "# Private draft\n\nThis sentence is private and long enough to be leak-checked.\n";
@@ -143,6 +144,30 @@ it("D-432: a push from elsewhere landing mid-upload is kept and the upload is re
     expect(t.git.headFiles("ada/notes-site")).toEqual(expect.arrayContaining(["elsewhere-3.txt", "elsewhere-6.txt"]));
     // Once the branch is still, Retry lands.
     await expect(runtime.takeDown()).resolves.toMatchObject({ commit: expect.any(String) });
+  } finally { await rm(t.directory, { recursive: true, force: true }); }
+});
+
+it("D-432: an upload waits while a backup push to the same repository holds its turn, then reads the head after it", async () => {
+  const t = await fixture();
+  try {
+    const gate = pushGate();
+    const runtime: ReturnType<typeof sharingRuntime> = sharingRuntime({ ...t.deps, publisher: pagesArtifactPublisher({
+      api: t.deps.api, get: t.git.get, timeoutMs: 2_000, delayMs: 5, exclusive: work => gate("site", work),
+      target: async () => ({ ...(await runtime.pairing())! }),
+    }) });
+    await expect(runtime.enable("notes-site")).resolves.toMatchObject({ phase: "ready" });
+    const reads = () => t.github.calls.filter(c => c.method === "GET" && c.path === "/repos/ada/notes-site/git/ref/heads/main").length;
+    let release!: () => void;
+    const backup = gate("site", () => new Promise<void>(r => { release = r; }));
+    const before = reads();
+    const upload = runtime.takeDown();
+    await new Promise(r => setTimeout(r, 200));
+    expect(reads()).toBe(before);
+    // The upload reads the branch only once the backup's push is done, so it starts from the backup's commit.
+    release();
+    await backup;
+    await expect(upload).resolves.toMatchObject({ commit: expect.any(String) });
+    expect(reads()).toBe(before + 1);
   } finally { await rm(t.directory, { recursive: true, force: true }); }
 });
 

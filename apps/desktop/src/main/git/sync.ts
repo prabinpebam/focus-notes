@@ -13,6 +13,7 @@ import { conflictCopy, deletedId, DELETED_LOG_ARGS, parseDeletedId, parseDeleted
 import { StatusCache, filesKey, gitFiles } from "./cache.ts";
 import { Cadence, FETCH_EVERY_MS, type BackupPolicy, POINTER_GAP_MS, pointerDelay, retryDelay, systemClock, type Clock, type SyncReason } from "./cadence.ts";
 import { releaseLock, takeLock } from "./lock.ts";
+import type { PushGate } from "./push-gate.ts";
 import { emptyFolders } from "./folders.ts";
 import { unpushedPaths, waitsForBackup } from "./backup-state.ts";
 import { AGENT_TRAILER, agentMessage, backupMessage, agentMovesOf, agentNoteOf, agentOf, batchMessage, changesOf, pointerMessage, resolveMessage, saveMessage, undoAgentMessage, type BatchOp, type Change } from "./message.ts";
@@ -59,6 +60,8 @@ export interface GitSyncOptions {
   checkRemote?: (url: string) => Promise<"ok" | "template" | "unreadable">;
   /** Called before committing/pushing; returning false pauses backup (e.g. mass external deletion, FRE-13). */
   beforeSync?: () => Promise<boolean>;
+  /** Each push waits its turn with the website upload to the same repository (D-432). */
+  pushGate?: PushGate;
   /** Logs counts and problems, never paths or note text. */
   log?: (line: string) => void;
 }
@@ -904,7 +907,10 @@ export class GitSync {
     // Never to a template repository (D-157), whatever route the workspace came by.
     const refused = await this.#refusePush(repo, st.upstream);
     if (refused) return { problem: refused, moved };
-    const push = () => this.#git(repo, ["-c", "push.default=upstream", "push", "--quiet"], undefined, timeout);
+    const push = () => {
+      const run = () => this.#git(repo, ["-c", "push.default=upstream", "push", "--quiet"], undefined, timeout);
+      return this.#o.pushGate ? this.#o.pushGate(repo.dir, run) : run();
+    };
     let r = await push();
     repo.cache.clear();
     // Pushed: nothing of this repository waits any more, which the save state shows at once (D-132).

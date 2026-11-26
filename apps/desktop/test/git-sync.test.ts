@@ -54,6 +54,18 @@ describe("EDT-11 and D-07: save, commit, and push, private first", () => {
     expect(pushes).toEqual([join(ws, "private"), ws]);
   });
 
+  it("D-432: each push takes its repository's turn in the push gate, shared with the website upload", async () => {
+    const { ws, notesRemote } = instance();
+    const turns: string[] = [];
+    const s = await open(ws, { pushGate: (dir, work) => { turns.push(dir); return work(); } });
+    const note = join(ws, "private", "notes", "welcome.md");
+    writeFileSync(note, "# Welcome\n\nGated.\n");
+    s.written(note);
+    expect((await s.request("save")).problem).toBeUndefined();
+    expect(subject(notesRemote)).toMatch(/^Update private notes to /);
+    expect(turns).toEqual([join(ws, "private"), ws]);
+  });
+
   it("backs up an already staged private pointer only after its child commit is on the remote", async () => {
     const { ws, notesRemote, privateRemote } = instance();
     const privateFolder = join(ws, "private");

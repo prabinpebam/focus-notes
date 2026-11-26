@@ -94,6 +94,8 @@ export function pagesArtifactPublisher(deps: {
   failed?(failed: FailedBuild): void;
   /** Waits before each further upload attempt (default 1, 2 and 4 s). */
   retryDelaysMs?: readonly number[];
+  /** Holds each upload attempt (head read to ref update) apart from other pushes to the same repository (D-432). */
+  exclusive?<T>(work: () => Promise<T>): Promise<T>;
 }): PagesPublisher {
   const ready = async (project: string) => {
     const target = await deps.target(project);
@@ -175,7 +177,10 @@ export function pagesArtifactPublisher(deps: {
     const created = new Set<string>(), waits = deps.retryDelaysMs ?? UPLOAD_RETRY_MS;
     let commit: string | undefined;
     for (let attempt = 0; commit === undefined; attempt++) {
-      try { commit = await upload(api, owner, name, repo.defaultBranch, files, created); }
+      try {
+        const once = () => upload(api, owner, name, repo.defaultBranch, files, created);
+        commit = await (deps.exclusive ? deps.exclusive(once) : once());
+      }
       catch (error) {
         const moved = error instanceof BranchMoved, transient = error instanceof GitHubError && error.status >= 500;
         if ((!moved && !transient) || attempt >= waits.length) throw moved ? fail("moved") : error;

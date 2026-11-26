@@ -105,17 +105,26 @@ test("D-430: Site appearance changes the theme and font of the published pages a
     await expect(done).toBeVisible({ timeout: 90_000 });
     await expect(settings.getByText(/^Stopped at/)).toHaveCount(0);
 
-    // 3. The font: Sans. D-432: someone else's push lands during every upload attempt (the owner's backup of the private
-    // pointer, as on 26 Nov): the step says why and what helps, the choice stays, their pushes stay, and Retry finishes.
+    // 3. D-432: someone else's push lands during every upload attempt: the step says why and what helps, the choice
+    // stays, their pushes stay, and Retry finishes.
     fake.git.pushElsewhere("ada/book", 4);
-    await font.getByText("Sans", { exact: true }).click();
+    await font.getByText("Hyperlegible", { exact: true }).click();
     await expect(settings.getByText("Stopped at “Upload your notes site”. The steps before it are done and kept. Your website’s repository kept changing on GitHub while uploading, even after trying 4 times. Retry. Your choice is kept.", { exact: true }))
       .toBeVisible({ timeout: 90_000 });
-    await expect(font.getByRole("radio", { name: "Sans", exact: true })).toBeChecked();
+    await expect(font.getByRole("radio", { name: "Hyperlegible", exact: true })).toBeChecked();
     expect(fake.git.headFiles("ada/book")).toEqual(expect.arrayContaining(["elsewhere-1.txt", "elsewhere-4.txt"]));
     await settings.getByRole("button", { name: "Retry", exact: true }).click();
     await expect(done).toBeVisible({ timeout: 90_000 });
     await expect(settings.getByText(/^Stopped at/)).toHaveCount(0);
+    await expect(done).toHaveCount(0, { timeout: 30_000 });
+
+    // 3b. The owner's 26 Nov case, Font → Sans: the backup's pointer push lands between the upload's head read and its
+    // ref update (twice). The person sees no failure, only the new look, and the backup's commits stay on the branch.
+    fake.git.pushElsewhere("ada/book", 2);
+    await font.getByText("Sans", { exact: true }).click();
+    await expect(done).toBeVisible({ timeout: 90_000 });
+    await expect(settings.getByText(/^Stopped at/)).toHaveCount(0);
+    expect(fake.git.headFiles("ada/book")).toEqual(expect.arrayContaining(["elsewhere-5.txt", "elsewhere-6.txt"]));
     // Every page of the site carries the look: the published notes' pages and index, and the share page.
     const looked = () => [...deployed().entries()].filter(([f, html]) => f.endsWith(".html") && html.includes('data-page="reader"'));
     await expect.poll(() => looked().length > 0 && looked().every(([, html]) => html.includes('data-theme="dusk" data-content-font="sans"')), { timeout: 90_000 }).toBe(true);
@@ -145,9 +154,10 @@ test("D-430: Site appearance changes the theme and font of the published pages a
       await preview.getByRole("button", { name: "Apply", exact: true }).click();
       await expect(theme.getByRole("radio", { name: "Sepia", exact: true })).toBeChecked({ timeout: 30_000 });
       await expect.poll(() => deployed().get(article)?.includes('data-theme="sepia" data-content-font="sans"'), { timeout: 90_000 }).toBe(true);
+      expect(deployed().get("s/index.html")).toContain('data-theme="sepia" data-content-font="sans"');
       await reader.reload();
       await expect.poll(() => look(reader, "main h1")).toMatchObject({ theme: "sepia", font: "sans", dark: false });
-      expect(fake.git.headFiles("ada/book")).toContain("elsewhere-5.txt");
+      expect(fake.git.headFiles("ada/book")).toContain("elsewhere-7.txt");
       await expect(settings.getByText(/^Stopped at/)).toHaveCount(0);
     } finally { await browser.close(); }
   } finally {

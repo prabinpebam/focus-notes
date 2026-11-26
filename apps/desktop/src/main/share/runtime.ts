@@ -13,6 +13,7 @@ import { fetchDeployedSite, pagesArtifactPublisher, servedBuild, type DeployedSi
 import { sharedImageDestinations } from "./media.ts";
 import { sharingSetup, sitePairingStore, type SharingSetupStep, type SitePairing } from "./setup.ts";
 import { applySiteLookToSite, isSiteLook, readSiteLook, siteLookFile, siteLookText, type SiteLook } from "./site-look.ts";
+import type { PushGate } from "../git/push-gate.ts";
 
 const exists = (path: string) => stat(path).then(() => true, () => false);
 /** Static, script-free: the site's root sends readers to the published index at `n/`. */
@@ -53,6 +54,8 @@ export function sharingRuntime(deps: {
   write(file: string, text: string): Promise<void>;
   written(file: string): void;
   temporary: string;
+  /** Website uploads to the project's own public repository wait their turn with its backup pushes (D-432). */
+  pushGate?: PushGate;
   /** Defaults to pushing the sealed artifact to the paired public site and waiting for Pages. */
   publisher?: SealedArtifactPublisher;
   /** Publishes the emptied old separate site after its shares moved (D-429); defaults to its own Pages publisher. */
@@ -105,6 +108,11 @@ export function sharingRuntime(deps: {
     pushed: () => deps.step?.("deploy"),
     slow: () => deps.step?.("slow"),
     failed: failed => { failing = failed; },
+    // Private + Public (D-429): the site is the project's public repository, which the backup pushes to as well.
+    exclusive: work => {
+      const layout = deps.layout();
+      return deps.pushGate && layout.legacy && layout.publicDir ? deps.pushGate(layout.publicDir, work) : work();
+    },
   });
   const resumable = typeof (publisher as Partial<PagesPublisher>).resume === "function" ? publisher as PagesPublisher : undefined;
   /** Builds pushed to the site this session, oldest first: a newer one being served means an older one's notes are live too. */
