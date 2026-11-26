@@ -12,6 +12,7 @@ import { configurePublicSite, requirePublishedArtifact, type SealedArtifactPubli
 import { fetchDeployedSite, pagesArtifactPublisher, servedBuild, type DeployedSiteGet, type FailedBuild, type PagesPublisher } from "./site-publish.ts";
 import { sharedImageDestinations } from "./media.ts";
 import { sharingSetup, sitePairingStore, type SharingSetupStep, type SitePairing } from "./setup.ts";
+import { applySiteLookToSite, isSiteLook, readSiteLook, siteLookFile, siteLookText, type SiteLook } from "./site-look.ts";
 
 const exists = (path: string) => stat(path).then(() => true, () => false);
 /** Static, script-free: the site's root sends readers to the published index at `n/`. */
@@ -186,7 +187,7 @@ export function sharingRuntime(deps: {
     /** What a site build is made from: the share records and the published list. Changed since a failed build: upload afresh. */
     const inputs = async () => {
       const hash = createHash("sha256");
-      for (const file of [join(privateDir, "access.json"), publishedFile, join(privateDir, ".focus-notes", "site-pairing.json")]) {
+      for (const file of [join(privateDir, "access.json"), publishedFile, join(privateDir, ".focus-notes", "site-pairing.json"), siteLookFile(privateDir)]) {
         hash.update(file).update(await readFile(file).catch(() => Buffer.from("absent")));
       }
       return hash.digest("hex");
@@ -246,6 +247,10 @@ export function sharingRuntime(deps: {
         if (await exists(join(directory, "n", "index.html"))) {
           if (!await exists(join(directory, "index.html"))) await writeFile(join(directory, "index.html"), HOME_REDIRECT);
         } else if (!await exists(join(directory, "index.html"))) await writeEmptyHome(deps.reader?.(), directory, pairing.site);
+        // D-430: the website's look on every page (published pages, the home and s/); allowlisted values only.
+        const look = await readSiteLook(siteLookFile(privateDir));
+        guard();
+        if (look) await applySiteLookToSite(directory, look);
         deps.step?.("push");
         if (selection) deps.publishStep?.("publishing");
         const sealed = { directory, build: artifact.build };
@@ -267,7 +272,14 @@ export function sharingRuntime(deps: {
         if (staging) await rm(staging, { recursive: true, force: true });
       }
     };
-    return { root, layout, privateDir, guard, store, read, current, build, readPublished, presentPublished, writePublished };
+    const writeLook = async (look: SiteLook) => {
+      const file = siteLookFile(privateDir);
+      guard();
+      await deps.write(file, siteLookText(look));
+      guard();
+      deps.written(file);
+    };
+    return { root, layout, privateDir, guard, store, read, current, build, readPublished, presentPublished, writePublished, writeLook };
   };
   const service = () => {
     const ctx = bound();
@@ -351,6 +363,20 @@ export function sharingRuntime(deps: {
     takeDown: (): Promise<PublicDeploy> => serial(async () => {
       const ctx = bound(), saved = await ctx.current();
       if (!saved || saved.phase !== "ready") throw new Error("sharing:unconfigured");
+      try { return await ctx.build(saved); } catch (error) { throw publishProblem(error); }
+    }),
+    /** D-430: the website's saved look, or undefined while none is chosen. */
+    appearance: async (): Promise<SiteLook | undefined> => readSiteLook(siteLookFile(bound().privateDir)),
+    /**
+     * D-430: saves the website's look and rebuilds the one public site with it, like `takeDown`: published pages and
+     * the shared notes' page take it together. A failure leaves the saved look, so Retry builds it again.
+     */
+    setAppearance: (look: unknown): Promise<PublicDeploy> => serial(async () => {
+      if (!isSiteLook(look)) throw new Error("sharing:scope");
+      const ctx = bound(), saved = await ctx.current();
+      if (!saved || saved.phase !== "ready") throw new Error("sharing:unconfigured");
+      deps.step?.("save");
+      await ctx.writeLook({ theme: look.theme, font: look.font });
       try { return await ctx.build(saved); } catch (error) { throw publishProblem(error); }
     }),
     /** D-429: the old separate site (`owner/name`) whose shares moved into the public repository, until it's deleted on GitHub. */

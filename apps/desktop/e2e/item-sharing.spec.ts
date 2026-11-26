@@ -247,7 +247,7 @@ test("SHR-16: first copy waits for a real deployed share; both methods work and 
   }
 });
 
-test("G6.3 / SHR-19: share information template edit, live preview, copy-time validation, and reset", async () => {
+test("G6.3 / SHR-19: share information template edit, live preview, and reset", async () => {
   test.setTimeout(120_000);
   const { dirs } = instance();
   write(join(dirs.userData, DATA_FILES.state), JSON.stringify({ version: 1, firstRun: "done", lastNotePath: join(dirs.docs, "notes", "hello.md") }));
@@ -281,7 +281,6 @@ test("G6.3 / SHR-19: share information template edit, live preview, copy-time va
   write(join(dirs.userData, DATA_FILES.setup), JSON.stringify({ version: 1, site, steps: {} }));
   await configureSharing(dirs, site);
   const l = await launch(dirs, { FOCUS_NOTES_MEMORY_CLIPBOARD: "1", FOCUS_NOTES_POINTER_GAP_MS: "0", FOCUS_NOTES_IDLE_COMMIT_MS: "600000" });
-  const copied = () => l.app.evaluate(() => (globalThis as { memoryClipboard?: { text: string } }).memoryClipboard?.text ?? "");
   try {
     await l.app.evaluate((_electron, fixture) => {
       const nativeFetch = globalThis.fetch;
@@ -342,26 +341,6 @@ test("G6.3 / SHR-19: share information template edit, live preview, copy-time va
     await expect(tplDialog).not.toBeVisible();
     await expect(settings.getByText("Edited", { exact: true })).toBeVisible();
     expect(existsSync(join(priv, "access-message.json"))).toBe(true);
-
-    // Copy share information on the link-only share ("Rome") -> copy-time validation blocks and offers recovery.
-    const beforeCopy = await copied();
-    const copyButtons = settings.getByRole("button", { name: "Copy again", exact: true });
-    await copyButtons.nth(0).click();
-    await page.getByRole("menuitem", { name: "Copy share information", exact: true }).click();
-    await expect(settings.getByText("Add a link, or the site address and access code, for this share.", { exact: true })).toBeVisible();
-    expect(await copied()).toBe(beforeCopy);
-
-    // Use default this time copies the recipient-voice default message.
-    await settings.getByRole("button", { name: "Use default this time", exact: true }).click();
-    await expect(settings.getByText("Share information copied with the default message.", { exact: true })).toBeVisible({ timeout: 20_000 });
-    expect(await copied()).toContain("I’ve shared “Rome” with you to read.");
-    expect(await copied()).toContain(`Open it here: ${site}s/#`);
-
-    // Copy share information on the link+code share ("Paris") uses the custom template.
-    await copyButtons.nth(1).click();
-    await page.getByRole("menuitem", { name: "Copy share information", exact: true }).click();
-    await expect(settings.getByText("Copied.", { exact: true })).toBeVisible({ timeout: 20_000 });
-    expect(await copied()).toMatch(/^Custom for “Paris”:\nGo to https:\/\/sharing\.test\/s\/ with [A-Z0-9]{4}-[A-Z0-9]{4} [a-z]+(-[a-z]+){3}$/);
 
     // Reset to default removes private/access-message.json.
     await settings.getByRole("button", { name: "Edit", exact: true }).click();

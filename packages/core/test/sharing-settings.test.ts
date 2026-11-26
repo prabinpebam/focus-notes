@@ -1,5 +1,6 @@
 import { expect, it, vi } from "vitest";
 import { createApp, type AccessListing, type PlatformBridge } from "../src/index.ts";
+import type { SharingSetupStep } from "../src/share-manage.ts";
 import en from "../../views/messages/en.json" with { type: "json" };
 
 const SITE = "https://ada.github.io/notes-site/";
@@ -65,4 +66,32 @@ it("a failed Turn off keeps sharing on with the dialog and an error, never a fal
   await t.run("sharing.confirmOpen", { kind: "turnOff" });
   await t.run("sharing.confirm");
   expect(t.vm("vm.sharingSettings")).toMatchObject({ on: true, confirmOpen: true, busy: false, problem: `Stopped at “Keep your notes safe”. ${en["share.item.failed"]}`, status: "" });
+});
+
+it("D-430: Site appearance saves the look and rebuilds the site with its steps; a failure keeps the choice and Retry carries on", async () => {
+  const t = shell(() => ({ available: true, configured: true, setupAvailable: true, site: SITE, vault: false, grants: [] }), async () => ({ phase: "ready", site: SITE }));
+  const steps: ((step: SharingSetupStep) => void)[] = [];
+  t.bridge.access!.setup!.onStep = listener => { steps.push(listener); return () => { steps.splice(steps.indexOf(listener), 1); }; };
+  t.bridge.access!.siteAppearance = vi.fn(async () => ({ theme: "sepia", font: "sans" }));
+  let fail = true;
+  t.bridge.access!.setSiteAppearance = vi.fn(async () => {
+    for (const s of steps) { s("seal"); s("push"); s("deploy"); }
+    if (fail) throw new Error("sharing:pages");
+    return { commit: "c1" };
+  });
+  await t.app.start();
+  await settle();
+  await t.run("share.manage.load");
+  await settle();
+  expect(t.vm("vm.siteAppearance")).toMatchObject({ show: true, theme: "sepia", font: "sans", busy: false, progress: false });
+  await t.run("sharing.appearance.theme", { value: "dusk" });
+  expect(t.bridge.access!.setSiteAppearance).toHaveBeenLastCalledWith({ theme: "dusk", font: "sans" });
+  expect(t.vm("vm.siteAppearance")).toMatchObject({ theme: "dusk", font: "sans", failed: true, progress: true, busy: false });
+  expect(t.vm("vm.siteAppearance").problem).toBe(`Stopped at “GitHub updates your website”. The steps before it are done and kept. ${en["site.appearance.failed"]}`);
+  expect(t.vm("vm.shareProgress").steps.map((s: { stateLabel: string }) => s.stateLabel)).toEqual(["Done", "Done", "Stopped here", "Not started yet"]);
+  fail = false;
+  await t.run("sharing.appearanceRetry");
+  expect(t.bridge.access!.setSiteAppearance).toHaveBeenLastCalledWith({ theme: "dusk", font: "sans" });
+  expect(t.vm("vm.siteAppearance")).toMatchObject({ theme: "dusk", font: "sans", failed: false, progress: false, problem: "" });
+  await expect(t.run("sharing.appearance.font", { value: "comic" })).rejects.toThrow();
 });

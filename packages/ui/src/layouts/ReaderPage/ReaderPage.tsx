@@ -6,6 +6,19 @@ import "@fontsource/roboto-mono/400.css";
 import "@fontsource/roboto-mono/400-italic.css";
 import "@fontsource/roboto-mono/700.css";
 import "@fontsource/roboto-mono/700-italic.css";
+// The site's own fonts (D-430): Serif (Newsreader, Fraunces headings), Sans (Inter) and Hyperlegible (Atkinson), chosen
+// in Settings → Sharing → Site appearance; a page downloads only the faces its chosen font uses.
+import "@fontsource/newsreader/400.css";
+import "@fontsource/newsreader/400-italic.css";
+import "@fontsource/newsreader/700.css";
+import "@fontsource/fraunces/700.css";
+import "@fontsource/fraunces/700-italic.css";
+import "@fontsource/inter/400.css";
+import "@fontsource/inter/400-italic.css";
+import "@fontsource/inter/700.css";
+import "@fontsource/atkinson-hyperlegible/400.css";
+import "@fontsource/atkinson-hyperlegible/400-italic.css";
+import "@fontsource/atkinson-hyperlegible/700.css";
 import * as s from "./ReaderPage.css.ts";
 
 export interface ReaderPageProps {

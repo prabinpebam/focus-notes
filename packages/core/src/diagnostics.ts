@@ -163,6 +163,8 @@ export const MEASURE_NAMES: readonly string[] = [
   "focus-notes:sharing.setup.describe", "focus-notes:sharing.setup.enable",
   // The superseded shares-only site's removal check (D-429).
   "fn:sharing.oldSite.check", "focus-notes:sharing.oldSite.check",
+  // The website's look changed: the site rebuilt with it (D-430).
+  "fn:sharing.appearance", "focus-notes:sharing.appearance",
   // Publish and Unpublish to the paired site (G3.5): SHARING_WAITS in sharing-preview.ts.
   "fn:sharing.publishSite", "fn:sharing.unpublishSite", "focus-notes:sharing.publishSite", "focus-notes:sharing.unpublishSite",
   "fn:files.deleteTakedown", "focus-notes:files.deleteTakedown",

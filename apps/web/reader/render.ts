@@ -29,13 +29,16 @@ export interface NotePageInput {
 
 export { publicPagePath };
 
+/** The default content font's files; a site with its own font (D-430) gets its preloads swapped when the site is built. */
+const DEFAULT_FONT = "roboto-mono";
+
 export function renderNotePage(input: NotePageInput): { file: string; html: string; title: string; excerpt?: string } {
   const page = publicPage(input.markdown, input.path, input.updated, input.publicPaths, input.publicMedia);
   const dir = publicPagePath(input.path);
   const up = "../".repeat(dir.split("/").filter(Boolean).length);
   const asset = (name: string) => `${up}assets/${name}`;
   // The content font's latin faces the first screen uses (PRF-12); other subsets load only if needed.
-  const preload = page.faces.flatMap((face) => input.assets.fonts.filter((f) => f.endsWith(".woff2") && f.includes(`-latin-${face}-`)).slice(0, 1)).map(asset);
+  const preload = page.faces.flatMap((face) => input.assets.fonts.filter((f) => f.endsWith(".woff2") && f.startsWith(`${DEFAULT_FONT}-latin-${face}-`)).slice(0, 1)).map(asset);
   const body = renderStaticView({ views: pages, view: "reader", registry: readerRegistry, contracts: readerContracts, messages: messages.en!, data: { [READER_VIEW_MODEL.id]: page.model } });
   const html = renderReaderDocument({
     title: page.title,
@@ -64,7 +67,7 @@ export function renderIndexPage(input: IndexPageInput): { file: string; html: st
   const heading = en["publicIndex.title"]!;
   const model = publicIndexModel(heading, input.notes);
   const asset = (name: string) => `${input.home ? "" : "../"}assets/${name}`;
-  const preload = ["400-normal", "700-normal"].flatMap((face) => input.assets.fonts.filter((f) => f.endsWith(".woff2") && f.includes(`-latin-${face}-`)).slice(0, 1)).map(asset);
+  const preload = ["400-normal", "700-normal"].flatMap((face) => input.assets.fonts.filter((f) => f.endsWith(".woff2") && f.startsWith(`${DEFAULT_FONT}-latin-${face}-`)).slice(0, 1)).map(asset);
   const body = renderStaticView({ views: pages, view: "index", registry: readerRegistry, contracts: readerContracts, messages: en, data: { [PUBLIC_INDEX_VIEW_MODEL.id]: model } });
   const site = input.siteUrl ? (input.siteUrl.endsWith("/") ? input.siteUrl : `${input.siteUrl}/`) : undefined;
   const html = renderReaderDocument({

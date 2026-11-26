@@ -29,11 +29,13 @@ On Windows, choose **Copy share information**, **Copy link**, or **Copy access c
 
 **Moved from an older site.** If an earlier version made a separate site for your shares (named like `notes-site`), the next **Turn on sharing** moves your shares to your project's public website. Their links change, so send the new ones. Then open **Settings → Sharing** and choose **Delete old site…**. Type its name, choose **Open GitHub settings**, delete it there, and come back to choose **Check again**.
 
+**Your website's look.** In **Settings → Sharing → Site appearance**, choose a **Theme** (Paper, Sepia, Ink or Dusk) and a **Font** (Serif, Sans or Hyperlegible). Your published notes and the page your shared notes open on both use it; your app keeps its own look. A change updates your website with the same steps as sharing, and the choices wait until it's done. If it stops, your choice is kept: choose **Retry**. **Preview site…** shows the site in a look before you choose **Apply**, which updates your website the same way.
+
 **Deleting a shared or published note.** Focus Notes always asks before it deletes a note, and says if its link or web page goes too. It turns the link off and takes the page down first, then deletes the note. Until that's done, the note stays in Files marked *Deleting…*; point to it to see the steps. If a step stops, choose **Retry**, or **Delete anyway** to delete the note now and leave its link or page up.
 
 Retrying a failed publication in the same dialog reuses the saved share. Opening **Share…** again starts an independent share; it does not replace the earlier link. With **Include notes added later** off, a folder share includes only the reviewed note identities, not another note later created at the same path.
 
-**Not available yet:** shared-before actions, adding newer notes to an earlier share, first-site setup from this dialog and full review of very large folders. Change… and template editing aren't part of this dialog. Settings → Sharing remains available for existing named grants.
+**Not available yet:** shared-before actions, adding newer notes to an earlier share, first-site setup from this dialog and full review of very large folders. Change… and template editing aren't part of this dialog. **Settings → Sharing** holds the share settings (your site, **Share information**, **Turn off sharing…**) and **Site appearance**.
 
 ## Coming soon
 

@@ -78,7 +78,7 @@ Agents prove these branches only with protocol fakes. The owner's first real act
 3. Choose expiry, Link/Passcode and generated/custom passcode. No recipient name, multi-item picker or “who”.
 4. **Share…**, **Copy link**, **Copy access code** or **Copy share information** creates/updates that share and waits honestly for publication before delivering ready information.
 
-Settings → Sharing lists **All shares** by item/expiry/state; extend and withdraw there. No Flow 2. Existing named grants are compatibility only until they end. Inviting an account with GitHub permissions is a separate whole-project action below. Files and ⋯ → Note are SHR-13's approved entry points; a dedicated Spotlight Share route is deferred, not an unwired delivery promise (D-384).
+Settings → Sharing has two groups (D-431): **Share settings** (the site card with Preview site… and Turn off sharing…, Share information, and Delete old site… while an old site remains) and **Site appearance** (D-430); it no longer lists shares. No Flow 2. Existing named grants are compatibility only until they end. Inviting an account with GitHub permissions is a separate whole-project action below. Files and ⋯ → Note are SHR-13's approved entry points; a dedicated Spotlight Share route is deferred, not an unwired delivery promise (D-384).
 
 ### Codes, history and share information
 

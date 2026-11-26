@@ -2516,6 +2516,12 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     }
     return sharing.takeDown();
   });
+  // D-430: the website's look (theme and font) for its published pages and shared notes; a change rebuilds the site.
+  handle("sharing:appearance", async () => settingsAvailable() ? sharing.appearance() : undefined);
+  handle("sharing:appearanceSet", async (look: unknown) => {
+    if (!settingsAvailable()) throw new Error("sharing:unavailable");
+    return sharing.setAppearance(look);
+  });
   // A secret goes to the window only for an open invite, and to the clipboard only from here, cleared after 90 s (review L1, L2).
   // Journeys copy into memory, so they never overwrite (or depend on) the computer's clipboard.
   const secretCopy = secretClipboard(appClipboard());

@@ -116,7 +116,7 @@ export interface SiteAppearanceState extends SiteAppearance { busy: boolean; pro
 
 export type SharingSetupPhase = "reserved" | "creating" | "created" | "ready" | "removing" | "off";
 import type { ShareProgress } from "./share-progress.ts";
-export type SharingSetupStep = "check" | "create" | "prepare" | "seal" | "push" | "deploy" | "slow" | "pages" | "preserve" | "remove" | "ready";
+export type SharingSetupStep = "check" | "create" | "prepare" | "seal" | "push" | "deploy" | "slow" | "pages" | "preserve" | "remove" | "ready" | "save";
 export interface SharingSetupPreview {
   project: string; owner: string; name: string; site: string; phase: SharingSetupPhase | "unconfigured";
   /** The old separate site (`owner/name`) whose shares move into this one, in the Private + Public layout (D-429). */

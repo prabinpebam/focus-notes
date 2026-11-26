@@ -298,6 +298,9 @@ contextBridge.exposeInMainWorld("focusNotes", {
     redeploy: () => ipcRenderer.invoke("access:redeploy"),
     // D-428/D-429: rebuilds the one public site from the current records, so what's no longer shared or published leaves it.
     takeDown: () => ipcRenderer.invoke("sharing:takeDown"),
+    // D-430: the website's look, and a change that rebuilds the site with it.
+    siteAppearance: () => ipcRenderer.invoke("sharing:appearance"),
+    setSiteAppearance: (look: unknown) => ipcRenderer.invoke("sharing:appearanceSet", look),
     reveal: (id: string) => ipcRenderer.invoke("access:reveal", id),
     prepareWords: (previousId?: string) => ipcRenderer.invoke("access:words", previousId),
     ready: (id: string) => ipcRenderer.invoke("access:ready", id),
