@@ -52,11 +52,11 @@
                       },
                       {
                         "type": "ProjectScope",
-                        "props": { "theme": { "get": "vm.siteLook.theme" }, "font": { "get": "vm.siteLook.font" }, "part": "window" },
+                        "props": { "theme": { "get": "vm.siteLook.theme" }, "font": { "get": "vm.siteLook.font" } },
                         "children": [
                           {
-                            "type": "Stack",
-                            "props": { "padding": "insetLg" },
+                            "type": "Surface",
+                            "props": { "variant": "raised", "shape": "popover", "padding": "insetLg" },
                             "children": [{ "type": "NoteContent", "props": { "blocks": { "get": "vm.siteLook.sampleBlocks" } } }]
                           }
                         ]
