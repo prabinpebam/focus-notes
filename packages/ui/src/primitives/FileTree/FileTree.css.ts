@@ -82,19 +82,23 @@ globalStyle(`${row}[aria-selected="true"] :is(${chevron}, ${icon}, ${description
  */
 export const glyph = style({ position: "relative", display: "inline-flex" });
 export const badges = style({ position: "absolute", inset: 0 });
-export const badge = style({
-  position: "absolute", display: "inline-flex", right: 0, bottom: `calc(-1 * ${t.iconBadgeOverhang})`,
-  selectors: { [`${glyph}[data-site-badges="shared published"] &[data-badge="published"]`]: { bottom: "auto", top: `calc(-1 * ${t.iconBadgeOverhang})` } },
-});
+export const badge = style({ position: "absolute", display: "block", right: 0, bottom: `calc(-1 * ${t.iconBadgeOverhang})`, width: t.iconBadgeSize, height: t.iconBadgeSize });
 globalStyle(`${badge} svg`, { display: "block", width: t.iconBadgeSize, height: t.iconBadgeSize });
 const badgeX = `calc(${t.iconSize} - ${t.iconBadgeSize} / 2)`;
-const badgeAt = `calc(${t.iconSize} + ${t.iconBadgeOverhang} - ${t.iconBadgeSize} / 2)`;
-const badgeTop = `calc(${t.iconBadgeSize} / 2 - ${t.iconBadgeOverhang})`;
+const badgeY = `calc(${t.iconSize} + ${t.iconBadgeOverhang} - ${t.iconBadgeSize} / 2)`;
 const knockout = `calc(${t.iconBadgeSize} / 2 + ${t.iconBadgeKnockout})`;
-const hole = (y: string) => `radial-gradient(circle at ${badgeX} ${y}, ${t.transparent} ${knockout}, ${t.iconBadgeKeep} ${knockout})`;
-globalStyle(`${glyph}[data-site-badges] > svg`, { maskImage: hole(badgeAt) });
-globalStyle(`${glyph}[data-site-badges="shared published"] > svg`, { maskImage: `${hole(badgeAt)}, ${hole(badgeTop)}`, maskComposite: "intersect" });
-/** The saving sign appears only after the wait sign's delay (Waits), so quick writes show nothing. */
+globalStyle(`${glyph}[data-site-badges] > svg`, { maskImage: `radial-gradient(circle at ${badgeX} ${badgeY}, ${t.transparent} ${knockout}, ${t.iconBadgeKeep} ${knockout})` });
+/**
+ * Shared and published: one badge in the same box, the globe behind at its top start and the person in front
+ * at its bottom end, each smaller, the globe cut away around the person by the same knockout.
+ */
+export const badgePart = style({ position: "absolute" });
+globalStyle(`${badgePart} svg`, { width: t.iconBadgePairSize, height: t.iconBadgePairSize });
+globalStyle(`${badgePart}[data-part="published"]`, { left: 0, top: 0 });
+globalStyle(`${badgePart}[data-part="shared"]`, { right: 0, bottom: 0 });
+const pairAt = `calc(${t.iconBadgeSize} - ${t.iconBadgePairSize} / 2)`;
+const pairKnockout = `calc(${t.iconBadgePairSize} / 2 + ${t.iconBadgeKnockout})`;
+globalStyle(`${badgePart}[data-part="published"] svg`, { maskImage: `radial-gradient(circle at ${pairAt} ${pairAt}, ${t.transparent} ${pairKnockout}, ${t.iconBadgeKeep} ${pairKnockout})` });/** The saving sign appears only after the wait sign's delay (Waits), so quick writes show nothing. */
 const appear = keyframes({ to: { visibility: "visible" } });
 export const pending = style({
   display: "inline-flex", flexShrink: 0, visibility: "hidden",

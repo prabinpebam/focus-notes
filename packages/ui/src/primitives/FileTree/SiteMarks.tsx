@@ -8,8 +8,8 @@ const marksOf = (item: TreeItem) =>
 
 /**
  * D-431 (owner, 26 November): a file's icon with its shared and published marks as badges on the icon's
- * bottom-right corner: a person for shared, a globe for published; a file that's both has the globe above
- * the person on the icon's end edge. The icon is cut away around each badge (a mask), so a badge stays
+ * bottom-right corner: a person for shared, a globe for published; a file that's both has one badge of the
+ * same size: a smaller globe behind a smaller person. The icon is cut away around each badge (a mask), so a badge stays
  * legible on any row fill without a border or fill of its own. The badges' tooltip is the marks' one name.
  * Used by the tree (and so Pinned and Recent) and Opened files.
  */
@@ -20,8 +20,12 @@ export function FileGlyph({ item, className, children }: { item: TreeItem; class
       {children}
       {marks ? (
         <span className={s.badges} title={item.siteLabel} data-site-marks={marks}>
-          {item.published ? <span className={s.badge} data-badge="published"><Icon name="globeBadge" size="s" /></span> : null}
-          {item.shared ? <span className={s.badge} data-badge="shared"><Icon name="personBadge" size="s" /></span> : null}
+          {item.shared && item.published ? (
+            <span className={s.badge} data-badge="both">
+              <span className={s.badgePart} data-part="published"><Icon name="globeBadge" size="s" /></span>
+              <span className={s.badgePart} data-part="shared"><Icon name="personBadge" size="s" /></span>
+            </span>
+          ) : <span className={s.badge} data-badge={item.shared ? "shared" : "published"}><Icon name={item.shared ? "personBadge" : "globeBadge"} size="s" /></span>}
         </span>
       ) : null}
     </span>

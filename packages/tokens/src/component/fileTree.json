@@ -21,12 +21,17 @@
       "iconBadgeSize": {
         "$type": "dimension",
         "$value": "{size.iconBadge}",
-        "$description": "A file's shared (person) or published (globe) badge on its icon's bottom-right corner (owner, 26 November; D-431). A file that's both has the globe above the person on the icon's end edge."
+        "$description": "A file's shared (person) or published (globe) badge on its icon's bottom-right corner (owner, 26 November; D-431). A file that's both has one badge in the same box (iconBadgePairSize)."
+      },
+      "iconBadgePairSize": {
+        "$type": "dimension",
+        "$value": "{size.iconBadgePair}",
+        "$description": "Shared and published in one badge: a smaller globe behind at its top start, a smaller person in front at its bottom end, overlapping slightly, both inside the single badge's box."
       },
       "iconBadgeOverhang": {
         "$type": "dimension",
         "$value": "{space.scale.xxs}",
-        "$description": "How far a badge sits past its icon's bottom edge (the globe past the top when both), so it covers less of the icon; it stays inside the end edge, clear of the name."
+        "$description": "How far a badge sits past its icon's bottom edge, so it covers less of the icon; it stays inside the end edge, clear of the name."
       },
       "iconBadgeKnockout": {
         "$type": "dimension",

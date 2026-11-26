@@ -248,6 +248,10 @@
     "iconS": {
       "$value": "{ref.size.16}"
     },
+    "iconBadgePair": {
+      "$value": "{ref.size.6}",
+      "$description": "Each of two marks sharing one icon badge's box (shared and published, D-431), slightly overlapping inside it."
+    },
     "iconBadge": {
       "$value": "{ref.size.10}",
       "$description": "A badge on an icon's corner (a file's shared or published mark, D-431): small enough to leave the icon readable."
