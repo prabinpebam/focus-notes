@@ -72,17 +72,30 @@ async function measureFreScroll(page: Page): Promise<ScrollGeometry> {
         .filter(({ el, r }) => r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== "hidden");
     };
 
+    // The surface keeps the focused control in view whenever its size changes (Surface's
+    // ResizeObserver), which can fire a frame after a resize and move the scroller again. Scroll
+    // until the position holds over a stable size, so the measure is taken where a person sees it.
+    const frames = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const settleAt = async (where: "top" | "end") => {
+      for (let i = 0; i < 30; i++) {
+        const height = scroller.clientHeight;
+        const target = where === "top" ? 0 : scroller.scrollHeight - scroller.clientHeight;
+        scroller.scrollTop = target;
+        await frames();
+        if (scroller.clientHeight === height && Math.abs(scroller.scrollTop - target) <= 1) return;
+      }
+      throw new Error(`firstRun scroller never settled at its ${where} (scrollTop ${scroller.scrollTop})`);
+    };
+
     // Scroll to top and measure top-most item.
-    scroller.scrollTop = 0;
-    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    await settleAt("top");
     const srTop = scroller.getBoundingClientRect();
     const topLeaves = visibleLeaves();
     const first = topLeaves.reduce((a, b) => (b.r.top < a.r.top ? b : a));
     const topClearanceAtZero = first.r.top - srTop.top;
 
     // Scroll to bottom and measure bottom-most item.
-    scroller.scrollTop = scroller.scrollHeight;
-    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    await settleAt("end");
     const srEnd = scroller.getBoundingClientRect();
     const endLeaves = visibleLeaves();
     const last = endLeaves.reduce((a, b) => (b.r.bottom > a.r.bottom ? b : a));
