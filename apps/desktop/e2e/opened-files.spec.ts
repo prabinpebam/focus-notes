@@ -219,6 +219,7 @@ test("Owner 26 Nov: a tab's menu is its file's Files menu plus Close tab, by mou
     await expect(menuOf("Spec ideas")).toBeVisible();
     expect(await itemsOf("Spec ideas")).toEqual([...rowItems, "openedFiles.closeTab"]);
     await expect(menuOf("Spec ideas").getByRole("menuitem", { name: "Close tab" })).toBeVisible();
+    await page.screenshot({ path: "../../test-results/screens/opened-files-tab-menu.png" });
     await page.keyboard.press("Escape");
     await expect(menuOf("Spec ideas")).toHaveCount(0);
 
