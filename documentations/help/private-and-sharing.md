@@ -3,7 +3,7 @@
 Keep notes private, publish them as web pages, and share any note with a link, a passcode or both.
 
 > [!NOTE]
-> **TL;DR.** **Share…** starts with the private note or folder you chose. Review its contents, choose how it opens, then copy its share information. Copying waits until the published encrypted share can actually be opened. Opening or cancelling the draft leaves existing shares unchanged. In Files, shared and published notes carry an icon, and **Share details…** copies, extends or withdraws a share.
+> **TL;DR.** **Share…** starts with the private note or folder you chose. Review its contents, choose how it opens, then copy its share information. Copying waits until the published encrypted share can actually be opened. Opening or cancelling the draft leaves existing shares unchanged. In Files, shared and published notes carry a small badge on their icon, and **Share details…** copies, extends or withdraws a share.
 
 ## Review a note or folder
 
@@ -39,7 +39,7 @@ Retrying a failed publication in the same dialog reuses the saved share. Once an
 
 ## See what's shared and copy it again
 
-In **Files**, a shared note or folder shows a share icon at the end of its row, and a published note shows a globe. A note that's both shows both. Point to the icons to see their name. They show in **Opened files**, **Pinned**, **Recent** and the list of notes.
+In **Files**, a shared note or folder has a small person on the corner of its icon, and a published note has a globe. A note that's both has the globe above the person. Point to the badge to see its name. They show in **Opened files**, **Pinned**, **Recent** and the list of notes.
 
 To copy a share again, open the shared item's row menu and choose **Share details…** or **Share…**: on a shared item, both open the same dialog. For the note you're writing, use **⋯ → Note → Share details…**. The dialog lists each of its shares that still works:
 

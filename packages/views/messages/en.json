@@ -1366,6 +1366,7 @@
   "files.opened.heading": "Opened files",
   "files.opened.menu": "Opened files actions",
   "files.opened.close": "Close",
+  "files.opened.closeTab": "Close tab",
   "files.opened.closeAll": "Close all",
   "block.image": "Image",
   "image.read.failed": "This image couldn't be read. Check that its file is still beside the note.",

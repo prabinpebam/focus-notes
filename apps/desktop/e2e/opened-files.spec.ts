@@ -183,3 +183,64 @@ test("FIL-20: Opened files vertical tabs above Pinned — activate, close, close
     await quit(l);
   }
 });
+
+test("Owner 26 Nov: a tab's menu is its file's Files menu plus Close tab, by mouse and by keyboard", async () => {
+  const dirs = tempDirs();
+  writeFileSync(join(dirs.docs, "Welcome.md"), "# Welcome\n\nFirst body.\n");
+  writeFileSync(join(dirs.docs, "spec.md"), "# Spec ideas\n\nSecond body.\n");
+  const l = await launch(dirs);
+  const { page } = l;
+  try {
+    const editor = page.getByRole("textbox", { name: "Note" });
+    await expect(editor).toContainText("First body.");
+    await page.keyboard.press(`${mod}+O`);
+    const files = page.getByRole("complementary", { name: "Files" });
+    await files.getByRole("button", { name: "Dock Files" }).click();
+    const tree = files.getByRole("tree", { name: "Notes and folders" });
+    await fileRow(tree, "Spec ideas").dblclick();
+    await expect(editor).toContainText("Second body.");
+    const opened = files.locator("section#filesOpened");
+    const specTab = opened.getByRole("button", { name: "Spec ideas", exact: true });
+    const welcomeTab = opened.getByRole("button", { name: "Welcome", exact: true });
+    await expect(welcomeTab).toBeVisible();
+    const menuOf = (name: string) => page.getByRole("menu", { name: `Actions for “${name}”` });
+    const itemsOf = (name: string) => menuOf(name).getByRole("menuitem").evaluateAll((els) => els.map((e) => e.getAttribute("data-key")));
+
+    // The Files row's own menu, for comparison.
+    await fileRow(tree, "Spec ideas").click({ button: "right" });
+    await expect(menuOf("Spec ideas")).toBeVisible();
+    const rowItems = await itemsOf("Spec ideas");
+    expect(rowItems).toContain("files.rename");
+    await page.keyboard.press("Escape");
+    await expect(menuOf("Spec ideas")).toHaveCount(0);
+
+    // Right-click on the tab: the same items, then Close tab.
+    await specTab.click({ button: "right" });
+    await expect(menuOf("Spec ideas")).toBeVisible();
+    expect(await itemsOf("Spec ideas")).toEqual([...rowItems, "openedFiles.closeTab"]);
+    await expect(menuOf("Spec ideas").getByRole("menuitem", { name: "Close tab" })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(menuOf("Spec ideas")).toHaveCount(0);
+
+    // Keyboard: Shift+F10 on a focused tab opens it for that tab's file; Esc returns focus to the tab.
+    await welcomeTab.focus();
+    await page.keyboard.press("Shift+F10");
+    await expect(menuOf("Welcome")).toBeVisible();
+    const welcomeItems = await itemsOf("Welcome");
+    expect(welcomeItems.at(-1)).toBe("openedFiles.closeTab");
+    expect(welcomeItems).toContain("files.rename");
+    await page.keyboard.press("Escape");
+    await expect(menuOf("Welcome")).toHaveCount(0);
+    await expect(welcomeTab).toBeFocused();
+
+    // The Menu key does the same; Close tab closes that tab, and the note stays as it was.
+    await page.keyboard.press("ContextMenu");
+    await expect(menuOf("Welcome")).toBeVisible();
+    await menuOf("Welcome").getByRole("menuitem", { name: "Close tab" }).click();
+    await expect(welcomeTab).toHaveCount(0);
+    await expect(specTab).toBeVisible();
+    await expect(editor).toContainText("Second body.");
+  } finally {
+    await quit(l);
+  }
+});

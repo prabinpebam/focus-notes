@@ -28,6 +28,12 @@ To change the file name deliberately, open the note's menu in Files and choose
 from other notes. When title and file name differ, Files shows the name in
 muted text; hover the row for its full path.
 
+## Work with open notes
+
+The notes you have open are listed under **Opened files** at the top of Files.
+Right-click one, or press **Shift+F10** or the Menu key on it, for the same
+menu as its row in Files, plus **Close tab**.
+
 ## Coming soon
 
 - Move and delete notes and folders
