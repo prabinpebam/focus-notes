@@ -148,10 +148,12 @@ test("Share walk-through: turn on, share a folder with link and access code, rec
       await expect(second.getByRole("heading", { level: 1 })).toHaveText("Shared with you");
     } finally { await browser.close(); }
 
-    // 6. Settings → Sharing lists the share by item.
+    // 6. Settings → Sharing holds Share settings and Site appearance only; shares aren't listed there (D-431).
     await page.keyboard.press("Escape");
     await openSettings("Sharing");
-    await expect(settings.getByText("trips", { exact: true }).first()).toBeVisible();
+    await expect(settings.getByRole("heading", { name: "Share settings", exact: true })).toBeVisible();
+    await expect(settings.getByRole("heading", { name: "Site appearance", exact: true })).toBeVisible();
+    await expect(settings.getByText("trips", { exact: true })).toHaveCount(0);
     await page.keyboard.press("Escape");
 
     // 7. Withdraw: confirm, then readers stop after the next publication.
