@@ -1,5 +1,6 @@
 import type { AppState } from "./app.ts";
 import { shareProgress, shareProgressView } from "./share-progress.ts";
+import { siteProblemKey } from "./site-problem.ts";
 import { opErrorCode } from "./bridge.ts";
 import type { CommandRegistry } from "./commands.ts";
 import type { MessageCatalog } from "./messages.ts";
@@ -122,7 +123,7 @@ export function registerItemShare({ store, commands, viewModels, catalog, tracke
     const signedOut = code === "signedOut" || code === "auth";
     const message = code === "offline" ? "share.item.offline" : signedOut ? "share.item.signedOut"
       : code === "scope.changed" ? "share.item.contentsChanged" : code === "notReady" ? "share.item.notReady"
-      : code === "expiry.invalid" ? "share.item.expiryInvalid" : pages ? "share.item.websiteFailed" : "share.item.failed";
+      : code === "expiry.invalid" ? "share.item.expiryInvalid" : siteProblemKey(error) ?? (pages ? "share.item.websiteFailed" : "share.item.failed");
     set({ problem: stopped + catalog.format(message), signedOut, status: "", ready: false, information: "" });
   };
   const reg = <A extends Record<string, unknown> = Record<string, never>>(id: string, run: (a: A) => void | Promise<void>) =>

@@ -39,7 +39,7 @@ function parsePublished(text: string): string[] {
 /** A Publish or Unpublish problem as a plain `sharing:<code>`; leak-check failures keep their own (content-free) message. */
 function publishProblem(error: unknown): unknown {
   if (!(error instanceof GitHubError)) return error;
-  return new Error(`sharing:${error.status === 0 ? "offline" : error.unauthorized ? "signedout"
+  return new Error(`sharing:${error.status === 0 ? "offline" : error.unauthorized ? "signedout" : error.rateLimited ? "ratelimited"
     : error.status === 403 || error.status === 404 ? "refused" : "failed"}`);
 }
 

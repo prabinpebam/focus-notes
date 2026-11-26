@@ -5,6 +5,7 @@
  * Deleting…, with a card of these steps; a failed step offers Retry (carrying on from that step) or Delete anyway.
  */
 import type { MessageCatalog } from "./messages.ts";
+import { siteProblemKey } from "./site-problem.ts";
 
 export type DeleteStep = "link" | "page" | "site" | "note";
 
@@ -89,7 +90,8 @@ export class TakedownStop extends Error {
   constructor(problem: string) { super(problem); this.problem = problem; }
 }
 
-const siteProblem = (error: unknown, otherwise: string) => /sharing:pages|sharing:notlive/.test(error instanceof Error ? error.message : "") ? "files.deleting.problem.site" : otherwise;
+const siteProblem = (error: unknown, otherwise: string) => siteProblemKey(error)
+  ?? (/sharing:pages|sharing:notlive/.test(error instanceof Error ? error.message : "") ? "files.deleting.problem.site" : otherwise);
 
 /**
  * Runs (or resumes) a delete, step by step from where it stopped. Every takedown step before "Delete the note"

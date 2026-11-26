@@ -13,6 +13,7 @@ import type { ViewModelRegistry } from "./view-models.ts";
 import { opErrorCode } from "./bridge.ts";
 import { sharingAvailable, type AccessBridge, type SiteAppearance, type SiteAppearanceState } from "./share-manage.ts";
 import { shareProgress, shareProgressView } from "./share-progress.ts";
+import { siteProblemKey } from "./site-problem.ts";
 
 export const SITE_THEMES = ["paper", "sepia", "ink", "dusk"] as const;
 export const SITE_FONTS = ["serif", "sans", "hyperlegible"] as const;
@@ -60,7 +61,9 @@ export function registerSiteAppearance({ store, catalog, commands, viewModels, t
       console.error("Site appearance change failed", opErrorCode(error));
       progress.fail();
       const pages = /sharing:pages/.test(error instanceof Error ? error.message : String(error));
-      set({ problem: `${shareProgressView(progress.get(), catalog, 0).failedStep} ${catalog.format(pages ? "site.appearance.failed" : "site.appearance.problem")}` });
+      const cause = siteProblemKey(error);
+      const why = cause ? `${catalog.format(cause)} ${catalog.format("site.appearance.kept")}` : catalog.format(pages ? "site.appearance.failed" : "site.appearance.problem");
+      set({ problem: `${shareProgressView(progress.get(), catalog, 0).failedStep} ${why}` });
     } finally { off?.(); set({ busy: false }); }
   };
   const reg = <A extends Record<string, unknown>>(id: string, run: (args: A) => void | Promise<void>) =>

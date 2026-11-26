@@ -23,7 +23,7 @@ On Windows, choose **Copy share information**, **Copy link**, or **Copy access c
 
 **Publish and Unpublish.** **Publish** makes a private note a web page (it asks first). **Unpublish** takes the page down at the next publish and makes the note private again. Both are in the Files row menu and **⋯ → Note**. Sharing also puts a note on the website, but encrypted: it only opens with the link, the passcode or both.
 
-**See each step while it works.** Turning sharing on, sharing, publishing and taking a note down can take a minute or two, because GitHub has to update your website. Each step shows as it happens: done steps get a tick, the current one turns, and the time so far is shown. If a step stops, it says which one, and **Retry** carries on from there. Nothing done so far is lost.
+**See each step while it works.** Turning sharing on, sharing, publishing and taking a note down can take a minute or two, because GitHub has to update your website. Each step shows as it happens: done steps get a tick, the current one turns, and the time so far is shown. If a step stops, it says which one and why, with what helps (sign in to GitHub again, reconnect, or wait a few minutes), and **Retry** carries on from there. Nothing done so far is lost. If your notes back up to the same repository while your website uploads, Focus Notes uploads again on top of the backup by itself.
 
 **Where your shares live.** In a project with public and private notes, your published pages and your encrypted shares are on one website: your project's public one. Turning sharing on there creates nothing new on GitHub.
 

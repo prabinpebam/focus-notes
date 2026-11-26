@@ -9,6 +9,7 @@ import { defaultItemShareTemplate } from "./share-item.ts";
 import { sharingAvailable, type AccessBridge, type ShareManageState } from "./share-manage.ts";
 import { opErrorCode } from "./bridge.ts";
 import { shareProgress, shareProgressView, type ShareOperation } from "./share-progress.ts";
+import { siteProblemKey } from "./site-problem.ts";
 
 export function registerSharingSettings({ store, catalog, commands, viewModels, tracker, access }: {
   store: Store<AppState>; catalog: MessageCatalog; commands: CommandRegistry<AppState>;
@@ -134,7 +135,7 @@ export function registerSharingSettings({ store, catalog, commands, viewModels, 
     } catch (error) {
       const pages = /sharing:pages/.test(error instanceof Error ? error.message : String(error));
       if (op) progress.fail();
-      const failed = catalog.format(pages ? "share.item.websiteFailed" : "share.item.failed");
+      const failed = catalog.format(siteProblemKey(error) ?? (pages ? "share.item.websiteFailed" : "share.item.failed"));
       set({ problem: op ? `${shareProgressView(progress.get(), catalog, 0).failedStep} ${failed}` : failed });
     } finally { off?.(); set({ busy: false }); }
   };

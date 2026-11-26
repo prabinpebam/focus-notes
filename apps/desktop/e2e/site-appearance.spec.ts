@@ -105,8 +105,17 @@ test("D-430: Site appearance changes the theme and font of the published pages a
     await expect(done).toBeVisible({ timeout: 90_000 });
     await expect(settings.getByText(/^Stopped at/)).toHaveCount(0);
 
-    // 3. The font: Sans, the site rebuilt again.
+    // 3. The font: Sans. D-432: someone else's push lands during every upload attempt (the owner's backup of the private
+    // pointer, as on 26 Nov): the step says why and what helps, the choice stays, their pushes stay, and Retry finishes.
+    fake.git.pushElsewhere("ada/book", 4);
     await font.getByText("Sans", { exact: true }).click();
+    await expect(settings.getByText("Stopped at “Upload your notes site”. The steps before it are done and kept. Your website’s repository kept changing on GitHub while uploading, even after trying 4 times. Retry. Your choice is kept.", { exact: true }))
+      .toBeVisible({ timeout: 90_000 });
+    await expect(font.getByRole("radio", { name: "Sans", exact: true })).toBeChecked();
+    expect(fake.git.headFiles("ada/book")).toEqual(expect.arrayContaining(["elsewhere-1.txt", "elsewhere-4.txt"]));
+    await settings.getByRole("button", { name: "Retry", exact: true }).click();
+    await expect(done).toBeVisible({ timeout: 90_000 });
+    await expect(settings.getByText(/^Stopped at/)).toHaveCount(0);
     // Every page of the site carries the look: the published notes' pages and index, and the share page.
     const looked = () => [...deployed().entries()].filter(([f, html]) => f.endsWith(".html") && html.includes('data-page="reader"'));
     await expect.poll(() => looked().length > 0 && looked().every(([, html]) => html.includes('data-theme="dusk" data-content-font="sans"')), { timeout: 90_000 }).toBe(true);
@@ -125,7 +134,9 @@ test("D-430: Site appearance changes the theme and font of the published pages a
       await expect(shareReader.getByRole("textbox", { name: "Access code", exact: true })).toBeVisible();
       await expect.poll(() => look(shareReader, "main")).toMatchObject({ theme: "dusk", font: "sans", dark: true });
 
-      // 5. Preview site's Apply reaches the live site through the same path (D-430): Sepia, light again.
+      // 5. Preview site's Apply reaches the live site through the same path (D-430): Sepia, light again. A push from
+      // elsewhere during its upload is absorbed without a word (D-432).
+      fake.git.pushElsewhere("ada/book", 1);
       await settings.getByRole("button", { name: "Preview site…", exact: true }).click();
       const preview = page.getByRole("region", { name: "Preview site", exact: true });
       await expect(preview).toBeVisible({ timeout: 30_000 });
@@ -136,6 +147,8 @@ test("D-430: Site appearance changes the theme and font of the published pages a
       await expect.poll(() => deployed().get(article)?.includes('data-theme="sepia" data-content-font="sans"'), { timeout: 90_000 }).toBe(true);
       await reader.reload();
       await expect.poll(() => look(reader, "main h1")).toMatchObject({ theme: "sepia", font: "sans", dark: false });
+      expect(fake.git.headFiles("ada/book")).toContain("elsewhere-5.txt");
+      await expect(settings.getByText(/^Stopped at/)).toHaveCount(0);
     } finally { await browser.close(); }
   } finally {
     try { if (l) await quit(l); } finally {

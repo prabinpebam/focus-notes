@@ -120,6 +120,32 @@ it("24 Nov: a Pages run that fails again ends the wait at once with sharing:page
   } finally { await rm(t.directory, { recursive: true, force: true }); }
 });
 
+it("D-432: a push from elsewhere landing mid-upload is kept and the upload is rebuilt on top; one that never stops is sharing:moved", async () => {
+  const t = await fixture();
+  try {
+    const runtime: ReturnType<typeof sharingRuntime> = sharingRuntime({ ...t.deps, publisher: pagesArtifactPublisher({
+      api: t.deps.api, get: t.git.get, timeoutMs: 2_000, delayMs: 5, retryDelaysMs: [1, 1, 1],
+      target: async () => ({ ...(await runtime.pairing())! }),
+    }) });
+    await expect(runtime.enable("notes-site")).resolves.toMatchObject({ phase: "ready" });
+    const blobPosts = (from: number) => t.github.calls.slice(from).filter(c => c.method === "POST" && c.path === "/repos/ada/notes-site/git/blobs").map(c => (c.body as { content: string }).content);
+    // The owner's backup pushes the private pointer twice while the site uploads: both pushes stay, the site is served.
+    t.git.pushElsewhere("ada/notes-site", 2);
+    const before = t.github.calls.length;
+    await expect(runtime.takeDown()).resolves.toMatchObject({ commit: expect.any(String) });
+    expect(t.git.headFiles("ada/notes-site")).toEqual(expect.arrayContaining(["elsewhere-1.txt", "elsewhere-2.txt"]));
+    expect(t.github.calls.filter(c => c.method === "PATCH" && c.path === "/repos/ada/notes-site/git/refs/heads/main").every(c => (c.body as { force?: boolean }).force === false)).toBe(true);
+    // Each blob goes up once, however many attempts the commit took.
+    const sent = blobPosts(before);
+    expect(new Set(sent).size).toBe(sent.length);
+    t.git.pushElsewhere("ada/notes-site", 4);
+    await expect(runtime.takeDown()).rejects.toThrow("sharing:moved");
+    expect(t.git.headFiles("ada/notes-site")).toEqual(expect.arrayContaining(["elsewhere-3.txt", "elsewhere-6.txt"]));
+    // Once the branch is still, Retry lands.
+    await expect(runtime.takeDown()).resolves.toMatchObject({ commit: expect.any(String) });
+  } finally { await rm(t.directory, { recursive: true, force: true }); }
+});
+
 it("24 Nov: an existing notes-site made by Focus Notes, or an empty one, is adopted; someone else's stays taken", async () => {
   for (const existing of [{ description: "Focus Notes site d14492eb-2f57-4ffd-a24a-bcd76f8dcb86", files: ["README.md"] }, { files: ["README.md"] }]) {
     const t = await fixture();

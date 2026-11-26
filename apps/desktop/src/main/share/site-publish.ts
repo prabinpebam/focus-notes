@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { lstat, readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
-import { BlobTooLargeError, type GitHubApi } from "@focus-notes/github";
+import { BlobTooLargeError, GitHubError, type GitHubApi } from "@focus-notes/github";
 import type { ArtifactPublication, SealedArtifactPublisher } from "./site.ts";
 import type { SitePairing } from "./setup.ts";
 
@@ -12,6 +12,9 @@ export type DeployedSiteGet = (url: string) => Promise<string | undefined>;
 const SITE_DIR = "site";
 const FAILED_RUN = new Set(["failure", "timed_out", "cancelled", "startup_failure"]);
 const fail = (code: string) => new Error(`sharing:${code}`);
+/** Waits between upload attempts when the site's branch moved or GitHub answered 5xx (D-432): four tries in about 7 s. */
+const UPLOAD_RETRY_MS = [1000, 2000, 4000] as const;
+class BranchMoved extends Error { constructor() { super("sharing:moved"); } }
 const gitBlobSha = (bytes: Buffer) => createHash("sha1").update(`blob ${bytes.length}\0`).update(bytes).digest("hex");
 
 async function artifactFiles(directory: string): Promise<Map<string, Buffer>> {
@@ -89,6 +92,8 @@ export function pagesArtifactPublisher(deps: {
   slowAfterMs?: number;
   /** The commit's Pages run failed twice: Retry may build it again from here (D-427). */
   failed?(failed: FailedBuild): void;
+  /** Waits before each further upload attempt (default 1, 2 and 4 s). */
+  retryDelaysMs?: readonly number[];
 }): PagesPublisher {
   const ready = async (project: string) => {
     const target = await deps.target(project);
@@ -124,10 +129,12 @@ export function pagesArtifactPublisher(deps: {
     }
     return { status: "published", commit, pages: { status, repository: `${owner}/${name}`, build } };
   };
-  const publisher: SealedArtifactPublisher = async (project, artifact) => {
-    const { target, api, owner, name, repo } = await ready(project);
-    const files = await artifactFiles(artifact.directory);
-    const head = await api.head(owner, name, repo.defaultBranch);
+  /**
+   * One upload: the site/ folder replaced on top of the branch's current head, as one non-forced commit. Blobs already
+   * created in an earlier attempt aren't sent again.
+   */
+  const upload = async (api: GitHubApi, owner: string, name: string, branch: string, files: Map<string, Buffer>, created: Set<string>): Promise<string> => {
+    const head = await api.head(owner, name, branch);
     if (!head) throw fail("missing");
     const base = await api.commitTree(owner, name, head);
     const listing = await api.tree(owner, name, base);
@@ -139,18 +146,42 @@ export function pagesArtifactPublisher(deps: {
       const full = `${SITE_DIR}/${path}`;
       const sha = gitBlobSha(bytes);
       if (existing.get(full) !== sha) {
-        let created: string;
-        // Exact bytes, so images and fonts arrive unchanged; one over GitHub's limit is a plain artifact problem.
-        try { created = await api.createBlob(owner, name, bytes); }
-        catch (error) { throw error instanceof BlobTooLargeError ? fail("artifact") : error; }
-        if (created !== sha) throw fail("artifact");
-        entries.push({ path: full, sha: created });
+        if (!created.has(sha)) {
+          let made: string;
+          // Exact bytes, so images and fonts arrive unchanged; one over GitHub's limit is a plain artifact problem.
+          try { made = await api.createBlob(owner, name, bytes); }
+          catch (error) { throw error instanceof BlobTooLargeError ? fail("artifact") : error; }
+          if (made !== sha) throw fail("artifact");
+          created.add(sha);
+        }
+        entries.push({ path: full, sha });
       }
     }
     for (const path of existing.keys()) if (!files.has(path.slice(SITE_DIR.length + 1))) entries.push({ path, sha: null });
     const tree = await api.createTree(owner, name, base, entries);
     const commit = await api.createCommit(owner, name, "Publish site", tree, [head]);
-    await api.updateRef(owner, name, repo.defaultBranch, commit);
+    try { await api.updateRef(owner, name, branch, commit); }
+    catch (error) {
+      // The branch moved since its head was read (D-432): the app's own backup of the private pointer, another device,
+      // or the owner pushing to the same repository. Nothing was lost; the upload is built again on the new head.
+      if (error instanceof GitHubError && (error.status === 422 || error.status === 409)) throw new BranchMoved();
+      throw error;
+    }
+    return commit;
+  };
+  const publisher: SealedArtifactPublisher = async (project, artifact) => {
+    const { target, api, owner, name, repo } = await ready(project);
+    const files = await artifactFiles(artifact.directory);
+    const created = new Set<string>(), waits = deps.retryDelaysMs ?? UPLOAD_RETRY_MS;
+    let commit: string | undefined;
+    for (let attempt = 0; commit === undefined; attempt++) {
+      try { commit = await upload(api, owner, name, repo.defaultBranch, files, created); }
+      catch (error) {
+        const moved = error instanceof BranchMoved, transient = error instanceof GitHubError && error.status >= 500;
+        if ((!moved && !transient) || attempt >= waits.length) throw moved ? fail("moved") : error;
+        await delay(waits[attempt]!);
+      }
+    }
     deps.pushed?.();
     return watch(api, project, owner, name, target.site, commit, artifact.build);
   };

@@ -17,6 +17,9 @@ export function gitData(github: FakeGitHub) {
   let failRuns = 0, nextRun = 1;
   /** The commit Pages serves when a failed run left it behind the branch head. */
   const served = new Map<string, string>();
+  /** Pushes from elsewhere still to land just before this repository's next ref updates. */
+  const racing = new Map<string, number>();
+  let raced = 0;
   const conclude = () => failRuns > 0 ? (failRuns--, "failure") : "success";
   const seed = (key: string) => {
     if (heads.has(key)) return heads.get(key)!;
@@ -73,6 +76,21 @@ export function gitData(github: FakeGitHub) {
     if (method === "POST" && rest === "commits") { const commit = sha(`commit ${body!.tree} ${(body!.parents as string[]).join()}`); commits.set(commit, { tree: String(body!.tree), parents: body!.parents as string[] }); return json(201, { sha: commit }); }
     if (method === "PATCH" && rest === "refs/heads/main") {
       const commit = String(body!.sha);
+      // Someone else's push lands between this upload's head read and its ref update (D-432): the app's own backup of
+      // the private pointer, another device, or the owner.
+      const elsewhere = racing.get(key) ?? 0;
+      if (elsewhere > 0) {
+        racing.set(key, elsewhere - 1);
+        const parent = seed(key)!, files = new Map(trees.get(commits.get(parent)!.tree)!);
+        const bytes = Buffer.from(`elsewhere ${++raced}\n`);
+        blobs.set(blobSha(bytes), bytes);
+        files.set(`elsewhere-${raced}.txt`, blobSha(bytes));
+        const tree = sha(`tree ${[...files].join()}`);
+        trees.set(tree, files);
+        const other = sha(`commit ${tree} ${parent}`);
+        commits.set(other, { tree, parents: [parent] });
+        heads.set(key, other);
+      }
       if (body!.force !== false || !commits.get(commit)?.parents.includes(seed(key)!)) return json(422, { message: "Update is not a fast forward" });
       const before = served.has(key) ? served.get(key)! : heads.get(key) ?? "";
       heads.set(key, commit);
@@ -98,7 +116,11 @@ export function gitData(github: FakeGitHub) {
     if (!at || stale) return undefined;
     return site(`${at[1]}/${at[2]}`).get(at[3]!);
   };
-  return { fetch, get, site, siteBytes, pushes, runs, setStale: (value: boolean) => { stale = value; }, failPagesRuns: (times: number) => { failRuns = times; } };
+  /** Every path in the branch head, outside site/ too. */
+  const headFiles = (key: string) => { const head = heads.get(key); return head ? [...trees.get(commits.get(head)!.tree)!.keys()] : []; };
+  return { fetch, get, site, siteBytes, pushes, runs, headFiles, setStale: (value: boolean) => { stale = value; }, failPagesRuns: (times: number) => { failRuns = times; },
+    /** The next `times` ref updates of `key` each find the branch moved by a push from elsewhere. */
+    pushElsewhere: (key: string, times: number) => { racing.set(key, times); } };
 }
 
 /**

@@ -95,3 +95,26 @@ it("D-430: Site appearance saves the look and rebuilds the site with its steps; 
   expect(t.vm("vm.siteAppearance")).toMatchObject({ theme: "dusk", font: "sans", failed: false, progress: false, problem: "" });
   await expect(t.run("sharing.appearance.font", { value: "comic" })).rejects.toThrow();
 });
+
+it("D-432: a Site appearance change that stops says why and what helps, and keeps the choice", async () => {
+  const t = shell(() => ({ available: true, configured: true, setupAvailable: true, site: SITE, vault: false, grants: [] }), async () => ({ phase: "ready", site: SITE }));
+  const steps: ((step: SharingSetupStep) => void)[] = [];
+  t.bridge.access!.setup!.onStep = listener => { steps.push(listener); return () => { steps.splice(steps.indexOf(listener), 1); }; };
+  let error = "Error invoking remote method 'sharing:appearanceSet': Error: sharing:moved";
+  t.bridge.access!.setSiteAppearance = vi.fn(async () => { for (const s of steps) { s("seal"); s("push"); } throw new Error(error); });
+  await t.app.start();
+  await settle();
+  await t.run("share.manage.load");
+  await settle();
+  const upload = "Stopped at “Upload your notes site”. The steps before it are done and kept.";
+  for (const [code, key] of [["moved", "site.problem.moved"], ["signedout", "site.problem.signedout"], ["offline", "site.problem.offline"], ["refused", "site.problem.refused"], ["ratelimited", "site.problem.ratelimited"]] as const) {
+    error = `Error invoking remote method 'sharing:appearanceSet': Error: sharing:${code}`;
+    await t.run("sharing.appearance.font", { value: "sans" });
+    expect(t.vm("vm.siteAppearance")).toMatchObject({ font: "sans", failed: true });
+    expect(t.vm("vm.siteAppearance").problem).toBe(`${upload} ${en[key]} ${en["site.appearance.kept"]}`);
+  }
+  // An unknown cause still keeps the choice and offers Retry, without promising a minute will help.
+  error = "sharing:failed";
+  await t.run("sharing.appearanceRetry");
+  expect(t.vm("vm.siteAppearance").problem).toBe(`${upload} ${en["site.appearance.problem"]}`);
+});
