@@ -71,6 +71,12 @@ describe("the order of a delete (D-428)", () => {
     expect(h.order).toEqual(["delete", "takeDown"]);
   });
 
+  it("D-432: a takedown stopped by a site branch that kept moving says so; offline keeps the card's own words", async () => {
+    const h = harness(newDeleteJob(["pub/b.md"], "“B”", [], [], 0, 1), { takeDown: async () => { throw new Error("sharing:moved"); } });
+    expect(await h.run()).toBe(false);
+    expect(h.job()).toMatchObject({ failed: true, problem: "site.problem.moved" });
+  });
+
   it("a note with nothing to take down is only deleted", () => {
     expect(newDeleteJob(["p/a.md"], "“A”", [], [], 0).steps).toEqual(["note"]);
   });

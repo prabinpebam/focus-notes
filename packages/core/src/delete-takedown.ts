@@ -90,8 +90,12 @@ export class TakedownStop extends Error {
   constructor(problem: string) { super(problem); this.problem = problem; }
 }
 
-const siteProblem = (error: unknown, otherwise: string) => siteProblemKey(error)
-  ?? (/sharing:pages|sharing:notlive/.test(error instanceof Error ? error.message : "") ? "files.deleting.problem.site" : otherwise);
+/** The delete card's own words already say to check the connection; other causes get their shared words (D-432). */
+const siteProblem = (error: unknown, otherwise: string) => {
+  const cause = siteProblemKey(error);
+  if (cause && cause !== "site.problem.offline") return cause;
+  return /sharing:pages|sharing:notlive/.test(error instanceof Error ? error.message : "") ? "files.deleting.problem.site" : otherwise;
+};
 
 /**
  * Runs (or resumes) a delete, step by step from where it stopped. Every takedown step before "Delete the note"
