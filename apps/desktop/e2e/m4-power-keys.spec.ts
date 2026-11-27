@@ -3,7 +3,7 @@
  * cheat sheet's Power filter, and Spotlight listing the new commands with their keys.
  */
 import { test, expect } from "./fixtures.ts";
-import { readFileSync, writeFileSync } from "node:fs";
+import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { launch, quit, tempDirs } from "./helpers.ts";
 
@@ -55,7 +55,12 @@ test("Back and forward step between the notes opened, and the cheat sheet's Powe
   await expect(editor).toHaveText("");
   await page.keyboard.type("second note");
   await page.keyboard.press(mac ? "Meta+BracketLeft" : "Alt+ArrowLeft");
-  await expect(editor).toHaveText("first note");
+  // Back waits for the note being left to be on disk first (data safety): here that's the new note's first save and
+  // its first-save rename (FIL-18), which takes seconds on a loaded runner.
+  await expect(editor).toHaveText("first note", { timeout: 15_000 });
+  // The typed text went with the new note, now named from its first save, never into the note Back opened.
+  await expect.poll(() => readdirSync(dirs.docs).filter((n) => n.endsWith(".md") && n !== "Welcome.md").map((n) => readFileSync(join(dirs.docs, n), "utf8")), { timeout: 15_000 }).toContainEqual(expect.stringContaining("second note"));
+  expect(readFileSync(join(dirs.docs, "Welcome.md"), "utf8")).toBe("first note\n");
   await page.keyboard.press(mac ? "Meta+BracketRight" : "Alt+ArrowRight");
   await expect(editor).toHaveText("second note");
 
