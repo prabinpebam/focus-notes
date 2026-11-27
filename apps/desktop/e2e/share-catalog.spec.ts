@@ -120,7 +120,7 @@ for (const theme of ["light", "dark"] as const) {
       const turnOn = settings.getByRole("button", { name: "Turn on sharing…", exact: true });
       await expect(turnOn).toBeVisible();
       await shot(l, theme, "04-settings-sharing-off-turn-on");
-      const confirmation = page.getByRole("dialog", { name: "Sharing", exact: true });
+      const confirmation = page.getByRole("dialog", { name: /^Turn on sharing for/ });
       github.fail("POST /repos/ada/notes-site/git/trees", 403, "Resource not accessible");
       await turnOn.click();
       await expect(confirmation).toContainText("ada/notes-site");
