@@ -14,7 +14,7 @@ import { execFileSync } from "node:child_process";
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { launch, PROMPTLY, tempDirs, type Launched } from "./helpers.ts";
-import { crash, LOSS_BUDGET_MS, readDrafts, START, typedPart, typeTimed } from "./recovery.ts";
+import { crash, LOSS_BUDGET_MS, readDrafts, START, textHash, typedPart, typeTimed } from "./recovery.ts";
 
 const rounds = Number(process.env.FOCUS_NOTES_FAULT_ROUNDS ?? 3);
 const seed = Number(process.env.FOCUS_NOTES_FAULT_SEED ?? Date.now() % 1_000_000);
@@ -52,9 +52,19 @@ test(`QLT-03: killed at random points while typing, ${rounds} rounds, nothing is
   // A failed round leaves its relaunch running: it's crashed at the end, or the worker never stops.
   const running = new Set<Launched>();
   const start = async () => {
-    const l = await launch(dirs, env);
-    running.add(l);
-    return l;
+    // A relaunch that can't create the single-instance lock file (Windows error 32: the killed instance, or a scanner,
+    // still holds it) quits as a second instance before its window; a person would start it again, and so does this.
+    for (let attempt = 1; ; attempt++) {
+      try {
+        const l = await launch(dirs, env);
+        running.add(l);
+        return l;
+      } catch (error) {
+        if (attempt >= 3 || !/Lock file can not be created/.test(String(error))) throw error;
+        console.log(`[fault-injection] seed=${seed}: the lock file was still held at launch ${attempt}; starting again`);
+        await new Promise((r) => setTimeout(r, 1_000));
+      }
+    }
   };
   const kill = (l: Launched) => {
     running.delete(l);
@@ -93,14 +103,26 @@ test(`QLT-03: killed at random points while typing, ${rounds} rounds, nothing is
       // The disk may lag; the draft store must not lag by more than about a second. Check it on
       // relaunch: what it kept comes back in the editor, and the normal save writes it (QLT-06).
       const draft = readDrafts(dirs.userData, dirs.docs).find((d) => d.header.path === "Welcome.md");
-      const expected = draft && draft.text !== readFileSync(note, "utf8") ? draft.text : readFileSync(note, "utf8");
+      const disk = readFileSync(note, "utf8");
+      // Only a draft typed over the disk as it is (matched) is restored. If the save finished after the draft's last
+      // handover, the disk is ahead and no longer matches the draft's base: the launch offers a comparison and
+      // writes nothing (QLT-03.draft-behind-save), so the file stays as it is.
+      const behind = Boolean(draft && draft.text !== disk && textHash(disk) !== draft.header.base);
+      const expected = draft && draft.text !== disk && !behind ? draft.text : disk;
       let restoredLaunch = await start();
       // Sometimes the launch that restores is crashed into before its save: the draft is still there for the next.
       if (rnd() < 0.3) {
         await kill(restoredLaunch);
         restoredLaunch = await start();
       }
-      await expect.poll(() => readFileSync(note, "utf8"), { ...PROMPTLY, message: `round ${round} (seed ${seed}): the restored text is saved` }).toBe(expected);
+      if (behind) {
+        // Only the save finishing after the draft's last handover explains this: the draft is a prefix of the disk.
+        expect(typedPart(disk).startsWith(typedPart(draft!.text)), `round ${round} (seed ${seed}): the draft ${JSON.stringify(draft!.text)} is behind the disk ${JSON.stringify(disk)}`).toBe(true);
+        // Nothing is written while the comparison waits for a choice: the file is still what the save wrote.
+        await expect(restoredLaunch.page.getByRole("textbox", { name: "Note" })).toBeVisible();
+        await restoredLaunch.page.waitForTimeout(1_500);
+        expect(readFileSync(note, "utf8"), `round ${round} (seed ${seed}): the disk, ahead of the draft, is unchanged`).toBe(disk);
+      } else await expect.poll(() => readFileSync(note, "utf8"), { ...PROMPTLY, message: `round ${round} (seed ${seed}): the restored text is saved` }).toBe(expected);
       const restored = typedPart(expected);
       expect(all.startsWith(restored), `round ${round} (seed ${seed}): restored ${JSON.stringify(restored)} is a prefix of ${JSON.stringify(all)}`).toBe(true);
       expect(restored.length, `round ${round} (seed ${seed}): nothing from an earlier round is lost`).toBeGreaterThanOrEqual(kept.length);
@@ -110,6 +132,11 @@ test(`QLT-03: killed at random points while typing, ${rounds} rounds, nothing is
       kept = restored;
       // The relaunch that restored is crashed into as well, once its save is on disk.
       await kill(restoredLaunch);
+      // The comparison waits for the person's choice, so later rounds would type over it: the run ends here.
+      if (behind) {
+        console.log(`[fault-injection] seed=${seed} round ${round}: the disk was ahead of the draft (changed, nothing written); stopping`);
+        break;
+      }
     }
   } finally {
     for (const l of running) await kill(l).catch(() => {});

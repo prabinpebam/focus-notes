@@ -169,6 +169,11 @@ export async function crash(l: Launched, userData: string): Promise<number> {
   process.kill(pid, "SIGKILL");
   if (launcher.pid !== pid) launcher.kill("SIGKILL");
   await Promise.race([closed, new Promise((r) => setTimeout(r, 5000))]);
+  // The killed process itself is gone (its handles, the lock file's among them, are closed only then).
+  for (let i = 0; i < 100; i++) {
+    try { process.kill(pid, 0); } catch { break; }
+    await new Promise((r) => setTimeout(r, 100));
+  }
   // The renderer and GPU processes follow the main process out. On Windows the single-instance lock
   // file goes when the last of them lets go of it; the next launch waits for that, as a person would.
   const lock = join(userData, "lockfile");
