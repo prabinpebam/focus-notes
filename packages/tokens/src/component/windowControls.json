@@ -17,7 +17,7 @@
   "revealDuration": { "$type": "duration", "$value": "{motion.enter}" },
   "shown": { "$type": "number", "$value": "{opacity.full}" },
   "flyoutBackground": { "$type": "color", "$value": "{color.surfaceRaised}" },
-  "flyoutBorder": { "$type": "color", "$value": "{color.border}" },
+  "flyoutBorder": { "$type": "color", "$value": "{color.borderWriting}" },
   "flyoutBorderWidth": { "$type": "dimension", "$value": "{border.hairline}" },
   "flyoutRadius": { "$type": "dimension", "$value": "{radius.popover}" },
   "flyoutShadow": { "$type": "shadow", "$value": "{shadow.2}" },
@@ -30,7 +30,7 @@
   "layoutPadding": { "$type": "dimension", "$value": "{border.focus}" },
   "layoutBackground": { "$type": "color", "$value": "{color.surfaceSunken}" },
   "layoutRadius": { "$type": "dimension", "$value": "{radius.small}" },
-  "zone": { "$type": "color", "$value": "{color.border}" },
+  "zone": { "$type": "color", "$value": "{color.borderWriting}" },
   "zoneHover": { "$type": "color", "$value": "{color.accent}" },
   "zoneRadius": { "$type": "dimension", "$value": "{radius.small}" },
   "layer": { "$type": "number", "$value": "{layer.popover}" }

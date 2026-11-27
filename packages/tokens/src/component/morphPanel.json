@@ -19,7 +19,7 @@
       },
       "border": {
         "$type": "color",
-        "$value": "{color.border}"
+        "$value": "{color.borderWriting}"
       },
       "borderWidth": {
         "$type": "dimension",

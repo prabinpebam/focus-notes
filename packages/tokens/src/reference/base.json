@@ -105,6 +105,10 @@
         "600": {
           "$value": "#4a4845"
         },
+        "650": {
+          "$value": "#42413f",
+          "$description": "The dark border: as far from surfaceRaised (700) as light's border is from white."
+        },
         "700": {
           "$value": "#2e2d2f"
         },
@@ -259,6 +263,10 @@
         "600": {
           "$value": "#4a3f35"
         },
+        "650": {
+          "$value": "#473d33",
+          "$description": "The dark border: as far from surfaceRaised (700) as light's border is from white."
+        },
         "700": {
           "$value": "#322a23"
         },
@@ -342,6 +350,10 @@
         "600": {
           "$value": "#36485a"
         },
+        "650": {
+          "$value": "#344657",
+          "$description": "The dark border: as far from surfaceRaised (700) as light's border is from white."
+        },
         "700": {
           "$value": "#24323e"
         },
@@ -424,6 +436,10 @@
         },
         "600": {
           "$value": "#3a4a33"
+        },
+        "650": {
+          "$value": "#384831",
+          "$description": "The dark border: as far from surfaceRaised (700) as light's border is from white."
         },
         "700": {
           "$value": "#273322"

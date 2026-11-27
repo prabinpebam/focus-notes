@@ -22,6 +22,9 @@
     "borderStrong": {
       "$value": "{ref.system.buttonText}"
     },
+    "borderWriting": {
+      "$value": "{ref.system.buttonText}"
+    },
     "text": {
       "$value": "{ref.system.canvasText}"
     },

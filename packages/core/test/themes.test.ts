@@ -40,6 +40,23 @@ describe("built-in themes", () => {
       expect(theme.kind === "light" ? onWhite < 1.3 : onWhite > 10).toBe(true);
     });
   }
+  // Light's quiet border is 1.25:1 on white; a dark border equal to surfaceRaised hid every dialog divider and card edge.
+  for (const theme of BUILT_IN_THEMES) {
+    it(`${theme.id} draws color.border visibly on every surface`, () => {
+      const colors = resolved(theme.id);
+      for (const bg of ["color.canvas", "color.surface", "color.surfaceRaised"]) {
+        expect(contrastRatio(colors["color.border"]!, colors[bg]!), `${theme.id} border on ${bg}`).toBeGreaterThanOrEqual(1.15);
+      }
+    });
+  }
+  // The writing window keeps its own hairline role: color.border everywhere except a dark theme's quieter value.
+  for (const theme of BUILT_IN_THEMES) {
+    it(`${theme.id} keeps the writing window's hairlines`, () => {
+      const colors = resolved(theme.id);
+      if (theme.kind === "dark" && theme.contrast !== "high") expect(colors["color.borderWriting"]).toBe(colors["color.surfaceRaised"]);
+      else expect(colors["color.borderWriting"]).toBe(colors["color.border"]);
+    });
+  }
   it("measures WCAG contrast", () => {
     expect(contrastRatio("#000000", "#ffffff")).toBeCloseTo(21, 5);
     expect(contrastRatio("#777777", "#ffffff")).toBeCloseTo(4.48, 2);

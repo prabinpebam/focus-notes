@@ -21,6 +21,9 @@
       "$value": "{ref.color.ink.a55}"
     },
     "border": {
+      "$value": "{ref.color.forestDark.650}"
+    },
+    "borderWriting": {
       "$value": "{ref.color.forestDark.700}"
     },
     "borderStrong": {

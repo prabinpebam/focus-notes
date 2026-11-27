@@ -9,6 +9,7 @@
     "scrim": { "$value": "{ref.color.paper.a40}" },
     "border": { "$value": "{ref.color.paper.200}" },
     "borderStrong": { "$value": "{ref.color.paper.300}" },
+    "borderWriting": { "$value": "{ref.color.paper.200}", "$description": "The writing window's own hairlines (window edge, toolbar, flyouts, cards and tables in the note): color.border, except where a dark theme keeps its earlier, quieter value (the writing window is sacred)." },
     "text": { "$value": "{ref.color.paper.900}" },
     "textMuted": { "$value": "{ref.color.paper.600}" },
     "onSelection": { "$value": "{ref.color.paper.900}" },

@@ -21,6 +21,9 @@
     "border": {
       "$value": "{ref.color.hcLight.border}"
     },
+    "borderWriting": {
+      "$value": "{ref.color.hcLight.border}"
+    },
     "borderStrong": {
       "$value": "{ref.color.hcLight.text}"
     },

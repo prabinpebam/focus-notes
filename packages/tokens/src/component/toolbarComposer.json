@@ -34,7 +34,7 @@
   "leaving": { "$type": "color", "$value": "{color.dangerMuted}", "$description": "The catalogue while a toolbar button is dragged over it: dropping there takes it off." },
   "ghostBackground": { "$type": "color", "$value": "{color.surfaceRaised}" },
   "ghostShadow": { "$type": "shadow", "$value": "{shadow.3}" },
-  "ghostBorder": { "$type": "color", "$value": "{color.border}" },
+  "ghostBorder": { "$type": "color", "$value": "{color.borderWriting}" },
   "ghostBorderWidth": { "$type": "dimension", "$value": "{border.hairline}" },
   "ghostSize": { "$type": "dimension", "$value": "{size.controlM}" },
   "ghostIcon": { "$type": "dimension", "$value": "{size.iconM}" },

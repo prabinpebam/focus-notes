@@ -19,6 +19,9 @@
     "border": {
       "$value": "{ref.color.sepia.200}"
     },
+    "borderWriting": {
+      "$value": "{ref.color.sepia.200}"
+    },
     "borderStrong": {
       "$value": "{ref.color.sepia.300}"
     },

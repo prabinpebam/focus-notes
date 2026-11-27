@@ -23,6 +23,9 @@
     "border": {
       "$value": "{ref.color.hcDark.border}"
     },
+    "borderWriting": {
+      "$value": "{ref.color.hcDark.border}"
+    },
     "borderStrong": {
       "$value": "{ref.color.hcDark.text}"
     },

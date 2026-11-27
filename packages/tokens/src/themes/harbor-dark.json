@@ -21,6 +21,9 @@
       "$value": "{ref.color.ink.a55}"
     },
     "border": {
+      "$value": "{ref.color.harborDark.650}"
+    },
+    "borderWriting": {
       "$value": "{ref.color.harborDark.700}"
     },
     "borderStrong": {

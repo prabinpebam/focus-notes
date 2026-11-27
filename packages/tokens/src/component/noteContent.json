@@ -33,7 +33,7 @@
   "checkbox": { "$type": "color", "$value": "{color.accent}" },
   "checkboxSize": { "$type": "dimension", "$value": "{size.iconS}" },
   "checkedText": { "$type": "color", "$value": "{color.textMuted}" },
-  "tableBorder": { "$type": "color", "$value": "{color.border}" },
+  "tableBorder": { "$type": "color", "$value": "{color.borderWriting}" },
   "tableBorderWidth": { "$type": "dimension", "$value": "{border.hairline}" },
   "tableRadius": { "$type": "dimension", "$value": "{radius.small}" },
   "tableHeader": { "$type": "color", "$value": "{color.surface}" },

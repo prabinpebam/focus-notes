@@ -1,5 +1,5 @@
 { "cmp": { "divider": {
-  "color": { "$type": "color", "$value": "{color.border}" },
+  "color": { "$type": "color", "$value": "{color.borderWriting}" },
   "width": { "$type": "dimension", "$value": "{border.hairline}" },
   "inset": { "$type": "dimension", "$value": "{space.scale.xs}" }
 } } }

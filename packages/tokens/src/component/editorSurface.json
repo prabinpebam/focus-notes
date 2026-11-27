@@ -440,7 +440,7 @@
         },
         "cardBorder": {
           "$type": "color",
-          "$value": "{color.border}"
+          "$value": "{color.borderWriting}"
         },
         "cardBorderWidth": {
           "$type": "dimension",
@@ -558,7 +558,7 @@
           },
           "border": {
             "$type": "color",
-            "$value": "{color.border}"
+            "$value": "{color.borderWriting}"
           },
           "borderWidth": {
             "$type": "dimension",
@@ -613,7 +613,7 @@
       },
       "tableBorder": {
         "$type": "color",
-        "$value": "{color.border}"
+        "$value": "{color.borderWriting}"
       },
       "tableBorderWidth": {
         "$type": "dimension",
