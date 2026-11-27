@@ -9,7 +9,7 @@ import { registerAi, reasonCode } from "../src/ai-app.ts";
 import { CATALOG } from "../src/actions-catalog.ts";
 import { aiProvider } from "../src/ai-providers.ts";
 import type { AiBridge, AiSettingsView } from "../src/bridge.ts";
-import { CommandRegistry } from "../src/commands.ts";
+import { CommandRegistry, formatChord } from "../src/commands.ts";
 import { MessageCatalog } from "../src/messages.ts";
 import { Store } from "../src/store.ts";
 import { ViewModelRegistry } from "../src/view-models.ts";
@@ -18,6 +18,15 @@ import { CommitTracker, type CommitView, type TaskView } from "../src/tasks.ts";
 import en from "../../views/messages/en.json" with { type: "json" };
 
 const settle = () => new Promise((r) => setTimeout(r, 0));
+
+it("shows the platform's key names, never the Mod placeholder, in the Rewrite hint and every message", () => {
+  expect(setup().vm().sendHint).toBe("Ctrl+Enter to send · Enter adds a line");
+  expect(setup({ platform: "macos" }).vm().sendHint).toBe("⌘↩ to send · Enter adds a line");
+  const t = setup();
+  const shown = [...Object.values(en as Record<string, string>), String(t.vm().sendHint),
+    ...t.commands.ids().map((id) => t.commands.describe(id).shortcut).filter((c): c is string => Boolean(c)).map((c) => formatChord(c, "windows"))];
+  expect(shown.filter((s) => /\bMod[+-]/.test(s))).toEqual([]);
+});
 
 it("shows real per-probe discovery results and counts while other probes are still pending", async () => {
   const t = setup();
@@ -152,7 +161,7 @@ const conn = (over: Partial<AiSettingsView["connections"][number]> = {}) => ({
   id: "w", provider: "openai", name: "OpenAI", endpoint: "", model: "gpt-x", deployment: "", apiVersion: "", account: "", hasKey: true, consented: false, ...over,
 });
 
-function setup(opts: { consented?: boolean; path?: string; tree?: WorkspaceTree; startError?: string; connection?: Partial<AiSettingsView["connections"][number]>; connections?: AiSettingsView["connections"]; writerError?: boolean; writerWait?: Promise<void>; consentWait?: Promise<void> } = {}) {
+function setup(opts: { platform?: "windows" | "macos"; consented?: boolean; path?: string; tree?: WorkspaceTree; startError?: string; connection?: Partial<AiSettingsView["connections"][number]>; connections?: AiSettingsView["connections"]; writerError?: boolean; writerWait?: Promise<void>; consentWait?: Promise<void> } = {}) {
   let settings: AiSettingsView = { writer: "w", connections: opts.connections ?? [conn({ consented: opts.consented ?? true, ...opts.connection })] };
   const calls: string[] = [];
   let listener: ((e: unknown) => void) | undefined;
@@ -201,7 +210,7 @@ function setup(opts: { consented?: boolean; path?: string; tree?: WorkspaceTree;
     run: a => commits.run(a.target, a.command, a.value, () => commands.run(a.command, { value: a.value })),
   });
   registerAi({
-    store, bridge: { ai } as never, catalog, commands, viewModels,
+    store, bridge: { ai, platform: opts.platform ?? "windows" } as never, catalog, commands, viewModels,
     tracker: { run: async (_target, _message, work) => work() },
     commits,
     editorAction: (id) => void editor.push(id), announce: (t) => void said.push(t),

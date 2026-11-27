@@ -9,7 +9,7 @@
 import { AI_PROVIDERS, AZURE_API_VERSION, aiProvider, aiRunsInCloud, type AiConnectionView, type AiFound, type AiGroup } from "./ai-providers.ts";
 import { aiConnectionIcon } from "../../ui/src/ai-icons.ts";
 import type { AiConnectionInput, PlatformBridge } from "./bridge.ts";
-import type { CommandRegistry } from "./commands.ts";
+import { formatChord, type CommandRegistry } from "./commands.ts";
 import type { MessageCatalog } from "./messages.ts";
 import type { Store } from "./store.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
@@ -545,7 +545,7 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
       return {
         open, caret, hasSelection: !caret, selection, prompt, confirmingDiscard, focusRequest,
         title: t(caret ? "rewrite.writeTitle" : "rewrite.title"),
-        sendHint: t("rewrite.sendHint", { key: commands.describe("rewrite.generate").shortcut ?? "" }),
+        sendHint: t("rewrite.sendHint", { key: formatChord(commands.describe("rewrite.generate").shortcut ?? "Mod+Enter", bridge.platform) }),
         writerLabel: w ? t("rewrite.writer", { name: w.name, detail: describe(w) }) : "",
         writerName: w?.name ?? "", writerService: w ? aiProvider(w.provider)!.label : "",
         writerModel: w ? w.model || w.deployment : "",
