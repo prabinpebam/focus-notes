@@ -1,6 +1,7 @@
 { "cmp": { "saveState": {
   "height": { "$type": "dimension", "$value": "{size.iconL}" },
-  "paddingInline": { "$type": "dimension", "$value": "{space.scale.xs}" },
+  "paddingStart": { "$type": "dimension", "$value": "{size.pillInsetStart}", "$description": "With words beside the icon: the project pill's start inset, so the icon's visible edge sits as far from the edge as the text's end (about 6 px). Icon only, the pill stays a circle." },
+  "paddingEnd": { "$type": "dimension", "$value": "{size.pillInsetEnd}", "$description": "With words: the project pill's end inset after the text." },
   "gap": { "$type": "dimension", "$value": "{space.inlinePair}" },
   "radius": { "$type": "dimension", "$value": "{radius.round}" },
   "text": { "$type": "color", "$value": "{color.textMuted}" },

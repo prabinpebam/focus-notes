@@ -35,11 +35,18 @@
       },
       "paddingBlock": {
         "$type": "dimension",
-        "$value": "{space.insetSm}"
+        "$value": "{space.scale.xs}",
+        "$description": "Optical: the 32 px close button sets the row's height and adds its own 6 px inset, so the text's cap height and the × glyph sit about as far from the top and bottom as the text from the start. Also room for the close button's focus ring (width plus offset) inside the border."
       },
       "paddingInline": {
         "$type": "dimension",
-        "$value": "{space.scale.m}"
+        "$value": "{space.scale.m}",
+        "$description": "The start, before the icon or text: the visible inset every other edge matches."
+      },
+      "paddingInlineEnd": {
+        "$type": "dimension",
+        "$value": "{space.scale.xs}",
+        "$description": "Optical: the start inset less the close button's own inset (6 px) and the × glyph's side bearing, so the glyph's visible edge sits as far from the end as the text from the start. Keeps the focus ring inside the border."
       },
       "gap": {
         "$type": "dimension",

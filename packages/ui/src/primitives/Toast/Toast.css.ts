@@ -10,7 +10,7 @@ export const root = style({
   maxWidth: t.maxWidth,
   paddingBlock: t.paddingBlock,
   paddingInlineStart: t.paddingInline,
-  paddingInlineEnd: t.paddingBlock,
+  paddingInlineEnd: t.paddingInlineEnd,
   borderRadius: t.radius,
   borderStyle: "solid",
   borderWidth: t.borderWidth,

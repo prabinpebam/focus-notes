@@ -35,7 +35,7 @@ export function SaveState({ state, label, text, id, interactive = true, onPress 
   );
   if (!interactive) {
     return (
-      <span className={`${s.pill} ${s.tone[state]}`} {...(id ? { id } : {})} role="img" aria-label={text || label} title={label} data-state={state}>
+      <span className={`${s.pill} ${s.tone[state]}${text ? ` ${s.withText}` : ""}`} {...(id ? { id } : {})} role="img" aria-label={text || label} title={label} data-state={state}>
         {glyph}
         {text ? <span className={s.text}>{text}</span> : null}
       </span>
@@ -43,7 +43,7 @@ export function SaveState({ state, label, text, id, interactive = true, onPress 
   }
   return (
       <Button
-        className={`${s.pill} ${s.tone[state]}`}
+        className={`${s.pill} ${s.tone[state]}${text ? ` ${s.withText}` : ""}`}
         {...(id ? { id } : {})}
         aria-label={text || label}
         data-state={state}

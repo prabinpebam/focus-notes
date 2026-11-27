@@ -42,6 +42,9 @@ export const tone = styleVariants({
 
 export const glyph = style({ position: "relative", display: "inline-flex" });
 
+// With words beside the icon it becomes a pill with the project pill's insets; icon only, it stays a circle.
+export const withText = style({ paddingInlineStart: t.paddingStart, paddingInlineEnd: t.paddingEnd });
+
 export const dot = style({
   position: "absolute",
   insetInlineEnd: 0,
