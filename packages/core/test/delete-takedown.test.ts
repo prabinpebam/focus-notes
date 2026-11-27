@@ -112,6 +112,7 @@ describe("deleting a shared note in the app (D-428)", () => {
     const batches: WorkspaceOp[][] = [];
     let revoked = false;
     let hold: Promise<void> | undefined;
+    let holdApply: Promise<void> | undefined;
     const listing = (): AccessListing => ({ available: true, configured: true, site: "https://ada.github.io/book/", vault: false, grants: [
       { id: "g1", name: "", scope: { notes: [] } as never, createdAt: "2026-11-25T00:00:00Z", expiresAt: null, revokedAt: revoked ? "2026-11-25T01:00:00Z" : null, link: true, passcode: false, generated: false, item: { path: "trip.md", folder: false } as never },
     ] });
@@ -137,7 +138,7 @@ describe("deleting a shared note in the app (D-428)", () => {
         renameNote: async () => {},
         apply: async (ops) => {
           batches.push(ops);
-          if (ops.some((o) => o.op === "delete")) order.push("delete");
+          if (ops.some((o) => o.op === "delete")) { order.push("delete"); if (holdApply) await holdApply; }
           const plan = planFlatOps([...notes.values()], folders, ops, 2);
           for (const p of plan.remove) notes.delete(p);
           for (const n of plan.put) notes.set(n.path, n);
@@ -146,7 +147,9 @@ describe("deleting a shared note in the app (D-428)", () => {
       },
     };
     let release!: () => void;
-    return { bridge, notes, order, batches, holdWithdraw: () => { hold = new Promise((r) => { release = r; }); }, release: () => release() };
+    let releaseApply!: () => void;
+    return { bridge, notes, order, batches, holdWithdraw: () => { hold = new Promise((r) => { release = r; }); }, release: () => release(),
+      holdDelete: () => { holdApply = new Promise((r) => { releaseApply = r; }); }, releaseDelete: () => releaseApply() };
   }
   const start = async (f: ReturnType<typeof setup>) => {
     const app = createApp(f.bridge, messages);
@@ -177,6 +180,25 @@ describe("deleting a shared note in the app (D-428)", () => {
     await app.idle();
     await settle();
     expect(f.order).toEqual(["withdraw", "delete"]);
+    expect(row(app, "p/trip.md")).toBeUndefined();
+    expect(toasts(app)).toContain("Deleted. Its link is off");
+  });
+
+  it("the row stays Deleting… while the note itself is being deleted, then goes once", async () => {
+    const f = setup();
+    const app = await start(f);
+    await app.commands.run("files.select", { id: "p/trip.md", mode: "replace" });
+    await app.commands.run("files.delete");
+    f.holdDelete();
+    await app.commands.run("files.confirm");
+    expect(row(app, "p/trip.md")).toMatchObject({ description: "Deleting…", deleting: "pending" });
+    await settle();
+    await expect.poll(() => f.order).toEqual(["withdraw", "delete"]);
+    // The note is leaving the tree but its delete isn't done: the row never disappears and comes back.
+    expect(row(app, "p/trip.md")).toMatchObject({ description: "Deleting…", deleting: "pending" });
+    f.releaseDelete();
+    await app.idle();
+    await settle();
     expect(row(app, "p/trip.md")).toBeUndefined();
     expect(toasts(app)).toContain("Deleted. Its link is off");
   });

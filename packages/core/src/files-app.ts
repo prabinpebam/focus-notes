@@ -776,6 +776,8 @@ export function registerFiles(ctx: Ctx) {
   const jobOf = (id: string) => deleting().find((j) => j.id === id);
   const setJob = (id: string, patch: Partial<DeleteJob>) => setFiles((f) => ({ deleting: (f.deleting ?? []).map((j) => (j.id === id ? { ...j, ...patch } : j)) }));
   const dropJob = (id: string) => setFiles((f) => ({ deleting: (f.deleting ?? []).filter((j) => j.id !== id), ...(f.deleteCard === id ? { deleteCard: "" } : {}) }));
+  /** Each running delete's Undo, kept from when its notes were deleted for the notification once its page is down. */
+  const undoes = new Map<string, () => Promise<void>>();
   /** A row being deleted: one of a job's paths, or inside one. */
   const deletingJob = (path: string) => deleting().find((j) => j.paths.some((p) => isWithin(p, path)));
   /** What has to come down before these go (D-428), through the one takedown boundary: links, pages, and public notes' own pages. */
@@ -787,17 +789,23 @@ export function registerFiles(ctx: Ctx) {
     return { ...found, pages };
   };
   const refreshShares = () => takedown.refresh();
-  function localDelete(paths: string[], done: string, quiet = false): Promise<boolean> {
+  /** Puts deleted notes back from history (FIL-10), with the folders that went with them; none without Git. */
+  function undoOf(paths: string[]): (() => Promise<void>) | undefined {
+    if (!canRestore(store.state)) return undefined;
+    // Folders that go with it, parent first, so Undo can put notes back where they were.
+    const folders = [...walk(tree())].filter((x) => x.node.kind === "folder" && paths.some((p) => isWithin(p, x.path))).map((x) => x.path).sort((a, b) => a.length - b.length);
+    const what = whatOf(paths);
+    return () => undelete(paths, folders, what);
+  }
+  function localDelete(paths: string[], done: string, quiet = false, undo = undoOf(paths)): Promise<boolean> {
     const plan = planDelete(tree(), paths);
     const what = whatOf(paths);
     if (plan.kind === "refused") { refused("files.deleteFailed", { what }, plan.reason); return Promise.resolve(false); }
-    // Folders that go with it, parent first, so Undo can put notes back where they were.
-    const folders = [...walk(tree())].filter((x) => x.node.kind === "folder" && paths.some((p) => isWithin(p, x.path))).map((x) => x.path).sort((a, b) => a.length - b.length);
     return perform(plan.tree, paths.map((path) => ({ op: "delete" as const, path })), {
       touched: [], deletes: paths, done, quiet,
       failed: (why) => catalog.format("files.deleteFailed", { what, reason: why }),
       // With Git, a delete is a commit, so Undo restores it from history (FIL-10).
-      ...(canRestore(store.state) ? { undo: () => undelete(paths, folders, what) } : {}),
+      ...(undo ? { undo } : {}),
     });
   }
   function doDelete(paths: string[]): void {
@@ -821,17 +829,23 @@ export function registerFiles(ctx: Ctx) {
       redeploy: () => takedown.redeploy(),
       unpublish: (rels) => takedown.unpublish(rels),
       takeDown: () => takedown.takeDown(),
-      // A public note's page comes down after it's deleted (D-429): its outcome is said once, when the page is down.
-      deleteLocal: () => localDelete(get().paths, catalog.format(deleteDoneKey(get(), false)), get().publicPages > 0),
+      // A public note's page comes down after it's deleted (D-429): its outcome is said once, when the page is down,
+      // with the Undo its delete would have offered.
+      deleteLocal: () => {
+        const undo = undoOf(get().paths);
+        if (undo) undoes.set(id, undo);
+        return localDelete(get().paths, catalog.format(deleteDoneKey(get(), false)), get().publicPages > 0, undo);
+      },
     });
     try {
       const ok = ctx.tracker ? await ctx.tracker.run("files.deleteTakedown", "files.deleting.mark", work, undefined, "fn:files.deleteTakedown", "none") : await work();
       if (ok && get().publicPages) {
         const done = catalog.format(deleteDoneKey(get(), false));
-        toast(done);
+        const undo = undoes.get(id);
+        toast(done, undo ? { action: undoAction(undo) } : {});
         announce(done);
       }
-      if (ok) dropJob(id);
+      if (ok) { undoes.delete(id); dropJob(id); }
     } finally {
       off();
     }
@@ -1789,21 +1803,22 @@ export function registerFiles(ctx: Ctx) {
         ...(r.kind === "root" && (r.rootId === "private" || r.rootId === "public") ? { accessory: r.rootId === "private" ? 0 : 1 } : {}),
         };
       });
-      // D-428: a public note whose page is still coming down after it was deleted keeps its row until it's done.
+      // D-428: a note being deleted keeps its row until the job is done, also once its file has left the tree (while
+      // its delete is saved, and while a public note's page comes down after it), so the row never goes and comes back.
       const ghosts: { to: number; item: Record<string, unknown> }[] = [];
       for (const job of f.deleting ?? []) {
-        if (!job.deleted) continue;
         job.paths.forEach((path, k) => {
           if (findNode(s.workspace.tree, path)) return;
           const parentPath = dirOf(path);
           const at = rows.findIndex((r) => r.path === parentPath && r.kind !== "note");
           const parent = rows[at];
           if (!parent || !parent.expanded) return;
-          const label = job.titles[k] || stemOf(path.split(/[\\/]/).pop() ?? path);
+          const file = path.split(/[\\/]/).pop() ?? path;
+          const label = job.titles[k] || stemOf(file);
           let to = at + 1;
           while (to < rows.length && rows[to]!.level > parent.level && !(rows[to]!.level === parent.level + 1 && rows[to]!.label.localeCompare(label) > 0)) to++;
           ghosts.push({ to, item: {
-            id: path, kind: "note", level: parent.level + 1, label, title: path, parent: parent.id, detail: "",
+            id: path, kind: "note", level: parent.level + 1, label, title: path, parent: parent.id, detail: stemOf(file) !== label ? file : "",
             description: catalog.format(job.failed ? "files.deleting.stopped" : "files.deleting.mark"), deleting: job.failed ? "failed" : "pending",
             expanded: false, hasChildren: false, selected: false, current: false, pending: false, readOnly: true, draggable: false, droppable: false, editing: false,
           } });

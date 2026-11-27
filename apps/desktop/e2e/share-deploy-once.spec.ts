@@ -95,6 +95,24 @@ test("D-436: share, then a backup of the public notes: the reader still opens th
     await page.waitForTimeout(6_000);
     expect(build(), "the share's build id").toBe(shared);
 
+    // A backup with no public change (an edit to Essay, a private note no one shares): it deploys nothing.
+    {
+      const p = pushes(), s = saves();
+      await openFiles();
+      await row("Essay").dblclick();
+      const note = page.getByRole("textbox", { name: "Note", exact: true });
+      await expect(note).toContainText("Essay words the owner publishes.");
+      await note.click();
+      await page.keyboard.press("Control+End");
+      await page.keyboard.press("Enter");
+      await page.keyboard.type("A private edit.");
+      await page.keyboard.press("Control+s");
+      await expect.poll(saves, { timeout: 30_000 }).toBe(s + 1);
+      await page.waitForTimeout(6_000);
+      expect(pushes(), "a private edit's backup: site deploys").toBe(p);
+      expect(build(), "a private edit's backup: build id").toBe(shared);
+    }
+
     // A reader opens the link while a real rebuild switches builds (main's condition 5): it reads the manifest of
     // the build that's served, then the rebuild below (editing a public note) replaces the site before it reads on.
     let held = false;

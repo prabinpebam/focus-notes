@@ -36,6 +36,20 @@ CI observations on the combined head (badge accent + D-436), recorded with their
 
 **Final proof on the landing head (W-ShareLand27, rebased on `61c7aae6`, after main's condition 5: a reader opening a link while a rebuild switches builds still reads it).** `FOCUS_NOTES_E2E=1`, `--workers=1 --retries=0`, one run: `delete-shared-same-repo` 20 of 20 and `share-same-repo.spec.ts:21` 20 of 20 (`--repeat-each=20`, 23.4 min), `share-deploy-once` 10 of 10 (`--repeat-each=10`, 13.7 min), whose condition 5 step reads the manifest, holds while the app's own rebuild switches builds, then opens the link. Without the reader fix that journey fails (*saw the gate: key*), and so does `share-reader.test.ts`'s D-436 case. Also green: `pnpm check`, `pnpm typecheck`, and 283 related unit tests (27 files: git-sync, site-rebuild, sharing, publishing, live status, share reader). The `share-same-repo.spec.ts:21` quarantine row is removed with this evidence.
 
+## Delete rows under load: the rows stay until the job is done (D-436 follow-up), 27 November
+
+`delete-shared-same-repo.spec.ts`'s combined Diary + Trip delete missed *Deleted. Its link is off and its page is down* (5 s) under load: CPU throttled 4× (`FOCUS_NOTES_E2E_CPU_THROTTLE=4`) with `pnpm exec vitest run packages` looping. It failed **2 of 3 on the D-436 head and 3 of 3 on `61c7aae6`, before D-436**, so the bug is older and load only exposes it.
+
+- **Timed step by step (ms after the confirmation, failing run):** turning off the link took 235–6183. Its deploy took 5.7 s, waiting behind the link's own `access.json` backup (D-432), as designed. Deleting the note took 6200–9455. **The rows left the tree at 6546** and the test's `toHaveCount(0)` passed at 6865. The rows came back *Deleting…* at 9560. Taking the page down then joined the rebuild for the delete (one deploy, 8408–10726).
+- **Cause:** `files-app.ts` kept a deleting note's row only after `job.deleted`, but *Delete the note* takes the files out of the tree at once (`perform`'s `setTree`). **Fix:** a deleting note keeps its row in every frame until its job is done.
+- **Evidence:**
+  - `delete-takedown.test.ts`, *the row stays Deleting… while the note itself is being deleted*, fails on the old code.
+  - The journey samples every frame. The very next frame after the confirmation reads *Deleting…*, and no frame is missing or plain before the row goes once. That check also fails on the old code.
+  - *Deleting…* shows within 5 s of the confirmation. Delete Essay is exactly 1 deploy and 1 backup; Diary + Trip is at most 2 and 2.
+  - A failed website update keeps Rome *Stopped* with Retry. Recently deleted lists Essay, and Undo brings Diary and Trip back.
+  - `share-deploy-once` adds a private edit's backup: 0 deploys.
+- **Results:** 5 of 5 under that load. Once each without load: `share-deploy-once`, `delete-shared-same-repo`, `delete-shared`, `share-same-repo`, `publish-live`, `g3-publish` (9 of 9). Before and after frames: `focus-notes-work\review\delete-rows-27nov\`.
+
 ## Opened files in Files (FIL-20, WP-P.24, D-410), 24 November
 
 Wired on `fix-opened-files-24nov` over the approved `34cd088e` design: `OpenedFiles` (`#filesOpened`) above Pinned in `canvas.view.json`, backed by `vm.opened`, `files.activateOpened`, `files.closeOpened`, `files.closeAllOpened` and Recent exclusion in `packages/core/src/files-app.ts`. No central files (`app.ts`, `main.ts`, `preload`, `en.json`) edited.
