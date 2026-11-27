@@ -74,12 +74,12 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
   const changed = () => store.update((s) => ({ ...s }));
   const t = (key: string, args?: Record<string, unknown>) => catalog.format(key, args);
   /** A reason code from the shell (inside an IPC error's text) as words. */
-  const reason = (e: unknown, fallback: string, retryAfter?: number, detail?: string) => {
+  const reason = (e: unknown, fallback: string, retryAfter?: number, detail?: string, full = false) => {
     const r = reasonCode(String((e as Error)?.message ?? ""));
     const wait = retryAfter ?? r.retryAfter;
     const said = detail ?? r.detail;
     const words = r.code === "rate-limited" && wait ? t("ai.error.rate-limited.wait", { s: wait }) : t(r.code ? `ai.error.${r.code}` : fallback);
-    return said ? `${words} ${t("ai.error.detail", { detail: clipDetail(said) })}` : words;
+    return said ? `${words} ${t("ai.error.detail", { detail: full ? said : clipDetail(said) })}` : words;
   };
 
   // ---- Settings → AI ----
@@ -110,7 +110,9 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
   let busy = false;
   let choosingWriter = false;
   const testing = new Set<string>();
-  const testErrors = new Map<string, string>();
+  /** A failed Test's error, kept whole: its line shows the first 200 characters of the service's words until Show all. */
+  const testErrors = new Map<string, unknown>();
+  const testExpanded = new Set<string>();
   let writing = Promise.resolve();
   let formGeneration = 0;
   let foundChoice: number | undefined;
@@ -138,12 +140,14 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
   const testText = (c: AiConnectionView) => {
     if (testing.has(c.id)) return t("ai.test.running");
     const note = c.untestedVersion ? ` ${t("ai.copilot.tested")}` : "";
-    const err = testErrors.get(c.id);
-    if (err) return `${err}${note}`;
+    if (testErrors.has(c.id)) return `${t("ai.test.error", { reason: reason(testErrors.get(c.id), "ai.error.provider", undefined, undefined, testExpanded.has(c.id)) })}${note}`;
     if (!c.lastTest) return `${t("ai.test.never")}${note}`;
     const at = new Date(c.lastTest.at).toLocaleString();
     return `${t(c.lastTest.ok ? "ai.test.passed" : "ai.test.failed", { at })}${note}`;
   };
+  /** The failed Test's words are longer than its line shows. */
+  const testMore = (c: AiConnectionView) => !testing.has(c.id) && testErrors.has(c.id)
+    && Array.from(reasonCode(String((testErrors.get(c.id) as Error)?.message ?? "")).detail ?? "").length > 200;
   const apply = (v: { writer: string; connections: AiConnectionView[] }) => { writer = v.writer; connections = v.connections; };
   const load = async () => {
     if (!ai) return;
@@ -190,6 +194,7 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
       connections: { type: "array", items: { type: "object", properties: {
         id: { type: "string" }, name: { type: "string" }, choiceLabel: { type: "string" }, icon: { type: "string" }, detail: { type: "string" }, badge: { type: "string" }, keyText: { type: "string" },
         testText: { type: "string" }, testing: { type: "boolean" }, writer: { type: "boolean" }, notWriter: { type: "boolean" },
+        testMore: { type: "boolean" }, testExpanded: { type: "boolean" }, testMoreLabel: { type: "string" }, testMoreIcon: { type: "string" },
       } } },
       found: { type: "array", items: { type: "object", properties: { id: { type: "string" }, name: { type: "string" }, detail: { type: "string" } } } },
       scanTargets: { type: "array", items: { type: "object", properties: {
@@ -209,6 +214,9 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
           badge: t(c.id === writer ? "ai.badge.writer" : "ai.badge.saved"),
           keyText: t(c.hasKey ? "ai.key.saved" : aiProvider(c.provider)!.key === "none" ? "ai.key.notNeeded" : "ai.key.none"),
           testText: testText(c), testing: testing.has(c.id),
+          testMore: testMore(c), testExpanded: testExpanded.has(c.id),
+          testMoreLabel: t(testExpanded.has(c.id) ? "ai.test.showLess" : "ai.test.showAll"),
+          testMoreIcon: testExpanded.has(c.id) ? "chevronDown" : "chevronRight",
         })),
         found: found.flatMap((f, i) => {
           if (f.provider === "copilot-cli") return [];
@@ -388,16 +396,24 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
     if (!ai || !id || testing.has(id)) return;
     testing.add(id);
     testErrors.delete(id);
+    testExpanded.delete(id);
     changed();
     try {
       apply(await ai.test(id));
     } catch (e) {
-      testErrors.set(id, t("ai.test.error", { reason: reason(e, "ai.error.provider") }));
+      testErrors.set(id, e);
       await load();
     } finally {
       testing.delete(id);
       changed();
     }
+  });
+  reg("ai.testMore", (a) => {
+    const id = typeof a.value === "string" ? a.value : "";
+    if (!testErrors.has(id)) return;
+    if (testExpanded.has(id)) testExpanded.delete(id);
+    else testExpanded.add(id);
+    changed();
   });
   reg("ai.discover", async () => {
     if (!ai || discovering) return;

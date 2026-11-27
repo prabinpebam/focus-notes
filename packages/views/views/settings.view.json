@@ -1580,6 +1580,40 @@
                                     },
                                     {
                                       "type": "Inline",
+                                      "when": {
+                                        "get": "c.testMore"
+                                      },
+                                      "children": [
+                                        {
+                                          "type": "Button",
+                                          "props": {
+                                            "label": {
+                                              "get": "c.testMoreLabel"
+                                            },
+                                            "variant": "subtle",
+                                            "icon": {
+                                              "get": "c.testMoreIcon"
+                                            },
+                                            "bleed": true,
+                                            "expanded": {
+                                              "get": "c.testExpanded"
+                                            }
+                                          },
+                                          "on": {
+                                            "press": {
+                                              "run": "ai.testMore",
+                                              "args": {
+                                                "value": {
+                                                  "get": "c.id"
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "type": "Inline",
                                       "props": {
                                         "gap": "inlineItem"
                                       },

@@ -11,6 +11,9 @@ export const base = style({
 export const large = style({ paddingBlock: t.paddingBlock.l, paddingInline: t.padding.l });
 const pendingBorder = keyframes({ from: { borderStyle: "solid" }, to: { borderStyle: "dashed" } });
 export const choiceCard = style({
+  // Two columns (D-438 follow-up): the radio and visual lead, and every piece of content, the slot's
+  // lines and buttons too, starts in the one content column.
+  display: "grid", gridTemplateColumns: "auto minmax(0, 1fr)", alignItems: "center", columnGap: t.gap, rowGap: t.gap,
   selectors: {
     "&[data-selected]": { borderColor: t.action.border, backgroundImage: `linear-gradient(${t.action.hover}, ${t.action.hover})` },
     "&:focus-within": { outlineStyle: "solid", outlineColor: t.action.focusRing, outlineWidth: t.action.focusWidth, outlineOffset: t.action.focusOffset },
@@ -18,6 +21,10 @@ export const choiceCard = style({
   },
 });
 export const choice = style({ display: "flex", alignItems: "center", flexWrap: "wrap", gap: t.gap, flexGrow: 1, minWidth: 0, cursor: "default" });
+// In a choice card the label's boxes join the card's grid: the radio and visual lead, the text and slot share the content column.
+export const choiceWithVisual = style({ gridTemplateColumns: "auto auto minmax(0, 1fr)" });
+export const choiceLabel = style({ display: "contents" });
+export const choiceContent = style({ gridColumn: "-2 / -1", display: "flex", minWidth: 0 });
 export const radio = style({ width: t.markSize, height: t.markSize, margin: 0, flexShrink: 0, accentColor: t.action.border });
 export const tile = style({
   flexShrink: 0, width: t.tile, height: t.tile, display: "flex", alignItems: "center", justifyContent: "center",
@@ -44,6 +51,8 @@ export const selectedBadge = style({
 });
 // The slot keeps its width beside the text, but never more than the card's: a long status line wraps inside it (D-438).
 export const actions = style({ display: "flex", alignItems: "center", flexWrap: "wrap", gap: t.textGap, flexShrink: 0, minWidth: 0, maxWidth: "100%", marginInlineStart: "auto" });
+// After ctions, so the choice card's slot starts in the content column, not pushed to the end.
+export const choiceSlot = style({ gridColumn: "-2 / -1", marginInlineStart: 0, justifySelf: "start" });
 // The whole card is the action (D-131): one button, the accent edge says it's the step's main one.
 export const pressable = style({
   width: "100%", textAlign: "start", color: "inherit", cursor: "default", outline: "none", flexWrap: "nowrap",

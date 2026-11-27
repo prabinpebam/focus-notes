@@ -805,3 +805,23 @@ describe("no prefilters: try, then say the real reason (D-438)", () => {
     expect(t.settingsVm()).toMatchObject({ model: "brand-new-model-2027", cannotSave: false, modelsStatus: en["ai.error.server-error"] });
   });
 });
+
+describe("a long service error is cut on its line and reachable in full (D-438 follow-up)", () => {
+  it("shows the first 200 characters, Show all reveals the rest, Show less cuts it again", async () => {
+    const said = `Model refused: ${"detail ".repeat(60)}END`;
+    const t = setup();
+    t.ai.test = async () => { throw new Error(`Error invoking remote method 'ai:test': Error: bad-request detail=${encodeURIComponent(said)}`); };
+    await t.commands.run("ai.load");
+    await t.commands.run("ai.test", { value: "w" });
+    type Card = { testText: string; testMore: boolean; testExpanded: boolean; testMoreLabel: string };
+    const card = () => (t.settingsVm().connections as Card[])[0]!;
+    expect(card()).toMatchObject({ testMore: true, testExpanded: false, testMoreLabel: "Show all" });
+    expect(card().testText).not.toContain("END");
+    expect(card().testText).toContain("…”");
+    await t.commands.run("ai.testMore", { value: "w" });
+    expect(card()).toMatchObject({ testExpanded: true, testMoreLabel: "Show less" });
+    expect(card().testText).toContain(`${said}”`);
+    await t.commands.run("ai.testMore", { value: "w" });
+    expect(card().testText).not.toContain("END");
+  });
+});

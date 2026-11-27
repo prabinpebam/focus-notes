@@ -103,16 +103,16 @@ export function ItemCard({ title, detail, titleLabel, detailLabel, onTitlePress,
   );
   if (choiceGroup) {
     return (
-      <div id={id} className={`${s.base} ${s.choiceCard} ${reading ? s.reading : ""}`} data-item-card="" data-reading={reading ? "" : undefined} data-selected={selected ? "" : undefined} aria-busy={busy || undefined}>
-        <label className={s.choice}>
+      <div id={id} className={`${s.base} ${s.choiceCard} ${visual ? s.choiceWithVisual : ""} ${reading ? s.reading : ""}`} data-item-card="" data-reading={reading ? "" : undefined} data-selected={selected ? "" : undefined} aria-busy={busy || undefined}>
+        <label className={`${s.choice} ${s.choiceLabel}`}>
           <input className={s.radio} type="radio" name={choiceGroup} value={choiceValue} checked={Boolean(selected)} aria-disabled={busy || disabled || undefined} aria-label={label ?? title}
             onClick={(e) => { if (inert) e.preventDefault(); }}
             onKeyDown={(e) => { if (inert && [" ", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) e.preventDefault(); }}
             onChange={() => { if (!inert && choiceValue) onChoose?.({ value: choiceValue }); }} />
           {visual}
-          {text}
+          <span className={s.choiceContent}>{text}</span>
         </label>
-        {Children.count(children) ? <div className={s.actions}>{children}</div> : null}
+        {Children.count(children) ? <div className={`${s.actions} ${s.choiceSlot}`}>{children}</div> : null}
       </div>
     );
   }

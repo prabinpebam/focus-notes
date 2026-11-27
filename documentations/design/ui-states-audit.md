@@ -32,12 +32,12 @@ Auto-dismiss includes ordinary errors, Retry and Undo. Only retained-text risk, 
 | 8d55f99b65e0-1 | catalog.format(&#96;agents.undo.${known.includes(r.problem) ? r.problem : "failed"}&#96;, { path: row.path }) | packages/core/src/agents-app.ts:145 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
 | dc022ea5d858-1 | catalog.format("agents.undo.done", { path: row.path }) | packages/core/src/agents-app.ts:146 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
 | 939f5deaa911-1 | catalog.format("agents.cli.failed") | packages/core/src/agents-app.ts:156 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| bef813ab1af3-1 | status | packages/core/src/ai-app.ts:157 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| bef813ab1af3-2 | status | packages/core/src/ai-app.ts:378 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| 812a0f7ee465-1 | t("ai.scan.cancelFailed") | packages/core/src/ai-app.ts:482 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| 0416d691b20e-1 | t("rewrite.error.kept", { reason: reason(new Error(code), "ai.error.provider", retryAfter, detail) }) | packages/core/src/ai-app.ts:587 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| eaf52e16a4df-1 | t("rewrite.error.stale") | packages/core/src/ai-app.ts:682 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
-| d0962c951e39-1 | t(caret ? "rewrite.writing" : "rewrite.running", { name }) | packages/core/src/ai-app.ts:689 | must-read | operation-control: The running operation's only Stop or Cancel control must remain reachable. | "rewrite.cancel" |
+| bef813ab1af3-1 | status | packages/core/src/ai-app.ts:161 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| bef813ab1af3-2 | status | packages/core/src/ai-app.ts:386 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 812a0f7ee465-1 | t("ai.scan.cancelFailed") | packages/core/src/ai-app.ts:498 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| 0416d691b20e-1 | t("rewrite.error.kept", { reason: reason(new Error(code), "ai.error.provider", retryAfter, detail) }) | packages/core/src/ai-app.ts:603 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| eaf52e16a4df-1 | t("rewrite.error.stale") | packages/core/src/ai-app.ts:698 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
+| d0962c951e39-1 | t(caret ? "rewrite.writing" : "rewrite.running", { name }) | packages/core/src/ai-app.ts:705 | must-read | operation-control: The running operation's only Stop or Cancel control must remain reachable. | "rewrite.cancel" |
 | 622621cf4b88-1 | catalog.format("project.launch.restoreFailed") | packages/core/src/app.ts:690 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
 | e30359ba296c-1 | catalog.format("project.launch.rememberFailed") | packages/core/src/app.ts:708 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
 | e30359ba296c-2 | catalog.format("project.launch.rememberFailed") | packages/core/src/app.ts:726 | auto-dismiss | Nonessential outcome; input and recovery remain in their originating surface. | None |
