@@ -58,6 +58,7 @@ import { projectSharingLayout } from "./share/layout.ts";
 import { sharingRuntime } from "./share/runtime.ts";
 import { liveWatcher, type LiveEntry, type LiveItem, type LiveRecord, type LiveWatcher } from "./share/live-status.ts";
 import { siteRebuilder, type SiteRebuilder } from "./share/site-rebuild.ts";
+import { takeDownAfterDelete } from "./share/delete-takedown.ts";
 import { fetchDeployedSite } from "./share/site-publish.ts";
 import { publicNoteUrl, publicPagePath } from "@focus-notes/core/public-page";
 
@@ -2687,16 +2688,17 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     return true;
   });
   // D-428 takedown (D-429's one public site): the deleted note's file is already out of the public notes, or its share
-  // already withdrawn; this saves, then rebuilds and pushes the site without it and waits for Pages.
+  // already withdrawn. Its backup and the site build run side by side; the site joins the rebuild for this change (D-436).
   handle("sharing:takeDown", async () => {
     if (!settingsAvailable()) throw new Error("sharing:unavailable");
     const g = await gitOpening;
-    if (g) {
+    const live = await legacySiteReady() ? liveFor() : undefined;
+    return takeDownAfterDelete({
       // The delete's own backup has usually pushed it already; sync again only if something still waits (D-436).
-      const report = await g.backedUp();
-      if (report.state === "problem") throw new Error(`sharing:${report.problem === "offline" ? "offline" : "failed"}`);
-    }
-    return sharing.takeDown();
+      ...(g ? { backup: () => g.backedUp() } : {}),
+      ...(live ? { rebuild: live.rebuilds } : {}),
+      takeDown: () => sharing.takeDown(),
+    });
   });
   // D-430: the website's look (theme and font) for its published pages and shared notes; a change rebuilds the site.
   handle("sharing:appearance", async () => settingsAvailable() ? sharing.appearance() : undefined);

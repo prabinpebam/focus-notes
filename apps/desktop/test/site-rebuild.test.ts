@@ -10,6 +10,7 @@ import { gitData } from "./fake-pages.ts";
 import { pagesArtifactPublisher } from "../src/main/share/site-publish.ts";
 import { sharingRuntime } from "../src/main/share/runtime.ts";
 import { siteRebuilder } from "../src/main/share/site-rebuild.ts";
+import { takeDownAfterDelete } from "../src/main/share/delete-takedown.ts";
 import { accessStore } from "../src/main/share/access.ts";
 import type { SharingLayout } from "../src/main/share/layout.ts";
 import type { SitePairing } from "../src/main/share/setup.ts";
@@ -48,6 +49,45 @@ it("D-436: a trigger during a run builds again after it, and a source change whi
   await r.idle();
   expect(deployed.slice(3)).toEqual(["a+rice", "b"]);
   r.dispose();
+});
+
+it("D-436: a Delete's takedown with the delete's backup in flight deploys the site once, joining the rebuild instead of waiting for the backup", async () => {
+  // The site lane and its "already serves this source" check, as in sharing.takeDown (runtime.ts).
+  let source = "with trip", served = "with trip", lane: Promise<unknown> = Promise.resolve();
+  const order: string[] = [];
+  let deploys = 0;
+  const serial = <T>(work: () => Promise<T>) => { const next = lane.then(work, work); lane = next.catch(() => {}); return next; };
+  const build = async (who: string) => { const read = source; order.push(`${who} build`); deploys++; await delay(30); served = read; };
+  const rebuilds = siteRebuilder({ signature: async () => source, deploy: () => serial(() => build("rebuild")) });
+  // The site already serves the notes as they were before the delete.
+  rebuilds.request(true);
+  await rebuilds.idle();
+  deploys = 0;
+  order.length = 0;
+  // The note is off this computer; its backup is still running (its push waits behind other work), and when it lands
+  // it asks for the site rebuild, as afterBackup does.
+  source = "without trip";
+  const backup = async () => { await delay(60); order.push("backup done"); rebuilds.request(); return { state: "idle" }; };
+  const takeDown = () => serial(async () => { if (served === source) { order.push("takedown: already served"); return "already"; } await build("takedown"); return "built"; });
+
+  const result = await takeDownAfterDelete({ backup, rebuild: rebuilds, takeDown });
+  await rebuilds.idle();
+  expect(deploys, "site deploys for one Delete").toBe(1);
+  expect(result).toBe("already");
+  // The site build started before the backup finished: the takedown never waited on the backup to begin.
+  expect(order.indexOf("rebuild build")).toBeGreaterThanOrEqual(0);
+  expect(order.indexOf("rebuild build")).toBeLessThan(order.indexOf("backup done"));
+  expect(served).toBe("without trip");
+  rebuilds.dispose();
+});
+
+it("D-436: a Delete's takedown still reports a failed backup, and builds the site itself when there's no rebuild to join", async () => {
+  let built = 0;
+  await expect(takeDownAfterDelete({ backup: async () => ({ state: "problem", problem: "offline" }), takeDown: async () => { built++; return "built"; } }))
+    .rejects.toThrow("sharing:offline");
+  expect(built, "the site part still ran").toBe(1);
+  await expect(takeDownAfterDelete({ takeDown: async () => { built++; return "built"; } })).resolves.toBe("built");
+  expect(built).toBe(2);
 });
 
 it("D-436: a failed rebuild stays owed (persisted), retries with backoff until it lands, and stops when the project closes", async () => {
