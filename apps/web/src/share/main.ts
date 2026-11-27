@@ -91,6 +91,7 @@ const app: RuntimeApp = {
       else if (id === "share.setRemember") reader.setRemember(args?.value === true);
       else if (id === "share.signOut") { reader.signOut(); dropNoteFragment(); }
       else if (id === "share.showList") { reader.showList(); dropNoteFragment(); }
+      else if (id === "share.retry") await reader.retry();
     },
   },
   bridge: { platform: "web" },

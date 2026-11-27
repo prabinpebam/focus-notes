@@ -41,7 +41,7 @@ export interface SessionStore {
   onSignedOut(listener: () => void): () => void;
 }
 
-export type SharePhase = "opening" | "gate" | "list" | "note";
+export type SharePhase = "opening" | "gate" | "list" | "note" | "updating";
 export interface ShareState extends Record<string, unknown> {
   phase: SharePhase;
   /** The one generic error (SHR-06). */
@@ -69,7 +69,7 @@ export const SHARE_VIEW_MODEL: { id: string; schema: JsonSchema & { type: "objec
   schema: {
     type: "object",
     properties: {
-      phase: { type: "string", enum: ["opening", "gate", "list", "note"] },
+      phase: { type: "string", enum: ["opening", "gate", "list", "note", "updating"] },
       error: { type: "boolean" },
       empty: { type: "boolean" },
       busy: { type: "boolean" },
@@ -112,7 +112,10 @@ export function pickSession<T extends StoredShare>(records: readonly T[], o: { n
   return { use: mine ?? device, drop };
 }
 
-export const SHARE_COMMANDS = ["share.submit", "share.submitCode", "share.setLegacy", "share.setRemember", "share.signOut", "share.showList"] as const;
+export const SHARE_COMMANDS = ["share.submit", "share.submitCode", "share.setLegacy", "share.setRemember", "share.signOut", "share.showList", "share.retry"] as const;
+
+/** The site's files for its build aren't there yet (a deploy is landing, D-436): the source's error says so with code "updating". */
+const isUpdating = (e: unknown) => typeof e === "object" && e !== null && (e as { code?: unknown }).code === "updating";
 
 const EMPTY: ReaderModel = { title: [], updated: 0, body: [] };
 /** setTimeout's longest delay; a later expiry is checked again when it fires. */
@@ -193,15 +196,25 @@ export function createShareReader(o: ShareReaderOptions) {
     check();
   };
 
-  const show = async (share: OpenedShare, hash: string | undefined) => {
+  const show = async (share: OpenedShare, hash: string | undefined, path?: string) => {
     open = share;
     watchExpiry(share.expiresAt);
     // Already past its expiry: the gate shows the generic error, and the share never shows (review I8).
     if (open !== share) return;
     const list = sharedListModel(o.format("share.reader.list.title"), share.notes);
     set({ error: false, empty: false, busy: false, openBusy: false, rememberBusy: false, signedOut: false, multiple: share.notes.length > 1, list });
-    const wanted = hash === undefined ? undefined : sharedNoteFromHash(hash);
+    const wanted = path ?? (hash === undefined ? undefined : sharedNoteFromHash(hash));
     await showNote(wanted);
+  };
+
+  /** What Retry runs while the site is updating (D-436): the attempt that found the build's files missing. */
+  let retry: (() => Promise<void>) | undefined;
+  /** The site's files for its build aren't there yet: say so, with Retry, never the private gate. The session is kept. */
+  const toUpdating = (again: () => Promise<void>) => {
+    open = undefined;
+    stopTimer();
+    retry = again;
+    set({ phase: "updating", busy: false, openBusy: false, rememberBusy: false, error: false, empty: false, multiple: false, list: EMPTY, note: EMPTY, focus: state.focus + 1 });
   };
 
   /** Shows a note the share opens, or the list for anything else: nothing outside the share is reachable. */
@@ -223,7 +236,11 @@ export function createShareReader(o: ShareReaderOptions) {
         if (open !== share) return;
         open = again;
         text = await again.read(entry.path);
-      } catch { if (open) fail(); return; }
+      } catch (e) {
+        if (open && isUpdating(e)) toUpdating(() => opened(() => o.source.resume(share.session), state.remember, undefined, true, entry.path));
+        else if (open) fail();
+        return;
+      }
     }
     if (!open) return;
     const current = open;
@@ -234,17 +251,19 @@ export function createShareReader(o: ShareReaderOptions) {
     set({ phase: "note", note: { ...page.model, body } });
   };
 
-  const opened = async (attempt: Promise<OpenedShare>, remember: boolean, hash?: string, stored = false) => {
+  const opened = async (attempt: () => Promise<OpenedShare>, remember: boolean, hash?: string, stored = false, path?: string): Promise<void> => {
     let share: OpenedShare;
-    try { share = await attempt; } catch {
+    try { share = await attempt(); } catch (e) {
+      if (isUpdating(e)) { toUpdating(() => opened(attempt, remember, hash, stored, path)); return; }
       // A stored session that no longer opens (withdrawn, expired, or a changed passcode) is forgotten.
       if (stored) void o.store.forget();
       fail();
       return;
     }
+    retry = undefined;
     await o.store.save(share.session, remember);
     set({ remember });
-    await show(share, hash);
+    await show(share, hash, path);
   };
 
   o.store.onSignedOut(() => toGate({ error: false, signedOut: true, remember: false }));
@@ -256,23 +275,23 @@ export function createShareReader(o: ShareReaderOptions) {
     /** The page opened: with a magic link (already removed from the address), a stored session, or neither. */
     async start(link: { id: string; secret: string } | undefined, hash: string | undefined): Promise<void> {
       // A link opens for this tab only; the reader chooses to remember it (review L3).
-      if (link) return opened(o.source.openLink(link), false, hash);
+      if (link) return opened(() => o.source.openLink(link), false, hash);
       const stored = await o.store.load();
       if (!stored) { toGate({}); return; }
-      await opened(o.source.resume(stored.session), stored.remembered, hash, true);
+      await opened(() => o.source.resume(stored.session), stored.remembered, hash, true);
     },
     /** Open, or Open and remember (on this device), from the name and passcode form. */
     async submit(name: string, passcode: string, remember = false): Promise<void> {
       if (state.busy) return;
       if (!name.trim() || !passcode.trim()) { set({ empty: true, error: false, focus: state.focus + 1 }); return; }
       set({ busy: true, openBusy: !remember, rememberBusy: remember, empty: false, error: false });
-      await opened(o.source.openPasscode(name, passcode), remember);
+      await opened(() => o.source.openPasscode(name, passcode), remember);
     },
     async submitCode(value: string, remember = false): Promise<void> {
       if (state.busy) return;
       if (!value) { set({ empty: true, error: false, focus: state.focus + 1 }); return; }
       set({ busy: true, openBusy: !remember, rememberBusy: remember, empty: false, error: false });
-      await opened(Promise.resolve().then(() => {
+      await opened(() => Promise.resolve().then(() => {
         if (!o.source.openAccessCode) throw new Error("Access-code reader unavailable");
         return o.source.openAccessCode(value);
       }), remember);
@@ -295,6 +314,12 @@ export function createShareReader(o: ShareReaderOptions) {
     },
     showList() {
       if (open && state.multiple) set({ phase: "list", note: EMPTY });
+    },
+    /** Retry while the site is updating (D-436): the same attempt again, pending on Retry itself. */
+    async retry(): Promise<void> {
+      if (state.busy || state.phase !== "updating" || !retry) return;
+      set({ busy: true });
+      await retry();
     },
   };
 }

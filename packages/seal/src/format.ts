@@ -13,9 +13,9 @@ export const KEY_BYTES = 32;
 export const LIMITS = { keyring: 64 * 1024, manifest: 4 * 1024 * 1024, note: 8 * 1024 * 1024, media: 25 * 1024 * 1024, site: 64 * 1024, index: 8 * 1024 * 1024 } as const;
 
 export class SealError extends Error {
-  /** format: the file isn't one we accept. key: the passphrase or key doesn't open it. */
-  readonly code: "format" | "key";
-  constructor(code: "format" | "key", message: string = code) {
+  /** format: the file isn't one we accept. key: the passphrase or key doesn't open it. updating: the site's files for its build aren't there yet (a deploy is landing). */
+  readonly code: "format" | "key" | "updating";
+  constructor(code: "format" | "key" | "updating", message: string = code) {
     super(message);
     this.code = code;
   }
@@ -247,6 +247,8 @@ export function parsePublicIndex(text: string): PublicIndex {
 export const isSafePath = (p: string) =>
   /\.(md|markdown)$/i.test(p) && !p.startsWith("/") && !p.includes("\\") && !p.includes(":") && p.split("/").every((s) => s && s !== "." && s !== "..");
 export const vaultPath = (build: string) => `_access/${build}/vault.json`;
+/** Every build's own public marker (D-436): present while that build is served, so a reader can tell a deploy landing from a denial. */
+export const buildMarkerPath = (build: string) => `_access/${build}/build.json`;
 export const sealedPath = (build: string, kid: string) => `_sealed/${build}/${kid}.json`;
 /** A note's title: its first heading, else its file name. */
 export function titleOf(path: string, text = ""): string {

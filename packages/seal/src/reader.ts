@@ -3,7 +3,7 @@
  * owner's passphrase (or a key this browser remembered) opens it. Read-only by construction.
  */
 import {
-  decodeText, derivePasscodeBits, derivePasscodeKey, fromB64url, isSafePath, KDF, keyringSalt, LIMITS, openFile, openKeyring, parseKeyring, parseManifest,
+  decodeText, buildMarkerPath, derivePasscodeBits, derivePasscodeKey, fromB64url, isSafePath, KDF, keyringSalt, LIMITS, openFile, openKeyring, parseKeyring, parseManifest,
   parsePublicIndex, parseSiteManifest, sealedPath, SealError, vaultPath,
   type KeyringEnvelope, type ManifestEntry, type PublicNote, type SiteManifest,
 } from "./format.ts";
@@ -148,13 +148,24 @@ export class SiteReader {
     for (let tries = 0; ; tries++) {
       try { return await generic(open); } catch (e) {
         // Failed before reading the site (a malformed link or code): nothing to follow.
-        if (tries >= 2 || this.#manifest === undefined) throw e;
+        if (this.#manifest === undefined) throw e;
+        if ((e as SealError).code === "updating") throw e;
         const used = (await this.#manifest)?.build;
         this.#manifest = undefined;
-        const now = (await this.manifest())?.build;
-        if (now === undefined || now === used) throw e;
+        const m = await this.manifest();
+        if (m !== undefined && m.build !== used && tries < 2) continue;
+        throw (await this.#served(m)) ? e : new SealError("updating");
       }
     }
+  }
+  /**
+   * Whether the site serves the build its manifest names (D-436): a CDN may still hand out an old manifest
+   * whose build's files are gone, or none yet. Only the build's own public marker is asked, never anything
+   * of the grant, so a denial and a deploy landing are told apart without saying whether a share exists.
+   */
+  async #served(m: SiteManifest | undefined): Promise<boolean> {
+    if (!m) return false;
+    return (await this.get(buildMarkerPath(m.build)).catch(() => undefined)) !== undefined;
   }
 
   async #shareKeyring(m: SiteManifest | undefined, via: ShareSession["via"], ref: string): Promise<KeyringEnvelope> {
@@ -174,7 +185,8 @@ export class SiteReader {
     const ring = await openKeyring(envelope, key, m.build, role);
     if (grant !== undefined && ring.grant !== grant) throw new SealError("key");
     const sealed = await this.get(sealedPath(m.build, ring.manifest.kid));
-    if (sealed === undefined) throw new SealError("format", "no manifest");
+    // The keyring opened, so whoever asks may know its build's files are gone: a deploy is landing.
+    if (sealed === undefined) throw isVault ? new SealError("format", "no manifest") : new SealError("updating");
     const manifest = parseManifest(await openFile("manifest", fromB64url(ring.manifest.key), m.build, ring.manifest.kid, sealed));
     const notes = manifest.notes.filter((n) => isSafePath(n.path));
     const byPath = new Map(notes.map((n) => [n.path, n]));
@@ -188,23 +200,23 @@ export class SiteReader {
         const entry: ManifestEntry | undefined = byPath.get(path);
         if (!entry) throw missing(path);
         const text = await this.get(sealedPath(m.build, entry.kid));
-        if (text === undefined) throw isVault ? new SealError("format", "missing note") : new SealError("key");
+        if (text === undefined) throw isVault ? new SealError("format", "missing note") : new SealError("updating");
         return decodeText(await openFile("note", fromB64url(entry.key), m.build, entry.kid, text));
       },
       media: async (path, ref) => {
         const image = byPath.get(path)?.media?.find((x) => x.ref === ref);
         if (!image) throw missing(path);
         const text = await this.get(sealedPath(m.build, image.kid));
-        if (text === undefined) throw isVault ? new SealError("format", "missing image") : new SealError("key");
+        if (text === undefined) throw isVault ? new SealError("format", "missing image") : new SealError("updating");
         return { type: image.type, bytes: await openFile("media", fromB64url(image.key), m.build, image.kid, text) };
       },
     };
   }
 }
 
-/** Runs a share's opening, turning every failure into the one generic error (SHR-06). */
+/** Runs a share's opening, turning every failure into the one generic error (SHR-06), except a deploy landing (D-436). */
 async function generic<T>(open: () => Promise<T>): Promise<T> {
-  try { return await open(); } catch { throw new SealError("key"); }
+  try { return await open(); } catch (e) { throw e instanceof SealError && e.code === "updating" ? e : new SealError("key"); }
 }
 
 export interface OpenVault {

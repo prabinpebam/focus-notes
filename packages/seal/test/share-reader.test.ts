@@ -193,6 +193,28 @@ describe("share sessions (SHR-10, D-125)", () => {
     await generic(switching().openLinkSession("gshare001", secret));
   }, 60_000);
 
+  it("D-436: a stale manifest whose build's files are gone, or no manifest yet, is updating, never the private gate; a denial stays generic", async () => {
+    const secret = toB64url(randomBytes(32));
+    const i = await instance([grant({ link: { secret }, scope: { notes: ["n-plan"] } })]);
+    await i.run();
+    const { session } = await i.reader().openLinkSession("gshare001", secret);
+    const site = (p: string) => readFile(join(i.root, "site", ...p.split("/").map(decodeURIComponent)), "utf8").catch(() => undefined);
+    const stale = await site("focus-notes.json");
+    await rm(join(i.root, "site"), { recursive: true, force: true });
+    await mkdir(join(i.root, "site"), { recursive: true });
+    await i.run();
+    // A CDN still hands out the old manifest; the old build's files 404.
+    const cdn = () => new SiteReader(async (p) => (p === "focus-notes.json" ? stale : site(p)));
+    const updating = (p: Promise<unknown>) => p.then(() => { throw new Error("opened"); }, (e: unknown) => expect((e as SealError).code).toBe("updating"));
+    await updating(cdn().openLinkSession("gshare001", secret));
+    await updating(cdn().resume(session));
+    await updating(new SiteReader(async () => undefined).openLinkSession("gshare001", secret));
+    // Served normally, a wrong secret or an unknown grant is the generic error, and a fresh read opens.
+    await generic(i.reader().openLinkSession("gshare001", toB64url(randomBytes(32))));
+    await generic(i.reader().openLinkSession("gshare999", secret));
+    expect(await (await i.reader().openLinkSession("gshare001", secret)).share.read("Plan.md")).toContain("Launch quietly");
+  }, 60_000);
+
   it("SHR-06: an expiry recorded in the keyring ends the session even before the nightly build", async () => {
     const secret = toB64url(randomBytes(32));
     const soon = new Date(Date.now() + 3000).toISOString();

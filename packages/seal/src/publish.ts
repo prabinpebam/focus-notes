@@ -9,7 +9,7 @@ import { createHash } from "node:crypto";
 import { join, relative, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 import {
-  encodeText, fromB64url, isSafePath, KDF, PUBLIC_INDEX, KEY_BYTES, randomBytes, randomId, sealedPath, sealFile, sealKeyring, SALT_BYTES, titleOf, toB64url, vaultPath,
+  encodeText, fromB64url, isSafePath, KDF, PUBLIC_INDEX, KEY_BYTES, randomBytes, randomId, sealedPath, sealFile, sealKeyring, SALT_BYTES, titleOf, toB64url, vaultPath, buildMarkerPath,
   derivePasscodeBits, type Manifest, type ManifestEntry, type PublicIndex, type SiteManifest,
 } from "./format.ts";
 import {
@@ -260,6 +260,7 @@ export async function publish(o: PublishOptions): Promise<PublishResult> {
       }
       shares++;
     }
+    await put(at(buildMarkerPath(build)), JSON.stringify({ build }));
     sealedNotes = sealedByPath.size;
   }
 

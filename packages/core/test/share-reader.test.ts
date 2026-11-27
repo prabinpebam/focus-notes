@@ -47,6 +47,32 @@ function setup(over: Partial<ShareSource> = {}, stored?: { session: unknown; rem
 const text = (blocks: unknown) => JSON.stringify(blocks);
 
 describe("share reader (SHR-10)", () => {
+  it("D-436: a site still updating shows This page is updating with Retry, keeps the stored session, and Retry opens the note", async () => {
+    const updating = () => Object.assign(new Error("updating"), { code: "updating" });
+    let ready = false;
+    const resume = vi.fn(async () => { if (!ready) throw updating(); return share(["drafts/Plan.md"]); });
+    const { r, forgets } = setup({ resume }, { session: { s: "x" }, remembered: true });
+    await r.start(undefined, "");
+    expect(r.state.phase).toBe("updating");
+    expect(r.state.error).toBe(false);
+    expect(forgets()).toBe(0);
+    // Still updating: Retry stays on the updating state, pending only while it runs.
+    const again = r.retry();
+    expect(r.state.busy).toBe(true);
+    await again;
+    expect(r.state.phase).toBe("updating");
+    expect(r.state.busy).toBe(false);
+    ready = true;
+    await r.retry();
+    expect(r.state.phase).toBe("note");
+    expect(text(r.state.note.title)).toContain("The plan");
+    // A real denial is still the private gate's one generic error.
+    const denied = setup({ openLink: async () => { throw new Error("key"); } });
+    await denied.r.start({ id: "gshare001", secret: "s" }, "");
+    expect(denied.r.state.phase).toBe("gate");
+    expect(denied.r.state.error).toBe(true);
+  });
+
   it("WP-9.6: shows a shared note's sealed image from a data URL it decrypted, never by its private path", async () => {
     const bytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 1, 2, 3, 250]);
     const markdown = "# Trip\n\n![Desk at dawn](../../assets/images/q7m4k2.png \"Morning\")\n\n![Gone](../../assets/images/gone.png)\n\n![Vector](../../assets/images/v.avif)\n";

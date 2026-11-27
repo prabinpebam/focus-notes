@@ -58,6 +58,15 @@
     "children": [
       { "switch": { "get": "vm.share.phase" }, "cases": {
         "opening": { "type": "Spinner", "props": { "label": { "t": "share.reader.opening" } } },
+        "updating": { "type": "Stack", "props": { "gap": "stackGroup" }, "children": [
+          { "type": "Stack", "props": { "gap": "stackItem" }, "children": [
+            { "type": "Heading", "props": { "value": { "t": "share.reader.updating.title" }, "level": "1" } },
+            { "type": "Text", "props": { "value": { "t": "share.reader.updating.intro" }, "tone": "muted", "announce": true } }
+          ] },
+          { "type": "Inline", "props": { "gap": "inlineItem", "wrap": true }, "children": [
+            { "type": "Button", "id": "retry", "props": { "label": { "t": "share.reader.retry" }, "variant": "primary", "busy": { "get": "vm.share.busy" } }, "on": { "press": { "run": "share.retry" } } }
+          ] }
+        ] },
         "gate": { "type": "Stack", "props": { "gap": "stackGroup" }, "children": [
           { "type": "Stack", "props": { "gap": "stackItem" }, "children": [
             { "type": "Heading", "props": { "value": { "t": "share.reader.gate.title" }, "level": "1" } },
