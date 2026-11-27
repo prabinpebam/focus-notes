@@ -15,6 +15,7 @@ export const MIN_TEXT = 4.5;
 /** The High contrast themes' level for text (the contrast guard's minHigh, THM-13). */
 export const MIN_TEXT_HIGH = 7;
 export const MIN_UI = 3;
+export const MARGIN = 0.1;
 
 const hex2 = (n) => Math.round(Math.min(255, Math.max(0, n))).toString(16).padStart(2, "0");
 
@@ -73,7 +74,8 @@ const alphaOf = (h) => parseHex(h).a;
  * one in a dark theme). `frost`: the frosted surface's opacity. `high`: a High contrast theme, where text needs MIN_TEXT_HIGH.
  */
 export function deriveProjectAccent(preset, t, dark, high = false, frost = 1) {
-  const minText = high ? MIN_TEXT_HIGH : MIN_TEXT;
+  // A small margin over the minimum, so checkers that blend and round differently (axe) still pass.
+  const minText = (high ? MIN_TEXT_HIGH : MIN_TEXT) + MARGIN;
   const canvas = parseHex(t["color.canvas"]);
   const frosted = (under) => over({ ...parseHex(t["color.surface"]), a: parseHex(t["color.surface"]).a * frost }, under);
   const surfaces = [
