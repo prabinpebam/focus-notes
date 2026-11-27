@@ -5,16 +5,28 @@ import { delimiter, isAbsolute, join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { promisify } from "node:util";
 import type { AiFound } from "@focus-notes/core/ai-providers";
-import { AiError, type AiLimits } from "./ai-rewrite.ts";
+import { AiError, errorDetail, type AiLimits } from "./ai-rewrite.ts";
 
 const exec = promisify(execFile);
-const SUPPORTED_VERSION = "1.0.105";
+/** The Copilot CLI version this integration was tested with: information only, never a gate (D-438). */
+export const TESTED_VERSION = "1.0.105";
 const MAX_ANSWER = 64 * 1024;
 interface Binary { path: string; args?: string[] }
 export interface CopilotOptions {
   /** Internal seam for protocol tests, never taken from renderer input or saved settings. */
   binary?: () => Promise<Binary | undefined>;
 }
+
+/** Whether `--version` output is at least the tested version; undefined when it names no version. */
+export function atLeastTested(output: string): boolean | undefined {
+  const m = /(\d+)\.(\d+)\.(\d+)/.exec(output);
+  if (!m) return undefined;
+  const have = m.slice(1).map(Number), want = TESTED_VERSION.split(".").map(Number);
+  for (let i = 0; i < 3; i++) if (have[i] !== want[i]) return have[i]! > want[i]!;
+  return true;
+}
+/** A JSON-RPC "method not found" (-32601) by its code, never its words: an older CLI without a method, not a failed check. */
+const methodMissing = (error: unknown) => (error as { code?: unknown } | null)?.code === -32601;
 
 export function copilotEnvironment(): Record<string, string | undefined> {
   const env: Record<string, string | undefined> = {};
@@ -46,14 +58,20 @@ function failure(error: unknown): AiError {
   if (error instanceof AiError) return error;
   const message = error instanceof Error ? error.message : "";
   if (/quota|rate.?limit|429|credits|premium requests/i.test(message)) return new AiError("rate-limited");
-  if (/auth|sign.?in|401|403|token/i.test(message)) return new AiError("cli-not-signed-in");
-  return new AiError("provider-error");
+  if (/\bauth|sign.?in|signed.?out|\blog.?in\b|\b401\b|\b403\b/i.test(message)) return new AiError("cli-not-signed-in");
+  return new AiError("provider-error", undefined, errorDetail(message) || undefined);
 }
 
 export class CopilotIntegration {
   readonly #binary: () => Promise<Binary | undefined>;
+  /** The last `--version` this process read: at least the tested version, older, or unreadable (undefined). Never a gate. */
+  #tested: boolean | undefined | null = null;
   constructor(options: CopilotOptions = {}) {
     this.#binary = options.binary ?? installedBinary;
+  }
+  /** Whether the installed CLI was last seen at the tested version or later; null before any look. */
+  tested(): boolean | undefined | null {
+    return this.#tested;
   }
 
   async #open(signal: AbortSignal) {
@@ -61,13 +79,14 @@ export class CopilotIntegration {
     const binary = await this.#binary();
     if (!binary) throw new AiError("cli-missing");
     const env = copilotEnvironment();
+    // The version is only noted (a quiet "tested with" line); every version is tried (D-438).
     try {
       const version = await exec(binary.path, [...binary.args ?? [], "--version", "--no-auto-update"], { env, windowsHide: true, timeout: 2000, maxBuffer: 4096, signal });
-      if (!new RegExp(`\\b${SUPPORTED_VERSION.replaceAll(".", "\\.")}\\b`).test(version.stdout)) throw new AiError("cli-unsupported");
+      this.#tested = atLeastTested(version.stdout);
     } catch (error) {
       if (signal.aborted) throw signal.reason;
-      if (error instanceof AiError) throw error;
-      throw new AiError((error as NodeJS.ErrnoException).code === "ENOENT" ? "cli-missing" : "cli-unsupported");
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") throw new AiError("cli-missing");
+      this.#tested = undefined;
     }
     signal.throwIfAborted();
     const root = await mkdtemp(join(tmpdir(), "focus-notes-copilot-"));
@@ -154,7 +173,7 @@ export class CopilotIntegration {
       outer?.throwIfAborted();
       const e = failure(error);
       if (e.code === "cli-missing") return undefined;
-      return { provider: "copilot-cli", endpoint: "", models: [], status: e.code === "cli-not-signed-in" ? "signed-out" : e.code === "cli-unsupported" ? "unsupported-version" : "unknown", error: e.code };
+      return { provider: "copilot-cli", endpoint: "", models: [], status: e.code === "cli-not-signed-in" ? "signed-out" : "unknown", error: e.code };
     } finally {
       outer?.removeEventListener("abort", abort);
       clearTimeout(timer);
@@ -171,7 +190,11 @@ export class CopilotIntegration {
     try {
       const runtime = await this.#open(controller.signal);
       close = runtime.close;
-      const models = await runtime.client.listModels();
+      // A list is a convenience: when the CLI can't give one, "auto" and a typed model are still tried (D-438).
+      const models = await runtime.client.listModels().catch((error: unknown) => {
+        if (controller.signal.aborted) throw error;
+        return [];
+      });
       return [{ id: "auto", cloud: true }, ...models.slice(0, 499).map((m) => ({ id: m.id, cloud: true }))];
     } catch (error) {
       throw controller.signal.aborted ? controller.signal.reason : failure(error);
@@ -253,9 +276,24 @@ export class CopilotIntegration {
         onEvent: event,
       });
       runtime.trackSession(session);
-      await session.rpc.tools.initializeAndValidate();
-      const tools = await session.rpc.tools.getCurrentMetadata();
-      if (!Array.isArray(tools.tools) || tools.tools.length) throw new AiError("provider-format");
+      // Proof no tools are attached. Only a CLI older than the tested version may lack these methods
+      // (JSON-RPC -32601): it still has no tools, as none are given, every permission and pre-tool hook
+      // is denied, and a tool event fails the answer. At the tested version or later, or an unreadable
+      // one, the proof is required. Once validation answers, the metadata must answer with no tools.
+      const older = this.#tested === false;
+      let validated = true;
+      try {
+        await session.rpc.tools.initializeAndValidate();
+      } catch (e) {
+        if (!older || controller.signal.aborted || !methodMissing(e)) throw e;
+        validated = false;
+      }
+      try {
+        const tools = await session.rpc.tools.getCurrentMetadata();
+        if (!Array.isArray(tools.tools) || tools.tools.length) throw new AiError("provider-format");
+      } catch (e) {
+        if (e instanceof AiError || validated || controller.signal.aborted || !methodMissing(e)) throw e;
+      }
       controller.signal.throwIfAborted();
       await session.send({ prompt });
       while (true) {
@@ -265,8 +303,7 @@ export class CopilotIntegration {
         else if (complete) break;
         else await new Promise<void>((r) => { wake = r; });
       }
-      if (!terminal) throw new AiError("provider-format");
-      if (!visible) throw new AiError("provider-empty");
+      if (!visible) throw new AiError(terminal || size ? "provider-empty" : "provider-format");
     } catch (e) {
       throw error ?? (controller.signal.aborted ? controller.signal.reason : failure(e));
     } finally {

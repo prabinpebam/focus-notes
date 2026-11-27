@@ -98,7 +98,7 @@ import { spawnOffThread } from "./spelling/off-thread.ts";
 import { SnapshotCache } from "@focus-notes/core/snapshot";
 import { textHash } from "@focus-notes/core/journal";
 import { DraftStore } from "./drafts.ts";
-import { AiService, reasonOf } from "./ai-rewrite.ts";
+import { AiError, AiService, reasonOf } from "./ai-rewrite.ts";
 import { watchTree, type TreeWatcher } from "./watch-tree.ts";
 import { JOURNEY_WINDOW_OPTIONS, keepOutOfTheWay } from "./window/journey-window.ts";
 import { watchCompositing } from "./window/compositing.ts";
@@ -1937,10 +1937,19 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   handle("ai:settings", () => ai.settings());
   handle("ai:save", (input: unknown) => ai.save(input));
   handle("ai:saveDetail", (input: unknown) => ai.saveDetail(input));
-  handle("ai:saveKey", (input: unknown) => ai.saveKey(input));
+  /** An AI call whose failure carries the service's own words: answered as data, so Electron's handler-error log never holds them (D-438). */
+  const aiResult = async (run: () => Promise<unknown>) => {
+    try {
+      return await run();
+    } catch (error) {
+      if (error instanceof AiError && error.detail) return { aiError: reasonOf(error) };
+      throw error;
+    }
+  };
+  handle("ai:saveKey", (input: unknown) => aiResult(() => ai.saveKey(input)));
   handle("ai:remove", (id: unknown) => ai.remove(id));
   handle("ai:writer", (id: unknown) => ai.writer(id));
-  handle("ai:test", (id: unknown) => ai.test(id));
+  handle("ai:test", (id: unknown) => aiResult(() => ai.test(id)));
   const discoveries = new Map<number, { id: string; abort: AbortController }>();
   handleFrom("ai:discover", async (e, input: unknown) => {
     const id = input && typeof input === "object" && "id" in input ? input.id : "legacy";
@@ -1969,7 +1978,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     const scan = discoveries.get(e.sender.id);
     if (scan && scan.id === id) scan.abort.abort();
   });
-  handle("ai:models", (input: unknown) => ai.models(input));
+  handle("ai:models", (input: unknown) => aiResult(() => ai.models(input)));
   handle("ai:captionSettings", () => ai.captionSettings());
   const captions = new Map<number, { id: string; abort: AbortController }>();
   handleFrom("ai:captionStart", (e, id: unknown, input: unknown) => {

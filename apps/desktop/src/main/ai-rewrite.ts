@@ -40,15 +40,60 @@ export type AiErrorCode =
   | "unauthorized" | "model-missing" | "not-found" | "rate-limited" | "server-error" | "bad-request" | "too-long"
   | "timeout" | "refused" | "dns" | "tls" | "redirected" | "network"
   | "provider-format" | "provider-error" | "provider-empty" | "cancelled" | "connection-unavailable"
-  | "cli-missing" | "cli-unsupported" | "cli-not-signed-in";
+  | "cli-missing" | "cli-not-signed-in";
 export class AiError extends Error {
   readonly code: AiErrorCode;
   /** Seconds to wait before trying again (429 with Retry-After). */
   readonly retryAfter?: number;
-  constructor(code: AiErrorCode, retryAfter?: number) {
+  /** The service's own words for the failure, already sanitised (`errorDetail`), shown after our sentence (D-438). Never in `message` and not enumerable, so logging an error never writes it. */
+  declare readonly detail?: string;
+  constructor(code: AiErrorCode, retryAfter?: number, detail?: string) {
     super(retryAfter ? `${code} retry-after=${retryAfter}` : code);
     this.code = code;
     if (retryAfter) this.retryAfter = retryAfter;
+    if (detail) Object.defineProperty(this, "detail", { value: detail, enumerable: false });
+  }
+}
+
+/** Headers that carry a connection's credential; only their values are secrets to remove from a service's words. */
+const SECRET_HEADERS = new Set(["authorization", "x-api-key", "api-key", "x-goog-api-key"]);
+export const callSecrets = (headers: Record<string, string>) =>
+  Object.entries(headers).filter(([name]) => SECRET_HEADERS.has(name.toLowerCase())).map(([, v]) => v.replace(/^(?:Bearer|Basic)\s+/i, ""));
+/**
+ * A service's error text, safe to show the person: one line of at most 200 characters. Control,
+ * format (zero-width, bidi) and line-separator characters go first, so nothing hidden can split a
+ * secret; then any run sharing 8 characters with the connection's own secret, anything shaped like a
+ * key or token, auth schemes' values, credentials in a query, and credentials in an address are
+ * removed. Empty when there is nothing readable.
+ */
+export function errorDetail(raw: unknown, secrets: readonly string[] = []): string {
+  let text = (typeof raw === "string" ? raw : "").normalize("NFKC").replace(/\p{Cf}+/gu, "").replace(/[\p{Cc}\u2028\u2029]+/gu, " ").replace(/\s+/g, " ").trim();
+  const windows = new Set<string>();
+  for (const secret of secrets) for (let i = 0; i + 8 <= secret.length; i++) windows.add(secret.slice(i, i + 8));
+  if (windows.size) text = text.replace(/[A-Za-z0-9_\-+/=.*~]{8,}/g, run => {
+    for (let i = 0; i + 8 <= run.length; i++) if (windows.has(run.slice(i, i + 8))) return "…";
+    return run;
+  });
+  text = text
+    .replace(/(\w+:\/\/)[^\s/@]+@/g, "$1")
+    .replace(/([?&](?:key|api[-_]?key|access[-_]?token|token|sig|signature|code|secret|password)=)[^&\s]+/gi, "$1…")
+    .replace(/\b(Bearer|Basic)\s+[^\s,;]+/gi, "$1 …")
+    .replace(/\beyJ[\w-]+\.[\w-]+\.[\w-]*/g, "…")
+    .replace(/\bAIza[0-9A-Za-z_-]{20,}/g, "…")
+    .replace(/\b(?:sk|pk|rk|ghp|gho|ghu|ghs|ghr|github_pat|xox[abp]|hf|gsk|csk|nvapi|r8|xai)[-_][A-Za-z0-9_\-*.]{6,}/gi, "…")
+    .replace(/[A-Za-z0-9_\-]{20,}/g, run => run.split("-").some(part => part.length >= 20 && /\d/.test(part) && /[A-Za-z]/.test(part)) ? "…" : run);
+  const chars = Array.from(text);
+  return chars.length > 200 ? `${chars.slice(0, 199).join("")}…` : text;
+}
+/** The message in a service's error answer (JSON in the common shapes, else plain text). */
+export function errorMessage(body: string): string {
+  try {
+    const j = JSON.parse(body) as any;
+    const e = Array.isArray(j) ? j[0]?.error ?? j[0] : j?.error ?? j;
+    for (const v of [e?.message, typeof e === "string" ? e : undefined, j?.message, j?.detail, j?.error_description]) if (typeof v === "string" && v.trim()) return v;
+    return "";
+  } catch {
+    return /<[a-z!]/i.test(body) ? "" : body;
   }
 }
 
@@ -77,15 +122,10 @@ const MAX_ANSWER = 2 * MAX_TEXT;
 const MAX_JSON = { test: 2 * 1024 * 1024, list: 4 * 1024 * 1024, answer: 8 * MAX_ANSWER } as const;
 const MAX_CONNECTIONS = 30;
 const object = (value: unknown): Record<string, unknown> | undefined => value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : undefined;
-export function imageCapability(json: unknown, model: string, ollama = false): boolean {
-  const root = object(json);
-  if (ollama) return Array.isArray(root?.capabilities) && root.capabilities.includes("vision");
-  const models = root?.data;
-  if (!Array.isArray(models)) return false;
-  const entry = models.map(object).find(item => item?.id === model);
-  const modalities = object(entry?.architecture)?.input_modalities ?? entry?.input_modalities;
-  return Array.isArray(modalities) && modalities.includes("image");
-}
+/** The request shapes that carry an image for a caption (Anthropic's and Gemini's are a D-438 follow-up). */
+const CAPTION_SHAPES = new Set<string>(["openai", "azure", "ollama", "cohere"]);
+/** Failures of a streamed request that the same request as plain request and response may not have (D-438). */
+const STREAM_FALLBACK = new Set<AiErrorCode>(["bad-request", "provider-format", "provider-empty", "server-error"]);
 const LOCAL_HOSTS = new Set(["127.0.0.1", "localhost", "[::1]"]);
 const SYSTEM = "You rewrite text for a writer. Rewrite the text the user gives, following their instruction. Reply with only the rewritten text: no preamble, no quotes, no commentary. Keep the language of the text.";
 
@@ -253,14 +293,35 @@ export function retryAfter(headers: Headers, now = Date.now()): number | undefin
   return Number.isFinite(s) && s > 0 ? Math.min(3600, Math.ceil(s)) : undefined;
 }
 /** An HTTP status as a reason. */
-export function statusError(status: number, headers: Headers, local: boolean): AiError {
-  if (status === 401 || status === 403) return new AiError("unauthorized");
-  if (status === 404) return new AiError(local ? "model-missing" : "not-found");
+export function statusError(status: number, headers: Headers, local: boolean, detail = ""): AiError {
+  const d = detail || undefined;
+  if (status === 401 || status === 403) return new AiError("unauthorized", undefined, d);
+  if (status === 404) return new AiError(local ? "model-missing" : "not-found", undefined, d);
   if (status === 408 || status === 504) return new AiError("timeout");
-  if (status === 413) return new AiError("too-long");
-  if (status === 429) return new AiError("rate-limited", retryAfter(headers));
-  if (status >= 500) return new AiError("server-error");
-  return new AiError("bad-request");
+  if (status === 413) return new AiError("too-long", undefined, d);
+  if (status === 429) return new AiError("rate-limited", retryAfter(headers), d);
+  if (status >= 500) return new AiError("server-error", undefined, d);
+  return new AiError("bad-request", undefined, d);
+}
+/** At most `max` bytes of a failed answer's body, as text; never an error of its own. */
+async function bodyText(r: Response, max = 4096): Promise<string> {
+  if (!r.body) return "";
+  const reader = r.body.getReader();
+  const parts: Uint8Array[] = [];
+  let size = 0;
+  try {
+    while (size < max) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      parts.push(value);
+      size += value.byteLength;
+    }
+  } catch {
+    // Whatever arrived is enough.
+  } finally {
+    await reader.cancel().catch(() => {});
+  }
+  return Buffer.concat(parts).subarray(0, max).toString("utf8");
 }
 /** A failure before any answer (fetch's own error) as a reason: refused, DNS, TLS, redirect or other. */
 export function transportError(error: unknown): AiError {
@@ -316,8 +377,8 @@ function exchange(fetcher: typeof fetch, call: Call, limits: AiLimits, local: bo
       throw reason(error);
     }
     if (!r.ok) {
-      await r.body?.cancel().catch(() => {});
-      throw why ? new AiError(why) : statusError(r.status, r.headers, local);
+      const detail = why ? "" : errorDetail(errorMessage(await bodyText(r)), callSecrets(call.headers));
+      throw why ? new AiError(why) : statusError(r.status, r.headers, local, detail);
     }
     kick();
     return r;
@@ -416,7 +477,9 @@ export class AiService {
     return run;
   }
   #view(s: Stored): AiSettings {
-    return { writer: s.writer, connections: s.connections.map(view) };
+    // A quiet "tested with" note for a CLI seen at an older or unreadable version; never a gate (D-438).
+    const untested = this.#copilot.tested() === false || this.#copilot.tested() === undefined;
+    return { writer: s.writer, connections: s.connections.map(c => untested && c.provider === "copilot-cli" ? { ...view(c), untestedVersion: true } : view(c)) };
   }
   #seal(key: string): string {
     if (key.length > 8192 || /[\r\n]/.test(key)) throw new Error("invalid-key");
@@ -557,29 +620,13 @@ export class AiService {
       x.close();
     }
   }
-  async #captionCapable(c: Connection, signal?: AbortSignal): Promise<boolean> {
-    const p = aiProvider(c.provider)!;
-    if (p.shape !== "ollama" && p.shape !== "openai") return false;
-    const key = this.#open(c);
-    if (p.key === "required" && !key) throw new AiError("key-required");
-    const base = baseOf(p, c), local = isLoopback(base);
-    const call = p.shape === "ollama"
-      ? { url: `${base}/api/show`, headers: bearer(key), body: { model: c.model } }
-      : modelsCall(p, c, key);
-    if (!call) return false;
-    return imageCapability(await this.#json(call, this.#limit("list", local), local, MAX_JSON.list, signal), c.model, p.shape === "ollama");
+  /** A connection can be asked to caption when its request shape carries an image; the model's own answer says whether it sees it (D-438, revising D-371). */
+  #captionCapable(c: Connection): boolean {
+    return CAPTION_SHAPES.has(aiProvider(c.provider)?.shape ?? "");
   }
   async captionSettings(): Promise<AiSettings> {
     const s = await this.#read();
-    const connections = await Promise.all(s.connections.map(async c => {
-      try { return { ...view(c), imageCapable: await this.#captionCapable(c) }; }
-      catch (error) {
-        const reason = reasonOf(error).code;
-        console.error("Image capability check failed", reason);
-        return { ...view(c), imageCapable: false, capabilityError: reason };
-      }
-    }));
-    return { writer: s.writer, connections };
+    return { writer: s.writer, connections: s.connections.map(c => ({ ...view(c), imageCapable: this.#captionCapable(c) })) };
   }
   /**
    * Remembers which of a server's models are on this computer, from a list this process fetched,
@@ -747,7 +794,7 @@ export class AiService {
       const content = imageClipboard(a.image, "", "");
       const info = rasterInfo(content.bytes);
       if (content.bytes.length > CAPTION_IMAGE_BYTES || info.width > CAPTION_IMAGE_EDGE || info.height > CAPTION_IMAGE_EDGE) throw new Error("image-too-large");
-      if (!await this.#captionCapable(c, signal)) throw new AiError("model-missing");
+      if (!this.#captionCapable(c)) throw new AiError("model-missing");
       image = `data:image/${info.ext === "jpg" ? "jpeg" : info.ext};base64,${content.bytes.toString("base64")}`;
     }
     if (p.shape === "azure" ? !c.deployment : !c.model) throw new Error(p.shape === "azure" ? "invalid-deployment" : "invalid-model");
@@ -764,8 +811,8 @@ export class AiService {
     }
     const key = this.#open(c);
     if (p.key === "required" && !key) throw new AiError("key-required");
-    const call = streamCall(p, generateCall(p, c, key, system, user, caption ? 512 : 4096, image));
-    const local = isLoopback(call.url);
+    const plain = generateCall(p, c, key, system, user, caption ? 512 : 4096, image);
+    const local = isLoopback(plain.url);
     const started = performance.now();
     let first = true;
     /** The service's first words (`fn:ai.firstToken`), then the whole answer (`fn:ai.stream`). */
@@ -774,20 +821,46 @@ export class AiService {
       first = false;
       return text;
     };
+    let yielded = false;
+    let streamError: AiError | undefined;
+    try {
+      for await (const text of this.#answer(p, streamCall(p, plain), true, local, signal, out)) {
+        yielded = true;
+        yield text;
+      }
+      measure("fn:ai.stream", started);
+      return;
+    } catch (error) {
+      if (yielded || signal.aborted || !(error instanceof AiError) || !STREAM_FALLBACK.has(error.code)) throw error;
+      streamError = error;
+    }
+    // Streaming is a nicety, never a requirement: the same request once more as plain request and response (D-438).
+    try {
+      yield* this.#answer(p, plain, false, local, signal, out);
+    } catch (error) {
+      // A plain answer that's no more readable says less than the streamed failure did.
+      if (error instanceof AiError && (error.code === "provider-format" || error.code === "provider-empty") && streamError) throw streamError;
+      throw error;
+    }
+    measure("fn:ai.stream", started);
+  }
+
+  /** One generation exchange's text: streamed events, or one whole answer (always when `streaming` is false). */
+  async *#answer(p: AiProvider, call: Call, streaming: boolean, local: boolean, signal: AbortSignal, out: (text: string) => string): AsyncGenerator<string> {
+    const secrets = callSecrets(call.headers);
     const x = exchange(this.#fetch, call, this.#limit("generate", local), local, signal);
     try {
       const response = await x.response;
       if (!response.body) throw new AiError("provider-empty");
       const type = response.headers.get("content-type") ?? "";
       if (/text\/html/.test(type)) throw new AiError("provider-format");
-      if (/application\/json/.test(type) && !/ndjson/.test(type)) {
+      if (!streaming || (/application\/json/.test(type) && !/ndjson/.test(type))) {
         const whole = answerText(p, await readJson(response, MAX_JSON.answer, x.kick));
         if (typeof whole !== "string") throw new AiError("provider-format");
         const text = whole.replace(/^\s*<think>[\s\S]*?<\/think>\s*/, "");
         if (!text.trim()) throw new AiError("provider-empty");
         if (text.length > MAX_ANSWER) throw new AiError("too-long");
         yield out(text);
-        measure("fn:ai.stream", started);
         return;
       }
       let got = false;
@@ -807,7 +880,7 @@ export class AiService {
         } catch {
           throw new AiError("provider-format");
         }
-        if (json?.error || json?.type === "error") throw new AiError("provider-error");
+        if (json?.error || json?.type === "error") throw new AiError("provider-error", undefined, errorDetail(errorMessage(JSON.stringify(json)), secrets) || undefined);
         const text = visible(deltaText(p, json));
         if (text) yield emit(text);
         if (streamEnded(p, json)) break;
@@ -815,7 +888,6 @@ export class AiService {
       const rest = visible.flush();
       if (rest) yield emit(rest);
       if (!got) throw new AiError("provider-empty");
-      measure("fn:ai.stream", started);
     } catch (error) {
       throw x.reason(error);
     } finally {
@@ -938,9 +1010,9 @@ export async function* ndjson(body: ReadableStream<Uint8Array>, kick?: () => voi
   for await (const line of lines(body, kick)) if (line.trim()) yield line;
 }
 
-/** A failure as the reason code the window is sent: only our own codes, never other text. */
-export function reasonOf(error: unknown): { code: string; retryAfter?: number } {
-  if (error instanceof AiError) return { code: error.code, ...(error.retryAfter ? { retryAfter: error.retryAfter } : {}) };
+/** A failure as the reason the window is sent: only our own codes, and the service's own words already sanitised by `errorDetail`. */
+export function reasonOf(error: unknown): { code: string; retryAfter?: number; detail?: string } {
+  if (error instanceof AiError) return { code: error.code, ...(error.retryAfter ? { retryAfter: error.retryAfter } : {}), ...(error.detail ? { detail: error.detail } : {}) };
   const message = String((error as Error)?.message ?? "");
   return { code: /^(invalid-[a-z]+|too-many)$/.test(message) ? message : "provider" };
 }

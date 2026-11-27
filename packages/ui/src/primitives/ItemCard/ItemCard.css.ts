@@ -42,7 +42,8 @@ export const selectedBadge = style({
   backgroundColor: t.badgeSelectedBackground, color: t.badgeSelectedText,
   borderColor: t.badgeSelectedBackground, fontWeight: t.badgeSelectedWeight,
 });
-export const actions = style({ display: "flex", alignItems: "center", gap: t.textGap, flexShrink: 0, marginInlineStart: "auto" });
+// The slot keeps its width beside the text, but never more than the card's: a long status line wraps inside it (D-438).
+export const actions = style({ display: "flex", alignItems: "center", flexWrap: "wrap", gap: t.textGap, flexShrink: 0, minWidth: 0, maxWidth: "100%", marginInlineStart: "auto" });
 // The whole card is the action (D-131): one button, the accent edge says it's the step's main one.
 export const pressable = style({
   width: "100%", textAlign: "start", color: "inherit", cursor: "default", outline: "none", flexWrap: "nowrap",

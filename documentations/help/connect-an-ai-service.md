@@ -35,7 +35,7 @@ Focus Notes doesn't install or run AI models. It connects to a service you alrea
 
 **Result:** **GitHub Copilot (on this computer)** says **Cloud**. The installed program runs here; GitHub's service rewrites the words. Focus Notes uses the login the program already owns, not a copied token. Rewrite shows the active integration and Generate sends directly, including the first time. Finding Copilot never sends your notes or starts sign-in.
 
-If it says to sign in, use Copilot in your normal terminal, then look again. A login that cannot be used with isolated configuration is not activated. The supported version for this adapter is CLI **1.0.105**; Focus Notes does not download or update it.
+If it says to sign in, use Copilot in your normal terminal, then look again. A login that cannot be used with isolated configuration is not activated. Tested with Copilot CLI **1.0.105** or later; other versions are tried too. Focus Notes does not download or update it.
 
 Claude subscription logins are not reused. Gemini CLI login reuse is on hold, and Codex integration is deferred; their existing API connections remain separate.
 
@@ -75,7 +75,7 @@ Use **Find on this PC**, with one explanation: **Scans this PC for running AI se
 - Online services have their own terms and charges.
 - To change a connection, select **Change**. Leave **API key** empty to keep the saved key.
 - To delete a connection and its key, select **Remove**. Your notes don't change.
-- Focus Notes offers 26 API/server kinds plus the supported Copilot CLI integration. It doesn't work with Amazon Bedrock or Vertex AI yet.
+- Focus Notes offers 26 API/server kinds plus the Copilot CLI integration. It doesn't work with Amazon Bedrock or Vertex AI yet.
 
 ## If the test fails
 

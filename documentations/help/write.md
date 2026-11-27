@@ -44,7 +44,7 @@ Right-click one image. **Copy** puts its pixels, description and caption on the 
 
 ## Write an image caption with AI
 
-Right-click an image and choose **Auto caption with AI…**. Choose an image-capable connected integration; the dialog shows its model and whether it runs on this computer or in the cloud. This choice does not change your writer for rewriting. If image support cannot be confirmed, choose **Write caption** instead.
+Right-click an image and choose **Auto caption with AI…**. Choose a connected integration; the dialog shows its model and whether it runs on this computer or in the cloud. This choice does not change your writer for rewriting. If the model can't read images, the dialog says what the service said; choose another integration or **Write caption** instead.
 
 Edit the instruction, then choose **Generate caption**. Only a smaller, location-free copy of the selected image and your instruction go to that integration, not the note or its name. **Stop** cancels generation without changing the existing caption.
 

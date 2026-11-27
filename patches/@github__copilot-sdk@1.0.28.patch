@@ -1,0 +1,28 @@
+diff --git a/dist/cjs/client.js b/dist/cjs/client.js
+index 3f0eaec0712267e4d7f4e424a54ae5a29b7742b2..e746ca77c9ea535c90e64e8600d124d33f221700 100644
+--- a/dist/cjs/client.js
++++ b/dist/cjs/client.js
+@@ -2133,7 +2133,8 @@ class CopilotClient {
+         `SDK protocol version mismatch: SDK supports versions ${MIN_PROTOCOL_VERSION}-${maxVersion}, but server does not report a protocol version. Please update your server to ensure compatibility.`
+       );
+     }
+-    if (serverVersion < MIN_PROTOCOL_VERSION || serverVersion > maxVersion) {
++    // Focus Notes (D-438): a newer runtime protocol is tried, not refused; a real incompatibility fails on its own call.
++    if (serverVersion < MIN_PROTOCOL_VERSION) {
+       throw new Error(
+         `SDK protocol version mismatch: SDK supports versions ${MIN_PROTOCOL_VERSION}-${maxVersion}, but server reports version ${serverVersion}. Please update your SDK or server to ensure compatibility.`
+       );
+diff --git a/dist/client.js b/dist/client.js
+index b31461b1e9a03c8c03a628445462b4cc453a1d26..5d8151270a838d21705aa747dd5dd9c9dd6d15c9 100644
+--- a/dist/client.js
++++ b/dist/client.js
+@@ -2115,7 +2115,8 @@ class CopilotClient {
+         `SDK protocol version mismatch: SDK supports versions ${MIN_PROTOCOL_VERSION}-${maxVersion}, but server does not report a protocol version. Please update your server to ensure compatibility.`
+       );
+     }
+-    if (serverVersion < MIN_PROTOCOL_VERSION || serverVersion > maxVersion) {
++    // Focus Notes (D-438): a newer runtime protocol is tried, not refused; a real incompatibility fails on its own call.
++    if (serverVersion < MIN_PROTOCOL_VERSION) {
+       throw new Error(
+         `SDK protocol version mismatch: SDK supports versions ${MIN_PROTOCOL_VERSION}-${maxVersion}, but server reports version ${serverVersion}. Please update your SDK or server to ensure compatibility.`
+       );

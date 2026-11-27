@@ -76,7 +76,6 @@ export function registerImageCaption(ctx: ImagesContext): void {
         integration = connections.find(c => c.id === settings.writer && c.imageCapable)?.id ?? "";
         preview = current.version = data;
         loading = false;
-        if (connections.some(c => c.capabilityError)) error = catalog.format("image.ai.capability.failed");
         changed();
       } catch (problem) { if (target === current) fail("image.ai.failed", problem); }
     },
@@ -142,6 +141,9 @@ export function registerImageCaption(ctx: ImagesContext): void {
       running = undefined;
       finishTracking(new Error("caption-provider-failed"));
       fail("image.ai.failed", new Error("caption-provider-failed"));
+      // The service's own words (D-438): a model that can't see images says so here.
+      const said = "detail" in event && typeof event.detail === "string" ? event.detail.slice(0, 200) : "";
+      if (said) { error = `${error} ${catalog.format("ai.error.detail", { detail: said })}`; changed(); }
     }
   });
   commands.register({

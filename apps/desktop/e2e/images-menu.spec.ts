@@ -168,7 +168,7 @@ test("IMG-EDIT: cropped copy is visible, Undo and Restore original retain both f
   } finally { if (launched) await close(launched); }
 });
 
-test("IMG-AI: connected vision integration gets bounded pixels only; review, Undo and Stop preserve the note", async () => {
+test("IMG-AI: a connected integration gets bounded pixels only, a model that can't see images says so; review, Undo and Stop preserve the note", async () => {
   const dirs = sample();
   const initial = original.replace("![Red square](red.png)", '![Red square](red.png "Old caption")');
   writeFileSync(join(dirs.docs, "Welcome.md"), initial);
@@ -182,9 +182,11 @@ test("IMG-AI: connected vision integration gets bounded pixels only; review, Und
     request.on("data", chunk => { body += chunk; });
     request.on("end", () => {
       const input = JSON.parse(body);
-      if (request.url === "/api/show") {
+      if (input.model === "writer") {
+        // A text-only model refuses the image in its own words (D-438: tried, not prefiltered).
+        response.statusCode = 400;
         response.setHeader("content-type", "application/json");
-        response.end(JSON.stringify({ capabilities: input.model === "vision" ? ["completion", "vision"] : ["completion"] }));
+        response.end(JSON.stringify({ error: "model writer does not support image input" }));
       } else {
         requests.push(input);
         response.setHeader("content-type", "application/x-ndjson");
@@ -209,8 +211,13 @@ test("IMG-AI: connected vision integration gets bounded pixels only; review, Und
     await page.getByRole("menuitem", { name: "Auto caption with AI…", exact: true }).click();
     const dialog = page.getByRole("dialog", { name: "Auto caption with AI", exact: true });
     await expect(dialog).toBeVisible();
-    await expect(dialog.getByRole("button", { name: "Generate caption" })).toBeDisabled();
     expect(requests).toEqual([]);
+    // The Writer is offered without a vision check; its own refusal is the error, and the note is untouched.
+    await dialog.getByRole("textbox", { name: "Instruction", exact: true }).fill("Only a short caption.");
+    await dialog.getByRole("button", { name: "Generate caption" }).click();
+    await expect(dialog.getByText(/The service said: “model writer does not support image input”/)).toBeVisible();
+    expect(requests).toEqual([]);
+    expect(readFileSync(join(dirs.docs, "Welcome.md"), "utf8")).toBe(initial);
     await dialog.getByRole("button", { name: "AI integration", exact: true }).click();
     await page.getByRole("menuitemcheckbox", { name: /Vision integration/ }).click();
     await dialog.getByRole("textbox", { name: "Instruction", exact: true }).fill("Only a short caption.");

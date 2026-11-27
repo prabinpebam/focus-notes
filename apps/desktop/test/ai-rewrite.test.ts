@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { crc32 } from "node:zlib";
 import { aiProvider } from "@focus-notes/core/ai-providers";
-import { AiService, answerText, deltaText, generateCall, imageCapability, normalizeUrl, streamCall } from "../src/main/ai-rewrite.ts";
+import { AiService, answerText, deltaText, errorDetail, generateCall, normalizeUrl, reasonOf, streamCall } from "../src/main/ai-rewrite.ts";
 import { CopilotIntegration } from "../src/main/ai-copilot.ts";
 
 const crypt = { available: () => true, encrypt: (t: string) => Buffer.from(`sealed:${t}`), decrypt: (b: Buffer) => b.toString().replace(/^sealed:/, "") };
@@ -22,17 +22,18 @@ const answering = (seen: Seen[], body: (url: string) => unknown) =>
 const collect = async (ai: AiService, input: unknown, signal = new AbortController().signal) => { const out: string[] = []; for await (const c of ai.stream(input, signal)) out.push(c); return out; };
 
 describe("AI connections (main process)", () => {
-  it("caption capability comes from server metadata, never model names", () => {
-    expect(imageCapability({ capabilities: ["vision"] }, "fake", true)).toBe(true);
-    expect(imageCapability({ capabilities: ["completion"] }, "vision-model", true)).toBe(false);
-    expect(imageCapability({ data: [{ id: "fake", architecture: { input_modalities: ["text", "image"] } }] }, "fake")).toBe(true);
-    expect(imageCapability({ data: [{ id: "vision-model" }] }, "vision-model")).toBe(false);
-    expect(imageCapability({ data: [{ id: "other", input_modalities: ["image"] }] }, "fake")).toBe(false);
+  it("caption is offered for every connection whose request can carry an image, with no metadata check (D-438)", async () => {
+    const seen: Seen[] = [];
+    const ai = new AiService(file(), crypt, write, answering(seen, () => ({})));
+    for (const provider of ["ollama", "lm-studio", "openai", "azure-openai", "anthropic", "gemini", "copilot-cli"]) await ai.save({ provider, endpoint: provider === "azure-openai" ? "https://res.openai.azure.com" : undefined, model: "m", deployment: "d", key: provider === "copilot-cli" ? undefined : "k" });
+    const capable = Object.fromEntries((await ai.captionSettings()).connections.map(c => [c.provider, c.imageCapable]));
+    expect(capable).toEqual({ "ollama": true, "lm-studio": true, "openai": true, "azure-openai": true, "anthropic": false, "gemini": false, "copilot-cli": false });
+    expect(seen).toEqual([]);
   });
   it("caption sends only stripped pixels and instruction to the chosen connection without changing Writer", async () => {
     const image = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==";
     const seen: Seen[] = [];
-    const ai = new AiService(file(), crypt, write, answering(seen, url => url.endsWith("/api/show") ? { capabilities: ["vision"] } : { message: { content: "A red square." } }));
+    const ai = new AiService(file(), crypt, write, answering(seen, () => ({ message: { content: "A red square." } })));
     const first = await ai.save({ provider: "ollama", name: "Writer", endpoint: "http://127.0.0.1:11434", model: "writer" });
     const settings = await ai.save({ provider: "ollama", name: "Vision", endpoint: "http://127.0.0.1:11434", model: "vision" });
     const id = settings.connections[1]!.id;
@@ -55,14 +56,18 @@ describe("AI connections (main process)", () => {
     await expect(collect(ai, { mode: "caption", text: "", connection: id, instruction: "Short caption", image: image + "A".repeat(7 * 1024 * 1024) })).rejects.toThrow("invalid-image");
     expect(seen).toHaveLength(count);
   });
-  it("caption refuses a text-only saved integration before sending pixels", async () => {
+  it("caption to an OpenAI-compatible model not confirmed as vision is attempted, and its own refusal is the error (D-438)", async () => {
     const seen: Seen[] = [];
-    const ai = new AiService(file(), crypt, write, answering(seen, () => ({ capabilities: ["completion"] })));
-    const settings = await ai.save({ provider: "ollama", name: "Text", endpoint: "http://127.0.0.1:11434", model: "vision-sounding-name" });
-    await expect(collect(ai, { mode: "caption", text: "", connection: settings.writer, instruction: "Caption", image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==" })).rejects.toThrow("model-missing");
-    expect(seen).toHaveLength(1);
-    expect(seen[0]?.url).toContain("/api/show");
-    expect(JSON.stringify(seen)).not.toContain("iVBORw");
+    const fetcher = (async (url: string, init: RequestInit) => {
+      seen.push({ url, init });
+      return new Response(JSON.stringify({ error: { message: "Model text-only does not support image input." } }), { status: 400, headers: { "content-type": "application/json" } });
+    }) as unknown as typeof fetch;
+    const ai = new AiService(file(), crypt, write, fetcher);
+    const settings = await ai.save({ provider: "compatible", endpoint: "https://llm.example.com/v1", model: "text-only", key: "sk-test-abcdefghijklmnop" });
+    const error = await collect(ai, { mode: "caption", text: "", connection: settings.writer, instruction: "Caption", image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==" }).catch((e: unknown) => e);
+    expect(reasonOf(error)).toEqual({ code: "bad-request", detail: "Model text-only does not support image input." });
+    expect(seen[0]?.url).toBe("https://llm.example.com/v1/chat/completions");
+    expect(JSON.stringify(JSON.parse(seen[0]!.init.body as string).messages)).toContain("image_url");
   });
   it("RWR-92: write mode sends the prompt alone and rejects note context", async () => {
     const seen: Seen[] = [];
@@ -188,5 +193,54 @@ describe("AI connections (main process)", () => {
     const s = await new AiService(f, crypt, write).settings();
     expect(s.connections).toEqual([expect.objectContaining({ provider: "compatible", endpoint: "https://api.example.com/v1", model: "m", hasKey: true })]);
     expect(s.writer).toBe(s.connections[0]!.id);
+  });
+});
+
+describe("no prefilters: send text, get text back (D-438)", () => {
+  const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
+  it("a streaming request the service refuses is sent again as plain request and response", async () => {
+    const seen: Seen[] = [];
+    const fetcher = (async (url: string, init: RequestInit) => {
+      seen.push({ url, init });
+      return JSON.parse(init.body as string).stream ? json({ error: { message: "stream is not supported" } }, 400) : json({ choices: [{ message: { content: "Plain answer." } }] });
+    }) as unknown as typeof fetch;
+    const ai = new AiService(file(), crypt, write, fetcher);
+    await ai.save({ provider: "compatible", endpoint: "https://old-server.example.com/v1", model: "m" });
+    expect(await collect(ai, { text: "Old words.", instruction: "Shorter" })).toEqual(["Plain answer."]);
+    expect(seen.map(s => JSON.parse(s.init.body as string).stream)).toEqual([true, undefined]);
+  });
+  it("never falls back on a refused key, and never sends twice after text arrived", async () => {
+    let calls = 0;
+    const ai = new AiService(file(), crypt, write, (async () => { calls++; return json({ error: { message: "bad key" } }, 401); }) as unknown as typeof fetch);
+    await ai.save({ provider: "openai", model: "m", key: "sk-real-looking-key-123456" });
+    await expect(collect(ai, { text: "Old words.", instruction: "Shorter" })).rejects.toMatchObject({ code: "unauthorized" });
+    expect(calls).toBe(1);
+  });
+  it("an unknown model name is sent as typed, not filtered", async () => {
+    const seen: Seen[] = [];
+    const ai = new AiService(file(), crypt, write, answering(seen, () => ({ choices: [{ message: { content: "OK" } }] })));
+    const settings = await ai.save({ provider: "openai", model: "never-heard-of-model-2031", key: "k" });
+    await ai.test(settings.writer);
+    expect(JSON.parse(seen[0]!.init.body as string).model).toBe("never-heard-of-model-2031");
+  });
+  it("a service's error words are redacted: a key, a bearer token and a credentialed URL never reach the window, and never the error's log text", async () => {
+    const key = "sk-proj-SyntheticKey0123456789abcdef";
+    const said = `Invalid key ${key} sent with Bearer abc.def.ghi to https://user:pa55@proxy.example.com/v1 (token ghp_ABCDEFGHIJKLMNOPQRSTuvwxyz0123456789)`;
+    expect(errorDetail(said, [key])).toBe("Invalid key … sent with Bearer … to https://proxy.example.com/v1 (token …)");
+    expect(errorDetail("invalid subscription key 0123456789abcdef", ["0123456789abcdef0123456789abcdef"])).toBe("invalid subscription key …");
+    expect(errorDetail("bad key sk-abc\u200bdef0123456789xyz and SK-UPPERCASE123456", [])).toBe("bad key … and …");
+    expect(errorDetail("key abcdef01\n23456789 rejected", ["abcdef0123456789"])).toBe("key … … rejected");
+    expect(errorDetail("GET /v1?api_key=s3cr3t&x=1 with Basic dXNlcjpwYXNz and eyJhbGciOi.eyJzdWIiOjF9.sig", [])).toBe("GET /v1?api_key=…&x=1 with Basic … and …");
+    expect(errorDetail("\u202Eevil", [])).toBe("evil");
+    expect(Array.from(errorDetail("😀".repeat(300))).length).toBe(200);
+    expect(errorDetail("meta-llama-3.1-70b-instruct-turbo-free-preview isn't available; key 9f86d081884c7d659a2feaa0c55ad015 refused")).toBe("meta-llama-3.1-70b-instruct-turbo-free-preview isn't available; key … refused");
+    const ai = new AiService(file(), crypt, write, (async () => json({ error: { message: said } }, 422)) as unknown as typeof fetch);
+    const settings = await ai.save({ provider: "openai", model: "m", key });
+    const error = await ai.test(settings.writer).catch((e: unknown) => e) as Error;
+    const { detail } = reasonOf(error);
+    expect(detail).toContain("Invalid key");
+    for (const secret of [key, "abc.def.ghi", "pa55", "ghp_ABCDEFGHIJKLMNOPQRSTuvwxyz0123456789"]) expect(detail).not.toContain(secret);
+    const { inspect } = await import("node:util");
+    for (const logged of [error.message, String(error), inspect(error), JSON.stringify(error), error.stack ?? ""]) expect(logged).not.toContain("Invalid key");
   });
 });

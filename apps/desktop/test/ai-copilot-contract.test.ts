@@ -56,11 +56,51 @@ describe("Copilot CLI through the official SDK and a stdio protocol fake", () =>
     expect(await collect((await fixture("final-only")).ai)).toEqual(["Shorter text."]);
   });
 
+  it.each(["old", "new", "odd", "version-fails"])("a %s CLI version is tried: the handshake and the answer run (D-438)", async (mode) => {
+    const f = await fixture(mode);
+    expect(await collect(f.ai)).toEqual(["Short", "er ", "text."]);
+    expect((await f.seen()).some((s) => s.method === "session.send")).toBe(true);
+    expect(f.cli.tested()).toBe(mode === "new" ? true : mode === "old" ? false : undefined);
+    const card = (await f.ai.settings()).connections[0]!;
+    expect(card.untestedVersion).toBe(mode === "new" ? undefined : true);
+  });
+
+  it("an answer streamed without a final message is still the answer", async () => {
+    expect(await collect((await fixture("missing-terminal")).ai)).toEqual(["Short", "er ", "text."]);
+  });
+
+  it("an older CLI without tool-metadata methods is tried, and a tool request still fails the answer", async () => {
+    expect(await collect((await fixture("no-tool-rpc")).ai)).toEqual(["Short", "er ", "text."]);
+    const f = await fixture("no-tool-rpc-tool-event");
+    await expect(collect(f.ai)).rejects.toMatchObject({ code: "provider-format" });
+    const create = (await f.seen()).find((s) => s.method === "session.create")!;
+    expect(create.params).toMatchObject({ availableTools: [], tools: [], mcpServers: {} });
+    // At the tested version or later the no-tools proof stays required: nothing is sent without it.
+    const current = await fixture("no-tool-rpc-current");
+    await expect(collect(current.ai)).rejects.toBeTruthy();
+    expect((await current.seen()).some((s) => s.method === "session.send")).toBe(false);
+  });
+
+  it("a typed model the CLI refuses is attempted and fails with the CLI's own words, sanitised", async () => {
+    const f = await fixture("model-refused");
+    await f.ai.save({ id: f.id, provider: "copilot-cli", model: "typed-model-x" });
+    const error = await collect(f.ai).catch((e: unknown) => e) as { code: string; detail?: string; message: string };
+    expect(error).toMatchObject({ code: "provider-error", message: "provider-error" });
+    expect(error.detail).toContain("Model typed-model-x is not available.");
+    expect(error.detail).not.toContain("ghu_abcdefghijklmnop1234");
+    expect((await f.seen()).find((s) => s.method === "session.create")!.params.model).toBe("typed-model-x");
+  });
+
+  it("a model list the CLI can't give falls back to auto, so a typed model is still tried", async () => {
+    const f = await fixture("models-fail");
+    expect(await f.ai.models({ id: f.id })).toEqual([{ id: "auto", cloud: true }]);
+  });
+
   it.each([
-    ["signed-out", "cli-not-signed-in"], ["unsupported", "cli-unsupported"],
+    ["signed-out", "cli-not-signed-in"],
     ["quota", "rate-limited"], ["tools", "provider-format"],
     ["tool-event", "provider-format"], ["empty", "provider-empty"],
-    ["missing-terminal", "provider-format"], ["huge", "too-long"],
+    ["huge", "too-long"],
   ])("%s returns only its clear reason, never raw provider output", async (mode, code) => {
     const f = await fixture(mode);
     await expect(collect(f.ai)).rejects.toMatchObject({ code, message: code });

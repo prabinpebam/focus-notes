@@ -59,7 +59,8 @@
     ],
     "patchedDependencies": {
       "app-builder-lib@26.15.3": "patches/app-builder-lib@26.15.3.patch",
-      "prosemirror-view@1.42.6": "patches/prosemirror-view@1.42.6.patch"
+      "prosemirror-view@1.42.6": "patches/prosemirror-view@1.42.6.patch",
+      "@github/copilot-sdk@1.0.28": "patches/@github__copilot-sdk@1.0.28.patch"
     }
   }
 }

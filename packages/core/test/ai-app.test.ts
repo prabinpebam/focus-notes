@@ -743,12 +743,11 @@ describe("where text goes and which key goes with it (D-259)", () => {
       expect(t.settingsVm().discoverStatus).toBe(en["ai.error.cli-not-signed-in"]);
       expect(t.settingsVm().found).toEqual([]);
       expect(reasonCode("Error: cli-missing")).toEqual({ code: "cli-missing" });
-      expect(reasonCode("Error: cli-unsupported")).toEqual({ code: "cli-unsupported" });
+      expect(reasonCode(`Error: bad-request detail=${encodeURIComponent("Model foo isn’t available")}`)).toEqual({ code: "bad-request", detail: "Model foo isn’t available" });
     });
 
     it.each([
       { status: "unknown", error: "timeout" },
-      { status: "unsupported-version", error: "cli-unsupported" },
     ] as const)("shows the $status reason without claiming readiness", async ({ status, error }) => {
       const t = setup();
       t.ai.discover = async () => [{ provider: "copilot-cli", endpoint: "", models: [], status, error }];
@@ -784,5 +783,25 @@ describe("where text goes and which key goes with it (D-259)", () => {
     await t.commands.run("ai.edit", { field: "endpoint", value: "https://llm.example.com/v1/" });
     expect(t.settingsVm().keyState).toBe(en["ai.key.keep"]);
     expect(reasonCode("Error invoking remote method 'ai:save': Error: key-new-address")).toEqual({ code: "key-new-address" });
+  });
+});
+describe("no prefilters: try, then say the real reason (D-438)", () => {
+  it("a failed Test shows our sentence and the service's own words; an untested CLI version is only a note", async () => {
+    const t = setup({ connection: { provider: "copilot-cli", model: "auto", untestedVersion: true } });
+    t.ai.test = async () => { throw new Error(`Error invoking remote method 'ai:test': Error: provider-error detail=${encodeURIComponent("Model gpt-x is not available")}`); };
+    await t.commands.run("ai.load");
+    const card = () => (t.settingsVm().connections as { testText: string }[])[0]!.testText;
+    expect(card()).toContain(en["ai.copilot.tested"]);
+    await t.commands.run("ai.test", { value: "w" });
+    expect(card()).toBe(`Test failed: ${en["ai.error.provider-error"]} The service said: “Model gpt-x is not available” ${en["ai.copilot.tested"]}`);
+  });
+
+  it("a model list that fails keeps the typed model, and Save stays available to try it", async () => {
+    const t = setup({ connections: [] });
+    t.ai.models = async () => { throw new Error("Error invoking remote method 'ai:models': Error: server-error"); };
+    await t.commands.run("ai.load"); await t.commands.run("ai.add");
+    await t.commands.run("ai.edit", { field: "model", value: "brand-new-model-2027" });
+    await t.commands.run("ai.models");
+    expect(t.settingsVm()).toMatchObject({ model: "brand-new-model-2027", cannotSave: false, modelsStatus: en["ai.error.server-error"] });
   });
 });

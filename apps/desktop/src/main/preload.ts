@@ -25,6 +25,16 @@ const listen = (channel: string) => (listener: (...args: unknown[]) => void) => 
   ipcRenderer.on(channel, handler);
   return () => ipcRenderer.removeListener(channel, handler);
 };
+/** An AI call whose failure arrives as data (D-438): thrown here as `code [retry-after=N] detail=<encoded words>`, the form the window reads. */
+const aiCall = async (channel: string, ...args: unknown[]) => {
+  const result = await ipcRenderer.invoke(channel, ...args);
+  const failure = result && typeof result === "object" && "aiError" in result ? (result as { aiError: { code?: unknown; retryAfter?: unknown; detail?: unknown } }).aiError : undefined;
+  if (!failure) return result;
+  const code = typeof failure.code === "string" ? failure.code : "provider-error";
+  const wait = typeof failure.retryAfter === "number" ? ` retry-after=${failure.retryAfter}` : "";
+  const detail = typeof failure.detail === "string" && failure.detail ? ` detail=${encodeURIComponent(failure.detail)}` : "";
+  throw new Error(`${code}${wait}${detail}`);
+};
 const privacyListeners = new Set<() => void>();
 const privacyFilters = new Set<(roots: readonly string[]) => void>();
 ipcRenderer.on("privacy:cleared", (_event, id: string) => {
@@ -375,10 +385,10 @@ contextBridge.exposeInMainWorld("focusNotes", {
     settings: () => ipcRenderer.invoke("ai:settings"),
     save: (input: unknown) => ipcRenderer.invoke("ai:save", input),
     saveDetail: (input: unknown) => ipcRenderer.invoke("ai:saveDetail", input),
-    saveKey: (input: unknown) => ipcRenderer.invoke("ai:saveKey", input),
+    saveKey: (input: unknown) => aiCall("ai:saveKey", input),
     remove: (id: string) => ipcRenderer.invoke("ai:remove", id),
     writer: (id: string) => ipcRenderer.invoke("ai:writer", id),
-    test: (id: string) => ipcRenderer.invoke("ai:test", id),
+    test: (id: string) => aiCall("ai:test", id),
     discover: (input?: { id: string }) => ipcRenderer.invoke("ai:discover", input),
     discoverCancel: (id: string) => ipcRenderer.invoke("ai:discoverCancel", id),
     onDiscoverEvent: (listener: (event: unknown) => void) => {
@@ -386,7 +396,7 @@ contextBridge.exposeInMainWorld("focusNotes", {
       ipcRenderer.on("ai:discoverEvent", on);
       return () => { ipcRenderer.removeListener("ai:discoverEvent", on); };
     },
-    models: (input: unknown) => ipcRenderer.invoke("ai:models", input),
+    models: (input: unknown) => aiCall("ai:models", input),
     rewriteStart: (id: string, input: unknown) => ipcRenderer.invoke("ai:rewriteStart", id, input),
     captionSettings: () => ipcRenderer.invoke("ai:captionSettings"),
     captionStart: (id: string, input: unknown) => ipcRenderer.invoke("ai:captionStart", id, input),

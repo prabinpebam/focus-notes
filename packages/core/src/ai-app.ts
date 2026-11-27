@@ -47,13 +47,15 @@ const ERRORS = new Set([
   "timeout", "network", "refused", "dns", "tls", "redirected", "model-missing", "not-found", "rate-limited", "server-error",
   "bad-request", "too-long", "provider-format", "provider-error", "provider-empty", "connection-unavailable",
   "invalid-url", "invalid-model", "invalid-deployment", "invalid-account", "invalid-key", "too-many",
-  "cli-missing", "cli-unsupported", "cli-not-signed-in",
+  "cli-missing", "cli-not-signed-in",
 ]);
-/** A reason from the shell: the code at the end of an IPC error's text, and Retry-After's seconds. */
-export function reasonCode(raw: string): { code: string; retryAfter?: number } {
-  const m = /([a-z][a-z-]*)(?: retry-after=(\d+))?\s*$/.exec(raw);
+/** A reason from the shell: the code in an IPC error's text, Retry-After's seconds, and the service's own (already sanitised) words. */
+export function reasonCode(raw: string): { code: string; retryAfter?: number; detail?: string } {
+  const m = /([a-z][a-z-]*)(?: retry-after=(\d+))?(?: detail=(\S+))?\s*$/.exec(raw);
   const code = m && ERRORS.has(m[1]!) ? m[1]! : "";
-  return m?.[2] ? { code, retryAfter: Number(m[2]) } : { code };
+  let detail: string | undefined;
+  try { detail = m?.[3] ? decodeURIComponent(m[3]).slice(0, 200) : undefined; } catch { detail = undefined; }
+  return { code, ...(m?.[2] ? { retryAfter: Number(m[2]) } : {}), ...(detail ? { detail } : {}) };
 }
 const DRAFT_FIELDS = ["name", "endpoint", "model", "deployment", "apiVersion", "account"] as const;
 type Draft = { id?: string; provider: string; name: string; endpoint: string; model: string; deployment: string; apiVersion: string; account: string };
@@ -67,11 +69,12 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
   const changed = () => store.update((s) => ({ ...s }));
   const t = (key: string, args?: Record<string, unknown>) => catalog.format(key, args);
   /** A reason code from the shell (inside an IPC error's text) as words. */
-  const reason = (e: unknown, fallback: string, retryAfter?: number) => {
+  const reason = (e: unknown, fallback: string, retryAfter?: number, detail?: string) => {
     const r = reasonCode(String((e as Error)?.message ?? ""));
     const wait = retryAfter ?? r.retryAfter;
-    if (r.code === "rate-limited" && wait) return t("ai.error.rate-limited.wait", { s: wait });
-    return t(r.code ? `ai.error.${r.code}` : fallback);
+    const said = detail ?? r.detail;
+    const words = r.code === "rate-limited" && wait ? t("ai.error.rate-limited.wait", { s: wait }) : t(r.code ? `ai.error.${r.code}` : fallback);
+    return said ? `${words} ${t("ai.error.detail", { detail: said })}` : words;
   };
 
   // ---- Settings → AI ----
@@ -129,11 +132,12 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
   };
   const testText = (c: AiConnectionView) => {
     if (testing.has(c.id)) return t("ai.test.running");
+    const note = c.untestedVersion ? ` ${t("ai.copilot.tested")}` : "";
     const err = testErrors.get(c.id);
-    if (err) return err;
-    if (!c.lastTest) return t("ai.test.never");
+    if (err) return `${err}${note}`;
+    if (!c.lastTest) return `${t("ai.test.never")}${note}`;
     const at = new Date(c.lastTest.at).toLocaleString();
-    return t(c.lastTest.ok ? "ai.test.passed" : "ai.test.failed", { at });
+    return `${t(c.lastTest.ok ? "ai.test.passed" : "ai.test.failed", { at })}${note}`;
   };
   const apply = (v: { writer: string; connections: AiConnectionView[] }) => { writer = v.writer; connections = v.connections; };
   const load = async () => {
@@ -571,14 +575,14 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
     if (typeof r.toast === "number") void commands.run("toast.dismiss", { id: r.toast }).catch(() => {});
   };
   /** A failure or a stop: the editor puts the original back and unlocks the note. */
-  const fail = (code: string, retryAfter?: number) => {
+  const fail = (code: string, retryAfter?: number, detail?: string) => {
     editorAction("rewrite.abort");
     end();
     if (code === "cancelled") announce(t("rewrite.stopped"));
-    else toast(t("rewrite.error.kept", { reason: reason(new Error(code), "ai.error.provider", retryAfter) }), { tone: "error" });
+    else toast(t("rewrite.error.kept", { reason: reason(new Error(code), "ai.error.provider", retryAfter, detail) }), { tone: "error" });
   };
   const onEvent = (raw: unknown) => {
-    const e = raw as { id?: unknown; type?: unknown; text?: unknown; code?: unknown; retryAfter?: unknown } | null;
+    const e = raw as { id?: unknown; type?: unknown; text?: unknown; code?: unknown; retryAfter?: unknown; detail?: unknown } | null;
     if (!running || !e || e.id !== running.id) return;
     if (e.type === "delta" && typeof e.text === "string") {
       running.got ||= e.text.trim().length > 0;
@@ -588,7 +592,7 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
       editorAction("rewrite.finish");
       end();
       announce(t(caret ? "rewrite.inserted" : "rewrite.replaced"));
-    } else if (e.type === "error") fail(typeof e.code === "string" ? e.code : "provider", typeof e.retryAfter === "number" ? e.retryAfter : undefined);
+    } else if (e.type === "error") fail(typeof e.code === "string" ? e.code : "provider", typeof e.retryAfter === "number" ? e.retryAfter : undefined, typeof e.detail === "string" ? e.detail.slice(0, 200) : undefined);
   };
   /** Stops the request in the shell, without touching the editor (it has already let the note go). */
   const drop = () => {

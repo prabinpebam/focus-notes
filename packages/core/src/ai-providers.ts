@@ -90,9 +90,8 @@ export const AZURE_API_VERSION = "2024-10-21";
 
 /** A connection as Settings shows it: never its key. */
 export interface AiConnectionView {
-  /** Confirmed by the connected server's model metadata, never inferred from a model name. */
+  /** The connection's request shape can carry an image for a caption; the model's own answer says whether it sees it (D-438). */
   imageCapable?: boolean;
-  capabilityError?: string;
   id: string;
   provider: string;
   name: string;
@@ -108,6 +107,8 @@ export interface AiConnectionView {
   lastTest?: { ok: boolean; at: string };
   /** The model runs in the cloud, including a cloud-routed Ollama model. */
   modelCloud?: boolean;
+  /** Copilot CLI was last seen at a version older than the tested one, or one it couldn't read: a quiet note, never a gate (D-438). */
+  untestedVersion?: boolean;
 }
 
 export interface AiFound {
@@ -115,7 +116,7 @@ export interface AiFound {
   endpoint: string;
   models: { id: string; cloud: boolean }[];
   /** Installed CLI authentication, checked without generation. Not a service health test. */
-  status?: "signed-in" | "signed-out" | "unsupported-version" | "unknown";
+  status?: "signed-in" | "signed-out" | "unknown";
   error?: string;
 }
 

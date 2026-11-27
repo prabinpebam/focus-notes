@@ -254,7 +254,7 @@ describe("streams cut anywhere", () => {
   });
 });
 
-describe("errors: one reason each, never the service's text", () => {
+describe("errors: one reason each, with the service's own words only sanitised (D-438)", () => {
   const status = (code: number, headers: Record<string, string> = {}, body = "{\"error\":{\"message\":\"nope\"}}"): Handler => (_r, res) => { res.writeHead(code, { "content-type": "application/json", ...headers }); res.end(body); };
   const fails = async (id: string, h: Handler, opts: Parameters<typeof writerFor>[2] = {}) => {
     const { ai } = await writerFor(id, h, { key: aiProvider(id)!.key === "none" ? undefined : KEY, ...opts });
@@ -277,7 +277,7 @@ describe("errors: one reason each, never the service's text", () => {
   it("429 carries Retry-After's seconds (delta or HTTP date)", async () => {
     const e = await fails("openai", status(429, { "retry-after": "7" }));
     expect([e.code, e.retryAfter, e.message]).toEqual(["rate-limited", 7, "rate-limited retry-after=7"]);
-    expect(reasonOf(e)).toEqual({ code: "rate-limited", retryAfter: 7 });
+    expect(reasonOf(e)).toEqual({ code: "rate-limited", retryAfter: 7, detail: "nope" });
     const h = new Headers({ "retry-after": new Date(Date.now() + 30_000).toUTCString() });
     expect(retryAfter(h)).toBeGreaterThanOrEqual(29);
     expect(retryAfter(new Headers({ "retry-after-ms": "1500" }))).toBe(2);

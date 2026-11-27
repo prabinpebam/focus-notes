@@ -3,11 +3,15 @@ import { appendFileSync, readdirSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 
 if (process.argv.includes("--version")) {
-  console.log(process.argv[2] === "unsupported" ? "GitHub Copilot CLI 0.0.1." : "GitHub Copilot CLI 1.0.105.");
+  const versions = { unsupported: "GitHub Copilot CLI 0.0.1.", old: "GitHub Copilot CLI 1.0.90.", new: "GitHub Copilot CLI 1.0.115.", odd: "copilot (dev build)", "no-tool-rpc": "GitHub Copilot CLI 1.0.90.", "no-tool-rpc-tool-event": "GitHub Copilot CLI 1.0.90." };
+  if (process.argv[2] === "version-fails") process.exit(3);
+  console.log(versions[process.argv[2]] ?? "GitHub Copilot CLI 1.0.105.");
   process.exit(0);
 }
 const mode = process.argv[2];
 const log = process.argv[3];
+/** Modes of an older CLI without the tool-metadata methods. */
+const noToolRpc = mode === "no-tool-rpc" || mode === "no-tool-rpc-tool-event" || mode === "no-tool-rpc-current";
 let bytes = Buffer.alloc(0);
 let sessionId;
 let interval;
@@ -35,13 +39,18 @@ function request(message) {
       sessionId = params.sessionId ?? randomUUID();
       result = { sessionId, capabilities: {} };
       break;
-    case "session.tools.getCurrentMetadata": result = { tools: mode === "tools" ? [{ name: "shell" }] : [] }; break;
+    case "session.tools.initializeAndValidate":
+    case "session.tools.getCurrentMetadata":
+      if (noToolRpc) return send({ id, error: { code: -32601, message: `Method not found: ${method}` } });
+      result = method.endsWith("getCurrentMetadata") ? { tools: mode === "tools" ? [{ name: "shell" }] : [] } : {};
+      break;
     case "session.detach": result = { success: true }; break;
     case "session.send":
       result = { messageId: "input" };
       break;
     case "models.list":
       if (mode === "models-stall") return;
+      if (mode === "models-fail") return send({ id, error: { code: -32603, message: "models unavailable" } });
       result = { models: [{ id: "model-a", name: "Model A", capabilities: {} }] };
       break;
     case "runtime.shutdown": clearInterval(interval); break;
@@ -50,7 +59,8 @@ function request(message) {
   send({ id, result });
   if (method === "session.send") {
     if (mode === "quota") event("session.error", { errorType: "quota", message: "rate limit must-not-leak" });
-    else if (mode === "tool-event") event("tool.execution_start", { toolName: "shell" });
+    else if (mode === "model-refused") event("session.error", { errorType: "invalid_request", message: "Model typed-model-x is not available. Bearer ghu_abcdefghijklmnop1234" });
+    else if (mode === "tool-event" || mode === "no-tool-rpc-tool-event") event("tool.execution_start", { toolName: "shell" });
     else if (mode === "stall") {
       event("assistant.message_delta", { messageId: "answer", deltaContent: "Partial" });
       interval = setInterval(() => {}, 1000);
