@@ -12,7 +12,7 @@
  * window is WINDOW with its shadow margin inside.
  */
 import { test, expect, screenAllowed } from "./fixtures.ts";
-import { copyFileSync, mkdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { join } from "node:path";
 import { DATA_FILES } from "../../../packages/core/src/inventory.ts";
@@ -74,7 +74,20 @@ const PROJECTS = [
  * Where the demo projects live: a plain public folder on CI, so no runner's user name or temporary
  * folder shows in a path; a temporary folder elsewhere (a local run is a preview, never published).
  */
-const ROOT = process.env.GITHUB_ACTIONS === "true" ? "C:\\Users\\Public\\Documents" : undefined;
+const ROOT = process.env.GITHUB_ACTIONS === "true" ? "C:\\Users\\Public\\Documents" : process.env.FOCUS_NOTES_SCENE_ROOT || undefined;
+/**
+ * A local run may set FOCUS_NOTES_SCENE_ROOT (C:\Users\Public\Documents, say), as the site catalogue does, so no
+ * path in a picture names the person running it (CI's screen can't hold the window at twice the scale). It runs
+ * only when none of the folders it makes is there yet, and removes them after each journey.
+ */
+const SCENE_FOLDERS = ["Focus Notes", ...PROJECTS.map((p) => p.name)];
+if (ROOT && process.env.GITHUB_ACTIONS !== "true") {
+  test.beforeAll(() => {
+    const taken = SCENE_FOLDERS.filter((name) => existsSync(join(ROOT, name)));
+    if (taken.length) throw new Error(`${taken.join(", ")} already in ${ROOT}: not touching them`);
+  });
+  test.afterEach(() => { for (const name of SCENE_FOLDERS) rmSync(join(ROOT, name), { recursive: true, force: true }); });
+}
 
 /** The demo folder with its own history, as a project kept on this computer. */
 function history(dirs: { docs: string }) {
