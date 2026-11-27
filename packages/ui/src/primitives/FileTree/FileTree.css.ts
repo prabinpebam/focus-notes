@@ -83,17 +83,29 @@ globalStyle(`${row}[aria-selected="true"] :is(${chevron}, ${icon}, ${description
 export const glyph = style({ position: "relative", display: "inline-flex" });
 export const badges = style({ position: "absolute", inset: 0 });
 export const badge = style({
-  position: "absolute", display: "inline-flex", right: 0, bottom: `calc(-1 * ${t.iconBadgeOverhang})`,
+  position: "absolute", display: "inline-flex", right: 0, bottom: `calc(-1 * ${t.iconBadgeOverhang})`, color: t.badge,
   selectors: { [`${glyph}[data-site-badges="shared published"] &[data-badge="published"]`]: { bottom: "auto", top: `calc(-1 * ${t.iconBadgeOverhang})` } },
+  // Forced colours: Highlight (the accent's system colour), and HighlightText where the row or tab is Highlight itself.
+  "@media": { "(forced-colors: active)": { forcedColorAdjust: "none" } },
 });
+globalStyle(`${row}[aria-selected="true"] ${badge}, [data-opened-files] [data-current] ${badge}`, { "@media": { "(forced-colors: active)": { color: t.selectionText } } });
 globalStyle(`${badge} svg`, { display: "block", width: t.iconBadgeSize, height: t.iconBadgeSize });
 const badgeX = `calc(${t.iconSize} - ${t.iconBadgeSize} / 2)`;
 const badgeAt = `calc(${t.iconSize} + ${t.iconBadgeOverhang} - ${t.iconBadgeSize} / 2)`;
 const badgeTop = `calc(${t.iconBadgeSize} / 2 - ${t.iconBadgeOverhang})`;
 const knockout = `calc(${t.iconBadgeSize} / 2 + ${t.iconBadgeKnockout})`;
-const hole = (y: string) => `radial-gradient(circle at ${badgeX} ${y}, ${t.transparent} ${knockout}, ${t.iconBadgeKeep} ${knockout})`;
+const hole = (y: string, shift?: string) => {
+  const at = shift ? `calc(${badgeX} + ${shift}) calc(${y} + ${shift})` : `${badgeX} ${y}`;
+  return `radial-gradient(circle at ${at}, ${t.transparent} ${knockout}, ${t.iconBadgeKeep} ${knockout})`;
+};
 globalStyle(`${glyph}[data-site-badges] > svg`, { maskImage: hole(badgeAt) });
 globalStyle(`${glyph}[data-site-badges="shared published"] > svg`, { maskImage: `${hole(badgeAt)}, ${hole(badgeTop)}`, maskComposite: "intersect" });
+// The badges stay while the row's pin takes its icon's place (hover, focus): over it, and the pin's larger
+// glyph (centred on the icon's box) is cut away around them the same way.
+globalStyle(`${badges}`, { visibility: "visible" });
+const pinShift = `calc((${t.pinIconSize} - ${t.iconSize}) / 2)`;
+globalStyle(`${icon}:has(${glyph}[data-site-badges]) ${pinControl} svg`, { maskImage: hole(badgeAt, pinShift) });
+globalStyle(`${icon}:has(${glyph}[data-site-badges="shared published"]) ${pinControl} svg`, { maskImage: `${hole(badgeAt, pinShift)}, ${hole(badgeTop, pinShift)}`, maskComposite: "intersect" });
 /** The saving sign appears only after the wait sign's delay (Waits), so quick writes show nothing. */
 const appear = keyframes({ to: { visibility: "visible" } });
 export const pending = style({

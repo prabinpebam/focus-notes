@@ -5,7 +5,7 @@ import * as menuStyles from "../MenuButton/MenuButton.css.ts";
 import { useWindowBoundary } from "../../layouts/AppRoot/in-window.tsx";
 import { Icon } from "../Icon/Icon.tsx";
 import { IconButton } from "../IconButton/IconButton.tsx";
-import { FileGlyph, SiteMarksName } from "./SiteMarks.tsx";
+import { FileGlyph, SiteMarksDescription, SiteMarksName, hasSiteDescription } from "./SiteMarks.tsx";
 import { Spinner } from "../Spinner/Spinner.tsx";
 import { BorderProgress } from "../CommitMark/BorderProgress.tsx";
 import * as popoverStyles from "../PopoverPanel/PopoverPanel.css.ts";
@@ -355,6 +355,7 @@ export function FileTree({ label, items, focusId, focusRequest, windowed = false
         const descriptionId = labelId && item.description && !end ? `${treeRowId(id, item.id)}-description` : undefined;
         const detailId = item.detail && !item.editing ? `${treeRowId(id, item.id)}-detail` : undefined;
         const marksId = labelId && marked ? `${treeRowId(id, item.id)}-marks` : undefined;
+        const aboutId = marked && hasSiteDescription(item) ? `${treeRowId(id, item.id)}-about` : undefined;
         return (
           <Fragment key={item.id}>
           {bounded ? spacer(`before-${item.id}`, index - (indices[n - 1] ?? -1) - 1) : null}
@@ -368,7 +369,8 @@ export function FileTree({ label, items, focusId, focusRequest, windowed = false
             }}
             role="treeitem"
             aria-labelledby={labelId ? [labelId, marksId, descriptionId, detailId].filter(Boolean).join(" ") : undefined}
-            aria-description={detailId ? item.title || undefined : undefined}
+            aria-description={detailId && !aboutId ? item.title || undefined : undefined}
+            aria-describedby={aboutId}
             aria-level={item.level}
             aria-posinset={bounded ? siblings.get(index)?.position : undefined}
             aria-setsize={bounded ? siblings.get(index)?.size : undefined}
@@ -376,7 +378,7 @@ export function FileTree({ label, items, focusId, focusRequest, windowed = false
             aria-expanded={folder ? item.expanded : undefined}
             aria-busy={item.pending || item.deleting === "pending" ? true : undefined}
             tabIndex={item.id === focused && !item.editing ? 0 : -1}
-            title={item.deleting ? undefined : [item.title, marked ? item.siteLabel : ""].filter(Boolean).join("\n") || undefined}
+            title={item.deleting ? undefined : item.title || undefined}
             className={`${s.row} ${item.kind === "section" ? s.section : ""}`}
             data-current={item.current ? "" : undefined}
             data-deleting={item.deleting}
@@ -414,7 +416,6 @@ export function FileTree({ label, items, focusId, focusRequest, windowed = false
             ) : <span className={s.chevron} aria-hidden="true" />}
             {item.kind !== "section" ? (
               <span className={s.icon}>
-                <span className={item.pinLabel && !item.editing ? s.typeIcon : undefined} data-file-icon={item.pinned ? "pin" : folder ? "folder" : "document"} aria-hidden="true"><FileGlyph item={item}><Icon name={item.pinned ? "pin" : folder ? "folder" : "document"} size="s" /></FileGlyph></span>
                 {item.pinLabel && !item.editing ? (
                   <span className={s.pinControl} data-pin-commit={item.pinCommit}
                     data-key-scope="filesSection" data-key-scope-stop=""
@@ -429,6 +430,8 @@ export function FileTree({ label, items, focusId, focusRequest, windowed = false
                       onPress={() => onPin?.({ id: item.id, pinned: !item.pinned })} />
                   </span>
                 ) : null}
+                {/* After the pin, so the file's badges stay over it while it shows (D-431). */}
+                <span className={item.pinLabel && !item.editing ? s.typeIcon : undefined} data-file-icon={item.pinned ? "pin" : folder ? "folder" : "document"} aria-hidden="true"><FileGlyph item={item}><Icon name={item.pinned ? "pin" : folder ? "folder" : "document"} size="s" /></FileGlyph></span>
               </span>
             ) : null}
             {item.editing ? (
@@ -458,6 +461,7 @@ export function FileTree({ label, items, focusId, focusRequest, windowed = false
             {item.description && !item.editing ? <span id={descriptionId} className={s.description}> {item.description}</span> : null}
             {item.detail && !item.editing ? <span id={detailId} className={s.description}> {item.detail}</span> : null}
             {marked ? <SiteMarksName item={item} lead="" trail={item.description ? "," : ""} {...(marksId ? { nameId: marksId } : {})} /> : null}
+            {aboutId ? <SiteMarksDescription item={item} id={aboutId} /> : null}
             {item.pending ? <span className={s.pending}><Spinner size="s" /></span> : null}
             {item.deleting ? <BorderProgress state={item.deleting} /> : null}
             {end ? (

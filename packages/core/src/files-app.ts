@@ -1608,6 +1608,7 @@ export function registerFiles(ctx: Ctx) {
       ["shared", { type: "boolean" as const }],
       ["published", { type: "boolean" as const }],
       ["siteLabel", { type: "string" as const }],
+      ["siteDescription", { type: "string" as const }],
       ["kind", { type: "string" as const, enum: ["section", "folder", "note"] }],
       ["level", { type: "number" as const }],
       ["accessory", { type: "number" as const }],

@@ -88,6 +88,8 @@ export const CONTRAST_PAIRS: readonly ContrastPair[] = [
   pair("color.accent", "color.canvas", 3, 4.5, "ui"),
   pair("color.focusRing", "color.canvas", 3, 4.5, "ui"),
   pair("color.focusRing", "color.surfaceRaised", 3, 4.5, "ui"),
+  // A Files row's shared and published badges, in the accent (D-431): on the frosted sheet and on a hovered, open or selected row.
+  ...["color.surface", "color.hover", "color.pressed", "color.selection"].map((bg) => pair("color.accent", bg, 3, 3, "ui", undefined, FROST)),
   pair("trigger.dot", "trigger.ring", 3, 3, "ui"),
 ];
 

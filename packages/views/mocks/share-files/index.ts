@@ -45,9 +45,9 @@ const panel = (extra: Node[] = []): Node => ({ ...sheetNode, slots: { band: (she
 const dialog = find(compose(shareItem), (n) => n.type === "Dialog" && n.id === "shareDetailsDialog")!;
 const view = (model: string, root: Node, id: string) => ({ id: `gallery.mock.${id}`, focus: "files", root: mockOf(root, model) as Node });
 
-const SHARED = { shared: true, siteLabel: "Shared" };
-const PUBLISHED = { published: true, siteLabel: "Published" };
-const BOTH = { shared: true, published: true, siteLabel: "Shared and published" };
+const SHARED = { shared: true, siteLabel: "Shared", siteDescription: "Shared privately · anyone with the link and code can open it · until 26 Dec" };
+const PUBLISHED = { published: true, siteLabel: "Published", siteDescription: "Published · anyone can read it on your website" };
+const BOTH = { shared: true, published: true, siteLabel: "Shared and published", siteDescription: "Shared privately · anyone with the link and code can open it · until 26 Dec · Published · anyone can read it on your website" };
 const marks: Record<string, Record<string, unknown>> = {
   "spec-ideas.md": SHARED, "reading-list.md": BOTH, "journal/weekly-review.md": PUBLISHED, "ideas/naming.md": SHARED, "roadmap.md": PUBLISHED,
 };

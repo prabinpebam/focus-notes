@@ -69,11 +69,11 @@ const modelFor = (open: Item[]) => {
 };
 // D-431 (owner, 26 November): shared, published and both as badges on the file icon, wherever the file shows.
 const MARKS: Record<string, Item> = {
-  "spec-ideas.md": { shared: true, siteLabel: "Shared" },
-  "public:garden.md": { published: true, siteLabel: "Published" },
-  "journal/weekly-review.md": { shared: true, published: true, siteLabel: "Shared and published" },
-  "roadmap.md": { shared: true, siteLabel: "Shared" },
-  "ideas/naming.md": { published: true, siteLabel: "Published" },
+  "spec-ideas.md": { shared: true, siteLabel: "Shared", siteDescription: "Shared privately · anyone with the link and code can open it · until 26 Dec" },
+  "public:garden.md": { published: true, siteLabel: "Published", siteDescription: "Published · anyone can read it on your website" },
+  "journal/weekly-review.md": { shared: true, published: true, siteLabel: "Shared and published", siteDescription: "Shared privately · anyone with the link and code can open it · until 26 Dec · Published · anyone can read it on your website" },
+  "roadmap.md": { shared: true, siteLabel: "Shared", siteDescription: "Shared privately · anyone with the link and code can open it · until 26 Dec" },
+  "ideas/naming.md": { published: true, siteLabel: "Published", siteDescription: "Published · anyone can read it on your website" },
 } as unknown as Record<string, Item>;
 const marked = <T extends { id: string }>(items: T[]) => items.map((i) => ({ ...i, ...MARKS[i.id] }));
 const marksOpen = marked(data.opened.few.slice(0, 1).concat([data.opened.many[5]!, data.opened.many[4]!, data.opened.few[2]!]));

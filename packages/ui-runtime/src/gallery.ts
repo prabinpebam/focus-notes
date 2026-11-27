@@ -233,9 +233,9 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
     // D-431: shared, published, and both, as badges on the file icon; one plain row for comparison.
     treeMarks: [
       { id: "root:private", kind: "section", level: 1, label: "Private", expanded: true, hasChildren: true },
-      { id: "trip.md", kind: "note", level: 2, label: "Trip plans", parent: "root:private", title: "trip.md", shared: true, siteLabel: "Shared" },
-      { id: "garden.md", kind: "note", level: 2, label: "Garden notes", parent: "root:private", title: "garden.md", published: true, siteLabel: "Published" },
-      { id: "recipes.md", kind: "note", level: 2, label: "Recipes", parent: "root:private", title: "recipes.md", shared: true, published: true, siteLabel: "Shared and published", selected: true },
+      { id: "trip.md", kind: "note", level: 2, label: "Trip plans", parent: "root:private", title: "trip.md", shared: true, siteLabel: "Shared", siteDescription: "Shared privately · anyone with the link and code can open it · until 26 Dec" },
+      { id: "garden.md", kind: "note", level: 2, label: "Garden notes", parent: "root:private", title: "garden.md", published: true, siteLabel: "Published", siteDescription: "Published · anyone can read it on your website" },
+      { id: "recipes.md", kind: "note", level: 2, label: "Recipes", parent: "root:private", title: "recipes.md", shared: true, published: true, siteLabel: "Shared and published", siteDescription: "Shared privately · anyone with the link and code can open it · until 26 Dec · Published · anyone can read it on your website", selected: true },
       { id: "ideas.md", kind: "note", level: 2, label: "Ideas", parent: "root:private", title: "ideas.md" },
     ],
     treeEditLabel: "Folder name",
@@ -248,9 +248,9 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
     ],
     versionEmpty: [],
     openedFiles: [
-      { id: "spec-ideas.md", kind: "note", level: 1, label: "Spec ideas", title: "spec-ideas.md", current: true, shared: true, siteLabel: "Shared" },
+      { id: "spec-ideas.md", kind: "note", level: 1, label: "Spec ideas", title: "spec-ideas.md", current: true, shared: true, siteLabel: "Shared", siteDescription: "Shared privately · anyone with the link and code can open it · until 26 Dec" },
       { id: "journal/2026-10-13.md", kind: "note", level: 1, label: "2026-10-13", title: "journal/2026-10-13.md" },
-      { id: "essays/long.md", kind: "note", level: 1, label: "What a calm writing app owes the person who opens it every morning", title: "essays/long.md", shared: true, published: true, siteLabel: "Shared and published" },
+      { id: "essays/long.md", kind: "note", level: 1, label: "What a calm writing app owes the person who opens it every morning", title: "essays/long.md", shared: true, published: true, siteLabel: "Shared and published", siteDescription: "Shared privately · anyone with the link and code can open it · until 26 Dec · Published · anyone can read it on your website" },
     ],
     openedFilesNone: [],
     openedFilesMenu: [{ id: "opened", items: [{ id: "files.closeAllOpened", label: "Close all" }] }],

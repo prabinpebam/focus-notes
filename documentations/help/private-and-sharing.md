@@ -39,7 +39,7 @@ Retrying a failed publication in the same dialog reuses the saved share. Once an
 
 ## See what's shared and copy it again
 
-In **Files**, a shared note or folder has a small person on the corner of its icon, and a published note has a globe. A note that's both has the globe above the person. Point to the badge to see its name. They show in **Opened files**, **Pinned**, **Recent** and the list of notes.
+In **Files**, a shared note or folder has a small person on the corner of its icon, and a published note has a globe. A note that's both has the globe above the person. The badges are in your accent colour. Point to a badge, or move to the note with the keyboard, to see in plain words who can open it and until when, for example *Shared privately · anyone with the link and code can open it · until 26 Dec* or *Published · anyone can read it on your website*. They show in **Opened files**, **Pinned**, **Recent** and the list of notes.
 
 To copy a share again, open the shared item's row menu and choose **Share details…** or **Share…**: on a shared item, both open the same dialog. For the note you're writing, use **⋯ → Note → Share details…**. The dialog lists each of its shares that still works:
 

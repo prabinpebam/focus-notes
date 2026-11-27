@@ -93,8 +93,10 @@ export interface TreeItem {
   shared?: boolean;
   /** D-431: live on the project's website; shows a globe badge on the file icon's corner (above the person when both). */
   published?: boolean;
-  /** D-431: the marks' name and tooltip: "Shared", "Published", "Shared and published". Required with either mark. */
+  /** D-431: the marks' name, read after the file's name: "Shared", "Published", "Shared and published". Required with either mark. */
   siteLabel?: string;
+  /** D-431: the marks in plain words, who can open the file and until when: the badges' tooltip and the row's accessible description, word for word. */
+  siteDescription?: string;
 }
 
 /**

@@ -1077,8 +1077,20 @@ describe("D-431: shared and published marks in Files, and Share details…", () 
     const tree = { roots: [{ id: "private" as const, path: "/w/p", readOnly: false, children: [] }] };
     const grant = { id: "g1", name: "", link: true, passcode: false, createdAt: "2026-11-01T00:00:00.000Z", item: { path: "a.md", label: "A", folder: false } };
     const state = (grants: unknown[], published: string[]) => ({ workspace: { tree }, ui: { share: { listing: { available: true, vault: false, grants }, publication: { published, publishing: [] } } } }) as never;
-    expect(siteMarksOf(state([grant], ["a.md"]), "/w/p/a.md", catalog)).toEqual({ shared: true, published: true, siteLabel: "Shared and published" });
-    expect(siteMarksOf(state([], ["a.md"]), "/w/p/a.md", catalog)).toEqual({ shared: false, published: true, siteLabel: "Published" });
+    expect(siteMarksOf(state([grant], ["a.md"]), "/w/p/a.md", catalog)).toEqual({ shared: true, published: true, siteLabel: "Shared and published",
+      siteDescription: "Shared privately · anyone with the link can open it · Published · anyone can read it on your website" });
+    expect(siteMarksOf(state([], ["a.md"]), "/w/p/a.md", catalog)).toEqual({ shared: false, published: true, siteLabel: "Published", siteDescription: "Published · anyone can read it on your website" });
     expect(siteMarksOf(state([{ ...grant, revokedAt: "2026-11-02T00:00:00.000Z" }], []), "/w/p/a.md", catalog)).toEqual({});
+  });
+  it("says in plain words who can open a shared note and until when: the latest expiry, none when one never expires (D-431)", () => {
+    const tree = { roots: [{ id: "private" as const, path: "/w/p", readOnly: false, children: [] }] };
+    const far = Date.now() + 40 * 86_400_000, near = Date.now() + 10 * 86_400_000;
+    const grant = (id: string, link: boolean, passcode: boolean, expiresAt: number | null) =>
+      ({ id, name: "", link, passcode, createdAt: "2026-11-01T00:00:00.000Z", expiresAt: expiresAt === null ? null : new Date(expiresAt).toISOString(), item: { path: "a.md", label: "A", folder: false } });
+    const about = (grants: unknown[]) => siteMarksOf({ workspace: { tree }, ui: { share: { listing: { available: true, vault: false, grants }, publication: { published: [], publishing: [] } } } } as never, "/w/p/a.md", catalog).siteDescription;
+    const day = (t: number) => new Intl.DateTimeFormat(catalog.locale, { day: "numeric", month: "short" }).format(new Date(t));
+    expect(about([grant("g1", true, true, near), grant("g2", true, true, far)])).toBe(`Shared privately · anyone with the link and code can open it · until ${day(far)}`);
+    expect(about([grant("g1", false, true, near)])).toBe(`Shared privately · anyone with the code can open it · until ${day(near)}`);
+    expect(about([grant("g1", true, false, near), grant("g2", false, true, null)])).toBe("Shared privately · anyone with the link or the code can open it");
   });
 });

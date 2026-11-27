@@ -43,12 +43,28 @@ export function liveSharesOf(state: Pick<AppState, "workspace" | "ui">, path: st
   return (state.ui.share.listing?.grants ?? []).filter((g) => g.item?.path === rel && live(g));
 }
 
-/** A Files row's marks (D-431): shared, published (live on the site, D-422), or both, with one name for them. */
-export function siteMarksOf(state: Pick<AppState, "workspace" | "ui">, path: string, catalog: MessageCatalog): { shared?: boolean; published?: boolean; siteLabel?: string } {
-  const shared = liveSharesOf(state, path).length > 0;
+/**
+ * A Files row's marks (D-431): shared, published (live on the site, D-422), or both, with one name for them
+ * (`siteLabel`, read after the file's name) and, in plain words, what each means (`siteDescription`: the
+ * badge's tooltip and the row's accessible description, word for word): who can open it and until when.
+ */
+export function siteMarksOf(state: Pick<AppState, "workspace" | "ui">, path: string, catalog: MessageCatalog): { shared?: boolean; published?: boolean; siteLabel?: string; siteDescription?: string } {
+  const shares = liveSharesOf(state, path);
+  const shared = shares.length > 0;
   const published = publishStatus(publishPathOf(state.workspace.tree, path), state.ui.share.publication) === "live";
   if (!shared && !published) return {};
-  return { shared, published, siteLabel: catalog.format(shared && published ? "files.mark.both" : shared ? "files.mark.shared" : "files.mark.published") };
+  const linkOnly = shares.some((g) => g.link && !g.passcode), codeOnly = shares.some((g) => g.passcode && !g.link);
+  const ways = linkOnly && codeOnly ? "either" : linkOnly ? "link" : codeOnly ? "code" : "both";
+  // The last day any of its shares opens; none when one never expires.
+  const last = shares.some((g) => !g.expiresAt) ? undefined : shares.map((g) => Date.parse(g.expiresAt!)).filter(Number.isFinite).sort((a, b) => b - a)[0];
+  const sharedAbout = !shared ? "" : last === undefined ? catalog.format("files.mark.sharedAbout", { ways })
+    : catalog.format("files.mark.sharedAboutUntil", { ways, date: new Intl.DateTimeFormat(catalog.locale, { day: "numeric", month: "short" }).format(new Date(last)) });
+  const publishedAbout = published ? catalog.format("files.mark.publishedAbout") : "";
+  return {
+    shared, published,
+    siteLabel: catalog.format(shared && published ? "files.mark.both" : shared ? "files.mark.shared" : "files.mark.published"),
+    siteDescription: shared && published ? catalog.format("files.mark.bothAbout", { shared: sharedAbout, published: publishedAbout }) : sharedAbout || publishedAbout,
+  };
 }
 
 export function registerShareDetails({ store, catalog, commands, viewModels, tracker, access, flush }: {

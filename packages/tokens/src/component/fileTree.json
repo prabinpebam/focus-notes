@@ -10,6 +10,11 @@
         "$value": "{size.hit}",
         "$description": "The pin button's box, centred on the row's type icon (cmp.iconButton.size); the row's height holds it."
       },
+      "pinIconSize": {
+        "$type": "dimension",
+        "$value": "{size.iconM}",
+        "$description": "The pin button's glyph (cmp.icon.size.m), centred on the type icon it replaces: where its knockout around a file's badges is cut (D-431)."
+      },
       "indent": {
         "$type": "dimension",
         "$value": "{space.scale.l}"
@@ -37,6 +42,11 @@
         "$type": "color",
         "$value": "{color.text}",
         "$description": "The opaque part of the icon's knockout mask: only its alpha is read."
+      },
+      "badge": {
+        "$type": "color",
+        "$value": "{color.accent}",
+        "$description": "The shared and published badges' glyphs (owner, 26 November 22:57; D-431): the accent, at least 3:1 on every row and tab state (rest, hover, focus, the open note, selected, Opened files' active and inactive tabs) in every built-in theme and project accent, measured by file-badge-contrast.test.ts; the contrast guard warns when a custom theme's accent falls short. Highlight in forced colours (HighlightText on a selected row or the active tab)."
       },
       "rowGap": {
         "$type": "dimension",

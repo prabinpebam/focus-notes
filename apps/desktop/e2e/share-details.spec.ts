@@ -73,13 +73,23 @@ test("D-431: a shared note is marked in Files; Share details… copies its link 
     await page.keyboard.press("Escape");
     await expect(share).toHaveCount(0);
 
-    // The mark: a badge on the file icon, read with its name and shown as its tooltip.
+    // The mark: a badge on the file icon in the accent, read with its name; its tooltip says in plain words
+    // who can open it, the row's accessible description word for word (owner, 26 November 22:57).
     await files();
     await expect(rome).toHaveAccessibleName(/^Rome, Shared\b/);
+    await expect(rome).toHaveAccessibleDescription(/^Shared privately · anyone with the link can open it\b/);
     const mark = rome.locator("[data-site-marks]");
     await expect(mark).toBeVisible();
-    await expect(mark).toHaveAttribute("title", "Shared");
     await expect(mark.locator("svg")).toHaveCount(1);
+    const accent = await mark.locator("[data-badge]").evaluate((el) => getComputedStyle(el).getPropertyValue("--fn-color-accent").trim());
+    const toRgb = (c: string) => page.evaluate((v) => { const s = document.createElement("span"); s.style.color = v; document.body.append(s); const r = getComputedStyle(s).color; s.remove(); return r; }, c);
+    expect(await mark.locator("[data-badge]").evaluate((el) => getComputedStyle(el).color)).toBe(await toRgb(accent));
+    await mark.hover();
+    const tip = page.getByRole("tooltip");
+    await expect(tip).toBeVisible();
+    const described = await rome.evaluate((el) => document.getElementById(el.getAttribute("aria-describedby") ?? "")?.textContent ?? "");
+    await expect(tip).toHaveText(described);
+    await page.mouse.move(1, 1);
 
     // Share details… from the file's menu: the right link, copied.
     await rome.click({ button: "right" });

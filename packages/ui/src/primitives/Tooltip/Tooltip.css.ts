@@ -33,6 +33,8 @@ export const tooltip = style({
   selectors: {
     "&[data-entering]": { opacity: 0, transitionDuration: "0s" },
   },
+  // Forced colours: its own system colours (CanvasText fill, Canvas text), never the text backplate that hid its words.
+  "@media": { "(forced-colors: active)": { forcedColorAdjust: "none" } },
 });
 
 export const shortcut = style({ opacity: t.shortcutOpacity });

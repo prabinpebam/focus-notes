@@ -7,7 +7,7 @@ import { anchor as anchorStyle, anchorX, anchorY } from "../FileTree/FileTree.cs
 import { Icon } from "../Icon/Icon.tsx";
 import { MenuButton } from "../MenuButton/MenuButton.tsx";
 import { Tooltip } from "../Tooltip/Tooltip.tsx";
-import { FileGlyph, SiteMarksName } from "../FileTree/SiteMarks.tsx";
+import { FileGlyph, SiteMarksDescription, SiteMarksName, hasSiteDescription } from "../FileTree/SiteMarks.tsx";
 import type { MenuSection, TreeItem } from "../../data.ts";
 import * as s from "./OpenedFiles.css.ts";
 
@@ -100,7 +100,9 @@ export function OpenedFiles({ label, items, menu = [], menuLabel = "", closeLabe
           const nameId = `${base}-n${i}`;
           const closeId = `${base}-c${i}`;
           const marksId = `${base}-m${i}`;
+          const aboutId = `${base}-d${i}`;
           const marked = Boolean(item.siteLabel && (item.shared || item.published));
+          const about = marked && hasSiteDescription(item);
           return (
             <li key={item.id} className={s.tab} data-current={item.current ? "" : undefined} data-menu-open={menuAt?.id === item.id ? "" : undefined}
               ref={(el) => { if (el && menuAt?.id === item.id && !menuAt.point) anchor.current = el; }}
@@ -111,11 +113,13 @@ export function OpenedFiles({ label, items, menu = [], menuLabel = "", closeLabe
                 data-tab-id={item.id}
                 aria-current={item.current ? "page" : undefined}
                 aria-labelledby={marked ? `${nameId} ${marksId}` : nameId}
+                aria-describedby={about ? aboutId : undefined}
                 onPress={() => onActivate?.({ id: item.id })}
               >
                 <FileGlyph item={item} className={s.icon}><Icon name="document" size="s" /></FileGlyph>
                 <span className={s.name} id={nameId} dir="auto" title={item.title || item.label}>{item.label}</span>
                 {marked ? <SiteMarksName item={item} nameId={marksId} /> : null}
+                {about ? <SiteMarksDescription item={item} id={aboutId} /> : null}
               </AriaButton>
               <Tooltip label={closeLabel}>
                 <AriaButton className={s.close} id={closeId} aria-label={closeLabel} aria-labelledby={`${closeId} ${nameId}`} onPress={() => onClose?.({ id: item.id })}>
