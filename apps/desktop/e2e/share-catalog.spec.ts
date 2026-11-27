@@ -211,12 +211,12 @@ for (const theme of ["light", "dark"] as const) {
       await shot(l, theme, "10-share-dialog-folder-link");
       await step("11 no method", async () => {
         await share.getByText("Link", { exact: true }).click();
-        await expect(share.getByText("Keep Link or Passcode on to share this item.", { exact: true })).toBeVisible();
+        await expect(share.getByText("Keep Link or Access code on to share this item.", { exact: true })).toBeVisible();
         await shot(l!, theme, "11-share-no-method-error");
         await share.getByText("Link", { exact: true }).click();
       });
-      await share.getByText("Passcode", { exact: true }).click();
-      await expect(share.getByRole("textbox", { name: "Passcode", exact: true })).toBeVisible();
+      await share.getByText("Access code", { exact: true }).click();
+      await expect(share.getByRole("switch", { name: "Access code", exact: true })).toBeChecked();
       await shot(l, theme, "12-share-link-and-passcode");
       await step("13 new words pending", async () => {
         await l!.app.evaluate(({ ipcMain }) => {
@@ -231,7 +231,7 @@ for (const theme of ["light", "dark"] as const) {
       });
       await step("14 own passcode", async () => {
         await share.getByText("Your own", { exact: true }).click();
-        await share.getByLabel("Your passcode", { exact: true }).fill("harbor maple river cloud");
+        await share.getByLabel("Your own words", { exact: true }).fill("harbor maple river cloud");
         await shot(l!, theme, "14-share-own-passcode");
         await share.getByText("Your own", { exact: true }).click().catch(() => {});
       });

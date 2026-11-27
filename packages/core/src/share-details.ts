@@ -125,7 +125,8 @@ export function registerShareDetails({ store, catalog, commands, viewModels, tra
         const date = g.expiresAt ? new Intl.DateTimeFormat(catalog.locale, { day: "numeric", month: "short" }).format(new Date(g.expiresAt)) : "";
         return {
           id: g.id,
-          methods: catalog.format(`share.manage.ways.${g.link && g.passcode ? "both" : g.link ? "link" : "passcode"}`),
+          // New shares open by link or access code; an older named share keeps its name-and-passcode words.
+          methods: catalog.format(`${g.shareCode ? "share.details.ways" : "share.manage.ways"}.${g.link && g.passcode ? "both" : g.link ? "link" : g.shareCode ? "accessCode" : "passcode"}`),
           detail: date ? catalog.format("sharing.expires", { date }) : catalog.format("share.manage.expiry.badge.never"),
           badge: catalog.format(`sharing.state.${audienceState(g)}`),
           newer: g.unsharedNotes?.length ? catalog.format("share.dialog.newer", { count: g.unsharedNotes.length }) : "", hasNewer: Boolean(g.unsharedNotes?.length),

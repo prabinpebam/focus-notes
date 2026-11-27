@@ -115,7 +115,7 @@ test("D-429: Private + Public: sharing uses the public repository, creates no re
       const share = page.getByRole("dialog", { name: "Share “Diary”", exact: true });
       await expect(share).toBeVisible({ timeout: 30_000 });
       await expect(share.getByRole("switch", { name: "Link", exact: true })).toBeChecked();
-      await share.getByText("Passcode", { exact: true }).click();
+      await share.getByText("Access code", { exact: true }).click();
       const code = share.locator("[data-code-block] code");
       await expect(code).toHaveText(/^[A-Z0-9]{4}-[A-Z0-9]{4} [a-z]+(-[a-z]+){3}$/);
       const accessCode = (await code.textContent())!;

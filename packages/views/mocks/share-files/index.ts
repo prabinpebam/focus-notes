@@ -73,7 +73,7 @@ const EXTEND = [{ id: "actions", items: [{ id: "7d", label: "7 days" }, { id: "3
 const shareDetails = {
   open: true, name: "Spec ideas", busy: false, status: "", hasStatus: false, problem: "", hasProblem: false, copyLabel: "Copy", extendLabel: "Extend",
   rows: [
-    { id: "g1", methods: "Link and passcode", detail: "expires 26 Dec", badge: "Active", newer: "", hasNewer: false, copyBusy: false, extendBusy: false, withdrawBusy: false, addBusy: false,
+    { id: "g1", methods: "Link and access code", detail: "expires 26 Dec", badge: "Active", newer: "", hasNewer: false, copyBusy: false, extendBusy: false, withdrawBusy: false, addBusy: false,
       copyMenu: [{ id: "actions", items: [{ id: "link", label: "Copy link" }, { id: "accessCode", label: "Copy access code" }, { id: "information", label: "Copy share information" }] }], extendMenu: EXTEND },
     { id: "g2", methods: "Link", detail: "expires 29 Nov", badge: "Expires soon", newer: "", hasNewer: false, copyBusy: false, extendBusy: false, withdrawBusy: false, addBusy: false,
       copyMenu: [{ id: "actions", items: [{ id: "link", label: "Copy link" }, { id: "information", label: "Copy share information" }] }], extendMenu: EXTEND },

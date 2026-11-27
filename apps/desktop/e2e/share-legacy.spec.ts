@@ -98,7 +98,7 @@ test("D-425: public+private layout: Share… on a private note turns sharing on,
     await expect(share.getByText(/can’t be turned on|isn’t available yet|publish it/)).toHaveCount(0);
     await share.getByRole("radiogroup", { name: "Expires in", exact: true }).getByText("7 days", { exact: true }).click();
     await expect(share.getByRole("switch", { name: "Link", exact: true })).toBeChecked();
-    await share.getByText("Passcode", { exact: true }).click();
+    await share.getByText("Access code", { exact: true }).click();
     const code = share.locator("[data-code-block] code");
     await expect(code).toHaveText(/^[A-Z0-9]{4}-[A-Z0-9]{4} [a-z]+(-[a-z]+){3}$/);
     const accessCode = (await code.textContent())!;

@@ -529,7 +529,7 @@ describe("item-first sharing (SHR-13 to SHR-16, SHR-24)", () => {
     await t.run("share.item.open", { path: "/w/private/notes/trips" });
     await t.run("share.item.toggleLink");
     expect(t.vm("vm.shareItem")).toMatchObject({
-      noMethods: true, blockedReason: "Keep Link or Passcode on to share this item.",
+      noMethods: true, blockedReason: "Keep Link or Access code on to share this item.",
       name: "trips",
     });
   });

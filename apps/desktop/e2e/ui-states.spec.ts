@@ -1010,7 +1010,7 @@ test("New project and Local import recover without repeating completed creation 
     renameSync(notes, held); writeFileSync(notes, "blocked directory");
     await sheet.getByRole("option", { name: /Imported/ }).click();
     const failure = sheet.locator("[data-status-row=danger]");
-    await expect(failure).toContainText("Your Local note is unchanged.");
+    await expect(failure).toContainText("Your local note is unchanged.");
     expect(readFileSync(note)).toEqual(before);
     rmSync(notes); renameSync(held, notes);
     await failure.getByRole("button", { name: "Retry", exact: true }).click();

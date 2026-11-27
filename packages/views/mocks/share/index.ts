@@ -19,7 +19,7 @@ export const shareMocks = {
   entries: [
     { id: "share.entry", label: "1. Share… from a Files row or the ⋯ menu", view: "flow" },
     { id: "share.folder", label: "2. Share dialog: a folder", view: "flow", local: { open: "share", target: "book" } },
-    { id: "share.note", label: "3. Share dialog: a note with a passcode", view: "flow", local: { open: "share", target: "focus", passcode: true } },
+    { id: "share.note", label: "3. Share dialog: a note with an access code", view: "flow", local: { open: "share", target: "focus", passcode: true } },
     { id: "share.codeOnly", label: "3b. Share dialog: a note with an access code only", view: "flow", local: { open: "share", target: "focus", link: false, passcode: true } },
     { id: "share.review", label: "4. Review contents over the share dialog", view: "flow", local: { open: "share", target: "book", review: true } },
     { id: "share.first", label: "5. First share: turn on sharing for the project", view: "flow", local: { open: "share", target: "book", sharingOn: false } },
