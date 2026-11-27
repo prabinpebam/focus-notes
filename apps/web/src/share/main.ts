@@ -8,11 +8,12 @@ import type { AppState } from "@focus-notes/core";
 import { MessageCatalog } from "@focus-notes/core/messages";
 import { sharedNoteFromHash } from "@focus-notes/core/public-page";
 import { createShareReader, SHARE_COMMANDS, SHARE_VIEW_MODEL, type OpenedShare, type ShareSource } from "@focus-notes/core/share-reader";
-import { parseShareFragment, SiteReader, type OpenShare, type SiteFetch } from "@focus-notes/seal";
+import { parseShareFragment, SiteReader, type OpenShare } from "@focus-notes/seal";
 import { shareContracts, shareRegistry } from "@focus-notes/ui/share";
 import { mountPage, type RuntimeApp } from "@focus-notes/ui-runtime/page";
 import { messages, pages } from "@focus-notes/views/pages";
 import { createSessionStore } from "./session.ts";
+import { siteFetch } from "./site-fetch.ts";
 
 // Never inside another page's frame, where it could be overlaid or clickjacked (a meta CSP can't say
 // frame-ancestors): the page empties itself before it reads the link or the site.
@@ -32,14 +33,7 @@ const takeFragment = () => {
 const link = takeFragment();
 
 // The site's own files only, from the site's root (this page is at s/): no cookies, no other origin.
-const site = new URL("../", location.href);
-const get: SiteFetch = async (path) => {
-  // Keyrings and the site manifest change every deploy; the browser revalidates them.
-  const res = await fetch(new URL(path, site), { cache: "no-cache", credentials: "omit", redirect: "error" });
-  if (res.status === 404) return undefined;
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.text();
-};
+const get = siteFetch(new URL("../", location.href));
 const opened = ({ share, session }: OpenShare): OpenedShare => ({
   notes: share.notes, read: (p) => share.read(p), session, expiresAt: session.expiresAt,
   ...(share.media ? { media: (p: string, ref: string) => share.media!(p, ref) } : {}),
