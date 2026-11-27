@@ -49,12 +49,17 @@ const ERRORS = new Set([
   "invalid-url", "invalid-model", "invalid-deployment", "invalid-account", "invalid-key", "too-many",
   "cli-missing", "cli-not-signed-in",
 ]);
+/** The service's words as a line shows them: at most 200 characters, ending in "…" when there's more. */
+export function clipDetail(detail: string, max = 200): string {
+  const chars = Array.from(detail);
+  return chars.length > max ? `${chars.slice(0, max - 1).join("")}…` : detail;
+}
 /** A reason from the shell: the code in an IPC error's text, Retry-After's seconds, and the service's own (already sanitised) words. */
 export function reasonCode(raw: string): { code: string; retryAfter?: number; detail?: string } {
   const m = /([a-z][a-z-]*)(?: retry-after=(\d+))?(?: detail=(\S+))?\s*$/.exec(raw);
   const code = m && ERRORS.has(m[1]!) ? m[1]! : "";
   let detail: string | undefined;
-  try { detail = m?.[3] ? decodeURIComponent(m[3]).slice(0, 200) : undefined; } catch { detail = undefined; }
+  try { detail = m?.[3] ? decodeURIComponent(m[3]).slice(0, 1000) : undefined; } catch { detail = undefined; }
   return { code, ...(m?.[2] ? { retryAfter: Number(m[2]) } : {}), ...(detail ? { detail } : {}) };
 }
 const DRAFT_FIELDS = ["name", "endpoint", "model", "deployment", "apiVersion", "account"] as const;
@@ -74,7 +79,7 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
     const wait = retryAfter ?? r.retryAfter;
     const said = detail ?? r.detail;
     const words = r.code === "rate-limited" && wait ? t("ai.error.rate-limited.wait", { s: wait }) : t(r.code ? `ai.error.${r.code}` : fallback);
-    return said ? `${words} ${t("ai.error.detail", { detail: said })}` : words;
+    return said ? `${words} ${t("ai.error.detail", { detail: clipDetail(said) })}` : words;
   };
 
   // ---- Settings → AI ----
@@ -592,7 +597,7 @@ export function registerAi<St extends S>({ store, bridge, catalog, commands, vie
       editorAction("rewrite.finish");
       end();
       announce(t(caret ? "rewrite.inserted" : "rewrite.replaced"));
-    } else if (e.type === "error") fail(typeof e.code === "string" ? e.code : "provider", typeof e.retryAfter === "number" ? e.retryAfter : undefined, typeof e.detail === "string" ? e.detail.slice(0, 200) : undefined);
+    } else if (e.type === "error") fail(typeof e.code === "string" ? e.code : "provider", typeof e.retryAfter === "number" ? e.retryAfter : undefined, typeof e.detail === "string" ? e.detail.slice(0, 1000) : undefined);
   };
   /** Stops the request in the shell, without touching the editor (it has already let the note go). */
   const drop = () => {

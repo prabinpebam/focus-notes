@@ -232,7 +232,7 @@ describe("no prefilters: send text, get text back (D-438)", () => {
     expect(errorDetail("key abcdef01\n23456789 rejected", ["abcdef0123456789"])).toBe("key … … rejected");
     expect(errorDetail("GET /v1?api_key=s3cr3t&x=1 with Basic dXNlcjpwYXNz and eyJhbGciOi.eyJzdWIiOjF9.sig", [])).toBe("GET /v1?api_key=…&x=1 with Basic … and …");
     expect(errorDetail("\u202Eevil", [])).toBe("evil");
-    expect(Array.from(errorDetail("😀".repeat(300))).length).toBe(200);
+    expect(Array.from(errorDetail("😀".repeat(1300))).length).toBe(1000);
     expect(errorDetail("meta-llama-3.1-70b-instruct-turbo-free-preview isn't available; key 9f86d081884c7d659a2feaa0c55ad015 refused")).toBe("meta-llama-3.1-70b-instruct-turbo-free-preview isn't available; key … refused");
     const ai = new AiService(file(), crypt, write, (async () => json({ error: { message: said } }, 422)) as unknown as typeof fetch);
     const settings = await ai.save({ provider: "openai", model: "m", key });

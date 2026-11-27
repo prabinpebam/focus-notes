@@ -142,7 +142,8 @@ export function registerImageCaption(ctx: ImagesContext): void {
       finishTracking(new Error("caption-provider-failed"));
       fail("image.ai.failed", new Error("caption-provider-failed"));
       // The service's own words (D-438): a model that can't see images says so here.
-      const said = "detail" in event && typeof event.detail === "string" ? event.detail.slice(0, 200) : "";
+      const raw = "detail" in event && typeof event.detail === "string" ? Array.from(event.detail) : [];
+      const said = raw.length > 200 ? `${raw.slice(0, 199).join("")}…` : raw.join("");
       if (said) { error = `${error} ${catalog.format("ai.error.detail", { detail: said })}`; changed(); }
     }
   });

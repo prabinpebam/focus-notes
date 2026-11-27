@@ -60,13 +60,13 @@ const SECRET_HEADERS = new Set(["authorization", "x-api-key", "api-key", "x-goog
 export const callSecrets = (headers: Record<string, string>) =>
   Object.entries(headers).filter(([name]) => SECRET_HEADERS.has(name.toLowerCase())).map(([, v]) => v.replace(/^(?:Bearer|Basic)\s+/i, ""));
 /**
- * A service's error text, safe to show the person: one line of at most 200 characters. Control,
+ * A service's error text, safe to show the person: one line of at most max (1000) characters; the window shows the first 200. Control,
  * format (zero-width, bidi) and line-separator characters go first, so nothing hidden can split a
  * secret; then any run sharing 8 characters with the connection's own secret, anything shaped like a
  * key or token, auth schemes' values, credentials in a query, and credentials in an address are
  * removed. Empty when there is nothing readable.
  */
-export function errorDetail(raw: unknown, secrets: readonly string[] = []): string {
+export function errorDetail(raw: unknown, secrets: readonly string[] = [], max = 1000): string {
   let text = (typeof raw === "string" ? raw : "").normalize("NFKC").replace(/\p{Cf}+/gu, "").replace(/[\p{Cc}\u2028\u2029]+/gu, " ").replace(/\s+/g, " ").trim();
   const windows = new Set<string>();
   for (const secret of secrets) for (let i = 0; i + 8 <= secret.length; i++) windows.add(secret.slice(i, i + 8));
@@ -83,7 +83,7 @@ export function errorDetail(raw: unknown, secrets: readonly string[] = []): stri
     .replace(/\b(?:sk|pk|rk|ghp|gho|ghu|ghs|ghr|github_pat|xox[abp]|hf|gsk|csk|nvapi|r8|xai)[-_][A-Za-z0-9_\-*.]{6,}/gi, "…")
     .replace(/[A-Za-z0-9_\-]{20,}/g, run => run.split("-").some(part => part.length >= 20 && /\d/.test(part) && /[A-Za-z]/.test(part)) ? "…" : run);
   const chars = Array.from(text);
-  return chars.length > 200 ? `${chars.slice(0, 199).join("")}…` : text;
+  return chars.length > max ? `${chars.slice(0, max - 1).join("")}…` : text;
 }
 /** The message in a service's error answer (JSON in the common shapes, else plain text). */
 export function errorMessage(body: string): string {
