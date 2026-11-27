@@ -3,7 +3,7 @@
  * passes the contrast guard (THM-13) and the solver's own rules, measured here with independent maths.
  */
 import { describe, expect, it } from "vitest";
-import { projectAccentValues, themeValues } from "@focus-notes/tokens";
+import { frost, projectAccentValues, themeValues } from "@focus-notes/tokens";
 import { checkContrast } from "../src/contrast.ts";
 
 const COLOURS = ["red", "orange", "amber", "lime", "green", "teal", "cyan", "blue", "indigo", "violet", "pink", "slate"];
@@ -60,6 +60,19 @@ describe("project accents (D-435)", () => {
       }
     }
     expect(ratio(hex(v["color.onAccent"]!), accent), "on-accent ink").toBeGreaterThanOrEqual(text);
+
+    // The Files panel's frosted sheet (D-111) and the states its rows and Opened files' tabs draw: rest, hover,
+    // the open note and active tab (pressed), selected, and the project's active tab (the accent's tint). On
+    // each, the file badges and focus ring (the accent) and the live globe's status colours (D-436) reach 3:1,
+    // and the selection's text 4.5:1 (7:1 in High contrast).
+    const sheet = on({ ...hex(t["color.surface"]!), a: hex(t["color.surface"]!).a * frost.opacity }, canvas);
+    const rows = [sheet, ...["color.hover", "color.pressed"].map((k) => on(hex(t[k]!), sheet)), ...["color.selection", "color.accentMuted"].map((k) => on(hex(v[k]!), sheet))];
+    for (const [i, row] of rows.entries()) {
+      for (const [name, glyph] of [["accent", v["color.accent"]!], ...["color.warning", "color.success", "color.danger"].map((k) => [k, t[k]!])] as const) {
+        expect(ratio(hex(glyph), row), `${name} on Files row state ${i}`).toBeGreaterThanOrEqual(3);
+      }
+      if (i >= 3) for (const ink of ["color.onSelection", "color.onSelectionMuted"]) expect(ratio(hex(t[ink]!), row), `${ink} on Files row state ${i}`).toBeGreaterThanOrEqual(text);
+    }
     // Never read as a status: far enough from danger, warning and success.
     for (const status of ["color.danger", "color.warning", "color.success"]) expect(distance(accent, hex(t[status]!)), status).toBeGreaterThanOrEqual(0.07);
   });

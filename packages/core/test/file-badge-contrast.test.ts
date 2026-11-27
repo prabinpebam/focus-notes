@@ -3,12 +3,12 @@
  * accent through cmp.fileTree's badge tokens, and each reaches 3:1 (WCAG 1.4.11) on every row state the
  * Files panel draws them on (rest, hover, focused, the open note, selected, selected and focused, and
  * Opened files' active and inactive tabs), in every built-in theme, with the app's accent and with each
- * project accent (D-313: its strong shade in a light context, its soft one in a dark one).
+ * project accent (D-435: the roles the solver emits for that colour in that theme).
  */
 import { describe, expect, it } from "vitest";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
-import { frost } from "@focus-notes/tokens";
+import { frost, projectAccentValues } from "@focus-notes/tokens";
 import { BUILT_IN_THEMES, checkContrast, pairRatio, type ContrastPair } from "../src/index.ts";
 
 const src = join(import.meta.dirname, "..", "..", "tokens", "src");
@@ -23,18 +23,13 @@ const dirFiles = (d: string) => readdirSync(join(src, d)).filter((f) => f.endsWi
 const base = new Map<string, unknown>();
 for (const f of [...dirFiles("reference"), ...dirFiles("semantic"), join(src, "component", "fileTree.json"), join(src, "component", "openedFiles.json")]) for (const [k, v] of read(f)) base.set(k, v);
 const PRESETS = [...base.keys()].filter((k) => /^ref\.color\.project\.[a-z]+\.strong$/.test(k)).map((k) => k.split(".")[3]!);
-const DARK = new Set(BUILT_IN_THEMES.filter((t) => t.kind === "dark").map((t) => t.id));
 
 /** Every token's colour in a theme, with a project accent rebinding the accent roles as the build does (D-313). */
 function colorsOf(themeId: string, accent: string | undefined): Record<string, string> {
   const tokens = new Map(base);
   if (themeId !== "paper") for (const [k, v] of read(join(src, "themes", `${themeId}.json`))) tokens.set(k, v);
-  if (accent) {
-    const shade = DARK.has(themeId) ? "soft" : "strong";
-    tokens.set("color.accent", `{ref.color.project.${accent}.${shade}}`);
-    tokens.set("color.focusRing", `{ref.color.project.${accent}.${shade}}`);
-    tokens.set("color.accentMuted", `{ref.color.project.${accent}.${shade}Tint}`);
-  }
+  // D-435: the project's colour takes every accent role, with the values the solver emits for this theme.
+  if (accent) for (const [k, v] of Object.entries(projectAccentValues[accent]![themeId]!)) tokens.set(k, v);
   const resolve = (v: unknown): unknown => {
     for (let i = 0; i < 10 && typeof v === "string" && /^\{.+\}$/.test(v); i++) v = tokens.get(v.slice(1, -1));
     return v;

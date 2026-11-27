@@ -81,10 +81,10 @@ A mode switches a set of token values without changing any name. Components neve
 
 - the accent on every surface (canvas, surface, raised, sunken, frost, and frost over a scrim) at least 4.5:1, 7:1 in High contrast; on a hover or pressed row, the selection and its own tint at least 3:1;
 - the on-accent ink (white, the theme's text or its deepest surface, whichever is best) at least 4.5:1 (7:1);
-- text and muted text on the selection and on the accent tint at least 4.5:1 (7:1), the tint's opacity lowered from the theme's own until they pass;
+- text and muted text on the selection and on the accent tint at least 4.5:1 (7:1), the tint's opacity lowered from the theme's own until they pass, with the accent and the live globe's status colours (warning, success, danger; D-436) at least 3:1 on them;
 - at least ΔE 0.07 (OKLab) from the theme's danger, warning and success, so a red, amber or green project never reads as a status.
 
-The build emits one block per colour and theme, keyed by the window's theme (`:root[data-theme]`) and by a project's own theme scope (`[data-theme-scope]`), inside `@media not (forced-colors: active)`, and exports the values as `projectAccentValues`. `packages/core/test/project-accent.test.ts` checks all 12 colours in all 10 themes against these rules and the contrast guard (THM-13). Custom themes aren't solved: they take Paper's values, or a built-in theme's when they name one.
+The build emits one block per colour and theme, keyed by the window's theme (`:root[data-theme]`) and by a project's own theme scope (`[data-theme-scope]`), inside `@media not (forced-colors: active)`, and exports the values as `projectAccentValues`. `packages/core/test/project-accent.test.ts` checks all 12 colours in all 10 themes against these rules and the contrast guard (THM-13), and on the Files panel's frosted rows (rest, hover, pressed, selected, the project's active tab): the file badges and focus ring and the globe's status colours at 3:1, the selection's text at 4.5:1 (7:1). `file-badge-contrast.test.ts` measures the badges on every row and tab state with the same solved values. Custom themes aren't solved: they take Paper's values, or a built-in theme's when they name one.
 
 Mode values are stored as separate token sets in the DTCG source, one file per mode value, and resolved at build time into CSS variable blocks keyed by data attributes on the root element (for example `data-scheme="dark"`, `data-motion="reduced"`).
 

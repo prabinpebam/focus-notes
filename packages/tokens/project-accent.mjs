@@ -6,7 +6,8 @@
 //   - accent on a row state (selection, hover, pressed, the accent's own tint over a surface): at least 3:1;
 //   - on-accent ink (white, or the theme's text or deepest surface, whichever contrasts most): at least 4.5:1;
 //   - text, and muted text, on the selection and on the accent's tint over every surface: at least 4.5:1
-//     (the tint's opacity is lowered from the theme's own until it passes);
+//     (the tint's opacity is lowered from the theme's own until it passes), with the accent and the status
+//     glyphs (the live globe, D-436) at least 3:1 on it;
 //   - at least STATUS_DISTANCE (OKLab ΔE) from the theme's danger, warning and success, so a red, amber or
 //     green project never looks like an error, a warning or a confirmation.
 
@@ -92,7 +93,8 @@ export function deriveProjectAccent(preset, t, dark, high = false, frost = 1) {
       // Measured at the alpha the hex colour carries (n/255), as it's drawn.
       const a = step / 255;
       const fills = surfaces.map((s) => over({ ...accent, a }, s));
-      if (fills.every((f) => text.every((x) => contrast(x, f) >= minText) && contrast(accent, f) >= MIN_UI)) return a;
+      // The status glyphs (the live globe's warning, success and danger, D-436) sit on these fills too.
+      if (fills.every((f) => text.every((x) => contrast(x, f) >= minText) && [accent, ...statuses].every((g) => contrast(g, f) >= MIN_UI))) return a;
     }
     return null;
   };
