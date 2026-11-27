@@ -85,7 +85,8 @@ test("D-431: a shared note is marked in Files; Share details… copies its link 
     const toRgb = (c: string) => page.evaluate((v) => { const s = document.createElement("span"); s.style.color = v; document.body.append(s); const r = getComputedStyle(s).color; s.remove(); return r; }, c);
     expect(await mark.locator("[data-badge]").evaluate((el) => getComputedStyle(el).color)).toBe(await toRgb(accent));
     await mark.hover();
-    const tip = page.getByRole("tooltip");
+    // The focused public note's globe has its own tooltip (D-436): this one is the hovered badge's.
+    const tip = page.getByRole("tooltip").filter({ hasText: "Shared privately" });
     await expect(tip).toBeVisible();
     const described = await rome.evaluate((el) => document.getElementById(el.getAttribute("aria-describedby") ?? "")?.textContent ?? "");
     await expect(tip).toHaveText(described);

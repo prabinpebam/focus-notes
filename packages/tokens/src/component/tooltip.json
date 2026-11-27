@@ -12,5 +12,6 @@
   "layer": { "$type": "number", "$value": "{layer.tooltip}" },
   "shortcutOpacity": { "$type": "number", "$value": "{opacity.muted}" },
   "offset": { "$type": "dimension", "$value": "{space.scale.s}", "$description": "Between the control and its tooltip (D-111)." },
-  "edge": { "$type": "dimension", "$value": "{space.scale.s}", "$description": "The least distance from the window's edges." }
+  "edge": { "$type": "dimension", "$value": "{space.scale.s}", "$description": "The least distance from the window's edges." },
+  "maxWidth": { "$type": "dimension", "$value": "{layout.tooltipMax}", "$description": "D-436: the widest a tooltip grows; longer words wrap, a long address breaks anywhere, and it's never wider than the window less its edges." }
 } } }

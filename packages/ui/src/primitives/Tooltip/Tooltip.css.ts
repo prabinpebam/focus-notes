@@ -1,7 +1,10 @@
-import { createVar, style } from "@vanilla-extract/css";
+import { createVar, fallbackVar, style } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
 
 const t = tokens.cmp.tooltip;
+
+/** D-436: the drawn window's width less its edges, set by the placement code. */
+export const windowMaxVar = createVar();
 
 /** Registered lengths, so the placement code reads the tokens' computed pixels. */
 export const gapVar = createVar({ syntax: "<length>", inherits: false, initialValue: "0px" });
@@ -17,6 +20,9 @@ export const tooltip = style({
   alignItems: "center",
   gap: t.gap,
   width: "max-content",
+  // D-436: never wider than its token or the window less its edges; long words (an address) wrap anywhere.
+  maxWidth: `min(${t.maxWidth}, ${fallbackVar(windowMaxVar, t.maxWidth)})`,
+  overflowWrap: "anywhere",
   backgroundColor: t.background,
   color: t.text,
   borderRadius: t.radius,
@@ -24,7 +30,7 @@ export const tooltip = style({
   paddingBlock: t.paddingBlock,
   fontFamily: t.font,
   fontSize: t.fontSize,
-  whiteSpace: "nowrap",
+  whiteSpace: "normal",
   boxShadow: t.shadow,
   zIndex: t.layer,
   pointerEvents: "none",

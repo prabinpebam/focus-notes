@@ -10,11 +10,6 @@
         "$value": "{size.hit}",
         "$description": "The pin button's box, centred on the row's type icon (cmp.iconButton.size); the row's height holds it."
       },
-      "pinIconSize": {
-        "$type": "dimension",
-        "$value": "{size.iconM}",
-        "$description": "The pin button's glyph (cmp.icon.size.m), centred on the type icon it replaces: where its knockout around a file's badges is cut (D-431)."
-      },
       "indent": {
         "$type": "dimension",
         "$value": "{space.scale.l}"
@@ -47,6 +42,31 @@
         "$type": "color",
         "$value": "{color.accent}",
         "$description": "The shared and published badges' glyphs (owner, 26 November 22:57; D-431): the accent, at least 3:1 on every row and tab state (rest, hover, focus, the open note, selected, Opened files' active and inactive tabs) in every built-in theme and project accent, measured by file-badge-contrast.test.ts; the contrast guard warns when a custom theme's accent falls short. Highlight in forced colours (HighlightText on a selected row or the active tab)."
+      },
+      "badgePending": {
+        "$type": "color",
+        "$value": "{color.warning}",
+        "$description": "D-436: the published (globe) badge while its Publish, Unpublish or update waits for GitHub Pages to serve it, with the commit mark's own-border pending arc around it."
+      },
+      "badgeLive": {
+        "$type": "color",
+        "$value": "{color.success}",
+        "$description": "D-436: the globe badge for the moment its page is confirmed live (with the commit mark's success outline, held at least 200 ms), before it settles to the accent."
+      },
+      "badgeFailed": {
+        "$type": "color",
+        "$value": "{color.danger}",
+        "$description": "D-436: the globe badge when its page didn't go live (a failed Pages deploy or no answer in 10 minutes); the reason is in its tooltip and the recovery in the file's menu."
+      },
+      "badgeRingStroke": {
+        "$type": "dimension",
+        "$value": "{border.focus}",
+        "$description": "D-436: the badge's pending arc or outline stroke: the commit mark's own-border stroke (cmp.commitMark.borderStroke)."
+      },
+      "badgeRing": {
+        "$type": "dimension",
+        "$value": "{border.hairline}",
+        "$description": "D-436: how far the badge's pending arc or outline sits outside its glyph; the icon's knockout widens by this plus the arc's stroke while it shows, so the ring never touches the icon."
       },
       "rowGap": {
         "$type": "dimension",

@@ -34,6 +34,9 @@ export const border = style({
       animationTimingFunction: "linear",
       animationIterationCount: "infinite",
     },
+    '&[data-border-progress="pending"][data-tone="warning"]': {
+      background: `conic-gradient(from ${angle}, ${t.borderTrack} calc(1turn - ${t.borderArc} * 1turn), ${t.borderPendingWarning} 0)`,
+    },
     '&[data-border-progress="confirmed"]': {
       background: `conic-gradient(${t.tick} ${coverage}, transparent 0)`,
       animationName: reveal,
@@ -44,11 +47,15 @@ export const border = style({
     '&[data-border-progress="failed"]': { background: t.failed },
     'html[data-motion="reduced"] &': { animation: "none" },
     'html[data-motion="reduced"] &[data-border-progress="pending"]': still,
+    'html[data-motion="reduced"] &[data-border-progress="pending"][data-tone="warning"]': { ...still, borderColor: t.borderPendingWarning },
   },
   "@media": {
     "(prefers-reduced-motion: reduce)": {
       animation: "none",
-      selectors: { '&[data-border-progress="pending"]': still },
+      selectors: {
+        '&[data-border-progress="pending"]': still,
+        '&[data-border-progress="pending"][data-tone="warning"]': { ...still, borderColor: t.borderPendingWarning },
+      },
     },
   },
 });

@@ -22,6 +22,16 @@ D-438 landed by non-force fast-forward of `main` to `fa2549ae` (`3013d473..fa254
 
 **Watch item for the v1.1.0 gate: P0-entry.5 (the owner's release blocker, D-397).** The CI failure of `project-entry-stale.spec.ts:228` (Recent; the Open dialog still visible 5 s after *Open Untitled*; [45959452942](https://github.com/prabinpebam/focus-notes/actions/runs/45959452942) shard 3, no seed) did not reproduce on `main` `3013d473`: 8/8 locally, 6/6 more with the CPU throttled 4× (`FOCUS_NOTES_E2E_CPU_THROTTLE=4`), and all seven P0-entry.5 paths 8× each (56/56: New project on this computer and on GitHub, Projects card, Open project…, both launch restorations, Recent). Re-check it in the v1.1.0 gate; any recurrence is a release blocker, not a flake.
 
+## Website rebuilds and live status (D-436), 27 November
+
+CI observations on the combined head (badge accent + D-436), recorded with their local verdicts:
+
+| Observation | Run | Verdict |
+| --- | --- | --- |
+| QLT-03 `fault-injection.spec.ts` lost 2482 ms of typing (budget 1000), round 1, seed 734056, shard 3 | [45956563525](https://github.com/prabinpebam/focus-notes/actions/runs/45956563525) on `99d9c3db` | Not reproducible locally: seed 734056 ×2, and seeds 734056, 11, 222 at 8 rounds each, all within budget on both `origin/main` `3013d473` and the head. Runner load, not this change; the next gate must show it green, no landing on a rerun if it's red |
+| D-428 `delete-shared-same-repo.spec.ts` toast not found, shard 3 | 45956563525 | Pre-existing: fails 1 of 2 locally on `origin/main` `3013d473` too |
+| G7 `m3-settings.spec.ts` cross-profile signOut, pin click timed out, shard 1 | 45956563525 | Ours: the published globe on a public note sat over the row's pin. Fixed by giving the pin its own place at the row's end (D-436); passes locally |
+
 ## Opened files in Files (FIL-20, WP-P.24, D-410), 24 November
 
 Wired on `fix-opened-files-24nov` over the approved `34cd088e` design: `OpenedFiles` (`#filesOpened`) above Pinned in `canvas.view.json`, backed by `vm.opened`, `files.activateOpened`, `files.closeOpened`, `files.closeAllOpened` and Recent exclusion in `packages/core/src/files-app.ts`. No central files (`app.ts`, `main.ts`, `preload`, `en.json`) edited.

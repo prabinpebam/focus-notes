@@ -25,3 +25,19 @@ export function publishStatus(rel: string | undefined, site: SitePublication): P
   if (site.publishing.includes(rel)) return "publishing";
   return site.published.includes(rel) ? "live" : "unpublished";
 }
+
+/**
+ * D-436: a published file's page change as the desktop checks it on GitHub Pages: `pending` until the page answers
+ * with a build made after the change (or 404 for Unpublish), `live` for the moment it does, `failed` with its reason
+ * (`timeout`, `pages`, `offline`, …). `root` and `path` place it: the notes root and the path in it.
+ */
+export interface LiveStatus { root: "private" | "public"; path: string; url: string; action: "publish" | "unpublish"; state: "pending" | "live" | "failed"; reason?: string }
+
+/** A tree path's live status, if it has one. */
+export function liveStatusOf(tree: WorkspaceTree, path: string, live: readonly LiveStatus[] | undefined): LiveStatus | undefined {
+  if (!live?.length) return undefined;
+  const root = rootOf(tree, path);
+  if (!root || (root.id !== "private" && root.id !== "public")) return undefined;
+  const rel = path.slice(root.path.length).split(/[\\/]/).filter(Boolean).join("/");
+  return live.find(l => l.root === root.id && l.path === rel);
+}

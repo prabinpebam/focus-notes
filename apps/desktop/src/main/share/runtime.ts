@@ -31,6 +31,18 @@ async function writeEmptyHome(reader: string | undefined, directory: string, sit
   if (file !== "index.html") return;
   await writeFile(join(directory, file), html);
 }
+/** D-436: each published page in a built site (`n/…/index.html`) by the SHA-256 of its bytes, to tell its deploy is served. */
+async function pageHashes(directory: string): Promise<Map<string, string>> {
+  const pages = new Map<string, string>();
+  const root = join(directory, "n");
+  const entries = await readdir(root, { recursive: true, withFileTypes: true }).catch(() => []);
+  for (const e of entries) {
+    if (!e.isFile() || e.name !== "index.html") continue;
+    const full = join(e.parentPath, e.name);
+    pages.set(relative(directory, full).split(sep).join("/"), createHash("sha256").update(await readFile(full)).digest("hex"));
+  }
+  return pages;
+}
 /** Notes on the current public site, by notes-root-relative path (G3). Recorded only after their deploy. */
 function parsePublished(text: string): string[] {
   const value = JSON.parse(text) as { version?: unknown; notes?: unknown };
@@ -82,6 +94,10 @@ export function sharingRuntime(deps: {
   publishLive?(event: { build: string; live: boolean }): void;
   /** A renamed or moved published note's deploy at its new address (D-423): live, pending (O4) or failed with Retry. */
   renameFollowed?(event: RenameFollowed): void;
+  /** D-436: a site build's upload landed: when it read its source, and the hash of each page (`n/…/index.html`) it carries. */
+  siteBuilt?(site: { started: number; pages: ReadonlyMap<string, string> }): void;
+  /** D-436: a site build or its Pages deploy failed. */
+  siteFailed?(error: unknown): void;
 }) {
   let current: { root: string; service: ReturnType<typeof sharingSetup> } | undefined;
   let tasks: ReturnType<typeof publicPublishing> | undefined, tasksRoot: string | undefined;
@@ -95,6 +111,8 @@ export function sharingRuntime(deps: {
     return next;
   };
   const get = deps.get ?? fetchDeployedSite;
+  /** D-436: the running build's "its upload landed" callback, for the publisher's `pushed`. */
+  let onPushed: (() => void) | undefined;
   /** The last upload whose GitHub build failed, with what it was built from, so Retry builds it again instead of uploading again (D-427). */
   let failedBuild: (FailedBuild & { inputs: string; empty: boolean }) | undefined;
   let failing: FailedBuild | undefined;
@@ -105,7 +123,7 @@ export function sharingRuntime(deps: {
     target: async project => { const saved = await bound().read(); return saved?.project === project ? saved : undefined; },
     get, ...(deps.pagesWaitMs === undefined ? {} : { timeoutMs: deps.pagesWaitMs }),
     ...(deps.pagesSlowMs === undefined ? {} : { slowAfterMs: deps.pagesSlowMs }),
-    pushed: () => deps.step?.("deploy"),
+    pushed: () => { deps.step?.("deploy"); onPushed?.(); },
     slow: () => deps.step?.("slow"),
     failed: failed => { failing = failed; },
     // Private + Public (D-429): the site is the project's public repository, which the backup pushes to as well.
@@ -217,6 +235,8 @@ export function sharingRuntime(deps: {
         }
       }
       const before = selection ? "" : await inputs();
+      // D-436: what this build read is the source as of now; a note changed after this waits for a later build.
+      const started = Date.now();
       deps.step?.("seal");
       const notes = empty || layout.legacy ? [] : selection?.notes ?? await presentPublished();
       // Private + Public layout (D-429): the project's own public repository is the site, so its published pages
@@ -263,10 +283,20 @@ export function sharingRuntime(deps: {
         if (selection) deps.publishStep?.("publishing");
         const sealed = { directory, build: artifact.build };
         failing = undefined;
+        const pageMap = deps.siteBuilt ? await pageHashes(directory) : undefined;
+        // D-436: the upload is on the site's branch (the publisher says so before it waits for Pages): its pages are what to look for.
+        let told = false;
+        const tell = () => { if (!told && pageMap) { told = true; deps.siteBuilt?.({ started, pages: pageMap }); } };
+        onPushed = tell;
         let result: Awaited<ReturnType<SealedArtifactPublisher>>;
         try { result = await publisher(pairing.project, sealed); }
-        catch (error) { const f = lastFailing(); if (f && !selection) failedBuild = { ...f, inputs: before, empty }; throw error; }
+        catch (error) {
+          const f = lastFailing(); if (f && !selection) failedBuild = { ...f, inputs: before, empty };
+          deps.siteFailed?.(error);
+          throw error;
+        } finally { onPushed = undefined; }
         if (result.status === "published") pushed.push(sealed.build);
+        if (result.status === "published") tell();
         guard();
         // Only a Publish or Unpublish may outlast the wait: its commit is on the site's branch, so Pages serving it is
         // a matter of time; setup, sharing pushes and Turn off still need the site served now.
@@ -477,13 +507,19 @@ export function sharingRuntime(deps: {
     tasksRoot = ctx.root;
     return tasks = publicPublishing({
       current: ctx.presentPublished,
-      record: ctx.writePublished,
+      // Recorded inside the lane, below, before the next build can read the list (D-436).
+      record: async () => {},
       // In the same lane as setup, removal and sharing pushes, so they never interleave on the site.
       deploy: (paths, selection) => serial(async () => {
         const saved = await ctx.current();
         if (!saved || saved.phase !== "ready") throw new Error("sharing:unavailable");
-        try { return await ctx.build(saved, false, { ...selection, notes: [...paths] }); }
+        let deployed: PublicDeploy;
+        try { deployed = await ctx.build(saved, false, { ...selection, notes: [...paths] }); }
         catch (error) { throw publishProblem(error); }
+        // D-436: a share update or another build queued behind this one reads the list this deploy put on the site,
+        // never the one before it (Publish B then a share update dropped B, 27 November).
+        await ctx.writePublished(paths);
+        return deployed;
       }),
       step: step => deps.publishStep?.(step),
     });

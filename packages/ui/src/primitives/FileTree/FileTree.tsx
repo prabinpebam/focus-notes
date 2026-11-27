@@ -355,7 +355,7 @@ export function FileTree({ label, items, focusId, focusRequest, windowed = false
         const descriptionId = labelId && item.description && !end ? `${treeRowId(id, item.id)}-description` : undefined;
         const detailId = item.detail && !item.editing ? `${treeRowId(id, item.id)}-detail` : undefined;
         const marksId = labelId && marked ? `${treeRowId(id, item.id)}-marks` : undefined;
-        const aboutId = marked && hasSiteDescription(item) ? `${treeRowId(id, item.id)}-about` : undefined;
+        const aboutId = hasSiteDescription(item) ? `${treeRowId(id, item.id)}-about` : undefined;
         return (
           <Fragment key={item.id}>
           {bounded ? spacer(`before-${item.id}`, index - (indices[n - 1] ?? -1) - 1) : null}
@@ -416,22 +416,7 @@ export function FileTree({ label, items, focusId, focusRequest, windowed = false
             ) : <span className={s.chevron} aria-hidden="true" />}
             {item.kind !== "section" ? (
               <span className={s.icon}>
-                {item.pinLabel && !item.editing ? (
-                  <span className={s.pinControl} data-pin-commit={item.pinCommit}
-                    data-key-scope="filesSection" data-key-scope-stop=""
-                    onKeyDown={e => e.stopPropagation()}
-                    onPointerDown={e => e.stopPropagation()}
-                    onClick={e => e.stopPropagation()}
-                    onDoubleClick={e => e.stopPropagation()}
-                    onContextMenu={e => e.stopPropagation()}
-                    onDragStart={e => { e.preventDefault(); e.stopPropagation(); }}>
-                    <IconButton icon={item.pinned ? "pinOff" : "pin"} label={item.pinLabel}
-                      commit={item.pinCommit}
-                      onPress={() => onPin?.({ id: item.id, pinned: !item.pinned })} />
-                  </span>
-                ) : null}
-                {/* After the pin, so the file's badges stay over it while it shows (D-431). */}
-                <span className={item.pinLabel && !item.editing ? s.typeIcon : undefined} data-file-icon={item.pinned ? "pin" : folder ? "folder" : "document"} aria-hidden="true"><FileGlyph item={item}><Icon name={item.pinned ? "pin" : folder ? "folder" : "document"} size="s" /></FileGlyph></span>
+                <span className={s.typeIcon} data-file-icon={item.pinned ? "pin" : folder ? "folder" : "document"} aria-hidden="true"><FileGlyph item={item}><Icon name={item.pinned ? "pin" : folder ? "folder" : "document"} size="s" /></FileGlyph></span>
               </span>
             ) : null}
             {item.editing ? (
@@ -462,6 +447,23 @@ export function FileTree({ label, items, focusId, focusRequest, windowed = false
             {item.detail && !item.editing ? <span id={detailId} className={s.description}> {item.detail}</span> : null}
             {marked ? <SiteMarksName item={item} lead="" trail={item.description ? "," : ""} {...(marksId ? { nameId: marksId } : {})} /> : null}
             {aboutId ? <SiteMarksDescription item={item} id={aboutId} /> : null}
+            {item.pinLabel && !item.editing ? (
+              // D-436: the pin has its own target at the row's end, never over the file icon's badges.
+              <span className={s.pinSlot}>
+                <span className={s.pinControl} data-pin-commit={item.pinCommit}
+                  data-key-scope="filesSection" data-key-scope-stop=""
+                  onKeyDown={e => e.stopPropagation()}
+                  onPointerDown={e => e.stopPropagation()}
+                  onClick={e => e.stopPropagation()}
+                  onDoubleClick={e => e.stopPropagation()}
+                  onContextMenu={e => e.stopPropagation()}
+                  onDragStart={e => { e.preventDefault(); e.stopPropagation(); }}>
+                  <IconButton icon={item.pinned ? "pinOff" : "pin"} label={item.pinLabel}
+                    commit={item.pinCommit}
+                    onPress={() => onPin?.({ id: item.id, pinned: !item.pinned })} />
+                </span>
+              </span>
+            ) : null}
             {item.pending ? <span className={s.pending}><Spinner size="s" /></span> : null}
             {item.deleting ? <BorderProgress state={item.deleting} /> : null}
             {end ? (

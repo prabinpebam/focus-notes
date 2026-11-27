@@ -170,6 +170,8 @@ export const MEASURE_NAMES: readonly string[] = [
   "fn:files.deleteTakedown", "focus-notes:files.deleteTakedown",
   // A Publish or Unpublish still waiting for Pages after its push (O4): background checks until it's live.
   "fn:sharing.publishLive", "focus-notes:sharing.publishLive",
+  // D-436: published files' pages checked on GitHub Pages until each is live.
+  "fn:sharing.liveStatus", "focus-notes:sharing.liveStatus",
   "fn:project.firstNote", "focus-notes:project.firstNote",
   "focus-notes:files.move", "focus-notes:files.rename",
   "focus-notes:image.caption.open", "focus-notes:image.caption.generate",

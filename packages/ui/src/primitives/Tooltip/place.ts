@@ -9,6 +9,14 @@ interface Box {
 }
 
 /**
+ * D-436: the widest a tooltip may be in this window: the window's drawn width less an edge on each side (its
+ * token cap is CSS), so a long one wraps instead of running past an edge.
+ */
+export function tooltipWidthLimit(win: Box, edge: number): number {
+  return Math.max(0, win.right - win.left - 2 * edge);
+}
+
+/**
  * Foundations → Visual quality, anchored tooltips (D-111): next to the control, `gap` away, centered
  * on it, on the preferred side unless there's no room there, and kept `edge` inside the window's
  * box (the drawn window on Windows and Linux). Everything is in viewport coordinates.

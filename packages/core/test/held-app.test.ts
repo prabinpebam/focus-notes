@@ -105,7 +105,7 @@ describe("D-158: a new note in a workspace without a private repository", () => 
     await settle();
     const items = (app.viewModels.select("vm.files", app.store.state) as { items: { label: string; description: string }[] }).items;
     expect(items.find((i) => i.label === "Untitled-1")?.description).toBe("Public · not backed up");
-    expect(items.find((i) => i.label === "Hello")?.description).toBe("public");
+    expect(items.find((i) => i.label === "Hello")).toMatchObject({ description: "public", published: true });
   });
 
   it("Save to cloud asks once before its first backup; Keep it on this computer only answers for good", async () => {

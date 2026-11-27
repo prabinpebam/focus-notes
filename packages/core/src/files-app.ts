@@ -21,6 +21,7 @@ import {
 import { copyPublicLink, publicLinkReason } from "./public-link-app.ts";
 import { publishPathOf, publishStatus } from "./publish-status.ts";
 import { liveSharesOf, siteMarksOf } from "./share-details.ts";
+import { LIVE_GITHUB, LIVE_RETRY } from "./publish-live.ts";
 import { deleteCardView, deleteDoneKey, deletePhase, newDeleteJob, runDelete, type DeleteJob } from "./delete-takedown.ts";
 import { siteTakedown, type SiteTakedown } from "./site-takedown.ts";
 import {
@@ -1609,6 +1610,7 @@ export function registerFiles(ctx: Ctx) {
       ["published", { type: "boolean" as const }],
       ["siteLabel", { type: "string" as const }],
       ["siteDescription", { type: "string" as const }],
+      ["siteLive", { type: "string" as const, enum: ["pending", "confirmed", "failed"] }],
       ["kind", { type: "string" as const, enum: ["section", "folder", "note"] }],
       ["level", { type: "number" as const }],
       ["accessory", { type: "number" as const }],
@@ -1702,6 +1704,9 @@ export function registerFiles(ctx: Ctx) {
         if (off.length) { const i = section.indexOf("files.makePrivate"); if (i >= 0) section.splice(i, 1); }
       }
       if (site.length || off.length) sections.splice(2, 0, [...site, ...off]);
+      // D-436: a page that didn't go live: Retry publish and View on GitHub, above Publish and Unpublish.
+      const recover = [LIVE_RETRY, LIVE_GITHUB].filter((id) => commands.describe(id).enabled);
+      if (recover.length) sections.splice(2, 0, recover);
     }
     const menu = sections.filter((ids) => ids.length).map((ids, i) => ({ id: `rowMenu${i}`, items: ids.map(item) }));
     if (focus.kind !== "root") menu[0]?.items.splice(1, 0, item("files.pinItem"));
@@ -1729,7 +1734,7 @@ export function registerFiles(ctx: Ctx) {
     },
     setters: { filter: "files.setFilter", editValue: "files.setEditValue" },
     // The tree, the open note, and whether the workspace can be written (PRF-11). Cheap while closed.
-    reads: ["ui.files", "workspace", "note.path", "ui.held", "account.login", "commits", "tasks", "ui.share.publication", "ui.share.listing"],
+    reads: ["ui.files", "workspace", "note.path", "ui.held", "account.login", "commits", "tasks", "ui.share.publication", "ui.share.listing", "ui.share.live"],
     shows: (s) => (s.ui.files.open ? [{ kind: "tree" }] : []),
     select: (s) => {
       const f = s.ui.files;

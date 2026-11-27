@@ -9,6 +9,7 @@ import type { PMNode } from "@focus-notes/markdown";
 import { shareProgress, shareProgressView } from "./share-progress.ts";
 import { siteProblemKey } from "./site-problem.ts";
 import { NO_PUBLICATION, PUBLISH_STATUS_COMMAND, PUBLISH_STATUS_TITLE, publishPathOf, publishStatus, type SitePublication } from "./publish-status.ts";
+import type { LiveStatusBridge } from "./publish-live.ts";
 
 interface Article { id: string; title: string; titleBlocks: PMNode[]; section: string; excerpt: string; updated: string; blocks: PMNode[] }
 
@@ -23,7 +24,7 @@ export const SHARING_WAITS = {
 /** `pending`: the build whose commit is on the site but which Pages isn't serving yet; `onLive` says when it is (O4). */
 export interface PublishTaskResult { commit: string; published: readonly string[]; changed: readonly string[]; pending?: string }
 /** The desktop's Publish and Unpublish (G3): the shell stages, seals, leak-checks, pushes and waits for the exact deploy. */
-export interface PublishingBridge {
+export interface PublishingBridge extends Partial<LiveStatusBridge> {
   /** Notes on the current public site, relative to the notes root. */
   published(): Promise<string[]>;
   /** Rejects with `sharing:<problem>`, or a leak check failure, and then nothing was pushed or recorded. */

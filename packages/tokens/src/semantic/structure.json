@@ -444,6 +444,10 @@
     "slashMenu": {
       "$value": "{ref.size.320}"
     },
+    "tooltipMax": {
+      "$value": "{ref.size.320}",
+      "$description": "D-436: the widest a tooltip grows before its words wrap (a long address breaks anywhere); never wider than the window less its edges."
+    },
     "dialogS": {
       "$value": "{ref.size.480}"
     },

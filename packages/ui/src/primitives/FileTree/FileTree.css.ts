@@ -1,4 +1,4 @@
-import { globalStyle, createVar, keyframes, style } from "@vanilla-extract/css";
+import { globalStyle, createVar, fallbackVar, keyframes, style } from "@vanilla-extract/css";
 import { tokens } from "@focus-notes/tokens";
 
 const t = tokens.cmp.fileTree;
@@ -59,19 +59,23 @@ export const section = style({
 export const chevron = style({ display: "inline-flex", flexShrink: 0, width: t.iconSize, height: t.iconSize, alignItems: "center", justifyContent: "center", color: t.textMuted });
 export const icon = style({ position: "relative", display: "inline-flex", flexShrink: 0, width: t.iconSize, height: t.iconSize, color: t.textMuted });
 export const typeIcon = style({ display: "inline-flex" });
-// Its box is the pin button's hit area, centred on the type icon it replaces, inside the row's padding box (spacing SP-4).
+/**
+ * D-436 (main, 27 November 13:27 and 13:58): the pin has its own place at the row's end, a slot the size of the
+ * row's ⋯ (and Opened files' ×), always reserved so its title never shifts; order: the pin, then ⋯. It never covers
+ * the icon's badges (nor they it) at any width or zoom. It shows on hover and keyboard focus, and always without hover.
+ */
+export const pinSlot = style({ position: "relative", display: "inline-flex", flexShrink: 0, width: t.moreSize, height: t.moreSize });
 export const pinControl = style({
-  position: "absolute", inset: `calc((${t.iconSize} - ${t.pinSize}) / 2)`, display: "flex", alignItems: "center", justifyContent: "center", visibility: "hidden",
+  position: "absolute", inset: `calc((${t.moreSize} - ${t.pinSize}) / 2)`, display: "flex", alignItems: "center", justifyContent: "center", visibility: "hidden",
+  // Only the button takes the pointer, never the box around it, so the row's ⋯ beside it keeps its whole target.
+  pointerEvents: "none",
 });
-globalStyle(`${row}:focus-within ${typeIcon}`, { visibility: "hidden" });
+globalStyle(`${pinControl} button`, { pointerEvents: "auto" });
 globalStyle(`${row}:focus-within ${pinControl}, ${pinControl}[data-pin-commit]:not([data-pin-commit="rest"])`, { visibility: "visible" });
-globalStyle(`${row}:hover ${typeIcon}`, { "@media": { "(hover: hover)": { visibility: "hidden" } } });
 globalStyle(`${row}:hover ${pinControl}`, { "@media": { "(hover: hover)": { visibility: "visible" } } });
-globalStyle(`${icon}:has(${pinControl}[data-pin-commit]:not([data-pin-commit="rest"])) ${typeIcon}`, { visibility: "hidden" });
 globalStyle(`${row}[aria-selected="true"] ${pinControl} button`, { color: t.selectionTextMuted });
 globalStyle(`${pinControl} button`, { flexShrink: 0 });
 globalStyle(`${pinControl}`, { "@media": { "(hover: none)": { visibility: "visible" } } });
-globalStyle(`${typeIcon}`, { "@media": { "(hover: none)": { visibility: "hidden" } } });
 export const label = style({ flexGrow: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" });
 // It gives way after the label, ending in an ellipsis, so the row keeps its end inset in a narrow window (spacing SP-4).
 export const description = style({ flexShrink: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: t.textMuted, fontSize: t.captionSize, fontWeight: t.weight, textTransform: "none" });
@@ -89,23 +93,31 @@ export const badge = style({
   "@media": { "(forced-colors: active)": { forcedColorAdjust: "none" } },
 });
 globalStyle(`${row}[aria-selected="true"] ${badge}, [data-opened-files] [data-current] ${badge}`, { "@media": { "(forced-colors: active)": { color: t.selectionText } } });
+/**
+ * D-436: the published badge's live status. Waiting for GitHub Pages: the warning colour inside the commit mark's
+ * own-border pending arc; confirmed: success, with its outline; failed: danger, with its outline. The icon's
+ * knockout widens by the ring while it shows, so the arc never touches the icon. Forced colours keep the system's
+ * Highlight; the arc and outline are the cue there.
+ */
+const liveRing = createVar();
+const ringWidth = `calc(${t.badgeRing} + ${t.badgeRingStroke})`;
+globalStyle(`${glyph}[data-site-live], ${icon}:has(${glyph}[data-site-live])`, { vars: { [liveRing]: ringWidth } });
+globalStyle(`${badge}[data-live]`, { borderRadius: "50%" });
+globalStyle(`${badge}[data-live="pending"]`, { color: t.badgePending });
+globalStyle(`${badge}[data-live="confirmed"]`, { color: t.badgeLive });
+globalStyle(`${badge}[data-live="failed"]`, { color: t.badgeFailed });
+export const liveRingBox = style({ position: "absolute", inset: `calc(-1 * ${ringWidth})`, borderRadius: "50%", pointerEvents: "none" });
 globalStyle(`${badge} svg`, { display: "block", width: t.iconBadgeSize, height: t.iconBadgeSize });
 const badgeX = `calc(${t.iconSize} - ${t.iconBadgeSize} / 2)`;
 const badgeAt = `calc(${t.iconSize} + ${t.iconBadgeOverhang} - ${t.iconBadgeSize} / 2)`;
 const badgeTop = `calc(${t.iconBadgeSize} / 2 - ${t.iconBadgeOverhang})`;
-const knockout = `calc(${t.iconBadgeSize} / 2 + ${t.iconBadgeKnockout})`;
+const knockout = `calc(${t.iconBadgeSize} / 2 + ${t.iconBadgeKnockout} + ${fallbackVar(liveRing, "0px")})`;
 const hole = (y: string, shift?: string) => {
   const at = shift ? `calc(${badgeX} + ${shift}) calc(${y} + ${shift})` : `${badgeX} ${y}`;
   return `radial-gradient(circle at ${at}, ${t.transparent} ${knockout}, ${t.iconBadgeKeep} ${knockout})`;
 };
 globalStyle(`${glyph}[data-site-badges] > svg`, { maskImage: hole(badgeAt) });
 globalStyle(`${glyph}[data-site-badges="shared published"] > svg`, { maskImage: `${hole(badgeAt)}, ${hole(badgeTop)}`, maskComposite: "intersect" });
-// The badges stay while the row's pin takes its icon's place (hover, focus): over it, and the pin's larger
-// glyph (centred on the icon's box) is cut away around them the same way.
-globalStyle(`${badges}`, { visibility: "visible" });
-const pinShift = `calc((${t.pinIconSize} - ${t.iconSize}) / 2)`;
-globalStyle(`${icon}:has(${glyph}[data-site-badges]) ${pinControl} svg`, { maskImage: hole(badgeAt, pinShift) });
-globalStyle(`${icon}:has(${glyph}[data-site-badges="shared published"]) ${pinControl} svg`, { maskImage: `${hole(badgeAt, pinShift)}, ${hole(badgeTop, pinShift)}`, maskComposite: "intersect" });
 /** The saving sign appears only after the wait sign's delay (Waits), so quick writes show nothing. */
 const appear = keyframes({ to: { visibility: "visible" } });
 export const pending = style({

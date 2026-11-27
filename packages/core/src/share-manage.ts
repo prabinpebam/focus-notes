@@ -20,7 +20,7 @@ import type { ViewModelRegistry } from "./view-models.ts";
 import { findNode, rootOf, stemOf, type TreeNode, type WorkspaceTree } from "./workspace.ts";
 import { inScope, noteId } from "@focus-notes/seal/grants";
 import { defaultItemShareTemplate, ITEM_SHARE_CLOSED, type ItemShareState } from "./share-item.ts";
-import { NO_PUBLICATION, type SitePublication } from "./publish-status.ts";
+import { NO_PUBLICATION, type LiveStatus, type SitePublication } from "./publish-status.ts";
 
 /** What the shell reports: whether there's a private repository, the site, and the share audiences, without their secrets. */
 export interface AccessListing {
@@ -216,6 +216,8 @@ export interface ShareManageState {
   from: "settings" | "note" | "shareItem";
   /** The paired site's published notes and the Publish in flight (G3, D-422): the one source for Unpublish and every publish status. */
   publication: SitePublication;
+  /** D-436: published files whose page change is waiting for GitHub Pages, just confirmed, or not live, as the desktop checks them. */
+  live?: readonly LiveStatus[];
   /** Share details… for one shared file (D-431): its live shares, copied, extended or withdrawn there. */
   details: { open: boolean; path: string; busy?: boolean; status?: string; problem?: string; pending?: string };
 }

@@ -53,7 +53,7 @@ export const ITEM_SHAPES: Readonly<Record<ListOf, ItemShape | typeof STRING_ITEM
     id: "string", kind: "string", level: "number", label: "string", description: "string?", detail: "string?", title: "string?", parent: "string?",
     expanded: "boolean?", hasChildren: "boolean?", selected: "boolean?", current: "boolean?", pending: "boolean?", readOnly: "boolean?",
     draggable: "boolean?", droppable: "boolean?", editing: "boolean?", accessory: "number?", pinned: "boolean?", pinLabel: "string?", pinCommit: "string?", deleting: "string?",
-    shared: "boolean?", published: "boolean?", siteLabel: "string?", siteDescription: "string?",
+    shared: "boolean?", published: "boolean?", siteLabel: "string?", siteDescription: "string?", siteLive: "string?",
   }),
   versionBlocks: shape<VersionBlock>({ id: "string", text: "string", changed: "boolean" }),
   themeTiles: shape<ThemeTile>({

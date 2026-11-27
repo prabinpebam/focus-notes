@@ -1074,7 +1074,7 @@ describe("D-431: shared and published marks in Files, and Share details…", () 
     expect(apply).toHaveBeenCalledWith({ op: "addItemNotes", id, notes: ["trips/rome.md"] });
     expect(t.vm("vm.shareDetails")).toMatchObject({ open: true, busy: false, status: "Reviewed notes added to these shares." });
   });  it("names a shared and published note once: Shared and published", () => {
-    const tree = { roots: [{ id: "private" as const, path: "/w/p", readOnly: false, children: [] }] };
+    const tree = { roots: [{ id: "private" as const, path: "/w/p", readOnly: false, children: [{ kind: "note" as const, name: "a.md", published: false }] }] };
     const grant = { id: "g1", name: "", link: true, passcode: false, createdAt: "2026-11-01T00:00:00.000Z", item: { path: "a.md", label: "A", folder: false } };
     const state = (grants: unknown[], published: string[]) => ({ workspace: { tree }, ui: { share: { listing: { available: true, vault: false, grants }, publication: { published, publishing: [] } } } }) as never;
     expect(siteMarksOf(state([grant], ["a.md"]), "/w/p/a.md", catalog)).toEqual({ shared: true, published: true, siteLabel: "Shared and published",
@@ -1083,7 +1083,7 @@ describe("D-431: shared and published marks in Files, and Share details…", () 
     expect(siteMarksOf(state([{ ...grant, revokedAt: "2026-11-02T00:00:00.000Z" }], []), "/w/p/a.md", catalog)).toEqual({});
   });
   it("says in plain words who can open a shared note and until when: the latest expiry, none when one never expires (D-431)", () => {
-    const tree = { roots: [{ id: "private" as const, path: "/w/p", readOnly: false, children: [] }] };
+    const tree = { roots: [{ id: "private" as const, path: "/w/p", readOnly: false, children: [{ kind: "note" as const, name: "a.md", published: false }] }] };
     const far = Date.now() + 40 * 86_400_000, near = Date.now() + 10 * 86_400_000;
     const grant = (id: string, link: boolean, passcode: boolean, expiresAt: number | null) =>
       ({ id, name: "", link, passcode, createdAt: "2026-11-01T00:00:00.000Z", expiresAt: expiresAt === null ? null : new Date(expiresAt).toISOString(), item: { path: "a.md", label: "A", folder: false } });
@@ -1092,5 +1092,25 @@ describe("D-431: shared and published marks in Files, and Share details…", () 
     expect(about([grant("g1", true, true, near), grant("g2", true, true, far)])).toBe(`Shared privately · anyone with the link and code can open it · until ${day(far)}`);
     expect(about([grant("g1", false, true, near)])).toBe(`Shared privately · anyone with the code can open it · until ${day(near)}`);
     expect(about([grant("g1", true, false, near), grant("g2", false, true, null)])).toBe("Shared privately · anyone with the link or the code can open it");
+  });
+  it("D-436: only notes on the site get the globe; a Private + Public project's public notes always, its private notes never; a live check paints it", () => {
+    const note = (name: string) => ({ kind: "note" as const, name, published: false });
+    const tree = { roots: [
+      { id: "private" as const, path: "/w/private/notes", readOnly: false, children: [note("diary.md")] },
+      { id: "public" as const, path: "/w/notes", readOnly: false, children: [note("rice-pudding.md"), note("hello.md")] },
+    ] };
+    const state = (live: unknown[] = [], published: string[] = []) => ({ workspace: { tree, site: "https://ada.github.io/book/" },
+      ui: { share: { listing: { available: true, vault: false, grants: [] }, publication: { published, publishing: [] }, live } } }) as never;
+    // A private note in a Private + Public project, even if a stale record names it.
+    expect(siteMarksOf(state([], ["diary.md"]), "/w/private/notes/diary.md", catalog)).toEqual({});
+    // Its row already says *public*, so the globe isn't named twice; its words are the tooltip and description.
+    expect(siteMarksOf(state(), "/w/notes/hello.md", catalog)).toEqual({ shared: false, published: true, siteDescription: "Published · live at https://ada.github.io/book/n/hello/" });
+    const check = (state: string, reason?: string) => ({ root: "public", path: "rice-pudding.md", url: "https://ada.github.io/book/n/rice-pudding/", action: "publish", state, ...(reason ? { reason } : {}) });
+    expect(siteMarksOf(state([check("pending")]), "/w/notes/rice-pudding.md", catalog)).toMatchObject({ published: true, siteLive: "pending", siteDescription: "Publishing · waiting for GitHub Pages to go live" });
+    expect(siteMarksOf(state([check("live")]), "/w/notes/rice-pudding.md", catalog)).toMatchObject({ siteLive: "confirmed", siteDescription: "Published · live at https://ada.github.io/book/n/rice-pudding/" });
+    expect(siteMarksOf(state([check("failed", "pages")]), "/w/notes/rice-pudding.md", catalog)).toMatchObject({ siteLive: "failed", siteDescription: "Not live yet · GitHub Pages couldn't build your site" });
+    // Unpublish moved it back to private: still on the site, so its globe waits there until the page is gone.
+    const leaving = { root: "private", path: "diary.md", url: "https://ada.github.io/book/n/diary/", action: "unpublish", state: "pending" };
+    expect(siteMarksOf(state([leaving]), "/w/private/notes/diary.md", catalog)).toMatchObject({ published: true, siteLive: "pending", siteDescription: "Unpublishing · waiting for GitHub Pages to take the page down" });
   });
 });

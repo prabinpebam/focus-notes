@@ -12,7 +12,9 @@ import type { Store } from "./store.ts";
 import type { ViewModelRegistry } from "./view-models.ts";
 import type { TaskTracker } from "./tasks.ts";
 import type { AccessBridge } from "./share-manage.ts";
-import { publishPathOf, publishStatus } from "./publish-status.ts";
+import { liveStatusOf, publishPathOf, publishStatus } from "./publish-status.ts";
+import { publicLinkOf } from "./public-link-app.ts";
+import { publicNoteUrl } from "./public-page.ts";
 import { findNode, rootOf, stemOf, type TreeNode, type WorkspaceTree } from "./workspace.ts";
 
 export const SHARE_DETAILS_COMMAND = "note.shareDetails";
@@ -48,10 +50,21 @@ export function liveSharesOf(state: Pick<AppState, "workspace" | "ui">, path: st
  * (`siteLabel`, read after the file's name) and, in plain words, what each means (`siteDescription`: the
  * badge's tooltip and the row's accessible description, word for word): who can open it and until when.
  */
-export function siteMarksOf(state: Pick<AppState, "workspace" | "ui">, path: string, catalog: MessageCatalog): { shared?: boolean; published?: boolean; siteLabel?: string; siteDescription?: string } {
+export function siteMarksOf(state: Pick<AppState, "workspace" | "ui">, path: string, catalog: MessageCatalog): { shared?: boolean; published?: boolean; siteLabel?: string; siteDescription?: string; siteLive?: "pending" | "confirmed" | "failed" } {
   const shares = liveSharesOf(state, path);
   const shared = shares.length > 0;
-  const published = publishStatus(publishPathOf(state.workspace.tree, path), state.ui.share.publication) === "live";
+  const tree = state.workspace.tree;
+  const root = rootOf(tree, path);
+  const isNote = findNode(tree, path)?.node.kind === "note";
+  // D-436: what the desktop is checking on GitHub Pages for this file right now, if anything.
+  const check = liveStatusOf(tree, path, state.ui.share.live);
+  // Only notes on the site get the globe: a Private + Public project's public notes (main, 27 November 10:49), or a
+  // private-only project's published notes; a private note in a Private + Public project never does, unless it's
+  // still on the site while its Unpublish waits for Pages.
+  const twoRoots = tree.roots.some((r) => r.id === "public");
+  const settled = isNote && (root?.id === "public" || (root?.id === "private" && !twoRoots
+    && publishStatus(publishPathOf(tree, path), state.ui.share.publication) === "live"));
+  const published = Boolean(check) || settled;
   if (!shared && !published) return {};
   const linkOnly = shares.some((g) => g.link && !g.passcode), codeOnly = shares.some((g) => g.passcode && !g.link);
   const ways = linkOnly && codeOnly ? "either" : linkOnly ? "link" : codeOnly ? "code" : "both";
@@ -59,12 +72,32 @@ export function siteMarksOf(state: Pick<AppState, "workspace" | "ui">, path: str
   const last = shares.some((g) => !g.expiresAt) ? undefined : shares.map((g) => Date.parse(g.expiresAt!)).filter(Number.isFinite).sort((a, b) => b - a)[0];
   const sharedAbout = !shared ? "" : last === undefined ? catalog.format("files.mark.sharedAbout", { ways })
     : catalog.format("files.mark.sharedAboutUntil", { ways, date: new Intl.DateTimeFormat(catalog.locale, { day: "numeric", month: "short" }).format(new Date(last)) });
-  const publishedAbout = published ? catalog.format("files.mark.publishedAbout") : "";
+  const link = check?.url ?? publishedLinkOf(state, path);
+  const publishedAbout = !published ? ""
+    : check?.state === "pending" ? catalog.format(check.action === "unpublish" ? "files.live.unpublishing" : "files.live.pending")
+      : check?.state === "failed" ? catalog.format("files.live.failed", { reason: catalog.format(`files.live.reason.${LIVE_REASONS.includes(check.reason ?? "") ? check.reason : "failed"}`) })
+        : check?.action === "unpublish" ? catalog.format("files.live.unpublished")
+          : link ? catalog.format("files.live.published", { link }) : catalog.format("files.mark.publishedAbout");
+  // The name after the file's name: left out where the row already says it (a public note's *public*, or D-422's
+  // *publishing…* while its Publish runs), so it's never read twice.
+  const quiet = !shared && ((settled && root?.id === "public" && !check)
+    || (check?.state === "pending" && publishStatus(publishPathOf(tree, path), state.ui.share.publication) === "publishing"));
   return {
     shared, published,
-    siteLabel: catalog.format(shared && published ? "files.mark.both" : shared ? "files.mark.shared" : "files.mark.published"),
+    ...(quiet ? {} : { siteLabel: catalog.format(shared && published ? "files.mark.both" : shared ? "files.mark.shared" : "files.mark.published") }),
     siteDescription: shared && published ? catalog.format("files.mark.bothAbout", { shared: sharedAbout, published: publishedAbout }) : sharedAbout || publishedAbout,
+    ...(check ? { siteLive: check.state === "live" ? "confirmed" as const : check.state } : {}),
   };
+}
+/** The reasons a page didn't go live that have their own words (D-436); any other is `failed`. */
+export const LIVE_REASONS = ["timeout", "pages", "offline", "signedout", "refused", "leak", "failed"];
+/** A published note's page address: a public note's on the project's site, or a private-only project's published note's. */
+function publishedLinkOf(state: Pick<AppState, "workspace" | "ui">, path: string): string | undefined {
+  const tree = state.workspace.tree;
+  const root = rootOf(tree, path);
+  if (root?.id === "public") return publicLinkOf(tree, state.workspace.site, path);
+  const rel = publishPathOf(tree, path), site = state.ui.share.listing?.site;
+  return rel && site ? publicNoteUrl(site, rel) : undefined;
 }
 
 export function registerShareDetails({ store, catalog, commands, viewModels, tracker, access, flush }: {

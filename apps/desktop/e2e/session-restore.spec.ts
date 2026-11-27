@@ -130,6 +130,10 @@ test("D-420: public notes/ plus a private/ submodule restores private and public
     await files.locator("section#filesOpened").getByRole("button", { name: "One", exact: true }).click();
     await expect(editor).toContainText("One body.");
     await expect.poll(() => tabNames(instance!)).toEqual(["Untitled", "Pub", "One", "Two"]);
+    // D-436: the public note's tab is named by its title only; its published status reaches screen readers as its description.
+    const pubTab = files.locator("section#filesOpened").getByRole("button", { name: "Pub", exact: true });
+    await expect(pubTab).toHaveAccessibleName("Pub");
+    await expect(pubTab).toHaveAccessibleDescription(/^Published · live at https:\/\/\S+\/n\/pub\/$/);
     await expect.poll(() => JSON.parse(readFileSync(join(dirs.userData, "state.json"), "utf8")).filesOpened).toEqual([pub]);
     await quit(instance);
     closeOwned(instance);

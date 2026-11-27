@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { TooltipContext, TooltipTrigger, TooltipTriggerStateContext } from "react-aria-components";
 import { useTooltip, useUNSAFE_PortalContext } from "react-aria";
 import { fixedBox } from "../../behaviors/frame.ts";
-import { placeTooltip, type TooltipSide } from "./place.ts";
+import { placeTooltip, tooltipWidthLimit, type TooltipSide } from "./place.ts";
 import * as s from "./Tooltip.css.ts";
 
 export interface TooltipProps {
@@ -53,6 +53,8 @@ function showing(el: HTMLElement | null): el is HTMLElement {
 
 /** The space between the control and its tooltip, and the least distance from the window's edges (tokens, read once shown). */
 const read = (el: Element, v: string) => parseFloat(getComputedStyle(el).getPropertyValue(v.replace(/^var\(/, "").replace(/\)$/, ""))) || 0;
+/** The drawn window's width less its edges (D-436), set as it's placed. */
+const windowMax = s.windowMaxVar.replace(/^var\(/, "").replace(/\)$/, "");
 
 /**
  * The tooltip itself: anchored to its control and kept inside the window as drawn (D-14, D-111). It
@@ -104,6 +106,9 @@ function PositionedBubble({ placement, children, open, triggerRef, tooltipProps,
         return;
       }
       const win = fixedBox(trigger);
+      const edge = read(el, s.edgeVar);
+      const limit = `${tooltipWidthLimit({ left: win.left, top: win.top, right: win.left + win.width, bottom: win.top + win.height }, edge)}px`;
+      if (el.style.getPropertyValue(windowMax) !== limit) el.style.setProperty(windowMax, limit);
       const now = el.getBoundingClientRect();
       // In a panel above what it points at (the formatting toolbar over the selection), above it,
       // so it never covers that text; below one, below.

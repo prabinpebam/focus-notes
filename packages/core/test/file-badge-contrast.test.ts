@@ -80,6 +80,22 @@ describe("file badges in the accent (D-431)", () => {
     const failing = ratios.filter((r) => !(r.ratio >= 3)).map((r) => `${r.theme} · ${r.accent} · ${r.state}: ${r.ratio.toFixed(2)}`);
     expect(failing).toEqual([]);
   });
+  it("D-436: the live-status globe (amber pending, with its arc in the same colour; green live; danger failed) reaches 3:1 everywhere too", () => {
+    const failing: string[] = [];
+    for (const theme of BUILT_IN_THEMES) {
+      for (const accent of [undefined, ...PRESETS]) {
+        const colors = colorsOf(theme.id, accent);
+        for (const s of STATES) {
+          if (s.project && !accent) continue;
+          for (const fg of ["cmp.fileTree.badgePending", "cmp.fileTree.badgeLive", "cmp.fileTree.badgeFailed"]) {
+            const ratio = pairRatio(colors, { fg, bg: s.bg, min: 3, minHigh: 3, role: "ui", under: FROST }) ?? NaN;
+            if (!(ratio >= 3)) failing.push(`${theme.id} · ${accent ?? "app"} · ${s.state} · ${fg}: ${ratio.toFixed(2)}`);
+          }
+        }
+      }
+    }
+    expect(failing).toEqual([]);
+  });
   it("the contrast guard warns when a custom theme's accent is too faint for the badges", () => {
     const colors = { ...colorsOf("paper", undefined), "color.accent": "#d7e3f8" };
     expect(checkContrast(colors).filter((f) => f.fg === "color.accent" && f.where === "on a frosted sheet").map((f) => f.bg)).toEqual(

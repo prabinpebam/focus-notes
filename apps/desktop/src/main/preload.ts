@@ -354,6 +354,15 @@ contextBridge.exposeInMainWorld("focusNotes", {
       return () => ipcRenderer.removeListener("sharing:publishLive", handler);
     },
     followRetry: () => ipcRenderer.invoke("sharing:followRetry"),
+    // D-436: published files' live checks on GitHub Pages.
+    liveStatus: () => ipcRenderer.invoke("sharing:liveStatus"),
+    liveRetry: (root: string, path: string) => ipcRenderer.invoke("sharing:liveRetry", root, path),
+    liveOpenGitHub: () => ipcRenderer.invoke("sharing:liveGitHub"),
+    onLiveStatus: (listener: (entries: unknown[]) => void) => {
+      const handler = (_event: unknown, value: unknown) => { if (Array.isArray(value)) listener(value); };
+      ipcRenderer.on("sharing:liveStatus", handler);
+      return () => ipcRenderer.removeListener("sharing:liveStatus", handler);
+    },
     sharesRetry: () => ipcRenderer.invoke("sharing:sharesRetry"),
     onSharesUpdated: (listener: (event: { status: string; problem?: string }) => void) => {
       const handler = (_event: unknown, value: unknown) => {

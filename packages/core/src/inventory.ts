@@ -69,6 +69,11 @@ export const DATA_FILES = {
   ai: "ai.json",
   /** Project invitations this computer has seen (G2): repository names, invitee logins, roles and IDs, to show one GitHub no longer lists as revoked. */
   invitations: "invitations.json",
+  /**
+   * D-436: published files whose page change is waiting for GitHub Pages or didn't go live (each note's path in its
+   * notes root, its page's public address, and hashes of the page bytes), and whether a site rebuild is owed.
+   */
+  publishLive: "publish-live.json",
 } as const;
 export type DataFile = (typeof DATA_FILES)[keyof typeof DATA_FILES];
 
@@ -127,6 +132,7 @@ export const DESKTOP_DATA: readonly InventoryItem[] = [
   { id: "aiService", path: DATA_FILES.ai, removedBy: ["deleteDataFolder"] },
   { id: "accountPicture", path: DATA_FILES.avatar, removedBy: ["deleteDataFolder"] },
   { id: "invitations", path: DATA_FILES.invitations, removedBy: ["signOut", "removeWorkspace", "deleteProject", "deleteDataFolder"] },
+  { id: "publishLive", path: DATA_FILES.publishLive, removedBy: ["signOut", "removeWorkspace", "deleteProject", "deleteDataFolder"] },
   { id: "keybindings", path: DATA_FILES.keybindings, removedBy: ["deleteDataFolder"] },
   { id: "agentPermissions", path: DATA_FILES.agents, removedBy: ["signOut", "removeWorkspace", "deleteProject", "deleteDataFolder"] },
   { id: "agentLimits", path: DATA_FILES.agentLimits, removedBy: ["signOut", "removeWorkspace", "deleteProject", "deleteDataFolder"] },

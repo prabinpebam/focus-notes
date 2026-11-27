@@ -128,7 +128,8 @@ export function gitData(github: FakeGitHub) {
   const get = async (url: string) => {
     const at = /^https:\/\/([^.]+)\.github\.io\/([^/]+)\/(.+)$/.exec(url);
     if (!at || stale) return undefined;
-    return site(`${at[1]}/${at[2]}`).get(at[3]!);
+    // A page's address is its folder: Pages serves the folder's index.html (D-436 checks the page itself).
+    return site(`${at[1]}/${at[2]}`).get(at[3]!.endsWith("/") ? `${at[3]}index.html` : at[3]!);
   };
   /** Every path in the branch head, outside site/ too. */
   const headFiles = (key: string) => { const head = heads.get(key); return head ? [...trees.get(commits.get(head)!.tree)!.keys()] : []; };

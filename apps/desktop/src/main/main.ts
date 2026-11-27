@@ -56,6 +56,20 @@ import { audienceState } from "@focus-notes/seal/access";
 import { invitationsFile, projectPeople } from "./share/people.ts";
 import { projectSharingLayout } from "./share/layout.ts";
 import { sharingRuntime } from "./share/runtime.ts";
+import { liveWatcher, type LiveEntry, type LiveItem, type LiveRecord, type LiveWatcher } from "./share/live-status.ts";
+import { siteRebuilder, type SiteRebuilder } from "./share/site-rebuild.ts";
+import { fetchDeployedSite } from "./share/site-publish.ts";
+import { publicNoteUrl, publicPagePath } from "@focus-notes/core/public-page";
+
+/** D-436: a failed build's or deploy's reason, as the live status names it (never a note's name or text). */
+function liveReason(error: unknown): string {
+  const text = error instanceof Error ? error.message : "";
+  if (/Leak check failed/.test(text)) return "leak";
+  const code = /(?:sharing|access):([a-zA-Z]+)/.exec(text)?.[1]?.toLowerCase();
+  return code === "signedout" || code === "offline" || code === "refused" || code === "pages" ? code : "failed";
+}
+/** D-436: what the window gets of a live check: where the note is, its page address, and its state. */
+const liveView = (e: LiveEntry) => ({ root: e.root, path: e.path, url: e.url, action: e.action, state: e.state, ...(e.reason ? { reason: e.reason } : {}) });
 import { githubRepo } from "./project-card.ts";
 import { memoryClipboard, secretClipboard, type TextClipboard } from "./share/clipboard.ts";
 import { ProblemLog, type RedactOptions } from "@focus-notes/core/diagnostics";
@@ -362,8 +376,10 @@ function backedUp(): void {
 let afterBackup: (() => void) | undefined;
 /** One queue per repository for the backup's pushes and the website's uploads (D-432). */
 const repoPushGate = pushGate();
+/** D-436: stops the open project's live checks and site rebuild retries when the project closes or changes. */
+let closeLive: (() => void) | undefined;
 /** Opened once the caret is ready, so Git never competes with the first frame (PRF-02, PRF-07). Again after the workspace changes. */
-const armGit = () => (gitSync = undefined, gitOpened = false, gitWaiting = [], lastWaiting = 0, gitOpening = new Promise<GitSync | undefined>((resolve) => {
+const armGit = () => (closeLive?.(), gitSync = undefined, gitOpened = false, gitWaiting = [], lastWaiting = 0, gitOpening = new Promise<GitSync | undefined>((resolve) => {
   startGit = () => {
     startGit = () => {};
     // The backup policy's thresholds (D-133); FOCUS_NOTES_IDLE_COMMIT_MS stays the 60 s pause.
@@ -540,6 +556,8 @@ async function setupWhere(instance?: string): Promise<{ folder: string; chosen: 
  * renderer forgets the recent note in state.json itself, since it owns that file.
  */
 async function forgetLocal(event: "signOut" | "removeWorkspace" | "deleteProject"): Promise<void> {
+  // D-436: no live check or rebuild retry may write publish-live.json again once it's forgotten.
+  closeLive?.();
   if (projectMetadata) {
     await projectMetadata.purge(async () => {}, event);
     return;
@@ -2164,6 +2182,9 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   });
   // The Pages site the public root publishes to (SHR-03, D-139): setup's, or the notes repository's origin on github.com.
   const sendSharing = (channel: string, value: unknown) => { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send(channel, value); };
+  /** D-436: the open project's live checks and its one site rebuild (set up by `liveFor`, further down). */
+  let liveNow: { project: string; watcher: LiveWatcher; rebuilds: SiteRebuilder; parts: Map<string, string> | undefined } | undefined;
+  closeLive = () => { liveNow?.watcher.dispose(); liveNow?.rebuilds.dispose(); liveNow = undefined; };
   const sharing = sharingRuntime({
     root: notesHome, layout: projectLayout, api: projectGitHub, repository: githubRepo, pushGate: repoPushGate,
     write: async (file, text) => { await assertWritable(file); await atomicWrite(file, text); },
@@ -2176,6 +2197,9 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     publishStep: step => sendSharing("sharing:publishStep", step),
     publishLive: event => sendSharing("sharing:publishLive", event),
     renameFollowed: event => sendSharing("sharing:renameFollowed", event),
+    // D-436: each upload's pages and each failure reach the live-status checks.
+    siteBuilt: site => void liveNow?.watcher.built(site),
+    siteFailed: error => void liveNow?.watcher.buildFailed(liveReason(error)),
     // Journeys only: a short Pages wait, so Still publishing can be walked without waiting 10 minutes.
     ...(devEnv("FOCUS_NOTES_PAGES_WAIT_MS") ? { pagesWaitMs: Number(devEnv("FOCUS_NOTES_PAGES_WAIT_MS")), pagesWatch: { delayMs: 500 } } : {}),
     // Journeys only: Still working after a short build, not after 2 minutes (D-427).
@@ -2214,12 +2238,52 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     return value as string[];
   };
   handle("sharing:published", () => sharing.published());
+  // D-436: Publish and Unpublish are checked live on Pages from the moment they start; a stop before the upload fails them.
+  const privateLive = (paths: readonly string[], action: "publish" | "unpublish") =>
+    liveItems(paths.map(p => ({ root: "private" as const, path: p, pagePath: p, action })));
+  const tracked = async <T>(items: Promise<LiveItem[]>, work: () => Promise<T>): Promise<T> => {
+    const live = liveFor(), list = await items.catch(() => [] as LiveItem[]);
+    await live.watcher.track(list);
+    try { return await work(); }
+    catch (error) {
+      // A stop before GitHub built it (refused, leak check, offline, signed out): it never reached the site, so nothing
+      // is kept of it. A failed Pages deploy is on the site's branch: kept as failed, with Retry.
+      const reason = liveReason(error);
+      if (reason === "pages") await live.watcher.buildFailed(reason); else await live.watcher.forget(list);
+      throw error;
+    }
+  };
   handle("sharing:publish", (selection: unknown) => {
     const s = selection as { notes?: unknown; folders?: unknown } | null;
     if (!s || typeof s !== "object") throw new Error("sharing:scope");
-    return sharing.publishNotes({ notes: notePaths(s.notes), ...(s.folders === undefined ? {} : { folders: notePaths(s.folders) }) });
+    const notes = notePaths(s.notes);
+    return tracked(privateLive(notes, "publish"), () => sharing.publishNotes({ notes, ...(s.folders === undefined ? {} : { folders: notePaths(s.folders) }) }));
   });
-  handle("sharing:unpublish", (paths: unknown) => sharing.unpublishNotes(notePaths(paths)));
+  handle("sharing:unpublish", (paths: unknown) => {
+    const notes = notePaths(paths);
+    return tracked(privateLive(notes, "unpublish"), () => sharing.unpublishNotes(notes));
+  });
+  handle("sharing:liveStatus", async () => { const live = liveFor(); await live.watcher.start(); return live.watcher.entries().map(liveView); });
+  handle("sharing:liveRetry", async (root: unknown, path: unknown) => {
+    if ((root !== "private" && root !== "public") || typeof path !== "string") throw new Error("sharing:scope");
+    const live = liveFor();
+    const entry = await live.watcher.retry(root, path);
+    if (!entry) return;
+    // Private + Public: the one rebuild builds the whole site again. A private-only project publishes or unpublishes it again.
+    if (projectLayout().legacy) { live.rebuilds.request(true); return; }
+    try { await (entry.action === "publish" ? sharing.publishNotes({ notes: [path] }) : sharing.unpublishNotes([path])); }
+    catch (error) { await live.watcher.buildFailed(liveReason(error)); }
+  });
+  // View on GitHub: the site repository's Actions runs, where its Pages deploys are.
+  handle("sharing:liveGitHub", async () => {
+    const pairing = await sharing.pairing().catch(() => undefined);
+    const slug = pairing ? `${pairing.owner}/${pairing.name}` : await githubRepo(notesHome());
+    if (!slug || !isRepoSlug(slug)) throw new Error("sharing:unconfigured");
+    const url = `https://github.com/${slug}/actions`;
+    if (!isWebLink(url)) throw new Error("sharing:failed");
+    if (journey) return void process.stdout.write(`[focus-notes] open-external ${url}\n`);
+    await shell.openExternal(url);
+  });
   handle("sharing:followRetry", () => sharing.followRetry());
   // Custom themes (THM-04, D-173): the workspace's theme files, private when it has a private
   // repository. Read only, small files only, never followed out of the folder.
@@ -2372,7 +2436,23 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
       if (op?.op === "move" && typeof op.from === "string" && typeof op.to === "string") void sharing.followRename(op.from, op.to).catch(() => {});
     }
     // Private + Public with sharing on: Publish and Unpublish move notes in or out of notes/, whose pages the app builds (D-429).
-    if (projectLayout().legacy) afterBackup?.();
+    if (projectLayout().legacy) {
+      // D-436: each move in or out of the public notes is checked live on Pages from now, where the note is now.
+      void (async () => {
+        if (!await legacySiteReady()) return;
+        const layout = projectLayout();
+        const pub = layout.roots.find(r => r.id === "public")?.path, priv = layout.roots.find(r => r.id === "private")?.path;
+        const relIn = (root: string | undefined, p: string) => { if (!root) return undefined; const r = relative(root, p); return !r || r.startsWith("..") || isAbsolute(r) ? undefined : r.split(sep).join("/"); };
+        const notes: Parameters<typeof liveItems>[0] = [];
+        for (const op of ops as { op?: unknown; from?: unknown; to?: unknown }[]) {
+          if (op?.op !== "move" || typeof op.from !== "string" || typeof op.to !== "string" || !/\.(md|markdown)$/i.test(op.to)) continue;
+          const fromPublic = relIn(pub, op.from), toPublic = relIn(pub, op.to), toPrivate = relIn(priv, op.to);
+          if (toPublic) notes.push({ root: "public", path: toPublic, pagePath: toPublic, action: "publish" });
+          else if (fromPublic && toPrivate) notes.push({ root: "private", path: toPrivate, pagePath: fromPublic, action: "unpublish" });
+        }
+        await liveFor().watcher.track(await liveItems(notes));
+      })().catch(() => {}).finally(() => afterBackup?.());
+    }
     // The shell's own reference changes, so the open note follows them instead of saving old ones back.
     return rewrites.length ? { rewrites } : undefined;
   });
@@ -2508,35 +2588,85 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   noteWritten = () => shareUpdates?.changed();
   handle("sharing:sharesRetry", () => shareUpdates?.retry());
   // A withdrawal, expiry change or removal reaches readers only when the paired site is deployed again (G6.2):
-  // deploy now; if that fails, the change stays recorded and the deploy retries in the background.
-  const redeployAfter = (attempt = 0): Promise<boolean> => deployAccess().then(() => true, (error: unknown) => {
+  // deploy now; if that fails, the change stays recorded and the one site rebuild (D-436) keeps trying until it lands.
+  const redeployAfter = (): Promise<boolean> => deployAccess().then(() => true, (error: unknown) => {
     logLine(`Sharing: site deploy after an access change failed (${error instanceof Error ? error.message : "unknown"})`);
-    if (attempt < 5) setTimeout(() => void redeployAfter(attempt + 1), 30_000).unref();
+    liveFor().rebuilds.request(true);
     return false;
   });
   // D-429: in the Private + Public layout with sharing on, the app builds the project's public site, so a backup that
   // changed the public notes (Publish and Unpublish move notes in and out of them) updates their pages too.
-  let publicNotesSeen: string | undefined;
-  const publicNotesSignature = async () => {
-    const dir = join(notesHome(), "notes"), parts: string[] = [];
+  const publicNoteParts = async () => {
+    const dir = join(notesHome(), "notes"), parts = new Map<string, string>();
     const walk = async (d: string): Promise<void> => {
       for (const e of await readdir(d, { withFileTypes: true }).catch(() => [])) {
         if (e.name.startsWith(".")) continue;
         const p = join(d, e.name);
         if (e.isDirectory()) await walk(p);
-        else if (e.isFile()) { const s = await stat(p); parts.push(`${relative(dir, p)}:${s.size}:${s.mtimeMs}`); }
+        else if (e.isFile()) { const s = await stat(p); parts.set(relative(dir, p).split(sep).join("/"), `${s.size}:${s.mtimeMs}`); }
       }
     };
     await walk(dir);
-    return parts.sort().join("\n");
+    return parts;
+  };
+  const publicNotesSignature = async () => [...await publicNoteParts()].map(([p, v]) => `${p}:${v}`).sort().join("\n");
+  const legacySiteReady = async () => projectLayout().legacy && (await sharing.pairing().catch(() => undefined))?.phase === "ready";
+  /**
+   * D-436: one site rebuild and one set of live checks per project. The rebuild builds the whole site from the source
+   * as it is after the change committed (D-432's queue holds it apart from the backup's pushes), again if the source
+   * changed while it ran, and keeps trying a failed one with backoff, owed across a restart. Closing the project stops both.
+   */
+  const liveFor = () => {
+    const project = notesHome();
+    if (liveNow?.project === project) return liveNow;
+    liveNow?.watcher.dispose();
+    liveNow?.rebuilds.dispose();
+    const file = dataFile(DATA_FILES.publishLive);
+    const quick = devEnv("FOCUS_NOTES_LIVE_CHECK_MS") ? Number(devEnv("FOCUS_NOTES_LIVE_CHECK_MS")) : undefined;
+    const watcher = liveWatcher({
+      project,
+      read: async () => JSON.parse(await readFile(file, "utf8")) as LiveRecord,
+      write: async record => { await atomicWrite(file, `${JSON.stringify(record)}\n`); },
+      get: fetchDeployedSite,
+      // Only the owner's own Pages site, also for an address read back from the data file.
+      allowed: url => { try { const u = new URL(url); return u.protocol === "https:" && u.hostname.endsWith(".github.io"); } catch { return false; } },
+      changed: entries => sendSharing("sharing:liveStatus", entries.map(liveView)),
+      // Journeys only: quick checks, so amber, green and the timeout can be walked in seconds.
+      ...(quick ? { fastMs: quick, slowMs: quick, holdMs: 1_000, ...(devEnv("FOCUS_NOTES_LIVE_TIMEOUT_MS") ? { timeoutMs: Number(devEnv("FOCUS_NOTES_LIVE_TIMEOUT_MS")) } : {}) } : {}),
+    });
+    const rebuilds = siteRebuilder({
+      signature: publicNotesSignature,
+      deploy: async () => { if (await legacySiteReady()) await deployAccess(); },
+      persist: owed => watcher.setOwed(owed),
+      report: event => {
+        if (event.status !== "failed") return;
+        logLine(`Sharing: site rebuild failed (${event.problem ?? "unknown"}), attempt ${event.attempt ?? 1}`);
+        void watcher.buildFailed(liveReason(new Error(event.problem ?? "")));
+      },
+      ...(quick ? { retryMs: [quick] } : {}),
+    });
+    void watcher.start().then(owed => { if (owed && liveNow?.rebuilds === rebuilds) rebuilds.request(true); });
+    return liveNow = { project, watcher, rebuilds, parts: undefined };
+  };
+  /** Notes now on (or leaving) the site, as the live checks name them; none while the site's address isn't known. */
+  const liveItems = async (notes: { root: "private" | "public"; path: string; pagePath: string; action: "publish" | "unpublish" }[]): Promise<LiveItem[]> => {
+    const site = await pagesSite().catch(() => undefined);
+    if (!site || !notes.length) return [];
+    return notes.map(n => ({ root: n.root, path: n.path, action: n.action, url: publicNoteUrl(site.endsWith("/") ? site : `${site}/`, n.pagePath),
+      page: `${publicPagePath(n.pagePath).split("/").map(s => decodeURIComponent(s)).join("/")}index.html` }));
   };
   afterBackup = () => void (async () => {
     shareUpdates?.changed();
-    if (!projectLayout().legacy || (await sharing.pairing().catch(() => undefined))?.phase !== "ready") return;
-    const now = await publicNotesSignature();
-    if (now === publicNotesSeen) return;
-    publicNotesSeen = now;
-    await redeployAfter();
+    if (!await legacySiteReady()) return;
+    const live = liveFor();
+    // D-436: a public note saved since the last look is an update of its page; the first look is only the baseline.
+    const parts = await publicNoteParts();
+    if (live.parts) {
+      const changed = [...parts].filter(([p, v]) => live.parts!.get(p) !== v).map(([p]) => p).filter(p => /\.(md|markdown)$/i.test(p));
+      await live.watcher.track(await liveItems(changed.map(p => ({ root: "public" as const, path: p, pagePath: p, action: "publish" as const }))));
+    }
+    live.parts = parts;
+    live.rebuilds.request();
   })().catch(() => {});
   handle("access:apply", async (change) => {
     if (!settingsAvailable()) throw new Error("access:failed");

@@ -52,6 +52,7 @@ import { registerSharingSettings } from "./sharing-settings.ts";
 import { registerShareDetails, SHARE_DETAILS_COMMAND } from "./share-details.ts";
 import { registerSharingPeople } from "./sharing-people.ts";
 import { registerSharingPreview } from "./sharing-preview.ts";
+import { registerPublishLive } from "./publish-live.ts";
 import { registerSiteAppearance } from "./site-appearance.ts";
 import { PUBLISH_STATUS_COMMAND, PUBLISH_STATUS_TITLE } from "./publish-status.ts";
 import { registerWindow, initialWindow, type WindowState } from "./window-app.ts";
@@ -528,6 +529,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   registerSharingPeople({ store, catalog, commands, viewModels, tracker, access: bridge.access });
   sitePublishedUrl = registerSharingPreview({ store, catalog, commands, viewModels, tracker, appState: () => appState, persistAppState, readNote: path => bridge.readNote(path), toast, siteAppearance,
     ...(bridge.publishing ? { publishing: bridge.publishing } : {}), ...(bridge.copyText ? { copyText: (text: string) => bridge.copyText!(text) } : {}) }).publishedUrl;
+  registerPublishLive({ store, commands, catalog, tracker, toast, ...(bridge.publishing ? { bridge: bridge.publishing } : {}) });
   const workspace = registerWorkspaceFeatures({
     store, commands, viewModels, catalog, bridge, tracker, toast, setNote, persistAppState, afterWrites, ...(options.workspaceFormat ? { format: options.workspaceFormat } : {}),
     // Unsaved edits and a file changed outside: both versions go to the resolver (D-92, FIL-12).
