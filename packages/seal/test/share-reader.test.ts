@@ -34,7 +34,7 @@ async function instance(grants: Grant[]) {
   await mkdir(join(root, "site"), { recursive: true });
   const reader = () => new SiteReader(async (p) => readFile(join(root, "site", ...p.split("/").map(decodeURIComponent)), "utf8").catch(() => undefined));
   const run = () => publish({ site: join(root, "site"), private: join(root, "private"), owner: "octo" });
-  return { reader, run, write };
+  return { root, reader, run, write };
 }
 
 const generic = (p: Promise<unknown>) => p.then(() => { throw new Error("opened"); }, (e: unknown) => {
@@ -161,6 +161,36 @@ describe("share sessions (SHR-10, D-125)", () => {
     const known = await time("Sam Lee", "wrong passcode words");
     const unknown = await time("Nobody Here", PASSCODE);
     expect(unknown).toBeGreaterThan(known * 0.6);
+  }, 60_000);
+
+  it("D-436: a reader who opens a link or a session while a rebuild switches builds still reads the note", async () => {
+    const secret = toB64url(randomBytes(32));
+    const i = await instance([grant({ link: { secret }, scope: { notes: ["n-plan"] } })]);
+    await i.run();
+    const { session } = await i.reader().openLinkSession("gshare001", secret);
+    const site = (p: string) => readFile(join(i.root, "site", ...p.split("/").map(decodeURIComponent)), "utf8").catch(() => undefined);
+    // The manifest is read from the old build; the site switches to a new one (a deploy replaces the whole
+    // tree, so the old build's files are gone) before the keyring is read.
+    const deploy = async () => {
+      await rm(join(i.root, "site"), { recursive: true, force: true });
+      await mkdir(join(i.root, "site"), { recursive: true });
+      await i.run();
+    };
+    const switching = () => {
+      let rebuilt = false;
+      return new SiteReader(async (p) => {
+        const text = await site(p);
+        if (p === "focus-notes.json" && !rebuilt) { rebuilt = true; await deploy(); }
+        return text;
+      });
+    };
+    const viaLink = await switching().openLinkSession("gshare001", secret);
+    expect(await viaLink.share.read("Plan.md")).toContain("Launch quietly");
+    const viaSession = await switching().resume(session);
+    expect(await viaSession.share.read("Plan.md")).toContain("Launch quietly");
+    // A withdrawn grant still fails with the generic error, however many builds it sees.
+    await i.write([grant({ link: { secret }, scope: { notes: ["n-plan"] }, revokedAt: "2026-10-10T00:00:00Z" })]);
+    await generic(switching().openLinkSession("gshare001", secret));
   }, 60_000);
 
   it("SHR-06: an expiry recorded in the keyring ends the session even before the nightly build", async () => {

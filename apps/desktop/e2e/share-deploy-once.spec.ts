@@ -3,7 +3,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { FakeGitHub } from "../../../packages/github/test/fake-github.ts";
-import { SiteReader } from "../../../packages/seal/src/reader.ts";
+import { SiteReader, type OpenShare } from "../../../packages/seal/src/reader.ts";
 import type { AccessFile } from "../../../packages/seal/src/grants.ts";
 import { serveFakeGitHub } from "../test/fake-pages.ts";
 import { launch, quit, type Launched } from "./helpers.ts";
@@ -13,7 +13,8 @@ import { git, instance, write } from "./instance.ts";
  * D-436 (27 November): in the Private + Public layout every change to the website is built and deployed once, with one
  * backup. Before, the rebuild after an action's own backup saved again and re-sealed the whole site under a new build
  * id, so a reader opening a just-shared link read files that had gone ("This note is private"). Share, a backup that
- * touches the public notes, then the reader opens the link; then editing a public note, Publish, Unpublish, Withdraw
+ * touches the public notes, then the reader opens the link; a reader opening the link while that rebuild switches builds
+ * still opens it (main's condition 5); then editing a public note, Publish, Unpublish, Withdraw
  * and Delete each deploy exactly once and back up once. GitHub and Pages are loopback fakes.
  */
 test("D-436: share, then a backup of the public notes: the reader still opens the link; every change deploys once and backs up once", async () => {
@@ -94,6 +95,19 @@ test("D-436: share, then a backup of the public notes: the reader still opens th
     await page.waitForTimeout(6_000);
     expect(build(), "the share's build id").toBe(shared);
 
+    // A reader opens the link while a real rebuild switches builds (main's condition 5): it reads the manifest of
+    // the build that's served, then the rebuild below (editing a public note) replaces the site before it reads on.
+    let held = false;
+    const midDeploy = new SiteReader(async path => {
+      const text = deployed().get(path);
+      if (path === "focus-notes.json" && !held) {
+        held = true;
+        for (const until = Date.now() + 150_000; build() === shared && Date.now() < until;) await new Promise(r => setTimeout(r, 250));
+      }
+      return text;
+    });
+    const during: Promise<OpenShare | Error> = midDeploy.openLinkSession(grant.id, grant.link!.secret).catch((e: unknown) => (e instanceof Error ? e : new Error(String(e))));
+
     // 1. Editing a public note, then a backup (Mod+S): its page updates once; the reader still opens the link.
     await once("edit Hello", async () => {
       await openFiles();
@@ -107,6 +121,11 @@ test("D-436: share, then a backup of the public notes: the reader still opens th
       await page.keyboard.type("An edit the site carries.");
       await page.keyboard.press("Control+s");
     }, () => (deployed().get("n/hello/index.html") ?? "").includes("An edit the site carries."));
+    expect(build(), "the edit's rebuild switched builds").not.toBe(shared);
+    expect(deployed().has(`_access/${shared}/l/${grant.id}.json`), "the old build's keyring is gone").toBe(false);
+    const midway = await during;
+    if (midway instanceof Error) throw new Error(`A reader opening the link during the rebuild saw the gate: ${midway.message}`);
+    expect(await midway.share.read(midway.share.notes[0]!.path)).toContain("Synthetic diary line.");
     const { share: opened } = await reader().openLinkSession(grant.id, grant.link!.secret);
     expect(await opened.read(opened.notes[0]!.path)).toContain("Synthetic diary line.");
 

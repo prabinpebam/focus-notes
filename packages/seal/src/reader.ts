@@ -91,7 +91,7 @@ export class SiteReader {
    * reader can reopen it after a reload or in another tab without the link secret or the passcode.
    */
   async openLinkSession(id: string, secret: string): Promise<OpenShare> {
-    return generic(async () => {
+    return this.#acrossDeploys(async () => {
       if (!GRANT_ID.test(id)) throw new SealError("key");
       const m = await this.manifest();
       const envelope = await this.#shareKeyring(m, "link", id);
@@ -101,7 +101,7 @@ export class SiteReader {
     });
   }
   async openPasscodeSession(name: string, passcode: string): Promise<OpenShare> {
-    return generic(async () => {
+    return this.#acrossDeploys(async () => {
       const m = await this.manifest();
       if (!m?.nameSalt) throw new SealError("key");
       const lookup = await nameLookup(m.nameSalt, name);
@@ -116,7 +116,7 @@ export class SiteReader {
     });
   }
   async openAccessCode(value: string): Promise<OpenShare> {
-    return generic(async () => {
+    return this.#acrossDeploys(async () => {
       const parsed = parseAccessCode(value);
       if (!parsed) throw new SealError("key");
       const m = await this.manifest();
@@ -131,11 +131,30 @@ export class SiteReader {
   }
   /** Reopens a share from a stored session. Anything malformed or expired fails before any request; every failure is generic. */
   async resume(stored: unknown): Promise<OpenShare> {
-    return generic(async () => {
-      const s = parseShareSession(stored);
+    const s = await generic(async () => parseShareSession(stored));
+    return this.#acrossDeploys(async () => {
       const m = await this.manifest();
       return this.#openShare(m!, await this.#shareKeyring(m, s.via, s.ref), s.via, s.ref, s.key);
     });
+  }
+
+  /**
+   * A share's opening with the generic error, that follows a deploy landing midway (D-436): each build's
+   * files are only under its own ID, so a reader that read the manifest just before the site switched
+   * builds finds them gone. When the site's manifest now names another build, open again against that
+   * one (twice at most). It retries only on a build change, which anyone can see, so it reveals nothing.
+   */
+  async #acrossDeploys<T>(open: () => Promise<T>): Promise<T> {
+    for (let tries = 0; ; tries++) {
+      try { return await generic(open); } catch (e) {
+        // Failed before reading the site (a malformed link or code): nothing to follow.
+        if (tries >= 2 || this.#manifest === undefined) throw e;
+        const used = (await this.#manifest)?.build;
+        this.#manifest = undefined;
+        const now = (await this.manifest())?.build;
+        if (now === undefined || now === used) throw e;
+      }
+    }
   }
 
   async #shareKeyring(m: SiteManifest | undefined, via: ShareSession["via"], ref: string): Promise<KeyringEnvelope> {
