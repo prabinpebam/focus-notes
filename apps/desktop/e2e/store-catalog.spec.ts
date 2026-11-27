@@ -23,12 +23,17 @@ import { files, reset, mod } from "./surfaces.ts";
 import { configure, configureSharing, git, instance, write } from "./instance.ts";
 import { repoRoot } from "./github-world.ts";
 import { captureWindow, exactSize, fullNote, openNote, startDemo } from "./scene-capture.ts";
+import { expectNoGlobeUnderPrivate, publishedRow, PUBLISHED, sharedRow, SHARED, startSharedProject } from "./scene-sharing.ts";
+import { SCENE_SITE } from "./scene-fixtures.ts";
+import { publicNoteUrl } from "../../../packages/core/src/public-page.ts";
 
 test.skip(process.env.FOCUS_NOTES_CAPTURE_STORE !== "1", "Opt in with FOCUS_NOTES_CAPTURE_STORE=1");
 
 /** The drawn window, in the app's own pixels; captured at SCALE, so 2240 × 1440 device pixels. */
 const WINDOW = { width: 1120, height: 720 };
-const SCALE = 2;
+// A local run whose screen can't hold 1440 device pixels of window may set FOCUS_NOTES_STORE_SCALE (1.8, say): the
+// composer fits every window to the same size on the backdrop.
+const SCALE = Number(process.env.FOCUS_NOTES_STORE_SCALE ?? 2);
 const ARGS = [`--force-device-scale-factor=${SCALE}`];
 const OUT = process.env.FOCUS_NOTES_STORE_OUT ?? join(repoRoot, "test-results", "store-capture");
 const exact = screenAllowed() ? (l: Launched) => exactSize(l, WINDOW) : undefined;
@@ -108,7 +113,7 @@ function closeApp(l: Launched | undefined) {
   if (l && process.platform === "win32") execFileSync("pwsh", ["-NoProfile", "-File", join(repoRoot, "tools", "dev", "close-test-apps.ps1"), "-OnlyPid", String(l.pid)], { stdio: "inherit" });
 }
 
-test("D-223: the note, Projects, a new project, Find in all notes, a picture, and Files", async () => {
+test("D-223: the note, Projects, a new project, Find in all notes and a picture", async () => {
   test.setTimeout(240_000);
   const l = await startDemo({ size: WINDOW, theme: "light", state: { appearance: "light", focusMode: false }, args: ARGS, exact, setup: demoExtras, root: ROOT });
   const { page } = l;
@@ -161,10 +166,6 @@ test("D-223: the note, Projects, a new project, Find in all notes, a picture, an
     await caption.evaluate((el) => el.scrollIntoView({ block: "end" }));
     await page.waitForTimeout(400);
     await capture(l, "images-light");
-
-    await files(page);
-    await rest(l);
-    await capture(l, "files-light");
   } finally {
     try { await quit(l); } finally { closeApp(l); }
   }
@@ -201,42 +202,51 @@ test("D-223: one note in four themes and fonts, for the cascade", async () => {
 
 const windowAt = (userData: string) => writeFileSync(join(userData, "window.json"), JSON.stringify({ version: 1, bounds: { x: 40, y: 40, width: WINDOW.width, height: WINDOW.height } }));
 
-test("D-223: sharing a folder with a link and passcode, dark", async () => {
-  test.setTimeout(180_000);
-  const made = instance();
-  // The project's name shows in its pill: a person's name for it, not the fixture's.
-  const docs = join(made.dirs.docs, "..", "Notebook");
-  renameSync(made.dirs.docs, docs);
-  const dirs = { ...made.dirs, docs };
-  const priv = join(dirs.docs, "private");
-  write(join(priv, "notes", "Travel", "Lisbon.md"), "# Lisbon\n\nThree days in October. Tram 28 early, before the crowds; the miradouros at dusk.\n");
-  write(join(priv, "notes", "Travel", "Packing list.md"), "# Packing list\n\n- Walking shoes\n- Light rain jacket\n- Notebook\n");
-  write(join(priv, "notes", "Garden plan.md"), "# Garden plan\n\nPeas along the north fence, tomatoes in the sunny bed.\n");
-  git(priv, "add", "-A"); git(priv, "commit", "-qm", "Add notes");
-  write(join(dirs.userData, DATA_FILES.state), JSON.stringify({ version: 1, firstRun: "done", appearance: "dark", focusMode: false, lastNotePath: join(priv, "notes", "Travel", "Lisbon.md") }));
-  windowAt(dirs.userData);
-  await configureSharing(dirs);
-  let l: Launched | undefined;
-  try {
-    l = await launch(dirs, { FOCUS_NOTES_MEMORY_CLIPBOARD: "1", FOCUS_NOTES_CANDIDATE_SITE: "" }, { args: ARGS });
-    await exact?.(l);
-    const { page } = l;
-    await l.app.evaluate(({ shell }) => { shell.openExternal = async () => {}; });
-    await expect(page.getByRole("textbox", { name: "Note" })).toContainText("Tram 28");
-    await expect.poll(() => page.evaluate(() => document.documentElement.style.colorScheme)).toBe("dark");
-    await page.keyboard.press("Control+Shift+E");
-    await page.getByRole("treeitem", { name: "Travel", exact: true }).click({ button: "right" });
-    await page.getByRole("menuitem", { name: "Share…", exact: true }).click();
-    const share = page.getByRole("dialog", { name: "Share “Travel”", exact: true });
-    await expect(share).toBeVisible();
-    await expect(share.getByRole("button", { name: "Copy share information", exact: true })).toBeVisible();
-    await rest(l);
-    await capture(l, "share-dark");
-  } finally {
-    try { if (l) await quit(l); } finally { closeApp(l); }
+test("D-437: Files with opened tabs and the shared and published badges, light; Share details, dark", async () => {
+  test.setTimeout(240_000);
+  // Files: the published note open, its row focused, so its badge's tooltip shows; the shared note's badge beside it.
+  {
+    const { l, page, close } = await startSharedProject({ theme: "light", size: WINDOW, args: ARGS, compact: true });
+    try {
+      // Two opened tabs, so Opened files, Private and Public all fit the Store's window without scrolling.
+      for (const title of [SHARED, PUBLISHED]) await openNote(page, title);
+      await fullNote(page);
+      await files(page);
+      await expect(publishedRow(page)).toBeFocused();
+      await expect(sharedRow(page).locator("[data-site-marks]")).toBeVisible();
+      await expectNoGlobeUnderPrivate(page);
+      // D-436: the published note's badge says where its page is live.
+      await expect(page.getByRole("tooltip")).toHaveCount(1);
+      await expect(page.getByRole("tooltip")).toHaveText(`Published · live at ${publicNoteUrl(SCENE_SITE, `${PUBLISHED}.md`)}`);
+      await capture(l, "files-light");
+    } finally {
+      await close();
+    }
+  }
+  // Share details over the note: the share's link and passcode, its expiry, and Copy, Extend and Withdraw.
+  {
+    // Share details for the note open behind it (main, 27 November 12:08): Lisbon trip open, the dialog naming it.
+    const { l, page, close } = await startSharedProject({ theme: "dark", size: WINDOW, args: ARGS, compact: true, first: SHARED });
+    try {
+      await fullNote(page);
+      const editor = page.getByRole("textbox", { name: "Note" });
+      const openTitle = (await editor.locator("h1").first().textContent())?.trim() ?? "";
+      expect(openTitle).toBe(SHARED);
+      await page.keyboard.press(`${mod}+Shift+E`);
+      await expectNoGlobeUnderPrivate(page);
+      await sharedRow(page).click({ button: "right" });
+      await page.getByRole("menuitem", { name: "Share details…", exact: true }).click();
+      const details = page.getByRole("dialog", { name: "Share details", exact: true });
+      await expect(details.getByText(openTitle, { exact: true })).toBeVisible();
+      await expect(details.getByRole("button", { name: "Withdraw", exact: true })).toBeVisible();
+      await expect(editor.locator("h1").first()).toHaveText(openTitle);
+      await rest(l);
+      await capture(l, "share-dark");
+    } finally {
+      await close();
+    }
   }
 });
-
 test("D-223: publishing a note with its picture to a public site", async () => {
   test.setTimeout(180_000);
   const dirs = tempDirs();

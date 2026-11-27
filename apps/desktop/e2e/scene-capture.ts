@@ -9,40 +9,8 @@ import { join } from "node:path";
 import { launch, tempDirs, windowBox, type Launched } from "./helpers.ts";
 import { scheme, mod } from "./surfaces.ts";
 
-/** The demo workspace: real writing, nobody's own notes, nothing private. */
-export const DEMO_NOTES: Record<string, string> = {
-  "On writing slowly.md": [
-    "# On writing slowly",
-    "",
-    "Most of what I write well, I write slowly. Not because the words are hard to find, but because the room around them is loud.",
-    "",
-    "## The page in front of you",
-    "",
-    "A good first draft asks for one thing: the next sentence. Everything else can wait. The outline, the title, the doubts about the second paragraph all belong to tomorrow.",
-    "",
-    "So I keep the screen quiet. One note, one line at a time, and the rest of the page fades back until I'm ready to read it again.",
-    "",
-    "> Write as if no one will read it, then read it as if someone will.",
-    "",
-    "## What helps",
-    "",
-    "- A fixed time, the same each morning",
-    "- No tabs, no inbox, no notifications",
-    "- Stopping mid-sentence, so tomorrow starts easily",
-    "",
-    "## Revising",
-    "",
-    "Revision is where the slowness pays off. When the draft has had a night to settle, the weak sentences stand out on their own, and cutting them feels less like loss and more like tidying a desk.",
-    "",
-  ].join("\n"),
-  "Reading list.md": "# Reading list\n\n- [x] Bird by Bird\n- [ ] The Elements of Style\n- [ ] Draft No. 4\n",
-  "Garden/Spring planting.md": "# Spring planting\n\nTomatoes go in after the last frost. Basil beside them.\n\n| Bed | Plant | When |\n| --- | --- | --- |\n| North | Peas | March |\n| South | Tomatoes | May |\n",
-  "Garden/Compost notes.md": "# Compost notes\n\nGreens and browns, roughly one to two.\n",
-  "Journal/Tuesday.md": "# Tuesday\n\nA long walk by the river before work. The first cold morning.\n",
-  "Journal/Friday.md": "# Friday\n\nFinished the essay draft. Read it aloud once; cut the second paragraph.\n",
-  "Projects/Kitchen shelves.md": "# Kitchen shelves\n\nOak, oiled, three shelves above the counter.\n",
-  "Recipes/Lentil soup.md": "# Lentil soup\n\nOnion, carrot, cumin, red lentils, lemon at the end.\n",
-};
+export { DEMO_NOTES } from "./scene-fixtures.ts";
+import { DEMO_NOTES } from "./scene-fixtures.ts";
 
 export type Size = { width: number; height: number };
 
