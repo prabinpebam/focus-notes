@@ -213,6 +213,27 @@ describe("FIL-05: every file operation is a commit", () => {
     expect(git(ws, "show", `${deletedIn}^:notes/list.md`)).toBe(text.trim());
   });
 
+  it("D-436: backedUp waits for a batch's own push and syncs again only when something still waits", async () => {
+    const { ws, notesRemote } = instance();
+    const lines: string[] = [];
+    const s = await open(ws, { log: (line) => lines.push(line) });
+    const syncs = () => lines.filter((line) => line.startsWith("git-sync"));
+    const p = join(ws, "notes", "list.md");
+    rmSync(p);
+    expect(await s.commitBatch([{ op: "delete", path: p }])).toBeUndefined();
+    expect((await s.backedUp()).problem).toBeUndefined();
+    expect(git(notesRemote, "rev-parse", "main")).toBe(git(ws, "rev-parse", "HEAD"));
+    expect(syncs()).toEqual(["git-sync reasons=batch problem=none"]);
+    await s.backedUp();
+    expect(syncs()).toHaveLength(1);
+    const hello = join(ws, "notes", "hello.md");
+    writeFileSync(hello, "# Hello\n\nStill waiting.\n");
+    s.written(hello);
+    await s.backedUp();
+    expect(syncs()).toHaveLength(2);
+    expect(git(notesRemote, "show", "main:notes/hello.md")).toBe("# Hello\n\nStill waiting.");
+  });
+
   it("makes each repository's part of a batch one commit there", async () => {
     const { ws } = instance();
     const s = await open(ws);

@@ -2692,7 +2692,8 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     if (!settingsAvailable()) throw new Error("sharing:unavailable");
     const g = await gitOpening;
     if (g) {
-      const report = await g.request("save");
+      // The delete's own backup has usually pushed it already; sync again only if something still waits (D-436).
+      const report = await g.backedUp();
       if (report.state === "problem") throw new Error(`sharing:${report.problem === "offline" ? "offline" : "failed"}`);
     }
     return sharing.takeDown();

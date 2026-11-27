@@ -225,6 +225,16 @@ export class GitSync {
     return this.sync(reason);
   }
 
+  /**
+   * The backup as it stands: after any running or queued sync, syncs again only if something still waits (D-436).
+   * A takedown after a delete needs the delete backed up, and the delete's own backup usually already did it.
+   */
+  async backedUp(): Promise<SyncReport> {
+    await this.#ops.run(async () => {});
+    const report = await this.status();
+    return report.waiting || report.unknown || report.state !== "idle" ? this.request("save") : report;
+  }
+
   /** The window became active: fetch, at most every 30 s (Desktop and Git → Save and sync, step 5). */
   focused(): void {
     if (this.#clock.now() - this.#lastFetchAt >= 30_000) void this.sync("fetch");
