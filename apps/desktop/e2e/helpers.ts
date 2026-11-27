@@ -364,6 +364,19 @@ export async function railFrom(page: Page): Promise<number> {
   });
 }
 
+/** Whether a process is gone within `ms` (signal 0 only checks that the PID exists). */
+async function processExited(pid: number, ms = 5_000): Promise<boolean> {
+  for (const end = Date.now() + ms; ; await new Promise((r) => setTimeout(r, 100))) {
+    try {
+      process.kill(pid, 0);
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code === "ESRCH") return true;
+      throw e;
+    }
+    if (Date.now() >= end) return false;
+  }
+}
+
 /** Closes through the window's close path so pending saves are flushed (QLT-03). */
 export async function quit(l: Launched): Promise<void> {
   const closed = l.app.waitForEvent("close", { timeout: 10_000 }).then(() => true, () => false);
@@ -373,6 +386,9 @@ export async function quit(l: Launched): Promise<void> {
       await l.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("index.html"))?.close());
       break;
     } catch (e) {
+      // An app that already quit by itself (a project window handing over) has nothing left to close: only
+      // that is a successful quit, once its process is gone by PID; anything else is still an error.
+      if (/Target page, context or browser has been closed/.test(String(e)) && await processExited(l.pid)) return;
       // The main process's inspector can drop a call's answer ("Promise was collected") while
       // Chromium attaches a new worker, such as the search index's just after start (WP-4.1). The
       // call may have run: what counts is that the app closes; if it doesn't, it's asked again.
