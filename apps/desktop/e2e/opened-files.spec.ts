@@ -9,6 +9,10 @@ import { join } from "node:path";
 import { fileRow, launch, quit, tempDirs } from "./helpers.ts";
 import { axeViolations } from "./axe.ts";
 import type { Locator } from "@playwright/test";
+import { projectAccentValues } from "../../../packages/tokens/dist/tokens.ts";
+
+/** A #rrggbb colour as getComputedStyle reports it. */
+const rgb = (hex: string) => `rgb(${[1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(", ")})`;
 
 const mod = process.platform === "darwin" ? "Meta" : "Control";
 
@@ -60,11 +64,11 @@ for (const appearance of ["light", "dark"] as const) test(`FIL-20: the active op
     await expect(specTab).toHaveAttribute("aria-current", "page");
     await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running"));
 
-    // The project's tint fills the active tab and its accent is the whole outline; light takes the strong shade, dark the soft one.
-    const shade = appearance === "light" ? "strong" : "soft";
-    const active = await tabColours(specTab, `--fn-ref-color-project-teal-${shade}-tint`, `--fn-ref-color-project-teal-${shade}`);
+    // The project's tint fills the active tab and its accent is the whole outline: teal as solved for the theme (D-435).
+    const active = await tabColours(specTab, "--fn-color-accent-muted", "--fn-color-accent");
     expect(active.fill).toBe(active.expectedFill);
     expect(active.border).toBe(active.expectedBorder);
+    expect(active.border).toBe(rgb(projectAccentValues.teal![appearance === "light" ? "paper" : "ink"]!["color.accent"]!));
     expect(active.sameOnAllSides).toBe(true);
     expect(active.fill).not.toBe("rgba(0, 0, 0, 0)");
 

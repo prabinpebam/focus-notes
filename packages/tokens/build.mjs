@@ -5,6 +5,7 @@ import { readFileSync, readdirSync, writeFileSync, mkdirSync } from "node:fs";
 import { join, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import StyleDictionary from "style-dictionary";
+import { deriveProjectAccent } from "./project-accent.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const src = join(here, "src");
@@ -179,26 +180,42 @@ const fontFile = (id) => join(src, "modes", `content-font-${id}.json`);
 const fontKeys = new Set(FONT_IDS.filter((id) => id !== "mono").flatMap((id) => [...load(fontFile(id)).keys()]));
 // An inline semantic size on a subtree must also rebind its root-resolved component aliases.
 blocks.push(scopeBlock("[data-content-size]", new Set(["font.size"]), new Map()));
-for (const id of FONT_IDS) blocks.push(scopeBlock(`[data-font-scope="${id}"]`, fontKeys, id === "mono" ? new Map() : load(fontFile(id))));// Project accents (D-313): a modifier on the semantic accent roles, never per-component overrides. A role
-// takes the preset's strong shade in a light context and its soft one in a dark context (a dark theme, or a
-// project whose own Appearance is dark), and the component tokens reading those roles are re-declared on the
-// scope so they resolve inside it. Selectors, not light-dark(): the CSS minifier rewrites light-dark().
-const ACCENT_ROLES = { "color.accent": "", "color.focusRing": "", "color.accentMuted": "Tint" };
-const accentReaders = [...all.keys()].filter((k) => tierOf(k) === "component" && aliasOf(all.get(k).value) in ACCENT_ROLES && !SITE_ONLY(k));
-const accentIds = [...all.keys()].filter((k) => /^ref\.color\.project\.[a-z]+\.strong$/.test(k)).map((k) => k.split(".")[3]);
-const darkThemes = darkThemeIds;
-const lightThemeIds = THEME_IDS.filter((id) => !darkThemeIds.includes(id));
-const accentBlock = (selectors, id, shade) => {
-  const lines = Object.entries(ACCENT_ROLES).map(([role, tint]) => `  ${cssName(role)}: var(${cssName(`ref.color.project.${id}.${shade}${tint}`)});`);
-  for (const k of accentReaders) lines.push(`  ${cssName(k)}: var(${cssName(aliasOf(all.get(k).value))});`);
-  return `${selectors.join(",\n")} {\n${lines.join("\n")}\n}\n`;
+for (const id of FONT_IDS) blocks.push(scopeBlock(`[data-font-scope="${id}"]`, fontKeys, id === "mono" ? new Map() : load(fontFile(id))));
+// Project accents (D-313, D-435): a project's colour takes every accent role in its window, solved per theme
+// (project-accent.mjs) from the preset's strong shade in a light theme and its soft one in a dark theme, so it
+// passes contrast there and never reads as a status. The component tokens reading those roles (directly or
+// through another component token) are re-declared on the scope so they resolve inside it. The window sets the
+// attribute on its root and on <html> (for overlays portaled to the body). Forced colours keep system colours.
+const ACCENT_ROLES = ["color.accent", "color.link", "color.focusRing", "color.onAccent", "color.selection", "color.accentMuted"];
+const readsRole = (k, seen = new Set()) => {
+  const target = aliasOf(all.get(k).value);
+  if (!target || seen.has(target)) return false;
+  if (ACCENT_ROLES.includes(target)) return true;
+  seen.add(target);
+  return all.has(target) && tierOf(target) === "component" && readsRole(target, seen);
 };
+const accentReaders = [...all.keys()].filter((k) => tierOf(k) === "component" && !SITE_ONLY(k) && readsRole(k));
+const accentIds = [...all.keys()].filter((k) => /^ref\.color\.project\.[a-z]+\.strong$/.test(k)).map((k) => k.split(".")[3]);
+const frostOpacity = parseFloat(String(resolveIn(new Map(), "frost.opacity")));
+const projectAccentValues = Object.fromEntries(accentIds.map((id) => [id, Object.fromEntries(THEME_IDS.map((th) => {
+  const dark = darkThemeIds.includes(th);
+  return [th, deriveProjectAccent(String(resolveIn(new Map(), `ref.color.project.${id}.${dark ? "soft" : "strong"}`)), themeValues[th], dark, th.startsWith("contrast-"), frostOpacity)];
+}))]));
+const accentBlock = (selectors, values) => {
+  const lines = ACCENT_ROLES.map((role) => `    ${cssName(role)}: ${values[role]};`);
+  for (const k of accentReaders) lines.push(`    ${cssName(k)}: var(${cssName(aliasOf(all.get(k).value))});`);
+  return `  ${selectors.join(",\n  ")} {\n${lines.join("\n")}\n  }\n`;
+};
+const accentCss = [];
 for (const id of accentIds) {
   const a = `[data-project-accent="${id}"]`;
-  blocks.push(accentBlock([a], id, "strong"));
-  blocks.push(accentBlock([...darkThemes.map((th) => `:root[data-theme="${th}"] ${a}`), ...darkThemes.flatMap((th) => [`:root [data-theme-scope="${th}"]${a}`, `:root [data-theme-scope="${th}"] ${a}`])], id, "soft"));
-  blocks.push(accentBlock(lightThemeIds.flatMap((th) => [`:root [data-theme-scope="${th}"]${a}`, `:root [data-theme-scope="${th}"] ${a}`]), id, "strong"));
-}// Printing (SHR-12, D-230): dark ink on white paper whatever theme is showing, so a note prints in
+  accentCss.push(accentBlock([a], projectAccentValues[id].paper));
+  // The window's theme first, then a project scope's own theme, which sits nearer and so comes later.
+  for (const th of THEME_IDS) accentCss.push(accentBlock([`:root[data-theme="${th}"]${a}`, `:root[data-theme="${th}"] ${a}`], projectAccentValues[id][th]));
+  for (const th of THEME_IDS) accentCss.push(accentBlock([`:root [data-theme-scope="${th}"]${a}`, `:root [data-theme-scope="${th}"] ${a}`], projectAccentValues[id][th]));
+}
+blocks.push(`@media not (forced-colors: active) {\n${accentCss.join("")}}\n`);
+// Printing (SHR-12, D-230): dark ink on white paper whatever theme is showing, so a note prints in
 // Paper's colors, at the print text size rather than the zoom on screen. !important because the app
 // sets a custom theme's colors and the zoom inline on :root. The print layout's pages are the named
 // pages fn-print (its margin) and, with page numbers on, fn-print-numbered (the margin, and the page
@@ -293,6 +310,9 @@ export const tokens = ${JSON.stringify(tree, null, 2)} as const;
 
 /** Each built-in theme's colors and focus dim, resolved (THM-13: the contrast guard checks them at run time). */
 export const themeValues: Readonly<Record<string, Readonly<Record<string, string>>>> = ${JSON.stringify(themeValues, null, 2)};
+
+/** Each project colour's accent roles in each built-in theme, as solved by project-accent.mjs (D-435). */
+export const projectAccentValues: Readonly<Record<string, Readonly<Record<string, Readonly<Record<string, string>>>>>> = ${JSON.stringify(projectAccentValues, null, 2)};
 
 export const tokenGroups = ${JSON.stringify(groups, null, 2)} as const;
 ${Object.keys(groups).map((g) => `export type ${g[0].toUpperCase() + g.slice(1)}Token = (typeof tokenGroups.${g})[number];`).join("\n")}

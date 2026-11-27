@@ -75,6 +75,16 @@ A mode switches a set of token values without changing any name. Components neve
 | **Platform** | macos, windows, linux, web, ipados | The shell | `window.radius` (0 on macOS, which uses the native window), the window control style, and shortcut glyphs |
 | **UI scale** | 90% to 150% | Settings → Appearance | Every `font.ui.*`, `size.*`, and `space.*` value is multiplied (the build wraps them in `calc(… * var(--fn-ui-scale))`). Note text is unaffected. |
 | **Content font** | mono (default), serif, sans, hyperlegible, dyslexic, system | ⋯ → View → Font, later the theme manager's Reading tab | `font.content` and `font.contentHeading` (Serif: Newsreader with Fraunces headings). The bundled fonts are self-hosted OFL fonts. |
+| **Project accent** (D-435) | app, or one of 12 project colours | A project window (`data-project-accent` on its root and on `<html>`, so dialogs and menus portaled to the body follow) | Every accent role, `color.accent`, `color.link`, `color.focusRing`, `color.onAccent`, `color.selection` and `color.accentMuted`, and every component token that reads them. The values are solved per built-in theme (below). Forced colours keep system colours. |
+
+**How a project accent is solved (D-435).** `packages/tokens/project-accent.mjs` starts from the preset's strong shade in a light theme and its soft shade in a dark one, and moves it to the nearest OKLab colour (lightness first; hue and chroma cost more, since they carry the colour's identity) that passes, in that theme:
+
+- the accent on every surface (canvas, surface, raised, sunken, frost, and frost over a scrim) at least 4.5:1, 7:1 in High contrast; on a hover or pressed row, the selection and its own tint at least 3:1;
+- the on-accent ink (white, the theme's text or its deepest surface, whichever is best) at least 4.5:1 (7:1);
+- text and muted text on the selection and on the accent tint at least 4.5:1 (7:1), the tint's opacity lowered from the theme's own until they pass;
+- at least ΔE 0.07 (OKLab) from the theme's danger, warning and success, so a red, amber or green project never reads as a status.
+
+The build emits one block per colour and theme, keyed by the window's theme (`:root[data-theme]`) and by a project's own theme scope (`[data-theme-scope]`), inside `@media not (forced-colors: active)`, and exports the values as `projectAccentValues`. `packages/core/test/project-accent.test.ts` checks all 12 colours in all 10 themes against these rules and the contrast guard (THM-13). Custom themes aren't solved: they take Paper's values, or a built-in theme's when they name one.
 
 Mode values are stored as separate token sets in the DTCG source, one file per mode value, and resolved at build time into CSS variable blocks keyed by data attributes on the root element (for example `data-scheme="dark"`, `data-motion="reduced"`).
 

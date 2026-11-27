@@ -137,6 +137,14 @@ export function AppRoot({ scheme, motion = "system", theme, contentFont, project
     else delete html.dataset.focus;
   }, [contentSize, focusMode]);
 
+  // The project's colour takes the accent roles in overlays portaled to the body too (D-435).
+  useEffect(() => {
+    const html = document.documentElement;
+    if (projectAccent === "app") delete html.dataset.projectAccent;
+    else html.dataset.projectAccent = projectAccent;
+    return () => { delete html.dataset.projectAccent; };
+  }, [projectAccent]);
+
   // Software compositing (D-121): the styles that need a GPU, the note's edge blur, read this.
   useEffect(() => {
     const html = document.documentElement;
