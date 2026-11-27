@@ -109,6 +109,7 @@ export const NOT_IN_MENU_BAR: readonly { why: string; ids: RegExp }[] = [
   { why: "Sharing settings, publication and preview steps", ids: /^sharing\..+$/ },
   { why: "image controls and image editor events", ids: /^image\.(?!insert$).+$/ },
   { why: "AI provider detail fields and recovery controls", ids: /^ai\.(detail\..+|chooseModel|saveKey|revertKey|retryProvider|revertProvider)$/ },
+  { why: "An AI card's Show all for a long service error, on the card only (D-438)", ids: /^ai\.testMore$/ },
   { why: "renderer failure and panel reload events", ids: /^app\.(reportFailure|reloadPanel)$/ },
   { why: "notification layout and note position events", ids: /^(toast\.wrapped|note\.position)$/ },
   { why: "Actions and a file result's Copy Markdown link", ids: /^note\.copyLink$/ },
