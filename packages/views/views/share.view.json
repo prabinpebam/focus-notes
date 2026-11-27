@@ -61,7 +61,8 @@
         "gate": { "type": "Stack", "props": { "gap": "stackGroup" }, "children": [
           { "type": "Stack", "props": { "gap": "stackItem" }, "children": [
             { "type": "Heading", "props": { "value": { "t": "share.reader.gate.title" }, "level": "1" } },
-            { "type": "Text", "props": { "value": { "t": "share.reader.gate.intro" }, "tone": "muted" } }
+            { "type": "Text", "when": { "expr": { "!": { "get": "vm.share.legacy" } } }, "props": { "value": { "t": "share.reader.gate.intro" }, "tone": "muted" } },
+            { "type": "Text", "when": { "get": "vm.share.legacy" }, "props": { "value": { "t": "share.reader.gate.introLegacy" }, "tone": "muted" } }
           ] },
           { "type": "Text", "when": { "get": "vm.share.signedOut" }, "props": { "value": { "t": "share.reader.signedOut" }, "announce": true } },
           { "type": "TextField", "id": "accessCode", "when": { "expr": { "!": { "get": "vm.share.legacy" } } }, "props": { "label": { "t": "share.reader.accessCode" }, "type": "password", "value": { "bind": "local.accessCode" }, "invalid": { "get": "vm.share.error" }, "autoFocus": true, "focusRequest": { "get": "vm.share.focus" } },
@@ -71,7 +72,8 @@
           { "type": "TextField", "id": "passcode", "when": { "get": "vm.share.legacy" }, "props": { "label": { "t": "share.reader.passcode" }, "type": "password", "value": { "bind": "local.passcode" }, "invalid": { "get": "vm.share.error" } },
             "on": { "submit": [{ "run": "share.submit", "args": { "name": { "get": "local.name" }, "passcode": { "get": "local.passcode" } } }, { "set": "local.passcode", "to": "" }] } },
           { "type": "Text", "when": { "get": "vm.share.error" }, "props": { "value": { "t": "share.reader.error" }, "tone": "danger", "announce": true } },
-          { "type": "Text", "when": { "get": "vm.share.empty" }, "props": { "value": { "t": "share.reader.error.empty" }, "tone": "danger", "announce": true } },
+          { "type": "Text", "when": { "expr": { "and": [{ "get": "vm.share.empty" }, { "!": { "get": "vm.share.legacy" } }] } }, "props": { "value": { "t": "share.reader.error.empty" }, "tone": "danger", "announce": true } },
+          { "type": "Text", "when": { "expr": { "and": [{ "get": "vm.share.empty" }, { "get": "vm.share.legacy" }] } }, "props": { "value": { "t": "share.reader.error.emptyLegacy" }, "tone": "danger", "announce": true } },
           { "type": "Inline", "props": { "gap": "inlineItem", "wrap": true }, "children": [
             { "type": "Button", "id": "open", "props": { "label": { "t": "share.reader.open" }, "variant": "primary", "busy": { "get": "vm.share.openBusy" } },
               "on": { "press": [{ "run": "share.submit", "args": { "value": { "get": "local.accessCode" }, "name": { "get": "local.name" }, "passcode": { "get": "local.passcode" } } }, { "set": "local.passcode", "to": "" }, { "set": "local.accessCode", "to": "" }] } },

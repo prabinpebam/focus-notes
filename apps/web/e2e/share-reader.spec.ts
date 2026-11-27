@@ -214,7 +214,10 @@ test("SHR-06: wrong, expired, and withdrawn grants all show the one generic erro
   expect(new Set(shown.slice(0, 3)).size).toBe(1);
   expect(new Set(shown.slice(3)).size).toBe(1);
   // An empty field is asked for, not an error.
+  await page.getByRole("button", { name: "Open", exact: true }).click();
+  await expect(page.getByText("Enter the access code.")).toBeVisible();
   await page.getByRole("button", { name: "Use an older name-and-passcode share" }).click();
+  await expect(page.getByText("If someone shared it with you, enter your name and the passcode they gave you.")).toBeVisible();
   await page.getByRole("button", { name: "Open", exact: true }).click();
   await expect(page.getByText("Enter your name and the passcode.")).toBeVisible();
 
