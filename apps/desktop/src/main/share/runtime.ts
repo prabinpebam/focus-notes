@@ -98,6 +98,8 @@ export function sharingRuntime(deps: {
   siteBuilt?(site: { started: number; pages: ReadonlyMap<string, string> }): void;
   /** D-436: a site build or its Pages deploy failed. */
   siteFailed?(error: unknown): void;
+  /** What else a build reads that the share records don't name (the public notes, the shared notes), as a signature. */
+  sourceExtra?(): Promise<string>;
 }) {
   let current: { root: string; service: ReturnType<typeof sharingSetup> } | undefined;
   let tasks: ReturnType<typeof publicPublishing> | undefined, tasksRoot: string | undefined;
@@ -110,6 +112,12 @@ export function sharingRuntime(deps: {
     lane = next.catch(() => {});
     return next;
   };
+  /**
+   * The source the site serves now, read when its last build started, and that build's commit. A build of the same
+   * source would only re-seal every share under a new build id, so a reader opening a link meanwhile reads files
+   * that just went away. Forgotten on any failed, empty or selection build.
+   */
+  let served: { root: string; key: string; commit: string } | undefined;
   const get = deps.get ?? fetchDeployedSite;
   /** D-436: the running build's "its upload landed" callback, for the publisher's `pushed`. */
   let onPushed: (() => void) | undefined;
@@ -218,11 +226,23 @@ export function sharingRuntime(deps: {
       }
       return hash.digest("hex");
     };
+    /** Everything a build reads, as one signature. */
+    const source = async () => `${await inputs()}\n${deps.sourceExtra ? await deps.sourceExtra() : ""}`;
+    /**
+     * The site already serves this source: nothing to build. Only known when the caller names the rest of the source,
+     * in the Private + Public layout (a New project's published private notes aren't in the signature).
+     */
+    const unchanged = async (): Promise<PublicDeploy | undefined> => {
+      const last = served;
+      if (!deps.sourceExtra || !layout.legacy || last?.root !== root) return undefined;
+      return last.key === await source() ? { commit: last.commit } : undefined;
+    };
     const build = async (pairing: SitePairing, empty = false, selection?: ConfirmedSelection): Promise<PublicDeploy> => {
       guard();
       // Retry after GitHub's build failed: the upload is already on the site, so build that again (D-427).
       const memo = failedBuild;
       failedBuild = undefined;
+      served = undefined;
       if (memo && !selection && memo.empty === empty && memo.project === pairing.project && resumable && memo.inputs === await inputs()) {
         failing = undefined;
         let result: Awaited<ReturnType<PagesPublisher["resume"]>>;
@@ -235,6 +255,7 @@ export function sharingRuntime(deps: {
         }
       }
       const before = selection ? "" : await inputs();
+      const key = selection || empty ? undefined : await source();
       // D-436: what this build read is the source as of now; a note changed after this waits for a later build.
       const started = Date.now();
       deps.step?.("seal");
@@ -302,7 +323,10 @@ export function sharingRuntime(deps: {
         // a matter of time; setup, sharing pushes and Turn off still need the site served now.
         const pages = requirePublishedArtifact(result, pairing, sealed, Boolean(selection));
         const commit = result.status === "published" ? result.commit : "";
-        if (pages === "built") return { commit };
+        if (pages === "built") {
+          if (key !== undefined) served = { root, key, commit };
+          return { commit };
+        }
         watchLive(pairing.site, sealed.build, () => deps.root() === root && deps.layout().privateDir === privateDir);
         return { commit, pending: sealed.build };
       } finally {
@@ -317,7 +341,7 @@ export function sharingRuntime(deps: {
       guard();
       deps.written(file);
     };
-    return { root, layout, privateDir, guard, store, read, current, build, readPublished, presentPublished, writePublished, writeLook };
+    return { root, layout, privateDir, guard, store, read, current, build, unchanged, readPublished, presentPublished, writePublished, writeLook };
   };
   const service = () => {
     const ctx = bound();
@@ -388,9 +412,11 @@ export function sharingRuntime(deps: {
     }),
     disable: () => serial(() => deps.removalLane ? deps.removalLane(() => service().disable()) : service().disable()),
     async pairing(): Promise<SitePairing | undefined> { return bound().current(); },
-    publish: (): Promise<void> => serial(async () => {
+    /** `ifChanged`: unless the site already serves the source as it is now (a backup that just finished, D-436). */
+    publish: (options: { ifChanged?: boolean } = {}): Promise<void> => serial(async () => {
       const ctx = bound(), saved = await ctx.current();
       if (!saved || saved.phase !== "ready") throw new Error("access:site.unavailable");
+      if (options.ifChanged && await ctx.unchanged()) return;
       try { await ctx.build(saved); } catch (error) { throw publishProblem(error); }
     }),
     /**
@@ -401,6 +427,9 @@ export function sharingRuntime(deps: {
     takeDown: (): Promise<PublicDeploy> => serial(async () => {
       const ctx = bound(), saved = await ctx.current();
       if (!saved || saved.phase !== "ready") throw new Error("sharing:unconfigured");
+      // The rebuild after the delete's backup may already serve the site without it.
+      const already = await ctx.unchanged();
+      if (already) return already;
       try { return await ctx.build(saved); } catch (error) { throw publishProblem(error); }
     }),
     /** D-430: the website's saved look, or undefined while none is chosen. */

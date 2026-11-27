@@ -29,7 +29,7 @@ CI observations on the combined head (badge accent + D-436), recorded with their
 | Observation | Run | Verdict |
 | --- | --- | --- |
 | QLT-03 `fault-injection.spec.ts` lost 2482 ms of typing (budget 1000), round 1, seed 734056, shard 3 | [45956563525](https://github.com/prabinpebam/focus-notes/actions/runs/45956563525) on `99d9c3db` | Not reproducible locally: seed 734056 ×2, and seeds 734056, 11, 222 at 8 rounds each, all within budget on both `origin/main` `3013d473` and the head. Runner load, not this change; the next gate must show it green, no landing on a rerun if it's red |
-| D-428 `delete-shared-same-repo.spec.ts` toast not found, shard 3 | 45956563525 | Pre-existing: fails 1 of 2 locally on `origin/main` `3013d473` too |
+| D-428 `delete-shared-same-repo.spec.ts` toast not found, shard 3 | 45956563525 | Pre-existing, now fixed (W-ShareFlakes27): every Share, Publish and Delete deployed twice, the backup's rebuild saving again and re-sealing under a new build id. Locally `delete-shared-same-repo` failed 5 of 7 on `3013d473` and 6 of 7 on `4efcf6cc` (`share-same-repo` 7 of 7 there); with the fix, `--repeat-each=20 --workers=1`: 40 of 40 passed (20 each, with `share-same-repo.spec.ts:21`) |
 | G7 `m3-settings.spec.ts` cross-profile signOut, pin click timed out, shard 1 | 45956563525 | Ours: the published globe on a public note sat over the row's pin. Fixed by giving the pin its own place at the row's end (D-436); passes locally |
 
 ## Opened files in Files (FIL-20, WP-P.24, D-410), 24 November

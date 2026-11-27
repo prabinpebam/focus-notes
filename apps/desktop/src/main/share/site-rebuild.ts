@@ -24,8 +24,11 @@ export const REBUILD_RETRY_MS = [30_000, 60_000, 120_000, 300_000, 600_000] as c
 export function siteRebuilder(deps: {
   /** The complete source of the site now: what a build would read. */
   signature(): Promise<string>;
-  /** Saves, builds the whole site, uploads it and waits until Pages deployed it; throws on any failure. */
-  deploy(): Promise<void>;
+  /**
+   * Saves, builds the whole site, uploads it and waits until Pages deployed it; throws on any failure. Unforced runs
+   * come from a backup that just finished: nothing is left to save, and a site already serving this source stays.
+   */
+  deploy(forced: boolean): Promise<void>;
   /** Persists whether a rebuild is owed, so it survives a restart. */
   persist?(owed: boolean): void | Promise<void>;
   /** Owed from an earlier run of the app: build once at start. */
@@ -51,7 +54,7 @@ export function siteRebuilder(deps: {
       let before: string;
       try { before = await deps.signature(); } catch { before = `unreadable:${Date.now()}`; }
       if (!forced && before === seen) continue;
-      try { await deps.deploy(); }
+      try { await deps.deploy(forced); }
       catch (error) {
         if (disposed) return;
         const problem = error instanceof Error ? error.message : "sharing:failed";

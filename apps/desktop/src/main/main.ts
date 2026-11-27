@@ -2205,6 +2205,8 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     // Journeys only: Still working after a short build, not after 2 minutes (D-427).
     ...(devEnv("FOCUS_NOTES_PAGES_SLOW_MS") ? { pagesSlowMs: Number(devEnv("FOCUS_NOTES_PAGES_SLOW_MS")) } : {}),
     withdrawShares: () => access.withdrawAll(),
+    // What a build reads beyond the share records: the public notes' files and the shared notes' files (D-436).
+    sourceExtra: async () => `${projectLayout().legacy ? await publicNotesSignature() : ""}\n${(await shareUpdates?.snapshot())?.signature ?? ""}`,
   });
   // A legacy pair's own repository site, where its public notes are (D-424); shares go to its paired site (D-425).
   const legacySite = async () => (await setup()).report().site ?? siteFromGitConfig(await readFile(join(notesHome(), ".git", "config"), "utf8"));
@@ -2519,15 +2521,18 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     if (repository !== current.repository) throw new Error("invite:changed");
     await shell.openExternal(`https://github.com/${current.repository}/settings/access`);
   });
-  const deploySite = async () => {
+  /** `fromBackup`: a backup just finished, so there's nothing to save, and a site already serving the source stays (D-436). */
+  const deploySite = async ({ fromBackup = false } = {}) => {
     const g = await gitOpening;
     if (!g) throw new Error("access:site.unavailable");
-    const report = await g.request("save");
-    if (report.state === "problem") throw new Error(`access:${report.problem ?? "failed"}`);
+    if (!fromBackup) {
+      const report = await g.request("save");
+      if (report.state === "problem") throw new Error(`access:${report.problem ?? "failed"}`);
+    }
     // A legacy pair without its own paired site still deploys through its repository's Actions (D-425).
     if (projectLayout().legacy && (await sharing.pairing().catch(() => undefined))?.phase !== "ready") return;
     // The share dialog names offline and signed out with their recovery (sharing.md States).
-    try { await sharing.publish(); } catch (error) {
+    try { await sharing.publish({ ifChanged: fromBackup }); } catch (error) {
       const code = error instanceof Error ? /sharing:([a-z]+)/.exec(error.message)?.[1] : undefined;
       if (code === "offline") throw new Error("access:offline");
       if (code === "signedout") throw new Error("access:signedOut");
@@ -2536,9 +2541,9 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
   };
   // Every site build seals the shared notes as they are now, so D-433's automatic update has nothing older left.
   let shareUpdates: ReturnType<typeof sharedNoteUpdates> | undefined;
-  const deployAccess = async () => {
+  const deployAccess = async (options: { fromBackup?: boolean } = {}) => {
     const before = await shareUpdates?.snapshot();
-    await deploySite();
+    await deploySite(options);
     shareUpdates?.built(before);
   };
   const access = accessStore({
@@ -2577,7 +2582,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
         .map((g) => ({ path: g.item!.path, folder: Boolean(g.item!.folder) }));
       return items.length ? { key: privateDir(), signature: await sharedNotesSignature(join(privateDir(), "notes"), items) } : undefined;
     },
-    deploy: deploySite,
+    deploy: () => deploySite(),
     report: (event) => {
       if (event.status === "failed") logLine(`Sharing: updating shares after a save failed (${event.problem})`);
       sendSharing("sharing:sharesUpdated", event);
@@ -2636,7 +2641,7 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     });
     const rebuilds = siteRebuilder({
       signature: publicNotesSignature,
-      deploy: async () => { if (await legacySiteReady()) await deployAccess(); },
+      deploy: async (forced) => { if (await legacySiteReady()) await deployAccess({ fromBackup: !forced }); },
       persist: owed => watcher.setOwed(owed),
       report: event => {
         if (event.status !== "failed") return;

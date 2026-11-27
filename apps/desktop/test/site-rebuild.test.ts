@@ -1,14 +1,16 @@
-import { mkdir, mkdtemp, readdir, rename, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, rename, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { afterEach, expect, it } from "vitest";
 import { GitHubApi } from "@focus-notes/github";
+import { SiteReader } from "@focus-notes/seal";
 import { FakeGitHub } from "../../../packages/github/test/fake-github.ts";
 import { gitData } from "./fake-pages.ts";
 import { pagesArtifactPublisher } from "../src/main/share/site-publish.ts";
 import { sharingRuntime } from "../src/main/share/runtime.ts";
 import { siteRebuilder } from "../src/main/share/site-rebuild.ts";
+import { accessStore } from "../src/main/share/access.ts";
 import type { SharingLayout } from "../src/main/share/layout.ts";
 import type { SitePairing } from "../src/main/share/setup.ts";
 
@@ -163,4 +165,64 @@ it("D-436: Publish A, then B, then a share update: A and B both stay on the depl
   const site = git.site("ada/quiet-site");
   expect(site.has("n/a/index.html")).toBe(true);
   expect(site.has("n/b/index.html")).toBe(true);
+});
+
+it("D-436 (27 November): Share, then its backup's rebuild: one deploy, and the reader keeps the build it opened", async () => {
+  const root = await temp();
+  const publicNotes = join(root, "notes"), privateDir = join(root, "private"), privateNotes = join(privateDir, "notes");
+  await mkdir(publicNotes, { recursive: true });
+  await mkdir(privateNotes, { recursive: true });
+  await mkdir(join(privateDir, ".focus-notes"), { recursive: true });
+  await writeFile(join(publicNotes, "hello.md"), "# Hello\n\nAlready public.\n");
+  await writeFile(join(privateNotes, "diary.md"), "# Diary\n\nFor one reader.\n");
+  const pairing: SitePairing = { version: 1, project: "ada/book-private", owner: "ada", name: "book", intent: "11111111-1111-1111-1111-111111111111", phase: "ready", site: "https://ada.github.io/book/" };
+  await writeFile(join(privateDir, ".focus-notes", "site-pairing.json"), JSON.stringify(pairing));
+  const reader = await temp();
+  await mkdir(join(reader, "assets"));
+  await writeFile(join(reader, "render.mjs"), RENDER);
+  const github = new FakeGitHub();
+  github.add({ owner: "ada", name: "book", files: [".github/workflows/pages.yml"] });
+  github.add({ owner: "ada", name: "book-private", private: true, files: [] });
+  const git = gitData(github);
+  const api = new GitHubApi(github.token, git.fetch);
+  const layout: SharingLayout = { legacy: true, privateDir, privateNotes, publicDir: root, roots: [] };
+  const files = async (dir: string) => (await Promise.all((await readdir(dir)).map(async f => `${f}:${(await stat(join(dir, f))).mtimeMs}`))).sort().join(",");
+  const runtime = sharingRuntime({
+    root: () => root, layout: () => layout, api: async () => api,
+    repository: async dir => dir === root ? "ada/book" : "ada/book-private",
+    write: (file, text) => writeFile(file, text), written: () => {}, temporary: await temp(), reader: () => reader, get: git.get,
+    publisher: pagesArtifactPublisher({ api: async () => api, target: async () => pairing, get: git.get, timeoutMs: 2000, delayMs: 1 }),
+    sourceExtra: async () => `${await files(publicNotes)}\n${await files(privateNotes)}`,
+  });
+  const site = (path: string) => git.site("ada/book").get(path);
+  const access = accessStore({
+    dir: () => privateDir, site: async () => pairing.site, configured: async () => true,
+    write: (file, text) => writeFile(file, text), written: () => {}, writeNoteId: (file, text) => writeFile(file, text),
+    publish: () => runtime.publish(), getSite: () => async path => site(path),
+  });
+  // The backup's rebuild (afterBackup): unforced, so it saves nothing and builds only a changed source.
+  const deploys: boolean[] = [];
+  const rebuilds = siteRebuilder({ signature: () => files(publicNotes), deploy: async forced => { deploys.push(forced); await runtime.publish({ ifChanged: !forced }); }, retryMs: [5] });
+  await runtime.publish();
+  const { id } = await access.apply({ op: "createItem", item: { path: "diary.md", label: "Diary", folder: false, includeLater: false }, notes: ["diary.md"], link: true, expiresAt: null });
+  await access.ready(id);
+  const pushes = git.pushes.length, build = JSON.parse(site("focus-notes.json")!).build;
+  const secret = (await access.reveal(id)).link!.split("#")[1]!.split(".")[1]!;
+  // The reader opens the link on the build the share was verified on; then the share's backup finishes.
+  const opening = new SiteReader(async path => site(path)).openLinkSession(id, secret);
+  rebuilds.request();
+  await rebuilds.idle();
+  expect(deploys).toEqual([false]);
+  expect(git.pushes.length).toBe(pushes);
+  expect(JSON.parse(site("focus-notes.json")!).build).toBe(build);
+  expect((await (await opening).share.read("diary.md"))).toContain("For one reader.");
+  // A delete's backup rebuilds without the note; the delete's own takedown then has nothing left to push.
+  await rm(join(publicNotes, "hello.md"));
+  rebuilds.request();
+  await rebuilds.idle();
+  expect(git.pushes.length).toBe(pushes + 1);
+  expect(site("n/hello/index.html")).toBeUndefined();
+  await runtime.takeDown();
+  expect(git.pushes.length).toBe(pushes + 1);
+  rebuilds.dispose();
 });
