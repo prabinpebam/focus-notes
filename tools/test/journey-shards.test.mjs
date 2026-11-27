@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { execFileSync } from "node:child_process";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { createRequire } from "node:module";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -8,6 +9,7 @@ import yaml from "js-yaml";
 import { discoverSpecs, partitionSpecs, verifyCoverage, playwrightArgs, parseArgs, loadWeights } from "../ci/run-journey-shard.mjs";
 
 const root = resolve(import.meta.dirname, "../..");
+const run = promisify(execFile);
 const desktop = join(root, "apps", "desktop");
 
 describe("duration-aware whole-file journey shards", () => {
@@ -59,15 +61,18 @@ describe("duration-aware whole-file journey shards", () => {
     for (const args of [[], ["--shard=0/4"], ["--shard=1/5"], ["--shard=1/4", "--workers=2"], ["--check", "--shard=1/4"]]) expect(() => parseArgs(args)).toThrow(/Usage/);
   });
 
-  it("matches Playwright's complete current cases exactly once, including zero-cost files", { timeout: 30_000 }, () => {
+  // Each `playwright --list` is a separate process that loads and transpiles the spec files it selects (about 5 s
+  // for all of them on an idle machine). Five in sequence took 22 s idle and over 30 s on a loaded CI runner, so
+  // the whole list and each bin's are asked at once; the timeout leaves room for a runner under load.
+  it("matches Playwright's complete current cases exactly once, including zero-cost files", { timeout: 60_000 }, async () => {
     const files = discoverSpecs(join(desktop, "e2e"));
     const bins = partitionSpecs(files, loadWeights());
     verifyCoverage(files, bins);
     const cli = createRequire(join(desktop, "package.json")).resolve("@playwright/test/cli");
-    const list = args => JSON.parse(execFileSync(process.execPath, [cli, ...args, "--list", "--reporter=json"], { cwd: desktop, encoding: "utf8", env: { ...process.env, CI: "1" }, maxBuffer: 10 * 1024 * 1024 }));
+    const list = async args => JSON.parse((await run(process.execPath, [cli, ...args, "--list", "--reporter=json"], { cwd: desktop, encoding: "utf8", env: { ...process.env, CI: "1" }, maxBuffer: 10 * 1024 * 1024 })).stdout);
     const cases = suites => suites.flatMap(suite => [...(suite.specs ?? []).flatMap(spec => spec.tests.map(test => `${spec.id}:${test.projectId}`)), ...cases(suite.suites ?? [])]);
-    const all = list(["test"]);
-    const selected = bins.flatMap(bin => bin.files.length ? cases(list(playwrightArgs(bin.files)).suites) : []);
+    const [all, ...listed] = await Promise.all([list(["test"]), ...bins.filter(bin => bin.files.length).map(bin => list(playwrightArgs(bin.files)))]);
+    const selected = listed.flatMap(l => cases(l.suites));
     const expected = cases(all.suites);
     expect(expected.length).toBeGreaterThan(400);
     expect(new Set(selected).size).toBe(selected.length);
