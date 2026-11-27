@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -27,7 +27,7 @@ describe("AI connections (main process)", () => {
     const ai = new AiService(file(), crypt, write, answering(seen, () => ({})));
     for (const provider of ["ollama", "lm-studio", "openai", "azure-openai", "anthropic", "gemini", "copilot-cli"]) await ai.save({ provider, endpoint: provider === "azure-openai" ? "https://res.openai.azure.com" : undefined, model: "m", deployment: "d", key: provider === "copilot-cli" ? undefined : "k" });
     const capable = Object.fromEntries((await ai.captionSettings()).connections.map(c => [c.provider, c.imageCapable]));
-    expect(capable).toEqual({ "ollama": true, "lm-studio": true, "openai": true, "azure-openai": true, "anthropic": false, "gemini": false, "copilot-cli": false });
+    expect(capable).toEqual({ "ollama": true, "lm-studio": true, "openai": true, "azure-openai": true, "anthropic": true, "gemini": true, "copilot-cli": false });
     expect(seen).toEqual([]);
   });
   it("caption sends only stripped pixels and instruction to the chosen connection without changing Writer", async () => {
@@ -68,6 +68,56 @@ describe("AI connections (main process)", () => {
     expect(reasonOf(error)).toEqual({ code: "bad-request", detail: "Model text-only does not support image input." });
     expect(seen[0]?.url).toBe("https://llm.example.com/v1/chat/completions");
     expect(JSON.stringify(JSON.parse(seen[0]!.init.body as string).messages)).toContain("image_url");
+  });
+  for (const shape of [
+    {
+      provider: "anthropic", key: "anthropic-secret-key-abcdef", url: "https://api.anthropic.com/v1/messages",
+      answer: { type: "message", content: [{ type: "text", text: "A red square." }] },
+      refusal: (detail: string) => ({ type: "error", error: { type: "invalid_request_error", message: detail } }),
+      sent: (body: any) => body.messages,
+      expected: (data: string) => [{ role: "user", content: [{ type: "image", source: { type: "base64", media_type: "image/png", data } }, { type: "text", text: "Short caption" }] }],
+    },
+    {
+      provider: "gemini", key: "gemini-secret-key-abcdef", url: "https://generativelanguage.googleapis.com/v1beta/models/m:generateContent",
+      answer: { candidates: [{ content: { parts: [{ text: "A red square." }] } }] },
+      refusal: (detail: string) => ({ error: { code: 400, message: detail, status: "INVALID_ARGUMENT" } }),
+      sent: (body: any) => body.contents,
+      expected: (data: string) => [{ role: "user", parts: [{ text: "Short caption" }, { inline_data: { mime_type: "image/png", data } }] }],
+    },
+  ]) it(`caption in the ${shape.provider} request shape carries the image, reads the caption and sanitises a refusal (D-438)`, async () => {
+    const image = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==";
+    const data = image.split(",")[1]!;
+    const logged: unknown[] = [];
+    const spies = (["log", "info", "warn", "error", "debug"] as const).map(name => vi.spyOn(console, name).mockImplementation((...args: unknown[]) => { logged.push(args); }));
+    try {
+      const seen: Seen[] = [];
+      let refuse = false;
+      const fetcher = (async (url: string, init: RequestInit) => {
+        seen.push({ url, init });
+        const body = refuse ? shape.refusal(`Key ${shape.key} may not read images. ${"x ".repeat(900)}`) : shape.answer;
+        return new Response(JSON.stringify(body), { status: refuse ? 400 : 200, headers: { "content-type": "application/json" } });
+      }) as unknown as typeof fetch;
+      const ai = new AiService(file(), crypt, write, fetcher);
+      const settings = await ai.save({ provider: shape.provider, model: "m", key: shape.key });
+      expect((await ai.captionSettings()).connections[0]?.imageCapable).toBe(true);
+      const input = { mode: "caption", text: "", connection: settings.writer, instruction: "Short caption", image };
+      expect(await collect(ai, input)).toEqual(["A red square."]);
+      expect(seen.every(s => s.url.startsWith(shape.url.replace(":generateContent", "")))).toBe(true);
+      expect(shape.sent(JSON.parse(seen.at(-1)!.init.body as string))).toEqual(shape.expected(data));
+      refuse = true;
+      const error = await collect(ai, input).catch((e: unknown) => e);
+      const reason = reasonOf(error);
+      expect(reason?.code).toBe("bad-request");
+      expect(reason?.detail).toContain("may not read images.");
+      expect(reason?.detail).not.toContain(shape.key);
+      expect(Array.from(reason?.detail ?? "").length).toBeLessThanOrEqual(1000);
+      expect(JSON.stringify(error)).not.toContain("may not read images");
+      const everyLog = JSON.stringify(logged);
+      expect(everyLog).not.toContain(data);
+      expect(everyLog).not.toContain(shape.key);
+    } finally {
+      for (const spy of spies) spy.mockRestore();
+    }
   });
   it("RWR-92: write mode sends the prompt alone and rejects note context", async () => {
     const seen: Seen[] = [];

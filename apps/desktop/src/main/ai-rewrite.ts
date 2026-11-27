@@ -122,8 +122,8 @@ const MAX_ANSWER = 2 * MAX_TEXT;
 const MAX_JSON = { test: 2 * 1024 * 1024, list: 4 * 1024 * 1024, answer: 8 * MAX_ANSWER } as const;
 const MAX_CONNECTIONS = 30;
 const object = (value: unknown): Record<string, unknown> | undefined => value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : undefined;
-/** The request shapes that carry an image for a caption (Anthropic's and Gemini's are a D-438 follow-up). */
-const CAPTION_SHAPES = new Set<string>(["openai", "azure", "ollama", "cohere"]);
+/** The request shapes that carry an image for a caption: every shape but the Copilot CLI's (D-438). */
+const CAPTION_SHAPES = new Set<string>(["openai", "azure", "ollama", "cohere", "anthropic", "gemini"]);
 /** Failures of a streamed request that the same request as plain request and response may not have (D-438). */
 const STREAM_FALLBACK = new Set<AiErrorCode>(["bad-request", "provider-format", "provider-empty", "server-error"]);
 const LOCAL_HOSTS = new Set(["127.0.0.1", "localhost", "[::1]"]);
@@ -205,16 +205,18 @@ export function generateCall(p: AiProvider, c: Connection, key: string, system: 
   const base = baseOf(p, c);
   const content = image ? [{ type: "text", text: user }, { type: "image_url", image_url: { url: image } }] : user;
   const messages = [{ role: "system", content: system }, { role: "user", content }];
+  // A caption's image is a `data:<media type>;base64,<bytes>` URL, checked and re-encoded by `stream`.
+  const media = image ? { type: image.slice(5, image.indexOf(";")), data: image.slice(image.indexOf(",") + 1) } : undefined;
   switch (p.shape) {
     case "anthropic":
-      return { url: `${base}/v1/messages`, headers: { "x-api-key": key, "anthropic-version": "2023-06-01" }, body: { model: c.model, max_tokens: maxTokens, system, messages: [{ role: "user", content: user }] } };
+      return { url: `${base}/v1/messages`, headers: { "x-api-key": key, "anthropic-version": "2023-06-01" }, body: { model: c.model, max_tokens: maxTokens, system, messages: [{ role: "user", content: media ? [{ type: "image", source: { type: "base64", media_type: media.type, data: media.data } }, { type: "text", text: user }] : user }] } };
     case "gemini":
-      return { url: `${base}/v1beta/models/${encodeURIComponent(c.model)}:generateContent`, headers: { "x-goog-api-key": key }, body: { systemInstruction: { parts: [{ text: system }] }, contents: [{ role: "user", parts: [{ text: user }] }], generationConfig: { maxOutputTokens: maxTokens * 4 } } };
+      return { url: `${base}/v1beta/models/${encodeURIComponent(c.model)}:generateContent`, headers: { "x-goog-api-key": key }, body: { systemInstruction: { parts: [{ text: system }] }, contents: [{ role: "user", parts: media ? [{ text: user }, { inline_data: { mime_type: media.type, data: media.data } }] : [{ text: user }] }], generationConfig: { maxOutputTokens: maxTokens * 4 } } };
     case "azure":
       if (!/^[\w.-]{1,100}$/.test(c.deployment)) throw new Error("invalid-deployment");
       return { url: `${base}/openai/deployments/${encodeURIComponent(c.deployment)}/chat/completions?api-version=${encodeURIComponent(c.apiVersion || AZURE_API_VERSION)}`, headers: { "api-key": key }, body: { messages, max_tokens: maxTokens } };
     case "ollama":
-      return { url: `${base}/api/chat`, headers: bearer(key), body: { model: c.model, messages: image ? [{ role: "system", content: system }, { role: "user", content: user, images: [image.slice(image.indexOf(",") + 1)] }] : messages, stream: false, think: false, options: { num_predict: maxTokens } } };
+      return { url: `${base}/api/chat`, headers: bearer(key), body: { model: c.model, messages: media ? [{ role: "system", content: system }, { role: "user", content: user, images: [media.data] }] : messages, stream: false, think: false, options: { num_predict: maxTokens } } };
     case "cohere":
       return { url: `${base}/v2/chat`, headers: bearer(key), body: { model: c.model, messages, max_tokens: maxTokens } };
     default:
