@@ -15,6 +15,7 @@ import type { AccessBridge } from "./share-manage.ts";
 import { liveStatusOf, publishPathOf, publishStatus } from "./publish-status.ts";
 import { publicLinkOf } from "./public-link-app.ts";
 import { publicNoteUrl } from "./public-page.ts";
+import { middleTruncate, readableLink } from "./readable-link.ts";
 import { findNode, rootOf, stemOf, type TreeNode, type WorkspaceTree } from "./workspace.ts";
 
 export const SHARE_DETAILS_COMMAND = "note.shareDetails";
@@ -48,9 +49,11 @@ export function liveSharesOf(state: Pick<AppState, "workspace" | "ui">, path: st
 /**
  * A Files row's marks (D-431): shared, published (live on the site, D-422), or both, with one name for them
  * (`siteLabel`, read after the file's name) and, in plain words, what each means (`siteDescription`: the
- * badge's tooltip and the row's accessible description, word for word): who can open it and until when.
+ * row's accessible description): who can open it and until when, and the badge's tooltip unless `siteTooltip` says
+ * it on one line. A published page's link reads as a person reads it (readableLink: no https://, spaces not %20):
+ * whole in the description, cut in the middle when long in `siteTooltip`. Copy and open keep the encoded URL.
  */
-export function siteMarksOf(state: Pick<AppState, "workspace" | "ui">, path: string, catalog: MessageCatalog): { shared?: boolean; published?: boolean; siteLabel?: string; siteDescription?: string; siteLive?: "pending" | "confirmed" | "failed" } {
+export function siteMarksOf(state: Pick<AppState, "workspace" | "ui">, path: string, catalog: MessageCatalog): { shared?: boolean; published?: boolean; siteLabel?: string; siteDescription?: string; siteTooltip?: string; siteLive?: "pending" | "confirmed" | "failed" } {
   const shares = liveSharesOf(state, path);
   const shared = shares.length > 0;
   const tree = state.workspace.tree;
@@ -77,7 +80,9 @@ export function siteMarksOf(state: Pick<AppState, "workspace" | "ui">, path: str
     : check?.state === "pending" ? catalog.format(check.action === "unpublish" ? "files.live.unpublishing" : "files.live.pending")
       : check?.state === "failed" ? catalog.format("files.live.failed", { reason: catalog.format(`files.live.reason.${LIVE_REASONS.includes(check.reason ?? "") ? check.reason : "failed"}`) })
         : check?.action === "unpublish" ? catalog.format("files.live.unpublished")
-          : link ? catalog.format("files.live.published", { link }) : catalog.format("files.mark.publishedAbout");
+          : link ? catalog.format("files.live.published", { link: readableLink(link) }) : catalog.format("files.mark.publishedAbout");
+  // Live and not shared: the tooltip is this one line, its link whole when it fits, else cut in the middle.
+  const liveLink = link && published && !shared && (!check || (check.state === "live" && check.action !== "unpublish")) ? link : undefined;
   // The name after the file's name: left out where the row already says it (a public note's *public*, or D-422's
   // *publishing…* while its Publish runs), so it's never read twice.
   const quiet = !shared && ((settled && root?.id === "public" && !check)
@@ -86,6 +91,7 @@ export function siteMarksOf(state: Pick<AppState, "workspace" | "ui">, path: str
     shared, published,
     ...(quiet ? {} : { siteLabel: catalog.format(shared && published ? "files.mark.both" : shared ? "files.mark.shared" : "files.mark.published") }),
     siteDescription: shared && published ? catalog.format("files.mark.bothAbout", { shared: sharedAbout, published: publishedAbout }) : sharedAbout || publishedAbout,
+    ...(liveLink ? { siteTooltip: catalog.format("files.live.published", { link: middleTruncate(readableLink(liveLink)) }) } : {}),
     ...(check ? { siteLive: check.state === "live" ? "confirmed" as const : check.state } : {}),
   };
 }

@@ -95,10 +95,10 @@ test("D-436: a published file's globe is amber until its page is live on Pages, 
     await expect(globe).toHaveAttribute("data-live", "confirmed", { timeout: 30_000 });
     expect(await paint()).toBe(success);
     await expect(globe.locator('[data-border-progress="confirmed"]')).toHaveCount(1);
-    await expect(trip).toHaveAccessibleDescription("Published · live at https://ada.github.io/quiet-site/n/trip/");
+    await expect(trip).toHaveAccessibleDescription("Published · live at ada.github.io/quiet-site/n/trip/");
     await expect(globe).not.toHaveAttribute("data-live", /./, { timeout: 10_000 });
     expect(await paint()).toBe(accent);
-    await expect(trip).toHaveAccessibleDescription("Published · live at https://ada.github.io/quiet-site/n/trip/");
+    await expect(trip).toHaveAccessibleDescription("Published · live at ada.github.io/quiet-site/n/trip/");
     expect(await page.evaluate(() => performance.getEntriesByName("fn:sharing.liveStatus").length)).toBeGreaterThan(0);
     // The pin has its own place at the row's end (main, 13:27, 13:58): hidden at rest, shown on hover without moving the
     // title (its slot is reserved), never under the badges, and always before the row's ⋯.
@@ -136,7 +136,7 @@ test("D-436: a published file's globe is amber until its page is live on Pages, 
     await page.keyboard.press("ArrowUp");
     await page.keyboard.press("ArrowDown");
     await expect(trip).toBeFocused();
-    await expect(page.getByRole("tooltip").filter({ hasText: "Published · live at https://ada.github.io/quiet-site/n/trip/" })).toBeVisible();
+    await expect(page.getByRole("tooltip").filter({ hasText: "Published · live at ada.github.io/quiet-site/n/trip/" })).toBeVisible();
 
     // A page that never goes live: danger, the reason in words, one notification, and the recovery in its menu.
     fake.git.setStale(true);

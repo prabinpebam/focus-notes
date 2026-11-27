@@ -44,3 +44,16 @@ export const tooltip = style({
 });
 
 export const shortcut = style({ opacity: t.shortcutOpacity });
+
+/**
+ * One line (main, 27 November: a published page's live link): as wide as the window less its edges allows, past the
+ * token's width. Its words are already cut to fit (middleTruncate); an end "…" shows only in a window too narrow for them.
+ */
+export const oneLine = style({
+  display: "block",
+  maxWidth: fallbackVar(windowMaxVar, t.maxWidth),
+  whiteSpace: "nowrap",
+  overflowWrap: "normal",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+});

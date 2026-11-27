@@ -26,6 +26,7 @@ import { captureWindow, exactSize, fullNote, openNote, startDemo } from "./scene
 import { expectNoGlobeUnderPrivate, publishedRow, PUBLISHED, sharedRow, SHARED, startSharedProject } from "./scene-sharing.ts";
 import { SCENE_SITE } from "./scene-fixtures.ts";
 import { publicNoteUrl } from "../../../packages/core/src/public-page.ts";
+import { readableLink } from "../../../packages/core/src/readable-link.ts";
 
 test.skip(process.env.FOCUS_NOTES_CAPTURE_STORE !== "1", "Opt in with FOCUS_NOTES_CAPTURE_STORE=1");
 
@@ -230,7 +231,7 @@ test("D-437: Files with opened tabs and the shared and published badges, light; 
       await expectNoGlobeUnderPrivate(page);
       // D-436: the published note's badge says where its page is live.
       await expect(page.getByRole("tooltip")).toHaveCount(1);
-      await expect(page.getByRole("tooltip")).toHaveText(`Published · live at ${publicNoteUrl(SCENE_SITE, `${PUBLISHED}.md`)}`);
+      await expect(page.getByRole("tooltip")).toHaveText(`Published · live at ${readableLink(publicNoteUrl(SCENE_SITE, `${PUBLISHED}.md`))}`);
       await capture(l, "files-light");
     } finally {
       await close();

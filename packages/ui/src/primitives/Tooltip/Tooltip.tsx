@@ -67,10 +67,9 @@ function Bubble({ placement, children }: { placement: TooltipSide; children: Rea
   const { tooltipProps } = useTooltip(props, state!);
   return <PositionedBubble placement={placement} open={Boolean(state?.isOpen)} triggerRef={triggerRef} tooltipProps={tooltipProps} onHidden={() => state?.close(true)}>{children}</PositionedBubble>;
 }
-
-function PositionedBubble({ placement, children, open, triggerRef, tooltipProps, onHidden }: {
+function PositionedBubble({ placement, children, open, triggerRef, tooltipProps, onHidden, oneLine }: {
   placement: TooltipSide; children: ReactNode; open: boolean; triggerRef?: RefObject<HTMLElement | null>;
-  tooltipProps: HTMLAttributes<HTMLElement>; onHidden?: () => void;
+  tooltipProps: HTMLAttributes<HTMLElement>; onHidden?: () => void; oneLine?: boolean | undefined;
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const portal = useUNSAFE_PortalContext();
@@ -132,16 +131,15 @@ function PositionedBubble({ placement, children, open, triggerRef, tooltipProps,
 
   if (!open || !container) return null;
   return createPortal(
-    <div {...tooltipProps} ref={ref} className={s.tooltip} data-entering={placed ? undefined : ""}>
+    <div {...tooltipProps} ref={ref} className={oneLine ? `${s.tooltip} ${s.oneLine}` : s.tooltip} data-entering={placed ? undefined : ""}>
       {children}
     </div>,
     container,
   );
 }
 
-/** A menu item owns its focus/hover state rather than a TooltipTrigger pressable. */
-export function DescriptionTooltip({ label, anchor, focused, hovered }: {
-  label: string; anchor: RefObject<HTMLElement | null>; focused: boolean; hovered: boolean;
+/** A menu item owns its focus/hover state rather than a TooltipTrigger pressable. */export function DescriptionTooltip({ label, anchor, focused, hovered, oneLine }: {
+  label: string; anchor: RefObject<HTMLElement | null>; focused: boolean; hovered: boolean; oneLine?: boolean;
 }) {
   const [delayed, setDelayed] = useState(false);
   useEffect(() => {
@@ -149,7 +147,7 @@ export function DescriptionTooltip({ label, anchor, focused, hovered }: {
     const timer = setTimeout(() => setDelayed(true), 500);
     return () => clearTimeout(timer);
   }, [hovered]);
-  return <PositionedBubble placement="bottom" open={focused || hovered && delayed} triggerRef={anchor} tooltipProps={{ role: "tooltip" }}>{label}</PositionedBubble>;
+  return <PositionedBubble placement="bottom" open={focused || hovered && delayed} triggerRef={anchor} tooltipProps={{ role: "tooltip" }} oneLine={oneLine}>{label}</PositionedBubble>;
 }
 
 /** Name and shortcut after 500 ms of hovering, or at once on keyboard focus (Foundations → Words). */

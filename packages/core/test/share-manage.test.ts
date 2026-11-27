@@ -1104,10 +1104,10 @@ describe("D-431: shared and published marks in Files, and Share details…", () 
     // A private note in a Private + Public project, even if a stale record names it.
     expect(siteMarksOf(state([], ["diary.md"]), "/w/private/notes/diary.md", catalog)).toEqual({});
     // Its row already says *public*, so the globe isn't named twice; its words are the tooltip and description.
-    expect(siteMarksOf(state(), "/w/notes/hello.md", catalog)).toEqual({ shared: false, published: true, siteDescription: "Published · live at https://ada.github.io/book/n/hello/" });
+    expect(siteMarksOf(state(), "/w/notes/hello.md", catalog)).toEqual({ shared: false, published: true, siteDescription: "Published · live at ada.github.io/book/n/hello/", siteTooltip: "Published · live at ada.github.io/book/n/hello/" });
     const check = (state: string, reason?: string) => ({ root: "public", path: "rice-pudding.md", url: "https://ada.github.io/book/n/rice-pudding/", action: "publish", state, ...(reason ? { reason } : {}) });
     expect(siteMarksOf(state([check("pending")]), "/w/notes/rice-pudding.md", catalog)).toMatchObject({ published: true, siteLive: "pending", siteDescription: "Publishing · waiting for GitHub Pages to go live" });
-    expect(siteMarksOf(state([check("live")]), "/w/notes/rice-pudding.md", catalog)).toMatchObject({ siteLive: "confirmed", siteDescription: "Published · live at https://ada.github.io/book/n/rice-pudding/" });
+    expect(siteMarksOf(state([check("live")]), "/w/notes/rice-pudding.md", catalog)).toMatchObject({ siteLive: "confirmed", siteDescription: "Published · live at ada.github.io/book/n/rice-pudding/" });
     expect(siteMarksOf(state([check("failed", "pages")]), "/w/notes/rice-pudding.md", catalog)).toMatchObject({ siteLive: "failed", siteDescription: "Not live yet · GitHub Pages couldn't build your site" });
     // Unpublish moved it back to private: still on the site, so its globe waits there until the page is gone.
     const leaving = { root: "private", path: "diary.md", url: "https://ada.github.io/book/n/diary/", action: "unpublish", state: "pending" };

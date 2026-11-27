@@ -1610,6 +1610,7 @@ export function registerFiles(ctx: Ctx) {
       ["published", { type: "boolean" as const }],
       ["siteLabel", { type: "string" as const }],
       ["siteDescription", { type: "string" as const }],
+      ["siteTooltip", { type: "string" as const }],
       ["siteLive", { type: "string" as const, enum: ["pending", "confirmed", "failed"] }],
       ["kind", { type: "string" as const, enum: ["section", "folder", "note"] }],
       ["level", { type: "number" as const }],

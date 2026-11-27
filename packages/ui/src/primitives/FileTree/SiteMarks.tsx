@@ -24,7 +24,9 @@ const HOST = '[role="treeitem"], [data-tab-id]';
 export function FileGlyph({ item, className, children }: { item: TreeItem; className?: string | undefined; children: ReactNode }) {
   const marks = marksOf(item);
   const live = marks && item.published ? item.siteLive : undefined;
-  const about = marks ? item.siteDescription ?? "" : "";
+  // The badges' tooltip: the one-line live link when there is one, else the description (which stays whole for screen readers).
+  const about = marks ? item.siteTooltip ?? item.siteDescription ?? "" : "";
+  const oneLine = Boolean(marks && item.siteTooltip);
   const anchor = useRef<HTMLSpanElement | null>(null);
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
@@ -55,7 +57,7 @@ export function FileGlyph({ item, className, children }: { item: TreeItem; class
           {item.shared ? <span className={s.badge} data-badge="shared"><Icon name="personBadge" size="s" /></span> : null}
         </span>
       ) : null}
-      {about ? <DescriptionTooltip label={about} anchor={anchor} focused={focused} hovered={hovered} /> : null}
+      {about ? <DescriptionTooltip label={about} anchor={anchor} focused={focused} hovered={hovered} oneLine={oneLine} /> : null}
     </span>
   );
 }
