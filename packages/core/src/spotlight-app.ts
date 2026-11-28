@@ -747,8 +747,21 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
         return undefined;
     }
   }
+  /** Resolves once the rows answer what the field shows (or Spotlight closed), at most `ms` later. */
+  const answered = (ms = 2_000) => new Promise<void>((resolve) => {
+    const ready = () => { const s = sp(); return !s.open || s.answered === answerKey(s); };
+    if (ready()) return resolve();
+    let off = () => {};
+    const done = () => { off(); clearTimeout(limit); resolve(); };
+    const limit = setTimeout(done, ms);
+    off = store.subscribe(() => { if (ready()) done(); });
+  });
+
   async function runActive(alternative: boolean): Promise<void> {
+    // Enter pressed straight after typing acts on the typed query's rows, never an earlier answer's.
+    if (!sp().actions) await answered();
     const s = sp();
+    if (!s.actions && s.answered !== answerKey(s)) return;
     if (s.actions) {
       const row = rowById(s.actions.row);
       const a = row ? actionList(row).find((x) => x.id === s.actions!.activeId) : undefined;

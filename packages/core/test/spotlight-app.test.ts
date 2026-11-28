@@ -146,6 +146,18 @@ describe("SPT-01: Mod+/ opens Spotlight from anywhere; Mod+Shift+P too, on every
     await app.commands.run("spotlight.run");
     expect(app.store.state.focusMode).not.toBe(before);
   });
+  it("Enter typed before the answer arrives runs the typed query's row, never a row of an earlier answer", async () => {
+    const { app } = await started();
+    await app.commands.run("spotlight.open");
+    await type(app, "se");
+    const stale = sp(app).activeId;
+    // No wait: Enter straight after the last key, as a fast typist presses it.
+    await app.commands.run("spotlight.setQuery", { value: "focus mode" });
+    expect(sp(app).answered, "the rows still answer the earlier query").not.toBe(answerKey(sp(app)));
+    const before = app.store.state.focusMode;
+    await app.commands.run("spotlight.run");
+    expect(app.store.state.focusMode, `ran ${stale} instead of Focus mode`).not.toBe(before);
+  });
   it("replaces an automatic Create selection when availability changes without an index update", async () => {
     const { app } = await started();
     let enabled = false;
