@@ -5,6 +5,17 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 > [!NOTE]
 > **TL;DR.** All 150 requirements in these six stages are named by at least one automated test (`pnpm trace` lists none untraced), and on 2026-10-15 every one of them has a test that passed on Windows in CI run 38639327074 on `be2f820` (now `main`): repository checks, typecheck, 1,054 unit tests, the bench (`pnpm bench --check`), 147 desktop journeys (5 skipped, all macOS-only or packaged) and 27 web journeys. Every demo script is automated and passed there. Even so, none of the 31 *verifying* work packages in M1, MW, M3, M2, and M4 can move to *done* yet, because rows of the [work package definition of done](definition-of-done.md#work-package-definition-of-done) have no evidence: for all of them, recorded review approvals, a dependency audit, and a nightly build that installs and starts on Windows; for the 24 with surfaces, approved visual baselines and the light and dark screenshot review; and for eight, open high CodeQL findings. No gate can pass until these are closed and the owner runs each demo on a clean Windows 11 machine, confirms the proposed decisions, and accepts it.
 
+## 1.1.0 release candidate `15de3928`, 28 November
+
+`main` fast-forwarded (non-force) `90e52fb3..15de3928` on Coordinator12's go. The release-candidate gates, each on this head unless stated:
+
+- **CI:** [46135230754](https://github.com/prabinpebam/focus-notes/actions/runs/46135230754), attempt 1, 7/7 green (changes, unit tests, web, journey shards 1–4).
+- **Full journeys:** CI 46135230754's four Windows shards on this exact head. A local duplicate run was stopped at 128/623 with no failure, by Coordinator12's direction, to free the machine.
+- **Web:** `pnpm test:web`: 25 passed, 2 skipped (local), and CI's `web-windows` job (`pnpm test:web`) green.
+- **Bench:** `pnpm bench --check` passed on `b13e8193`, one commit before the settle-only dispose change; only `sync.ts`, `main.ts`, tests and docs changed after it, none in start-up. PRF-02 cold 847 ms, warm 829 ms against the 802/744 baseline ([D-426](decisions.md#d-426-re-record-the-start-up-baseline-at-todays-numbers): written during a high-drift period); every budget met (PRF-03 open 85 ms / save 547 ms, PRF-04 341 MB, PRF-10 32.2 ms, SPT-07 19.7 ms, FND-04 34.1 ms, PRF-06 7457 ms).
+- **`delete-shared-same-repo.spec.ts:18` (D-428 rowFrames):** the sampler, fixed in `bde3602d` and `7dd89101` (below); green in CI 46135230754. No quarantine row.
+- The two red runs before it (46127074899 on `237edc88`, 46132629598 on `b13e8193`) and their fixes are below.
+
 ## Batch candidate red on `237edc88`: three causes, fixed on the candidate, 28 November
 
 [CI 46127074899](https://github.com/prabinpebam/focus-notes/actions/runs/46127074899) on `fix-merge-candidate-28nov` `237edc88` failed one journey in each of shards 1, 2 and 4 (unit, web, changes and shard 3 green). None is in the batch's own changes; each cause is fixed on the candidate, nothing rerun or quarantined.

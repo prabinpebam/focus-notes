@@ -10,7 +10,7 @@ What each Focus Notes release brings, in the words a person who writes would use
 ### Projects
 
 - **Projects.** Each project is its own folder and window, with its own colour outline, pill and optional logo. Create one on this computer or on GitHub, open one from GitHub (only Focus Notes projects are listed), and reuse a copy that's already on this computer instead of downloading it again ([D-415](decisions.md#d-415-offer-a-copy-thats-already-here-before-downloading-again), [D-416](decisions.md#d-416-open-from-github-lists-only-focus-notes-projects)).
-- **You always land in writing.** Every way into a project opens an empty Untitled note with the caret ready, or the note you had open last ([D-397](decisions.md#d-397-every-project-entry-opens-a-note-never-open-first), [D-420](decisions.md#d-420-an-existing-project-reopens-its-session-not-an-empty-note)). If the record of your last note can't be read, Focus Notes opens your most recent note or an empty one, says so once, and repairs the record.
+- **You always land in writing.** Every way into a project opens an empty Untitled note with the caret ready, or the note you had open last ([D-397](decisions.md#d-397-every-project-entry-opens-a-note-never-open-first), [D-420](decisions.md#d-420-an-existing-project-reopens-its-session-not-an-empty-note)). If the record of your last note can't be read, Focus Notes opens your most recent note or an empty one, says so once, and repairs the record. If a project's list of recent notes can't be read, the project still opens and is listed, you're told once, and the list is rebuilt.
 - **A project's colour everywhere.** Inside a project window, links, focus rings, selection and buttons take the project's colour, adjusted per theme so text stays readable ([D-435](decisions.md#d-435-a-projects-colour-takes-every-accent-role-solved-per-theme)).
 - **Delete a project**, in the app or on GitHub's website, with an optional copy of anything not yet backed up ([D-413](decisions.md#d-413-delete-linked-projects-on-github-web-with-automatic-detection-and-optional-unsynced-save)).
 - **Files**: Opened files as tabs above Pinned ([D-410](decisions.md#d-410-opened-files-as-vertical-tabs-above-pinned)), New note in…, Rename file, Local notes, and marks on shared and published files ([D-431](decisions.md#d-431-shared-and-published-files-are-marked-in-files-and-each-shared-file-has-share-details)).
@@ -31,16 +31,19 @@ What each Focus Notes release brings, in the words a person who writes would use
 ### Rewrite with AI
 
 - Select words, give a prompt, and the rewrite streams in place as one undo step; or write at the caret. Settings → AI connects an AI app on this computer, an online service with your own key, or the GitHub Copilot CLI. Every connection is tried for real rather than ruled out by version, and a service's own error is shown in full ([D-438](decisions.md#d-438-ai-connections-are-tried-never-prefiltered)).
+- **Image captions with AI** work with every connection that can send an image, Anthropic and Gemini included (all but the GitHub Copilot CLI); a model that can't see images says so in its own words.
 
 ### Saving, recovery and backup
 
 - **Backup status you can trust**: the corner never says *Backed up* while work isn't on GitHub, including just after launch; until Git has answered it says *Saved on this computer* ([D-414](decisions.md#d-414-what-on-github-means-is-the-save-states-measure-unknown-is-its-own-answer)).
-- **Crash recovery**: unsaved text comes back in its note after a crash, even when its file was renamed or moved; in a rare case it waits in Files › Recovered, character for character, to save as a new note.
+- **Crash recovery**: unsaved text comes back in its note after a crash, even when its file was renamed or moved; in a rare case it waits in Files › Recovered, character for character, to save as a new note. When both a recovered version and the saved file exist, Focus Notes says the note has two versions and lets you keep either.
+- **Backup that can't stall your project**: a GitHub step that hangs is stopped with everything it started, while a save or commit on this computer always runs to completion; deleting a project or removing it waits briefly for a running backup to finish first.
 - A missing notes folder is offered back rather than replaced with an empty one, and a mass deletion pauses to ask.
 
 ### Also
 
-- Actions (the renamed Spotlight) finds files, folders and the actions that apply to them.
+- Actions (the renamed Spotlight) finds files, folders and the actions that apply to them. Pressing Enter straight after typing runs what you typed, never an earlier result.
+- A failed delete explains what went wrong and offers Retry, without repeating it in the message.
 - Dialogs and cards in two columns, Switches for every on/off setting, notifications that dismiss themselves, and many spacing and contrast fixes.
 
 ### Known issues
