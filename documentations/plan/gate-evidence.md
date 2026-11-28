@@ -13,6 +13,8 @@ The evidence for each stage gate before 1.0, in the order the stages close (M0, 
 
 **Census: `project-entry-stale.spec.ts:228` (P0-entry.5) failed only in teardown.** Its body passed; `quit()` (`helpers.ts:373`) threw *Target page, context or browser has been closed* while the app was already closing (shard 2 of [46045543444](https://github.com/prabinpebam/focus-notes/actions/runs/46045543444)). `quit()` now treats an app that already exited as quit, and nothing else (PRJ-24 teardown).
 
+**Census: `delete-shared-same-repo.spec.ts:18` (D-428, "a frame after the confirmation") failed once in 9 local runs on `fix-launch-status-28nov` and passed 3/3 on `main`'s build (`1101607c`).** The row-frame watcher had no frame with the confirmation closed. That watcher samples by animation frame in an invisible window; the journey doesn't read the save state, which is all D-414's change touched. Watch it in the flake census before the v1.1.0 gate.
+
 ## D-438 landing: four scoped quarantines, 27 November
 
 D-438 (AI connections tried, never prefiltered) lands as `fa2549ae`. Its exact-head gates hit three different journeys outside AI. None of them failed in the D-438 run on `2944187d` ([45955737088](https://github.com/prabinpebam/focus-notes/actions/runs/45955737088), 7/7 on the same `main` base `3013d473`). QLT-03 (killed while typing) passed in every run: worst 164 ms and 236 ms against a 1000 ms budget. Coordinator11 authorized these four rows only: no test, selector, timeout, budget or assertion changed, and every other branch still needs its own green run.
