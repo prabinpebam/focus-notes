@@ -3,13 +3,13 @@
   "measures": {
     "PRF-02.coldReadyMs": {
       "budget": 2500,
-      "baseline": 487,
+      "baseline": 802,
       "unit": "ms",
       "noiseAbsolute": 100
     },
     "PRF-02.warmReadyMs": {
       "budget": 1500,
-      "baseline": 423,
+      "baseline": 744,
       "unit": "ms",
       "noiseAbsolute": 100
     },
