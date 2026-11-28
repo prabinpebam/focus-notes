@@ -238,6 +238,17 @@ describe("Open", () => {
     expect(app.store.state.ui.toasts.filter(t => t.message === en["project.launch.restoreFailed"])).toEqual([expect.objectContaining({ tone: "error" })]);
     expect(app.store.state.ui.toasts.filter(t => t.sticky)).toEqual([]);
   });
+  it("an unreadable Recent lists the project and says so once, not as 'no recent notes' (D-397)", async () => {
+    const list = vi.fn(async () => [{ ...book, recent: [], recentUnreadable: true }]);
+    const app = appWith({ list, lastNote: async () => undefined });
+    await app.commands.run("projects.refresh");
+    await app.commands.run("projects.refresh");
+    expect(list).toHaveBeenCalledTimes(2);
+    expect(vm(app).entries).toHaveLength(1);
+    expect(vm(app).error).toBe("");
+    const message = en["project.open.recentFailed"].replace("{name}", "Book");
+    expect(app.store.state.ui.toasts.filter(t => t.message === message)).toEqual([expect.objectContaining({ tone: "error" })]);
+  });
   it.each([false, true])("opens the saved disk note when launch metadata is stale or unreadable (unreadable: %s)", async (unreadable) => {
     const target = "C:\\Book\\renamed.md", stale = "C:\\Book\\Untitled.md";
     const writeNote = vi.fn(async () => {});

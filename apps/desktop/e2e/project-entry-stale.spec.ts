@@ -347,6 +347,8 @@ for (const recent of ["readable", "unreadable"] as const) {
       instance = undefined;
       // Self-heal: the note opened on entry rewrote the record, so the next launch reopens it with no warning.
       expect(readFileSync(join(dirs.userData, DATA_FILES.projectLastNote), "utf8")).toMatch(/^dpapi:./);
+      // And a Recent that couldn't be read was rebuilt from that open, never left empty.
+      expect(readFileSync(join(dirs.userData, DATA_FILES.projectRecent), "utf8")).toMatch(/^dpapi:./);
       instance = await launch(dirs);
       await expect(instance.page.getByRole("textbox", { name: "Note", exact: true })).toHaveText(reopened);
       await expect(warning(instance.page)).toHaveCount(0);

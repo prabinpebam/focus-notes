@@ -563,6 +563,36 @@ it.skipIf(process.platform !== "win32").each(Object.entries(unreadableRecent))("
   await expect(projects.recentNote()).rejects.toThrow();
 });
 
+it.skipIf(process.platform !== "win32").each(Object.entries(unreadableRecent))("a %s Recent record still lists the project, marked unreadable, and the next open rebuilds it (D-397)", async (_kind, bytes) => {
+  const { root, projects } = await setup();
+  const note = join(root, "first.md");
+  await writeFile(join(paths.profile, DATA_FILES.projectRecent), bytes);
+  const [entry] = await projects.list();
+  expect(entry).toMatchObject({ recent: [], recentUnreadable: true });
+  const error = vi.spyOn(console, "error").mockImplementation(() => {});
+  try {
+    await projects.remember(note);
+    await projects.closed();
+  } finally { error.mockRestore(); }
+  const restarted = projectWindows(() => join(root, "existing"), writeFile);
+  expect(await restarted.recentNote()).toBe(note);
+  expect((await restarted.list())[0]).not.toHaveProperty("recentUnreadable");
+});
+
+it.skipIf(process.platform !== "win32")("a Recent record that can't be decrypted is never overwritten by the next open (D-397)", async () => {
+  const { root, projects } = await setup();
+  const bytes = "v10-not-dpapi-and-not-decryptable";
+  await writeFile(join(paths.profile, DATA_FILES.projectRecent), bytes);
+  protection.decrypt.mockImplementation(() => { throw new Error("Chromium key unavailable"); });
+  const error = vi.spyOn(console, "error").mockImplementation(() => {});
+  try {
+    expect((await projects.list())[0]).toMatchObject({ recentUnreadable: true });
+    await projects.remember(join(root, "first.md"));
+    await projects.closed();
+  } finally { error.mockRestore(); protection.decrypt.mockImplementation((value: Buffer) => value.toString("utf8")); }
+  expect(await readFile(join(paths.profile, DATA_FILES.projectRecent), "utf8")).toBe(bytes);
+});
+
 it.skipIf(process.platform !== "win32")("recentNote is the project's top-ranked Recent note (D-397)", async () => {
   const { root, projects } = await setup();
   const first = join(root, "first.md"), second = join(root, "second.md");

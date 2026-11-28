@@ -252,25 +252,31 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     try { return await readFile(join(profile, DATA_FILES.projectRecent), "utf8"); }
     catch (error) { if (missing(error)) return; throw error; }
   }
+  /** A Recent record that decrypts but holds no valid record (0 bytes, blank, garbage, pathless): nothing in it can be recovered. */
+  class InvalidRecent extends Error {}
   async function readRecent(profile: string, encrypted: string | undefined): Promise<Recent> {
     if (encrypted === undefined) return { rank: 0, pinned: false, notes: [] };
     if (profile === userData && ownRecent && ownRecentBytes === encrypted) return structuredClone(ownRecent);
+    let content: string;
     try {
       if (!safeStorage.isEncryptionAvailable()) throw new Error("Protected recent storage is unavailable.");
-      const content = encrypted.startsWith("dpapi:")
+      content = encrypted.startsWith("dpapi:")
         ? Buffer.from(await windowsProtectedRecord(encrypted.slice(6), false), "base64").toString("utf8")
         : safeStorage.decryptString(Buffer.from(encrypted, "base64"));
-      return validRecent(JSON.parse(content));
     } catch (error) {
       if (missing(error)) return { rank: 0, pinned: false, notes: [] };
       throw error;
     }
+    let parsed: unknown;
+    try { parsed = JSON.parse(content); }
+    catch { throw new InvalidRecent("Invalid protected recent record."); }
+    return validRecent(parsed);
   }
   // An empty, pathless or foreign record is unreadable, never an empty Recent (D-397).
   function validRecent(record: unknown): Recent {
     if (!record || typeof record !== "object" || !("notes" in record) || !Array.isArray(record.notes)
       || record.notes.some(note => !note || typeof note !== "object" || typeof note.path !== "string" || !note.path.trim())) {
-      throw new Error("Invalid protected recent record.");
+      throw new InvalidRecent("Invalid protected recent record.");
     }
     return record as Recent;
   }
@@ -349,7 +355,12 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     void queueRecent(async epoch => {
       const profile = userData;
       const previous = await recentBytes(profile);
-      const record = await readRecent(profile, previous);
+      // A record with nothing recoverable in it is rebuilt from this open (D-397); a failed decryption stays an error.
+      const record = await readRecent(profile, previous).catch((error: unknown) => {
+        if (!(error instanceof InvalidRecent)) throw error;
+        console.error("Rebuilding an unreadable project ranking:", error.name);
+        return { rank: 0, pinned: false, notes: [] } as Recent;
+      });
       const note = record.notes.find((n) => n.path === path) ?? { path, rank: 0, pinned: false };
       note.rank = addScore(note.rank, points);
       record.rank = addScore(record.rank, points);
@@ -584,12 +595,18 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
       await metadata.initialize(profile);
       const saved = await state(profile);
       const identity = saved.projectSettings?.[folder];
-      const history = await recent(profile);
+      // An unreadable Recent mustn't hide the project from Open: it's listed, marked, and Open says so (D-397).
+      let recentUnreadable = false;
+      const history = await recent(profile).catch((error: unknown) => {
+        console.error("Could not read project ranking:", error instanceof Error ? error.name : "Error");
+        recentUnreadable = true;
+        return { rank: 0, pinned: false, notes: [] } as Recent;
+      });
       // An unreadable launch record mustn't hide every project from Open; the window says so on entry.
       const lastPath = profile === userData ? await lastNote().catch(() => undefined) : undefined;
       const github = saved.localNotes ? undefined : await githubRepo(folder);
       const last = counted.get(folder);
-      return { folder, name: identity?.name ?? basename(folder), accent: saved.localNotes ? "app" : identity?.accent ?? "teal", logo: saved.localNotes ? "none" : identity?.logo ?? "book", logoSrc: identity?.logoSrc, lastNote: lastPath ?? saved.lastNotePath, rank: history.rank, pinned: history.pinned, recent: history.notes, localNotes: saved.localNotes, ...(github ? { repo: github } : {}), ...(last ? { stats: last } : {}) };
+      return { folder, name: identity?.name ?? basename(folder), accent: saved.localNotes ? "app" : identity?.accent ?? "teal", logo: saved.localNotes ? "none" : identity?.logo ?? "book", logoSrc: identity?.logoSrc, lastNote: lastPath ?? saved.lastNotePath, rank: history.rank, pinned: history.pinned, recent: history.notes, localNotes: saved.localNotes, ...(recentUnreadable ? { recentUnreadable } : {}), ...(github ? { repo: github } : {}), ...(last ? { stats: last } : {}) };
     }));
   }
   function pin(folder: string, path?: string) {

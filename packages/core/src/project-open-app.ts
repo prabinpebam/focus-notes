@@ -25,7 +25,7 @@ export function formatSize(bytes: number): string {
 export function registerProjectOpen(ctx: {
   store: App["store"]; commands: App["commands"]; viewModels: App["viewModels"];
   bridge: PlatformBridge; catalog: MessageCatalog; load: (path: string, keepCurrent?: boolean) => Promise<boolean>; tracker: TaskTracker;
-  flush: () => Promise<boolean>; toast: (message: string) => void;
+  flush: () => Promise<boolean>; toast: (message: string, opts?: { tone?: "info" | "error" }) => unknown;
 }) {
   const { store, commands, viewModels, bridge } = ctx;
   const state = { open: false, full: false, query: "", active: "", pending: false, loading: false, retrying: false, searchFocus: 0, error: "", details: "", entries: [] as ProjectEntry[] };
@@ -36,6 +36,7 @@ export function registerProjectOpen(ctx: {
   const changed = () => store.update((s) => ({ ...s }));
   let recovery: { command: string; args: Record<string, unknown> } | undefined;
   let listing = 0;
+  const recentWarned = new Set<string>();
   let action = 0;
   const clearFailure = () => { state.error = ""; state.details = ""; recovery = undefined; };
   const begin = () => { const request = ++action; state.pending = false; if (!state.retrying) clearFailure(); changed(); return request; };
@@ -115,6 +116,12 @@ export function registerProjectOpen(ctx: {
       const entries = await ctx.tracker.section("project.list", "project.open.listing", () => bridge.projects!.list(), "fn:project.list");
       if (request !== listing || operation !== action || !state.open) return;
       state.entries = entries; clearFailure(); clearPinFailures(); count(entries);
+      // An unreadable Recent is an error, not "no recent notes" (D-397): said once per project per session.
+      for (const entry of entries) {
+        if (!entry.recentUnreadable || recentWarned.has(entry.folder)) continue;
+        recentWarned.add(entry.folder);
+        ctx.toast(ctx.catalog.format("project.open.recentFailed", { name: entry.name }), { tone: "error" });
+      }
     }
     catch (error) { if (request === listing && operation === action && state.open) fail("project.open.listFailed", "projects.refresh", error); }
     finally { if (request === listing) { state.loading = false; changed(); } }

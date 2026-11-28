@@ -256,6 +256,8 @@ export interface ProjectEntry {
   pinned?: boolean;
   rank?: number;
   recent?: { path: string; rank: number; pinned: boolean }[];
+  /** Its Recent record couldn't be read (D-397): `recent` is empty because of an error, not because there are none. */
+  recentUnreadable?: boolean;
   localNotes?: boolean;
   /** owner/repo of the folder's GitHub remote, read from its own Git config (D-346). */
   repo?: string;
