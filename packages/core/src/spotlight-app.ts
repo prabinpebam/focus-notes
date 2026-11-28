@@ -759,8 +759,13 @@ export function registerSpotlight(ctx: Ctx): { attach(search: SpotlightSearch): 
 
   async function runActive(alternative: boolean): Promise<void> {
     // Enter pressed straight after typing acts on the typed query's rows, never an earlier answer's.
-    if (!sp().actions) await answered();
+    if (!sp().actions && sp().answered !== answerKey(sp())) {
+      const from = now();
+      await answered();
+      if (typeof performance !== "undefined") performance.measure("fn:spotlight.enterWait", { start: from, end: now() });
+    }
     const s = sp();
+    // No answer in time: nothing runs, rather than a guess.
     if (!s.actions && s.answered !== answerKey(s)) return;
     if (s.actions) {
       const row = rowById(s.actions.row);

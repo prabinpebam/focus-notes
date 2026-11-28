@@ -158,6 +158,24 @@ describe("SPT-01: Mod+/ opens Spotlight from anywhere; Mod+Shift+P too, on every
     await app.commands.run("spotlight.run");
     expect(app.store.state.focusMode, `ran ${stale} instead of Focus mode`).not.toBe(before);
   });
+  it("Enter with no answer for the typed query after 2 s runs nothing, never a guess", async () => {
+    const { app } = await started(desktop(), { search: false });
+    const search = startSearch(app, localSearch());
+    running.push(search);
+    app.useSearch(search);
+    await search.whenIndexed();
+    await app.commands.run("spotlight.open");
+    await type(app, "se");
+    vi.spyOn(search, "query").mockImplementation(() => new Promise(() => {}));
+    await app.commands.run("spotlight.setQuery", { value: "focus mode" });
+    const before = app.store.state.focusMode;
+    const t0 = Date.now();
+    await app.commands.run("spotlight.run");
+    expect(Date.now() - t0, "it waited for the answer").toBeGreaterThanOrEqual(1_900);
+    expect(app.store.state.focusMode, "Focus mode didn't run without its answer").toBe(before);
+    expect(sp(app).open, "no stale row ran: Spotlight is still open on the typed query").toBe(true);
+    expect(sp(app).query).toBe("focus mode");
+  });
   it("replaces an automatic Create selection when availability changes without an index update", async () => {
     const { app } = await started();
     let enabled = false;
