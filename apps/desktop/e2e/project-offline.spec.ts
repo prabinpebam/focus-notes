@@ -79,7 +79,7 @@ foreach ($chunk in 0..([Math]::Floor(($files.Count - 1) / 200))) {
   if ($need -gt 0) {
     $a = New-Object FnRm+PI[] $need; $n = $need
     [FnRm]::RmGetList($h, [ref]$need, [ref]$n, $a, [ref]$r) | Out-Null
-    foreach ($p in $a) { $holders += [pscustomobject]@{ pid = $p.P.pid; name = $p.App; path = (Get-Process -Id $p.P.pid).Path } }
+    foreach ($p in $a) { $holders += [pscustomobject]@{ pid = [int]$p.P.pid; name = $p.App; path = (Get-Process -Id $p.P.pid).Path } }
   }
   [FnRm]::RmEndSession($h) | Out-Null
 }
@@ -87,11 +87,17 @@ $all = @(Get-CimInstance Win32_Process)
 $tree = @{}; $tree[$AppPid] = $true
 do { $grew = $false; foreach ($p in $all) { if ($tree[[int]$p.ParentProcessId] -and -not $tree[[int]$p.ProcessId]) { $tree[[int]$p.ProcessId] = $true; $grew = $true } } } while ($grew)
 $procs = @($all | Where-Object { $_.ProcessId -ne $PID -and $_.ParentProcessId -ne $PID -and (($_.CommandLine -and $_.CommandLine.Contains($Folder)) -or $_.Name -like 'git*' -or ($tree[[int]$_.ProcessId] -and $_.ProcessId -ne $AppPid -and $_.Name -notlike '*lectron*' -and $_.Name -notlike 'Focus Notes*')) } |
-  ForEach-Object { [pscustomobject]@{ pid = $_.ProcessId; ppid = $_.ParentProcessId; name = $_.Name; path = $_.ExecutablePath; commandLine = $_.CommandLine } })
+  ForEach-Object {
+    # The app's own: its tree, or Git and its shells working on this folder whose launcher already ended (orphans).
+    $live = $all | Where-Object ProcessId -eq $_.ParentProcessId
+    $own = [bool]$tree[[int]$_.ProcessId] -or (($_.CommandLine -and $_.CommandLine.Contains($Folder)) -and ($_.Name -match '^(git|sh|bash|ssh|git-remote|git-credential)' -or -not $live))
+    [pscustomobject]@{ pid = $_.ProcessId; ppid = $_.ParentProcessId; name = $_.Name; path = $_.ExecutablePath; commandLine = $_.CommandLine; own = $own } })
+$ownPids = @($procs | Where-Object own | ForEach-Object pid)
+$holders = @($holders | ForEach-Object { $_ | Add-Member -NotePropertyName own -NotePropertyValue ([bool]$tree[$_.pid] -or $ownPids -contains $_.pid) -PassThru })
 [pscustomobject]@{ holders = @($holders | Sort-Object pid -Unique); processes = $procs } | ConvertTo-Json -Depth 4 -Compress
 `;
 
-interface TrashRefusal { at: number; code: string; message: string; holders: { pid: number; name: string; path?: string }[]; processes: { pid: number; ppid: number; name: string; path?: string; commandLine?: string }[]; probe?: string }
+interface TrashRefusal { at: number; code: string; message: string; holders: { pid: number; name: string; path?: string; own?: boolean }[]; processes: { pid: number; ppid: number; name: string; path?: string; commandLine?: string; own?: boolean }[]; probe?: string }
 
 /**
  * Synthetic Recycle Bin: moves the approved fixture folder into recycle instead of touching OS trash.
@@ -173,6 +179,10 @@ async function expectProjectDeleted(fx: { l: Launched; dirs: { docs: string } },
   const first = await trashRefusals(fx.l);
   const why = await dialog.innerText();
   expect(first.length, `Retry without a refused Recycle Bin: ${why}`).toBeGreaterThan(0);
+  // Retry is only for a holder outside the app (an antivirus or indexer scan). Focus Notes, or Git it started, must
+  // have let go before the move (D-413): any such holder fails here, on the first attempt.
+  const ours = first.filter(r => r.holders.some(h => h.own) || r.processes.some(p => p.own));
+  expect(ours.map(holderLine), "the folder was held by Focus Notes or a process it started").toEqual([]);
   await expect(dialog).toContainText("Deleted on GitHub, but the folder couldn't go to the Recycle Bin");
   await expect(deleted).toHaveCount(0);
   expect(existsSync(fx.dirs.docs)).toBe(true);

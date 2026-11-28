@@ -31,6 +31,27 @@ export type GitRunner = (call: GitCall) => Promise<GitResult>;
 
 export const DEFAULT_TIMEOUT_MS = 60_000;
 
+/** Git's subcommand, after its global options (`-c key=value`, `-C dir`, …). */
+export function gitSubcommand(args: readonly string[]): string | undefined {
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i]!;
+    if (a === "-c" || a === "-C" || a === "--git-dir" || a === "--work-tree" || a === "--namespace" || a === "--exec-path") { i++; continue; }
+    if (!a.startsWith("-")) return a;
+  }
+  return undefined;
+}
+/**
+ * Network commands and credential-helper calls that may wait on a server or a helper; ended by their
+ * timeout. `submodule` (update --init, add) too, as before: setup has no way out mid-call otherwise.
+ */
+const NETWORK = new Set(["fetch", "push", "ls-remote", "clone", "credential", "submodule"]);
+/**
+ * Only reads and network commands are stopped by a timeout (main, 28 November, D-413). A local write
+ * (add, commit, merge, rm, …) is never killed: killing it would leave its lock files behind, and no lock
+ * is ever removed for it. It runs until Git finishes.
+ */
+export const killableOnTimeout = (call: Pick<GitCall, "args" | "read">) => call.read === true || NETWORK.has(gitSubcommand(call.args) ?? "");
+
 /** The environment for a background Git command: no prompt can hang the app, and messages are parseable. */
 export function gitEnv(base: NodeJS.ProcessEnv, read: boolean): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = { ...base, GIT_TERMINAL_PROMPT: "0", GCM_INTERACTIVE: "never", LC_ALL: "C", LANGUAGE: "C", GIT_LITERAL_PATHSPECS: "1" };
@@ -48,26 +69,50 @@ export function gitEnv(base: NodeJS.ProcessEnv, read: boolean): NodeJS.ProcessEn
 export const EXITED_PIPE_GRACE_MS = 2_000;
 
 /**
+ * Ends a timed-out Git and everything it started. On Windows, `git` is Git for Windows' launcher: its
+ * real git.exe, hooks, remote and credential helpers outlive a kill of the launcher alone, still in
+ * the repository (a delete then couldn't move the folder). taskkill /T /F ends the whole tree. Kept
+ * self-contained: the worker's source embeds it as text.
+ */
+export function killTree(child: { pid?: number | undefined; kill(): boolean }, run: (file: string, args: string[], opts: { windowsHide: boolean }, done: () => void) => unknown): void {
+  if (process.platform !== "win32" || !child.pid) {
+    try { child.kill(); } catch { /* gone */ }
+    return;
+  }
+  const taskkill = `${process.env.SystemRoot || "C:\\Windows"}\\System32\\taskkill.exe`;
+  run(taskkill, ["/PID", String(child.pid), "/T", "/F"], { windowsHide: true }, () => {
+    // Gone already, or taskkill unavailable: the launcher at least.
+    try { child.kill(); } catch { /* gone */ }
+  });
+}
+
+/**
  * Starting a process blocks the thread that starts it: on Windows, 10 to 30 ms for each Git command
  * (measured in the main process's profile, D-151 (5)). So Git starts on a worker thread of its own,
  * and the main process, which moves the window and answers the page, only posts the call and gets
- * the result. Where a worker can't start, Git starts here as before.
+ * the result. Where a worker can't start, Git starts here as before. A timeout ends Git's whole tree
+ * (`killTree`), and the answer comes once its output closes, when nothing of it is left holding it.
  */
 const WORKER_SOURCE = `
 const { parentPort } = require("node:worker_threads");
 const { execFile } = require("node:child_process");
+const killTree = ${killTree.toString()};
 parentPort.on("message", ({ id, git, args, env, timeout, input }) => {
   let child;
+  let timedOut = false;
+  let timer;
   try {
-    child = execFile(git, args, { env, timeout, maxBuffer: 256 * 1024 * 1024, windowsHide: true, encoding: "utf8" }, (error, stdout, stderr) => {
-    if (!error) return parentPort.postMessage({ id, code: 0, stdout, stderr });
-    const code = typeof error.code === "number" && !error.killed ? error.code : -1;
-    parentPort.postMessage({ id, code, stdout: stdout || "", stderr: (stderr || "") + (error.killed ? "\\n(timed out)" : typeof error.code === "string" ? "\\n" + error.code : "") });
+    child = execFile(git, args, { env, maxBuffer: 256 * 1024 * 1024, windowsHide: true, encoding: "utf8" }, (error, stdout, stderr) => {
+    clearTimeout(timer);
+    if (!error && !timedOut) return parentPort.postMessage({ id, code: 0, stdout, stderr });
+    const code = !timedOut && error && typeof error.code === "number" ? error.code : -1;
+    parentPort.postMessage({ id, code, stdout: stdout || "", stderr: (stderr || "") + (timedOut ? "\\n(timed out)" : error && typeof error.code === "string" ? "\\n" + error.code : "") });
     });
   } catch (error) {
     // A program that isn't one (a damaged git.exe: EFTYPE) throws here rather than failing.
     return parentPort.postMessage({ id, code: -1, stdout: "", stderr: "\\n" + (error && error.code || "spawn failed") });
   }
+  if (timeout > 0) timer = setTimeout(() => { timedOut = true; killTree(child, execFile); }, timeout);
   child.on("exit", () => setTimeout(() => { child.stdout && child.stdout.destroy(); child.stderr && child.stderr.destroy(); }, ${EXITED_PIPE_GRACE_MS}).unref());
   if (child.stdin) {
     child.stdin.on("error", () => {});
@@ -81,16 +126,20 @@ interface Spawn { git: string; args: string[]; env: NodeJS.ProcessEnv; timeout: 
 function runHere(s: Spawn): Promise<GitResult> {
   return new Promise((resolve) => {
     let child: ReturnType<typeof execFile>;
+    let timedOut = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
     try {
-      child = execFile(s.git, s.args, { env: s.env, timeout: s.timeout, maxBuffer: 256 * 1024 * 1024, windowsHide: true, encoding: "utf8" }, (error, stdout, stderr) => {
-        if (!error) return resolve({ code: 0, stdout, stderr });
-        const e = error as NodeJS.ErrnoException & { code?: number | string; killed?: boolean };
-        resolve({ code: typeof e.code === "number" && !e.killed ? e.code : -1, stdout: stdout ?? "", stderr: `${stderr ?? ""}${e.killed ? "\n(timed out)" : typeof e.code === "string" ? `\n${e.code}` : ""}` });
+      child = execFile(s.git, s.args, { env: s.env, maxBuffer: 256 * 1024 * 1024, windowsHide: true, encoding: "utf8" }, (error, stdout, stderr) => {
+        clearTimeout(timer);
+        if (!error && !timedOut) return resolve({ code: 0, stdout, stderr });
+        const e = error as (NodeJS.ErrnoException & { code?: number | string }) | null;
+        resolve({ code: !timedOut && typeof e?.code === "number" ? e.code : -1, stdout: stdout ?? "", stderr: `${stderr ?? ""}${timedOut ? "\n(timed out)" : typeof e?.code === "string" ? `\n${e.code}` : ""}` });
       });
     } catch (error) {
       // A program that isn't one (a damaged git.exe: EFTYPE) throws here rather than failing.
       return resolve({ code: -1, stdout: "", stderr: `\n${(error as NodeJS.ErrnoException).code ?? "spawn failed"}` });
     }
+    if (s.timeout > 0) timer = setTimeout(() => { timedOut = true; killTree(child, execFile); }, s.timeout);
     if (s.onStderr) child.stderr?.on("data", (d: string | Buffer) => s.onStderr!(String(d)));
     child.on("exit", () => setTimeout(() => { child.stdout?.destroy(); child.stderr?.destroy(); }, EXITED_PIPE_GRACE_MS).unref());
     child.stdin?.on("error", () => {});
@@ -169,7 +218,8 @@ export function createRunner(options: { git?: string; env?: NodeJS.ProcessEnv; o
     const args = ["-C", call.cwd, ...call.args];
     const env = { ...gitEnv(base, call.read === true), ...call.env };
     options.onSpawn?.(args, env);
-    const s: Spawn = { git, args, env, timeout: call.timeoutMs ?? DEFAULT_TIMEOUT_MS, ...(call.input !== undefined ? { input: call.input } : {}), ...(call.onStderr ? { onStderr: call.onStderr } : {}) };
+    const timeout = killableOnTimeout(call) ? call.timeoutMs ?? DEFAULT_TIMEOUT_MS : 0;
+    const s: Spawn = { git, args, env, timeout, ...(call.input !== undefined ? { input: call.input } : {}), ...(call.onStderr ? { onStderr: call.onStderr } : {}) };
     // A call that streams Git's progress (a clone's percentage) runs here: a function can't be posted to the worker.
     const worker = options.here || call.onStderr ? undefined : gitSpawner();
     if (!worker) return runHere(s);
