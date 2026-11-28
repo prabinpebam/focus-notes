@@ -48,15 +48,142 @@ async function reachesFirstConfirmation(page: Page, kind: "offline" | "linked") 
   await expect(page.getByText(UNAVAILABLE)).toHaveCount(0);
 }
 
-/** Synthetic Recycle Bin: moves the approved fixture folder into recycle instead of touching OS trash. */
-async function installRecycleFake(l: Launched, folder: string, recycle: string) {
+/**
+ * What held the folder when the fake Recycle Bin was refused (test-only, never in the app): Restart
+ * Manager's holders of every file in it, every process whose command line names it, and every Git
+ * process and child of the app still alive. Prints JSON.
+ */
+const HOLDERS_PS = String.raw`
+param([string]$Folder, [int]$AppPid)
+$ErrorActionPreference = 'SilentlyContinue'
+Add-Type -TypeDefinition @'
+using System; using System.Runtime.InteropServices;
+public static class FnRm {
+  [StructLayout(LayoutKind.Sequential)] public struct UP { public int pid; public System.Runtime.InteropServices.ComTypes.FILETIME t; }
+  [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)] public struct PI { public UP P; [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 256)] public string App; [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 64)] public string Svc; public int T; public int S; public int Sess; [MarshalAs(UnmanagedType.Bool)] public bool R; }
+  [DllImport("rstrtmgr.dll", CharSet = CharSet.Unicode)] public static extern int RmStartSession(out uint h, int f, string k);
+  [DllImport("rstrtmgr.dll")] public static extern int RmEndSession(uint h);
+  [DllImport("rstrtmgr.dll", CharSet = CharSet.Unicode)] public static extern int RmRegisterResources(uint h, uint n, string[] f, uint a, UP[] p, uint s, string[] sv);
+  [DllImport("rstrtmgr.dll")] public static extern int RmGetList(uint h, out uint need, ref uint n, [In, Out] PI[] a, ref uint r);
+}
+'@
+$holders = @()
+$files = @(Get-ChildItem -LiteralPath $Folder -Recurse -File -Force | Select-Object -First 2000 | ForEach-Object FullName)
+foreach ($chunk in 0..([Math]::Floor(($files.Count - 1) / 200))) {
+  $part = [string[]]@($files | Select-Object -Skip ($chunk * 200) -First 200)
+  if (-not $part.Count) { continue }
+  $h = 0; [FnRm]::RmStartSession([ref]$h, 0, [guid]::NewGuid().ToString()) | Out-Null
+  [FnRm]::RmRegisterResources($h, $part.Count, $part, 0, $null, 0, $null) | Out-Null
+  $need = 0; $n = 0; $r = 0
+  [FnRm]::RmGetList($h, [ref]$need, [ref]$n, $null, [ref]$r) | Out-Null
+  if ($need -gt 0) {
+    $a = New-Object FnRm+PI[] $need; $n = $need
+    [FnRm]::RmGetList($h, [ref]$need, [ref]$n, $a, [ref]$r) | Out-Null
+    foreach ($p in $a) { $holders += [pscustomobject]@{ pid = $p.P.pid; name = $p.App; path = (Get-Process -Id $p.P.pid).Path } }
+  }
+  [FnRm]::RmEndSession($h) | Out-Null
+}
+$all = @(Get-CimInstance Win32_Process)
+$tree = @{}; $tree[$AppPid] = $true
+do { $grew = $false; foreach ($p in $all) { if ($tree[[int]$p.ParentProcessId] -and -not $tree[[int]$p.ProcessId]) { $tree[[int]$p.ProcessId] = $true; $grew = $true } } } while ($grew)
+$procs = @($all | Where-Object { $_.ProcessId -ne $PID -and $_.ParentProcessId -ne $PID -and (($_.CommandLine -and $_.CommandLine.Contains($Folder)) -or $_.Name -like 'git*' -or ($tree[[int]$_.ProcessId] -and $_.ProcessId -ne $AppPid -and $_.Name -notlike '*lectron*' -and $_.Name -notlike 'Focus Notes*')) } |
+  ForEach-Object { [pscustomobject]@{ pid = $_.ProcessId; ppid = $_.ParentProcessId; name = $_.Name; path = $_.ExecutablePath; commandLine = $_.CommandLine } })
+[pscustomobject]@{ holders = @($holders | Sort-Object pid -Unique); processes = $procs } | ConvertTo-Json -Depth 4 -Compress
+`;
+
+interface TrashRefusal { at: number; code: string; message: string; holders: { pid: number; name: string; path?: string }[]; processes: { pid: number; ppid: number; name: string; path?: string; commandLine?: string }[]; probe?: string }
+
+/**
+ * Synthetic Recycle Bin: moves the approved fixture folder into recycle instead of touching OS trash.
+ * A refusal (Windows won't move a folder while anything holds a file in it) is never silent: the
+ * moment it happens, what held the folder goes to `out` and the app's output, and `trashRefusals` has it.
+ */
+async function installRecycleFake(l: Launched, folder: string, recycle: string, out: string) {
   await l.app.evaluate(({ shell }, paths) => {
-    const fs = process.getBuiltinModule("fs").promises;
+    const fs = process.getBuiltinModule("fs");
+    const cp = process.getBuiltinModule("child_process");
+    const g = globalThis as unknown as { __trashRefusals?: unknown[] };
+    g.__trashRefusals = [];
     shell.trashItem = async path => {
       if (path !== paths.folder) throw new Error("Refused foreign fixture folder");
-      await fs.rename(path, paths.recycle);
+      try { await fs.promises.rename(path, paths.recycle); }
+      catch (error) {
+        const e = error as NodeJS.ErrnoException;
+        const refusal: Record<string, unknown> = { at: Date.now(), code: String(e.code ?? ""), message: String(e.message ?? e), holders: [], processes: [] };
+        try {
+          Object.assign(refusal, JSON.parse(cp.execFileSync("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", `& { ${paths.script} } -Folder '${path.replace(/'/g, "''")}' -AppPid ${process.pid}`], { encoding: "utf8", windowsHide: true, timeout: 30_000 })));
+        } catch (probe) { refusal.probe = String(probe); }
+        g.__trashRefusals!.push(refusal);
+        fs.mkdirSync(paths.out, { recursive: true });
+        fs.writeFileSync(`${paths.out}\\trash-refused-${g.__trashRefusals!.length}.json`, JSON.stringify(refusal, null, 2));
+        process.stdout.write(`[focus-notes-test] trash-refused ${JSON.stringify(refusal)}\n`);
+        throw error;
+      }
     };
-  }, { folder, recycle });
+  }, { folder, recycle, out, script: HOLDERS_PS });
+}
+
+const trashRefusals = (l: Launched) => l.app.evaluate(() => ((globalThis as unknown as { __trashRefusals?: TrashRefusal[] }).__trashRefusals ?? []) as TrashRefusal[]);
+
+/** One line naming what held the folder: process name, PID and path. */
+function holderLine(r: TrashRefusal): string {
+  const named = [...r.holders.map(h => `${h.name} (PID ${h.pid}, ${h.path ?? "path unknown"})`),
+    ...r.processes.map(p => `${p.name} (PID ${p.pid}, parent ${p.ppid}, ${p.path ?? "path unknown"}${p.commandLine ? `: ${p.commandLine}` : ""})`)];
+  return `${r.code}: ${named.length ? named.join("; ") : "no process found holding it"}${r.probe ? ` [probe failed: ${r.probe}]` : ""}`;
+}
+
+/** Each refusal goes to the test's log, its annotations and, on CI, a workflow annotation. */
+function reportRefusals(refusals: readonly TrashRefusal[]) {
+  const info = test.info();
+  info.annotations.push({ type: "trash-refusals", description: String(refusals.length) });
+  console.log(`[project-offline] ${info.title}: the Recycle Bin was refused ${refusals.length} time(s)`);
+  refusals.forEach((r, i) => {
+    const line = `refusal ${i + 1}, ${holderLine(r)}`;
+    info.annotations.push({ type: "trash-refused", description: line });
+    console.log(`[project-offline] trash-refused ${line}`);
+    if (process.env.GITHUB_ACTIONS) console.log(`::warning title=trash-refused::${info.title}: ${line.replace(/\r?\n/g, " ")}`);
+  });
+}
+
+/** Every note in the folder, by path, with its bytes: what must stay as it was while the delete is refused. */
+function noteBytes(folder: string): Map<string, Buffer> {
+  const notes = new Map<string, Buffer>();
+  const walk = (dir: string) => {
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      if (e.name === ".git") continue;
+      const p = join(dir, e.name);
+      if (e.isDirectory()) walk(p);
+      else if (e.name.endsWith(".md")) notes.set(p, readFileSync(p));
+    }
+  };
+  walk(folder);
+  return notes;
+}
+
+/**
+ * The local delete finishes (DD-PROJ-17). When Windows refuses the move, the person sees the real
+ * reason and loses nothing: the folder is there, every note byte-identical, no "Project deleted";
+ * only then does one Retry, their own path, finish it. A second refusal fails, naming what held it.
+ */
+async function expectProjectDeleted(fx: { l: Launched; dirs: { docs: string } }, dialog: ReturnType<Page["getByRole"]>, notes: Map<string, Buffer>) {
+  const deleted = dialog.getByRole("heading", { name: "Project deleted", exact: true });
+  const retry = dialog.getByRole("button", { name: "Retry", exact: true });
+  await expect(deleted.or(retry)).toBeVisible({ timeout: 15_000 });
+  if (await deleted.isVisible()) return;
+  const first = await trashRefusals(fx.l);
+  const why = await dialog.innerText();
+  expect(first.length, `Retry without a refused Recycle Bin: ${why}`).toBeGreaterThan(0);
+  await expect(dialog).toContainText("Deleted on GitHub, but the folder couldn't go to the Recycle Bin");
+  await expect(deleted).toHaveCount(0);
+  expect(existsSync(fx.dirs.docs)).toBe(true);
+  for (const [path, bytes] of notes) expect(readFileSync(path), `${path} changed while the delete was refused`).toEqual(bytes);
+  await retry.click();
+  await expect(deleted.or(dialog.getByText("Deleted on GitHub, but the folder couldn't go to the Recycle Bin"))).toBeVisible({ timeout: 15_000 });
+  const all = await trashRefusals(fx.l);
+  if (!(await deleted.isVisible()) || all.length > 1) {
+    await expect(deleted, `Refused twice; what held the folder: ${all.map(holderLine).join(" | ")}`).toBeVisible({ timeout: 15_000 });
+    expect(all.length, `Refused twice; what held the folder: ${all.map(holderLine).join(" | ")}`).toBe(1);
+  }
 }
 
 test("D-pending: a project kept on this computer says Saved on this computer, and Delete project reaches its first confirmation", async () => {
@@ -169,8 +296,14 @@ async function startLinkedProject(opts: {
     FOCUS_NOTES_CANDIDATE_GIT_REMOTES: remotes,
   });
   const recycle = join(dirs.userData, "recycled-project");
-  await installRecycleFake(l, dirs.docs, recycle);
-  return { dirs, fakes, l, recycle, requests, close: async () => { await quit(l); await new Promise<void>((r, j) => server.close(e => e ? j(e) : r())); } };
+  await installRecycleFake(l, dirs.docs, recycle, test.info().outputPath("trash"));
+  const close = async () => {
+    // Every refusal shows in the log, even when Retry then finished the delete.
+    reportRefusals(await trashRefusals(l).catch((): TrashRefusal[] => []));
+    await quit(l);
+    await new Promise<void>((r, j) => server.close(e => e ? j(e) : r()));
+  };
+  return { dirs, fakes, l, recycle, requests, close };
 }
 
 async function captureIfRequested(l: Launched, name: string) {
@@ -261,7 +394,7 @@ test("D-413: opening GitHub settings uses external link, auto-advances when fake
 
     // Repo disappears on GitHub (404 + GET /user 200) -> automatic polling detects it and finishes locally.
     gone = true;
-    await expect(dialog.getByRole("heading", { name: "Project deleted", exact: true })).toBeVisible({ timeout: 15_000 });
+    await expectProjectDeleted(fx, dialog, noteBytes(fx.dirs.docs));
     expect(existsSync(fx.dirs.docs)).toBe(false);
     expect(readFileSync(join(fx.recycle, "Welcome.md"))).toEqual(beforeBytes);
     expect(fx.requests.filter(r => r.startsWith("DELETE "))).toEqual([]);
@@ -321,8 +454,9 @@ test("D-413: Check again verifies status; 401, 403, 429 and 404-with-invalid-ses
 
     // Now 404 on repo + 200 on /user -> Check again (or an in-flight background poll) finishes cleanly.
     repoMode = "gone";
+    const notes = noteBytes(fx.dirs.docs);
     if (await checkAgain.isVisible()) await checkAgain.click({ timeout: 2_000 }).catch(() => {});
-    await expect(dialog.getByRole("heading", { name: "Project deleted", exact: true })).toBeVisible({ timeout: 15_000 });
+    await expectProjectDeleted(fx, dialog, notes);
     expect(existsSync(fx.dirs.docs)).toBe(false);
     expect(existsSync(join(fx.recycle, "Welcome.md"))).toBe(true);
   } finally { await fx.close(); }
@@ -363,8 +497,9 @@ test("D-413: paired public site repository shows a second link and requires both
 
     // Delete paired site repo -> auto-advances to local cleanup and completion state.
     gone.add("ada/notes-site");
+    const notes = noteBytes(fx.dirs.docs);
     await checkAgain.click();
-    await expect(dialog.getByRole("heading", { name: "Project deleted", exact: true })).toBeVisible({ timeout: 15_000 });
+    await expectProjectDeleted(fx, dialog, notes);
     expect(existsSync(fx.dirs.docs)).toBe(false);
     expect(existsSync(join(fx.recycle, "Welcome.md"))).toBe(true);
   } finally { await fx.close(); }
@@ -436,8 +571,9 @@ test("D-413: unsynced notes warn with optional Save a copy and allow Delete with
     await expect(dialog.getByRole("textbox", { name: /^Type .+ to confirm$/ })).toHaveCount(0);
 
     gone = true;
+    const notes = noteBytes(fx.dirs.docs);
     await dialog.locator("[data-icon-layout-actions]").getByRole("button", { name: "Check again", exact: true }).click();
-    await expect(dialog.getByRole("heading", { name: "Project deleted", exact: true })).toBeVisible({ timeout: 15_000 });
+    await expectProjectDeleted(fx, dialog, notes);
     expect(existsSync(fx.dirs.docs)).toBe(false);
     expect(existsSync(join(fx.recycle, "Draft.md"))).toBe(true);
   } finally { await fx.close(); }
@@ -489,6 +625,7 @@ for (const scope of ["Both", "Only the public one", "Only the private one"] as c
         if (chosen.includes(repo)) await expect(dialog.getByText(repo, { exact: true }).first()).toBeVisible();
       }
       const checkAgain = dialog.locator("[data-icon-layout-actions]").getByRole("button", { name: "Check again", exact: true });
+      const notes = noteBytes(fx.dirs.docs);
       // A repository not chosen going away changes nothing; the first chosen one alone keeps this computer's copy when there are two.
       gone.add(chosen[0]!);
       await checkAgain.click();
@@ -499,14 +636,9 @@ for (const scope of ["Both", "Only the public one", "Only the private one"] as c
         // The automatic check (on focus and every few seconds) notices the second one.
       }
       const deletedHeading = dialog.getByRole("heading", { name: "Project deleted", exact: true });
-      // Windows may hold a file in the folder for a moment: the dialog says so, and its Retry finishes (DD-PROJ-17).
-      const retry = dialog.getByRole("button", { name: "Retry", exact: true });
-      for (let i = 0; i < 3; i++) {
-        await expect(deletedHeading.or(retry)).toBeVisible({ timeout: 15_000 });
-        if (await deletedHeading.isVisible()) break;
-        await retry.click();
-      }
-      await expect(deletedHeading).toBeVisible({ timeout: 15_000 });
+      // Windows may hold a file in the folder for a moment: the dialog says so, and one Retry finishes (DD-PROJ-17).
+      await expectProjectDeleted(fx, dialog, notes);
+      await expect(deletedHeading).toBeVisible();
       expect(existsSync(fx.dirs.docs)).toBe(false);
       expect(existsSync(join(fx.recycle, "Welcome.md"))).toBe(true);
       // Only the public one keeps the private notes beside the folder; the others recycle them with it.
