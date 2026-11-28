@@ -160,7 +160,7 @@ export async function setWindowActive(app: ElectronApplication, active: boolean)
  */
 /** Whether this worker printed the app's compositing yet (D-121). */
 let compositingShown = false;
-export async function launch(dirs: { userData: string; docs: string }, extraEnv: Record<string, string> = {}, opts: { firstRun?: boolean; args?: string[]; entrypoint?: string } = {}): Promise<Launched> {
+export async function launch(dirs: { userData: string; docs: string }, extraEnv: Record<string, string> = {}, opts: { firstRun?: boolean; args?: string[]; entrypoint?: string; initScript?: string } = {}): Promise<Launched> {
   const log: string[] = [];
   const stateFile = join(dirs.userData, "state.json");
   const state = existsSync(stateFile) ? JSON.parse(readFileSync(stateFile, "utf8")) : { version: 1 };
@@ -190,6 +190,8 @@ export async function launch(dirs: { userData: string; docs: string }, extraEnv:
     // Never the computer's focus (D-104 (7)): the windows open inactive, and the app keeps its own "active".
     env: { ...base, FOCUS_NOTES_USER_DATA: dirs.userData, FOCUS_NOTES_DOCS: dirs.docs, FOCUS_NOTES_GITHUB_API: "http://127.0.0.1:9", FOCUS_NOTES_WARMUP: "0", FOCUS_NOTES_E2E: "1", ...extraEnv },
   });
+  // A script that runs in every page before its own (a launch sampler, D-414); the journey checks it ran first.
+  if (opts.initScript) await app.context().addInitScript(opts.initScript);
   app.process().stderr?.on("data", (d: Buffer) => log.push(...d.toString().split("\n").filter(Boolean)));
   app.process().stdout?.on("data", (d: Buffer) => {
     const lines = d.toString().split("\n").filter(Boolean);
