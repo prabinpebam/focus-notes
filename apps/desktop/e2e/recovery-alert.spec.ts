@@ -37,6 +37,9 @@ async function assertTwoColumnIconLayout(card: import("@playwright/test").Locato
 
 test("FRE-13 / D-408: recovery alert cards render in corner and Files header with two-column IconLayout while writing continues", async () => {
   const { dirs } = instance();
+  // A real saved-locally-only workspace: no remote, so the sync engine itself reports remote:false
+  // (an injected sync status raced the engine's own reports).
+  git(dirs.docs, "remote", "remove", "origin");
   const l = await launch(dirs);
   const { page, app } = l;
   try {
@@ -46,10 +49,10 @@ test("FRE-13 / D-408: recovery alert cards render in corner and Files header wit
     await expect(saveState).toBeVisible();
 
     // 1. Offline / local mode: corner uses hardDriveCheck (savedLocal) and normal Backup card uses two-column IconLayout.
-    await app.evaluate(({ BrowserWindow }) => {
-      const win = BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("index.html"))!;
-      win.webContents.send("sync:status", { git: true, state: "idle", waiting: 0, remote: false });
-    });
+    await expect.poll(() => page.evaluate(async () => {
+      const api = (window as unknown as { focusNotes: { sync: { status(): Promise<{ remote?: boolean }> } } }).focusNotes;
+      return (await api.sync.status()).remote;
+    })).toBe(false);
     await expect(saveState).toHaveAttribute("data-state", "savedLocal");
     await saveState.hover();
     const backupCard = page.getByRole("dialog", { name: "Backup", exact: true });
@@ -59,11 +62,30 @@ test("FRE-13 / D-408: recovery alert cards render in corner and Files header wit
     await page.keyboard.press("Escape");
     await expect(backupCard).toBeHidden();
 
-    // Helper to push a SyncAlertReport to the renderer.
+    // The alert source belongs to this test from here. The engine's own syncAlert reports are held back from
+    // this window, and the test's report is what the window both receives and reads back. The renderer's
+    // launch-time status request waits on the mass-deletion check and can answer after a pushed alert,
+    // replacing it with the engine's real (empty) report; one reload drops that pending answer.
+    await app.evaluate(({ BrowserWindow, ipcMain }) => {
+      const win = BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("index.html"))!;
+      const send = win.webContents.send.bind(win.webContents);
+      const g = globalThis as unknown as { __testAlert: unknown; __testAlertSend: typeof send };
+      g.__testAlert = {};
+      g.__testAlertSend = send;
+      win.webContents.send = (channel: string, ...args: unknown[]) => {
+        if (channel !== "syncAlert:status") send(channel, ...args);
+      };
+      ipcMain.removeHandler("syncAlert:status");
+      ipcMain.handle("syncAlert:status", () => g.__testAlert);
+    });
+    await page.reload();
+    await expect(editor).toBeFocused();
+    await expect(saveState).toHaveAttribute("data-state", "savedLocal");
     const pushAlert = (report: SyncAlertReport) =>
-      app.evaluate(({ BrowserWindow }, r) => {
-        const win = BrowserWindow.getAllWindows().find((w) => w.webContents.getURL().includes("index.html"))!;
-        win.webContents.send("syncAlert:status", r);
+      app.evaluate((_e, r) => {
+        const g = globalThis as unknown as { __testAlert: unknown; __testAlertSend: (c: string, ...a: unknown[]) => void };
+        g.__testAlert = r;
+        g.__testAlertSend("syncAlert:status", r);
       }, report);
 
     const base = { folder: "Documents\\prabins-notes", repository: "prabin-demo/prabins-notes", lastBackup: "2026-11-24T09:00:00Z" };
