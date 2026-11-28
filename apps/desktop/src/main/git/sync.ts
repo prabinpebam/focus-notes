@@ -98,7 +98,8 @@ export class GitSync {
   #queued: { reasons: Set<SyncReason>; done: Promise<SyncReport> } | undefined;
   #generation = 0;
   #locked = false;
-  #report: SyncReport = { git: true, state: "idle", waiting: 0 };
+  // Nothing is counted until open has read each repository's status: never "Backed up" before that (D-414).
+  #report: SyncReport = { git: true, state: "idle", waiting: 0, unknown: true };
   #lastPointerAt: number | undefined;
   #pointerTimer: unknown;
   #retryTimer: unknown;
@@ -140,7 +141,10 @@ export class GitSync {
     // The first answer names each branch and upstream, whose ref files key the cache from then on.
     await Promise.all([sync.notes.cache.fresh(), sync.privateRepo?.cache.fresh()]).catch(() => {});
     sync.#scheduleFetch();
-    sync.#emit(sync.#locked ? { state: "idle" } : { state: "problem", problem: "locked" });
+    // The first report carries the count from the statuses just read: unknown where Git couldn't say (D-414).
+    const read = [sync.notes, sync.privateRepo].filter((r): r is Repo => !!r);
+    const counted = { waiting: sync.#waiting(read.map((r) => r.last)), unknown: read.some((r) => !r.last) ? true : undefined };
+    sync.#emit(sync.#locked ? { state: "idle", ...counted } : { state: "problem", problem: "locked", ...counted });
     // The app learns there's a repository even when nothing went wrong.
     sync.#o.onReport?.(sync.#report);
     return sync;

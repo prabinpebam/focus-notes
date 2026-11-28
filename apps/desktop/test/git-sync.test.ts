@@ -10,6 +10,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, w
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { GitSync, type GitSyncOptions } from "../src/main/git/sync.ts";
+import type { SyncReport } from "@focus-notes/core";
 import { createRunner } from "../src/main/git/run.ts";
 import { LOCK_NAME, releaseLock, takeLock } from "../src/main/git/lock.ts";
 import { FakeClock, SETUP_TIMEOUT_MS, configure, count, git, instance, prepareTemplate, subject, write } from "./git-fixture.ts";
@@ -398,6 +399,41 @@ describe("D-157: never pushes notes to a template repository", () => {
     expect(checks).toBe(2);
     expect(r.problem).toBe("template");
     expect(git(notesRemote, "rev-parse", "main"), "the retry never pushed").toBe(theirs);
+  });
+});
+
+describe("D-414: nothing says backed up before the launch count", () => {
+  // A report the corner shows as "Backed up": idle, nothing waiting, a remote, and known.
+  const claimsBackedUp = (r: SyncReport) => r.git && r.state === "idle" && r.waiting === 0 && r.remote !== false && !r.unknown;
+
+  it("an unpushed commit: no report from open says nothing is waiting", async () => {
+    const { ws } = instance();
+    write(join(ws, "notes", "kept.md"), "# Kept\n");
+    git(ws, "add", "notes/kept.md");
+    git(ws, "commit", "-q", "-m", "Not pushed yet");
+    const reports: SyncReport[] = [];
+    const s = await open(ws, { onReport: (r) => reports.push({ ...r }) });
+    expect(reports.length).toBeGreaterThan(0);
+    expect(reports.filter(claimsBackedUp)).toEqual([]);
+    expect(s.report.waiting).toBe(1);
+  });
+
+  it("an unpushed private commit: no report from open says nothing is waiting", async () => {
+    const { ws } = instance();
+    const priv = join(ws, "private");
+    writeFileSync(join(priv, "notes", "welcome.md"), "# Welcome\n\nCommitted here only.\n");
+    git(priv, "commit", "-qam", "Not pushed yet");
+    const reports: SyncReport[] = [];
+    await open(ws, { onReport: (r) => reports.push({ ...r }) });
+    expect(reports.filter(claimsBackedUp)).toEqual([]);
+  });
+
+  it("a clean, pushed workspace is backed up once open has counted", async () => {
+    const { ws } = instance();
+    const reports: SyncReport[] = [];
+    const s = await open(ws, { onReport: (r) => reports.push({ ...r }) });
+    expect(claimsBackedUp(s.report)).toBe(true);
+    expect(reports.some(claimsBackedUp)).toBe(true);
   });
 });
 
