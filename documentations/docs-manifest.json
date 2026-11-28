@@ -653,6 +653,15 @@
       "group": "Plan"
     },
     {
+      "path": "plan/release-notes.md",
+      "title": "Release notes",
+      "order": 526,
+      "icon": "new_releases",
+      "status": "draft",
+      "updated": "2026-11-28",
+      "group": "Plan"
+    },
+    {
       "path": "plan/risks.md",
       "title": "Risks",
       "order": 530,
