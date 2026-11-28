@@ -14,7 +14,7 @@ Install Focus Notes, start a project on this computer or on GitHub, and write yo
 3. **Where to keep it:**
    - **On this computer only** keeps the folder and its history with Git, not on GitHub. You can link it later.
    - **On GitHub** also makes a new private repository for your GitHub account and backs it up online. Sign in to GitHub first; while you're offline, only *On this computer only* is available.
-4. Choose a colour and logo for the project's window. You can change these later in **Settings → Project**.
+4. Choose a colour and logo for the project's window. You can change these later in **Settings → Project**. Inside the window, the colour also marks links, selected text, the focus ring and the main buttons, adjusted for light and dark so text stays easy to read.
 5. Check what **Create project** will make, then choose **Create project**.
 
 **Result:** each setup step shows as it happens, then the project opens in its own window on an empty note. Nothing is public until you turn on sharing.
@@ -24,6 +24,8 @@ If setup stops, your choices and anything already made are kept, and nothing is 
 ## Open a project or a file
 
 Press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>O</kbd> for **Open…**. It lists your projects, recent files and Local notes. **Open project…** opens a project folder you already have, and **Open file…** opens one Markdown or text file on its own.
+
+A project always opens in writing: on the note you had open last, or an empty Untitled note if there isn't one. If Focus Notes can't read which note that was, it opens your most recent note, or an empty one, and says so once.
 
 A file opened on its own gets writing, find, theme and print. It isn't backed up while it's open, and a `.txt` file stays plain text when you save it.
 
