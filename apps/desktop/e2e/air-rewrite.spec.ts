@@ -65,24 +65,26 @@ function fakeOllama() {
   };
 }
 
-/** Selects `text` in the note, as a drag would. */
+/** Selects `text` in the note, as a drag would; again if a later render of the note (an outside change read in) cleared it. */
 async function select(page: Page, text: string) {
-  await page.evaluate((text) => {
-    const root = document.querySelector("[data-editor]")!;
-    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
-      const i = n.textContent!.indexOf(text);
-      if (i < 0) continue;
-      const r = document.createRange();
-      r.setStart(n, i);
-      r.setEnd(n, i + text.length);
-      getSelection()!.removeAllRanges();
-      getSelection()!.addRange(r);
-      return;
-    }
-    throw new Error(`"${text}" isn't in the note`);
-  }, text);
-  await expect.poll(() => page.evaluate(() => getSelection()?.toString() ?? "")).toBe(text);
+  await expect(async () => {
+    await page.evaluate((text) => {
+      const root = document.querySelector("[data-editor]")!;
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+        const i = n.textContent!.indexOf(text);
+        if (i < 0) continue;
+        const r = document.createRange();
+        r.setStart(n, i);
+        r.setEnd(n, i + text.length);
+        getSelection()!.removeAllRanges();
+        getSelection()!.addRange(r);
+        return;
+      }
+      throw new Error(`"${text}" isn't in the note`);
+    }, text);
+    await expect.poll(() => page.evaluate(() => getSelection()?.toString() ?? ""), { timeout: 1_000 }).toBe(text);
+  }).toPass({ timeout: 10_000 });
 }
 
 async function rewrite(page: Page, text: string, prompt: string) {
