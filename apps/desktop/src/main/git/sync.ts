@@ -66,8 +66,11 @@ export interface GitSyncOptions {
   pushGate?: PushGate;
   /** Logs counts and problems, never paths or note text. */
   log?: (line: string) => void;
+  /** How long dispose waits for a running Git operation before it lets go of the lock. */
+  disposeWaitMs?: number;
 }
 
+const DISPOSE_WAIT_MS = 5_000;
 const MIN_GIT: [number, number] = [2, 31];
 const PRIVATE = "private";
 /** A repository's notes folder: only what's in it is counted and backed up by a section's backup (D-191). */
@@ -756,6 +759,14 @@ export class GitSync {
     this.#disposed = true;
     this.#cadence.dispose();
     for (const t of [this.#pointerTimer, this.#retryTimer, this.#fetchTimer]) if (t !== undefined) this.#clock.clearTimeout(t);
+    // A running fetch, commit or push finishes before the lock goes, so Delete never moves a folder
+    // Git is writing (PRJ-23). A hung one is bounded: the move then refuses with its real reason.
+    let limit: ReturnType<typeof setTimeout> | undefined;
+    await Promise.race([
+      this.#ops.run(async () => {}).catch(() => {}),
+      new Promise<void>((r) => { limit = setTimeout(r, this.#o.disposeWaitMs ?? DISPOSE_WAIT_MS); limit.unref?.(); }),
+    ]);
+    clearTimeout(limit);
     if (this.#locked) await releaseLock(this.notes.commonDir).catch(() => {});
   }
 

@@ -520,6 +520,71 @@ describe("Repositories, the lock, the status cache, and credentials", () => {
     await releaseLock(gitDir, process.ppid);
   });
 
+  it("PRJ-23: dispose waits for a running push before it lets go of the lock, so Delete never moves a folder Git is writing", async () => {
+    const { ws } = instance();
+    const gitDir = git(ws, "rev-parse", "--absolute-git-dir");
+    const lock = join(gitDir, LOCK_NAME);
+    const real = createRunner();
+    let pushing!: () => void;
+    const started = new Promise<void>((r) => (pushing = r));
+    let release!: () => void;
+    const held = new Promise<void>((r) => (release = r));
+    let finished = false;
+    const s = await open(ws, {
+      run: async (call) => {
+        if (!call.args.includes("push")) return real(call);
+        pushing();
+        await held;
+        const r = await real(call);
+        finished = true;
+        return r;
+      },
+    });
+    const note = join(ws, "private", "notes", "welcome.md");
+    writeFileSync(note, "# Welcome\n\nDeleted mid-push.\n");
+    s.written(note);
+    const saved = s.request("save");
+    await started;
+    let disposed = false;
+    const gone = s.dispose().then(() => (disposed = true));
+    await new Promise((r) => setTimeout(r, 200));
+    expect(disposed, "dispose waits for the running push").toBe(false);
+    expect(existsSync(lock), "the lock stays while Git writes").toBe(true);
+    release();
+    await gone;
+    expect(finished, "the push ran to its end before dispose resolved").toBe(true);
+    expect(existsSync(lock)).toBe(false);
+    await saved;
+  });
+
+  it("PRJ-23: dispose stops waiting after its limit, so a hung push can't hold Delete forever", async () => {
+    const { ws } = instance();
+    const real = createRunner();
+    let pushing!: () => void;
+    const started = new Promise<void>((r) => (pushing = r));
+    let release!: () => void;
+    const held = new Promise<void>((r) => (release = r));
+    const s = await open(ws, {
+      disposeWaitMs: 300,
+      run: async (call) => {
+        if (!call.args.includes("push")) return real(call);
+        pushing();
+        await held;
+        return real(call);
+      },
+    });
+    const note = join(ws, "private", "notes", "welcome.md");
+    writeFileSync(note, "# Welcome\n\nHung push.\n");
+    s.written(note);
+    const saved = s.request("save");
+    await started;
+    const t0 = Date.now();
+    await s.dispose();
+    expect(Date.now() - t0).toBeLessThan(5_000);
+    release();
+    await saved;
+  });
+
   it("asks one status per repository, in parallel and without optional locks, and answers again from the cache (PRF-07)", async () => {
     const { ws } = instance();
     const s = await open(ws);
