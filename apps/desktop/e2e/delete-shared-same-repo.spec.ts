@@ -92,7 +92,7 @@ test("D-428: Private + Public: deleting a published note takes its page down; a 
     const expectRowsSteady = async (label: string) => {
       const frames = (await page.evaluate(() => { const w = window as unknown as { rowFrames: string[]; rowWatch: boolean }; w.rowWatch = false; return w.rowFrames; })).map(x => x.split(" "));
       const first = frames.findIndex(x => x[0] === "closed");
-      expect(first, `${label}: a frame after the confirmation`).toBeGreaterThan(0);
+      expect(first, `${label}: a frame after the confirmation (${frames.length} frames, first: ${JSON.stringify(frames.slice(0, 4))})`).toBeGreaterThan(0);
       const after = frames.slice(first);
       expect(after[0]!.slice(1), `${label}: the very next frame after Delete is confirmed`).toEqual(after[0]!.slice(1).map(() => "pending"));
       for (let k = 1; k < after[0]!.length; k++) {
@@ -195,6 +195,7 @@ test("D-428: Private + Public: deleting a published note takes its page down; a 
     fake.git.failPagesRuns(2);
     await menu("Rome", /^Delete/);
     const askRome = page.getByRole("dialog", { name: "Delete “Rome”?", exact: true });
+    await expect(askRome).toBeVisible();
     await watchRows(["Rome"], "Delete “Rome”?");
     await askRome.getByRole("button", { name: "Delete 1 note", exact: true }).click();
     await expect(deletingStatus()).toBeVisible();
