@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { open } from "node:fs/promises";
 import { NoteWriter, noteSave, retrying, writeBack } from "../src/main/note-write.ts";
 
 const dir = () => mkdtempSync(join(tmpdir(), "fn-def24-"));
@@ -18,6 +19,25 @@ describe("NoteWriter", () => {
     writeFileSync(p, "# A\n\nFirst.\n");
     expect(await new NoteWriter().write(p, "# A\n\nFirst. Typed.\n", "# A\n\nFirst.\n")).toBeUndefined();
     expect(readFileSync(p, "utf8")).toBe("# A\n\nFirst. Typed.\n");
+  });
+
+  it("flushes the temporary file to disk before the rename, so a crash never leaves an empty file (D-397)", async () => {
+    const d = dir();
+    const p = join(d, "a.md");
+    writeFileSync(p, "# Old\n");
+    const probe = await open(p, "r");
+    const proto = Object.getPrototypeOf(probe) as { sync(): Promise<void> };
+    await probe.close();
+    const seen: { target: string; temp: string }[] = [];
+    const sync = vi.spyOn(proto, "sync").mockImplementation(async function (this: { fd: number }) {
+      const temp = readdirSync(d).find(name => name.endsWith(".focus-notes.tmp"));
+      seen.push({ target: readFileSync(p, "utf8"), temp: temp ? readFileSync(join(d, temp), "utf8") : "" });
+    });
+    try {
+      expect(await new NoteWriter().write(p, "# New\n")).toBeUndefined();
+    } finally { sync.mockRestore(); }
+    expect(seen).toEqual([{ target: "# Old\n", temp: "# New\n" }]);
+    expect(readFileSync(p, "utf8")).toBe("# New\n");
   });
 
   it("DEF-38: its temporary file is hidden and named for the note, and one a crashed instance left is cleared at the note's first save", async () => {

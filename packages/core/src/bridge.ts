@@ -187,6 +187,8 @@ export interface PlatformBridge {
     /** Copies of that repository already on this computer, newest first (D-415). Read-only. */
     githubCopies?(owner: string, name: string): Promise<ExistingCopy[]>;
     lastNote(): Promise<string | undefined>;
+    /** The project's most recent note from Recent, asked for only when lastNote can't be read (D-397); rejects when Recent can't be read either. */
+    recentNote?(): Promise<string | undefined>;
     /** The opened-files tabs in order (D-420), private notes included, from OS-protected storage; undefined: none saved yet. */
     opened?(): Promise<string[] | undefined>;
     /** Saves the opened-files tabs in order to OS-protected storage, beside the last note. */

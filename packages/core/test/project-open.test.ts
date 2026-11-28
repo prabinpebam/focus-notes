@@ -91,15 +91,28 @@ describe("Open", () => {
     expect(firstNote).toHaveBeenCalledOnce();
   });
 
-  it.each(["missing", "unreadable"])("never creates a first note after %s remembered-note recovery", async (failure) => {
+  it("never creates a first note after missing remembered-note recovery", async () => {
     const firstNote = vi.fn(async () => "C:\\Book\\Untitled.md");
     const app = appWith({
-      firstNote, lastNote: async () => { if (failure === "unreadable") throw new Error("protected read failed"); return "C:\\Book\\missing.md"; },
+      firstNote, lastNote: async () => "C:\\Book\\missing.md",
       list: async () => [],
     }, async () => { throw new Error("missing"); }, { loadAppState: async () => ({ version: 1, firstRun: "done" }) });
     await app.start();
     expect(firstNote).not.toHaveBeenCalled();
     expect(vm(app).open).toBe(true);
+  });
+
+  // Main, 28 November (D-397): an unreadable launch record is treated as missing, so with no Recent note entry
+  // takes the empty-Untitled ("history") path instead of leaving the person at Open.
+  it("an unreadable remembered note with no Recent note admits only an empty Untitled", async () => {
+    const firstNote = vi.fn(async (_reason?: "history") => "C:\\Book\\Untitled.md");
+    const app = appWith({
+      firstNote, lastNote: async () => { throw new Error("protected read failed"); },
+      list: async () => [], position: async () => undefined, remember: async () => {},
+    }, async path => { if (path === "C:\\Book\\Untitled.md") return ""; throw new Error("missing"); }, { loadAppState: async () => ({ version: 1, firstRun: "done" }) });
+    await app.start();
+    expect(firstNote).toHaveBeenCalledExactlyOnceWith("history");
+    expect(vm(app).open).toBe(false);
   });
 
   // Owner, 23 November (P0-entry.5): a last note confirmed gone leaves the project without history, so it starts
@@ -189,6 +202,42 @@ describe("Open", () => {
     expect(vm(app).open).toBe(false);
   });
 
+  it.each([
+    ["Recent's note", true],
+    ["the empty-Untitled path", false],
+  ])("an unreadable launch record opens %s, says so once, and overwrites nothing (D-397)", async (_name, recentReadable) => {
+    const recentPath = "C:\\New\\notes\\Recent.md", untitled = "C:\\New\\notes\\Untitled.md";
+    const readNote = vi.fn(async (path: string) => path === recentPath ? "# Recent words" : "");
+    const writeNote = vi.fn(async () => {});
+    const firstNote = vi.fn(async (_reason?: "history") => untitled);
+    const position = vi.fn(async () => { throw new Error("Invalid protected launch record."); });
+    const app = appWith({
+      firstNote, list: async () => [], remember: async () => {}, position,
+      lastNote: async () => { throw new Error("Invalid protected launch record."); },
+      opened: async () => { throw new Error("Invalid protected launch record."); },
+      recentNote: async () => { if (!recentReadable) throw new Error("Invalid protected recent record."); return recentPath; },
+    }, readNote, {
+      writeNote,
+      workspace: {
+        info: async () => ({ folder: "C:\\New", format: '{"formatVersion":1}' }),
+        scan: async () => ({ folder: "C:\\New", roots: [{ id: "public", path: "C:\\New\\notes", readOnly: false }], entries: [] }),
+        writeFormat: async () => {}, renameNote: async () => {}, onChange: () => () => {},
+      },
+      loadAppState: async () => ({ version: 1, firstRun: "done" }),
+    });
+    await app.start();
+    if (recentReadable) {
+      expect(app.store.state.note).toMatchObject({ path: recentPath, markdown: "# Recent words", status: "ready" });
+      expect(firstNote).not.toHaveBeenCalled();
+    } else {
+      expect(app.store.state.note).toMatchObject({ path: untitled, markdown: "", status: "ready" });
+      expect(firstNote).toHaveBeenCalledExactlyOnceWith("history");
+    }
+    expect(writeNote).not.toHaveBeenCalled();
+    expect(vm(app).open).toBe(false);
+    expect(app.store.state.ui.toasts.filter(t => t.message === en["project.launch.restoreFailed"])).toEqual([expect.objectContaining({ tone: "error" })]);
+    expect(app.store.state.ui.toasts.filter(t => t.sticky)).toEqual([]);
+  });
   it.each([false, true])("opens the saved disk note when launch metadata is stale or unreadable (unreadable: %s)", async (unreadable) => {
     const target = "C:\\Book\\renamed.md", stale = "C:\\Book\\Untitled.md";
     const writeNote = vi.fn(async () => {});

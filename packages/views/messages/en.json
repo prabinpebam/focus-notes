@@ -19,7 +19,7 @@
   "toast.repeated": "{message} ({count})",
   "toast.region": "Notifications",
   "project.launch.rememberFailed": "Could not remember this note for next launch. Your note is still saved.",
-  "project.launch.restoreFailed": "Could not restore the last note. Choose a note from Open.",
+  "project.launch.restoreFailed": "Couldn't reopen your last note.",
   "project.session.restoreFailed": "Couldn't reopen the notes you had open. They're kept as they were. Try again.",
   "command.project.session.retry": "Reopen the notes you had open",
   "image.ai.again": "Try again",

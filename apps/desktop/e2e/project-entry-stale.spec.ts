@@ -294,3 +294,66 @@ test("Launch restoration of a project whose last note was deleted lands in writi
     rmSync(dirs.docs, { recursive: true, force: true });
   }
 });
+
+// Main, 28 November (D-397): an empty launch record (Electron decrypts 0 bytes to "") is unreadable, never "no last
+// note". Entry opens the project's most recent note from Recent, or the empty-Untitled path when Recent can't be read
+// either; one notification says so; nothing is overwritten; and the next note opened rewrites the record.
+for (const recent of ["readable", "unreadable"] as const) {
+  test(`An empty last-note record with ${recent} Recent reopens without overwriting and heals (D-397)`, async () => {
+    test.setTimeout(120_000);
+    const dirs = tempDirs();
+    writeFileSync(join(dirs.userData, DATA_FILES.state), JSON.stringify({ version: 1, firstRun: "done", lastNotePath: "" }));
+    writeFileSync(join(dirs.userData, DATA_FILES.projectFolder), dirs.docs);
+    writeFileSync(join(dirs.userData, DATA_FILES.workspace), JSON.stringify({ version: 1, folder: dirs.docs, kind: "local" }));
+    const warning = (page: Page) => page.locator("#toasts").getByText("Couldn't reopen your last note.", { exact: true });
+    let instance: Launched | undefined;
+    try {
+      instance = await launch(dirs);
+      const firstApp = instance.app;
+      await assertWriting(instance.page, () => firstApp.windows().length, dirs.docs, "First words.");
+      await instance.page.keyboard.press("Control+N");
+      const note = instance.page.getByRole("textbox", { name: "Note", exact: true });
+      await expect(note).toHaveText("");
+      await instance.page.keyboard.type("Latest words.");
+      await expect.poll(() => markdown(dirs.docs).map(file => readFileSync(join(dirs.docs, file), "utf8")).join("")).toContain("Latest words.");
+      await quitOwned(instance);
+      instance = undefined;
+      const before = Object.fromEntries(markdown(dirs.docs).map(file => [file, readFileSync(join(dirs.docs, file), "utf8")]));
+      expect(Object.keys(before)).toHaveLength(2);
+      writeFileSync(join(dirs.userData, DATA_FILES.projectLastNote), "");
+      if (recent === "unreadable") {
+        writeFileSync(join(dirs.userData, DATA_FILES.projectRecent), "");
+        writeFileSync(join(dirs.userData, DATA_FILES.state), JSON.stringify({ version: 1, firstRun: "done", lastNotePath: "" }));
+      }
+      instance = await launch(dirs);
+      const page = instance.page;
+      const app = instance.app;
+      await expect(warning(page)).toHaveCount(1);
+      let reopened = "New words.";
+      if (recent === "readable") {
+        // Recent ranks by use (frecency), so its top note is one of the two; either way an existing note, not a new one.
+        const restored = page.getByRole("textbox", { name: "Note", exact: true });
+        await expect(restored).toHaveText(/^(First|Latest) words\.$/);
+        reopened = (await restored.textContent())!;
+        await expect(restored).toBeFocused();
+        await expect(page.getByRole("dialog", { name: "Open", exact: true })).toBeHidden();
+        expect(markdown(dirs.docs).sort()).toEqual(Object.keys(before).sort());
+      } else {
+        await assertWriting(page, () => app.windows().length, dirs.docs, "New words.");
+        expect(markdown(dirs.docs)).toHaveLength(3);
+      }
+      for (const [file, text] of Object.entries(before)) expect(readFileSync(join(dirs.docs, file), "utf8")).toBe(text);
+      await quitOwned(instance);
+      instance = undefined;
+      // Self-heal: the note opened on entry rewrote the record, so the next launch reopens it with no warning.
+      expect(readFileSync(join(dirs.userData, DATA_FILES.projectLastNote), "utf8")).toMatch(/^dpapi:./);
+      instance = await launch(dirs);
+      await expect(instance.page.getByRole("textbox", { name: "Note", exact: true })).toHaveText(reopened);
+      await expect(warning(instance.page)).toHaveCount(0);
+    } finally {
+      if (instance) await quitOwned(instance);
+      rmSync(dirs.userData, { recursive: true, force: true });
+      rmSync(dirs.docs, { recursive: true, force: true });
+    }
+  });
+}

@@ -501,19 +501,18 @@ it("reuses its own protected Recent record between opens but still persists ever
   const { root, projects } = await setup();
   const first = join(root, "first.md"), second = join(root, "second.md");
   await projects.remember(first);
-  await vi.waitFor(async () => expect(await readFile(join(paths.profile, DATA_FILES.projectRecent), "utf8")).toContain("dpapi:"));
   await projects.remember(second);
-  await vi.waitFor(async () => {
-    const disk = await readFile(join(paths.profile, DATA_FILES.projectRecent), "utf8");
-    expect(JSON.parse(Buffer.from(disk.slice(6), "base64").toString("utf8")).notes).toHaveLength(2);
-  });
+  // closed() drains the queued ranking writes, as the quit path does; then the disk is read once.
+  await projects.closed();
   const disk = await readFile(join(paths.profile, DATA_FILES.projectRecent), "utf8");
   expect(disk.startsWith("dpapi:")).toBe(true);
   const record = JSON.parse(Buffer.from(disk.slice(6), "base64").toString("utf8"));
   expect(record.notes.map((note: { path: string }) => note.path).sort()).toEqual([first, second].sort());
+  expect(protection.recent.filter(value => value === "unprotect")).toHaveLength(0);
   const restarted = projectWindows(() => root, writeFile);
   await restarted.remember(first);
-  await vi.waitFor(() => expect(protection.recent.filter(value => value === "unprotect")).toHaveLength(2));
+  await restarted.closed();
+  expect(protection.recent.filter(value => value === "unprotect")).toHaveLength(2);
 });
 
 it("replaces an unreadable launch position only when remembering a successfully opened disk note", async () => {
@@ -526,10 +525,52 @@ it("replaces an unreadable launch position only when remembering a successfully 
   try {
     await projects.remember(note);
     await vi.waitFor(() => expect(error).toHaveBeenCalledWith("Could not restore the previous launch position:", "SyntaxError"));
+    // The quit path (main.ts will-quit) awaits closed(), which drains the launch write. A second instance made
+    // before that could read the test double's non-atomic write mid-truncation and cache the empty record.
+    await projects.closed();
     const restarted = projectWindows(() => root, writeFile);
-    await vi.waitFor(async () => expect(await restarted.lastNote()).toBe(note));
+    expect(await restarted.lastNote()).toBe(note);
     expect(await readFile(note, "utf8")).toBe("# Kept on disk\n");
   } finally { error.mockRestore(); }
+});
+
+const b64 = (text: string) => Buffer.from(text, "utf8").toString("base64");
+// Electron's decryptString returns "" for an empty buffer, as this double does: a crash or an outside edit can leave 0 bytes.
+const unreadableLast = { empty: "", "whitespace-only": b64("  \n "), pathless: b64('{"position":{"from":1,"to":1,"scroll":0}}'), garbage: b64("\u0000\u00ffnot a record") };
+it.each(Object.entries(unreadableLast))("a %s launch record is an error, not 'no last note', and the next note opened rewrites it (D-397)", async (_kind, bytes) => {
+  const { root, projects } = await setup();
+  const note = join(root, "first.md");
+  await writeFile(note, "# Kept on disk\n");
+  await writeFile(join(paths.profile, DATA_FILES.projectLastNote), bytes);
+  await expect(projects.lastNote()).rejects.toThrow();
+  await expect(projects.position(note)).rejects.toThrow();
+  await expect(projects.opened()).rejects.toThrow();
+  // Open still lists the project; only the window's entry says the record couldn't be read.
+  expect((await projects.list()).map(entry => entry.lastNote)).not.toContain("");
+  const error = vi.spyOn(console, "error").mockImplementation(() => {});
+  try {
+    await projects.remember(note);
+    await projects.closed();
+  } finally { error.mockRestore(); }
+  expect(await readFile(note, "utf8")).toBe("# Kept on disk\n");
+  expect(await projectWindows(() => root, writeFile).lastNote()).toBe(note);
+});
+
+const unreadableRecent = { empty: "", "whitespace-only": `dpapi:${b64("  \n ")}`, pathless: `dpapi:${b64('{"rank":1,"pinned":false,"notes":[{"rank":1,"pinned":false}]}')}`, garbage: `dpapi:${b64("\u0000\u00ffnot a record")}` };
+it.skipIf(process.platform !== "win32").each(Object.entries(unreadableRecent))("a %s Recent record is an error, never an empty Recent (D-397)", async (_kind, bytes) => {
+  const { projects } = await setup();
+  await writeFile(join(paths.profile, DATA_FILES.projectRecent), bytes);
+  await expect(projects.recentNote()).rejects.toThrow();
+});
+
+it.skipIf(process.platform !== "win32")("recentNote is the project's top-ranked Recent note (D-397)", async () => {
+  const { root, projects } = await setup();
+  const first = join(root, "first.md"), second = join(root, "second.md");
+  await projects.remember(first);
+  await projects.remember(second);
+  await projects.edited(second);
+  await projects.closed();
+  expect(await projectWindows(() => root, writeFile).recentNote()).toBe(second);
 });
 
 it("keeps the last persisted Recent value when a ranking write fails and retries on the next open", async () => {

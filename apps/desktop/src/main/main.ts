@@ -1748,6 +1748,8 @@ function registerIpc(win: () => BrowserWindow | undefined): void {
     return projects.pin(folder, path);
   });
   handle("projects:lastNote", async () => process.env.FOCUS_NOTES_PROJECT_NOTE || afterRecovery(await projects.lastNote()));
+  // Only asked for when the launch record can't be read (D-397): the project's most recent note instead.
+  handle("projects:recentNote", async () => afterRecovery(await projects.recentNote()));
   // The session's tabs (D-420), from the protected launch record: private notes included, never in state.json.
   handle("projects:opened", async () => {
     const tabs = await projects.opened();

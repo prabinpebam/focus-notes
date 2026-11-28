@@ -402,6 +402,14 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   const notifications = new NotificationQueue(clock, waits.toastDuration, (toasts) => store.update((s) => ({ ...s, ui: { ...s.ui, toasts } })), waits.noticeLong);
   const dismissToast = (id: number) => notifications.dismiss(id);
   const toast = (message: string, opts: NotificationOptions = {}) => notifications.show(message, opts);
+  // One notification per launch for an unreadable launch record (D-397): entry, tabs and the cursor all read it.
+  let launchRestoreWarned = false;
+  let launchRestoring = false;
+  const launchRestoreFailed = () => {
+    if (launchRestoring && launchRestoreWarned) return;
+    if (launchRestoring) launchRestoreWarned = true;
+    toast(catalog.format("project.launch.restoreFailed"), { tone: "error" });
+  };
   store.subscribe(() => notifications.setActive(store.state.window.active));
   let saveTimer: ReturnType<typeof setTimeout> | undefined;
   let saving: Promise<void> = Promise.resolve();
@@ -689,7 +697,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         } catch {
           if (opts.current && !opts.current()) return false;
           restorePosition = undefined;
-          toast(catalog.format("project.launch.restoreFailed"), { tone: "error" });
+          launchRestoreFailed();
         }
       }
       notePosition = undefined;
@@ -1958,6 +1966,11 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         // A window opened for a note opens that note (DSK-06, D-179); the first window, the last one.
         let remembered: string | undefined;
         let restoreFailed = false;
+        // An unreadable launch record (D-397) is treated as missing and said once: the project's most recent
+        // note from Recent opens instead, else the empty-Untitled path. It never blocks entry.
+        let lastFailed = false;
+        launchRestoring = true;
+        launchRestoreWarned = false;
         const currentProjectNote = (path: string | undefined) => {
           const folder = store.state.workspace.folder;
           if (!path || !folder || !bridge.projects || bridge.projects.local) return path;
@@ -1969,7 +1982,12 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         };
         if (bridge.projects && !bridge.windows?.initialNote && !bridge.windows?.initialOpen) {
           try { remembered = currentProjectNote(await bridge.projects.lastNote()); }
-          catch { restoreFailed = true; toast(catalog.format("project.launch.restoreFailed"), { tone: "error" }); }
+          catch {
+            lastFailed = true;
+            launchRestoreFailed();
+            try { remembered = currentProjectNote(await bridge.projects.recentNote?.()); }
+            catch { remembered = undefined; }
+          }
         }
         const saved = currentProjectNote(appState.lastNotePath || undefined);
         let last = bridge.windows?.initialOpen ? undefined : bridge.windows?.initialNote ?? remembered ?? saved;
@@ -1977,11 +1995,11 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         // Notes that are gone are dropped quietly; a note that can't be read is an error, and the saved tabs stay as they were.
         let sessionGone = false;
         // The tabs come from the protected launch record (private notes included); state.json's public-only list
-        // is the fallback for a record saved before tabs were kept there.
+        // is the fallback for a record saved before tabs were kept there, or one that can't be read.
         let savedTabs: readonly string[] | undefined = appState.filesOpened;
-        if (bridge.projects?.opened && !restoreFailed && !bridge.windows?.initialOpen && !bridge.windows?.initialNote && !bridge.windows?.secondary) {
+        if (bridge.projects?.opened && !lastFailed && !restoreFailed && !bridge.windows?.initialOpen && !bridge.windows?.initialNote && !bridge.windows?.secondary) {
           try { savedTabs = (await bridge.projects.opened()) ?? savedTabs; }
-          catch { restoreFailed = true; toast(catalog.format("project.launch.restoreFailed"), { tone: "error" }); }
+          catch { restoreFailed = true; launchRestoreFailed(); }
         }
         const sessionTabs = bridge.windows?.initialOpen || bridge.windows?.initialNote || bridge.windows?.secondary || restoreFailed
           ? undefined : (savedTabs ?? []).map(currentProjectNote).filter((path): path is string => Boolean(path));
@@ -2005,7 +2023,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         // A crash can leave protected metadata behind a completed rename. The saved disk path is
         // still usable; explicit window targets never fall back to a different note.
         if (!reopened && !bridge.windows?.initialOpen && !bridge.windows?.initialNote && remembered && saved && saved !== remembered) {
-          toast(catalog.format("project.launch.restoreFailed"), { tone: "error" });
+          launchRestoreFailed();
           tried.push(saved);
           reopened = await openNote(saved);
         }
@@ -2023,7 +2041,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
           const initialPath = store.state.note.path;
           try {
             reopened = await tracker.run("project.firstNote", "command.note.new", async () => {
-              const path = await bridge.projects!.firstNote!(...(lastGone || sessionGone ? ["history" as const] : []));
+              const path = await bridge.projects!.firstNote!(...(lastGone || sessionGone || lastFailed ? ["history" as const] : []));
               startupSuperseded = store.state.note.key !== initialKey || store.state.note.path !== initialPath;
               if (startupSuperseded) return false;
               if (!path) return false;
@@ -2039,6 +2057,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
         }
         if (!reopened && !startupSuperseded && bridge.projects) await projects.start();
         else if (!reopened && !startupSuperseded) await load(await bridge.defaultNotePath());
+        launchRestoring = false;
         // A link the app was opened with goes on from the note it opened (D-165).
         if (!bridge.windows?.initialOpen) void deepLinks.take();
       }

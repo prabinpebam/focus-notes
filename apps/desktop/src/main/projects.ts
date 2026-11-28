@@ -260,11 +260,24 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
       const content = encrypted.startsWith("dpapi:")
         ? Buffer.from(await windowsProtectedRecord(encrypted.slice(6), false), "base64").toString("utf8")
         : safeStorage.decryptString(Buffer.from(encrypted, "base64"));
-      return JSON.parse(content);
+      return validRecent(JSON.parse(content));
     } catch (error) {
       if (missing(error)) return { rank: 0, pinned: false, notes: [] };
       throw error;
     }
+  }
+  // An empty, pathless or foreign record is unreadable, never an empty Recent (D-397).
+  function validRecent(record: unknown): Recent {
+    if (!record || typeof record !== "object" || !("notes" in record) || !Array.isArray(record.notes)
+      || record.notes.some(note => !note || typeof note !== "object" || typeof note.path !== "string" || !note.path.trim())) {
+      throw new Error("Invalid protected recent record.");
+    }
+    return record as Recent;
+  }
+  /** This project's most recent note from Recent; rejects when Recent can't be read (D-397). */
+  async function recentNote(): Promise<string | undefined> {
+    const record = await recent(userData);
+    return [...record.notes].sort((a, b) => b.rank - a.rank).find(note => !removedPath(note.path, excludedFolders))?.path;
   }
   async function recent(profile: string): Promise<Recent> { return readRecent(profile, await recentBytes(profile)); }
   const removedPath = (path: string, folders: readonly string[]) => folders.some(folder => {
@@ -357,7 +370,12 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     const value = encrypted.startsWith("dpapi:")
       ? Buffer.from(await windowsProtectedRecord(encrypted.slice(6), false), "base64").toString("utf8")
       : safeStorage.decryptString(Buffer.from(encrypted, "base64"));
-    return value.startsWith("{") ? JSON.parse(value) : { path: value };
+    // Electron decrypts an empty file to "": an empty, blank or pathless record is unreadable, never "no last note" (D-397).
+    const record: unknown = value.startsWith("{") ? JSON.parse(value) : { path: value };
+    if (!record || typeof record !== "object" || !("path" in record) || typeof record.path !== "string" || !isAbsolute(record.path)) {
+      throw new Error("Invalid protected launch record.");
+    }
+    return record as LaunchRecord;
   }
   function lastRecord(): Promise<LaunchRecord | undefined> {
     if (launchRecord) return launchRecord;
@@ -567,7 +585,8 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
       const saved = await state(profile);
       const identity = saved.projectSettings?.[folder];
       const history = await recent(profile);
-      const lastPath = profile === userData ? await lastNote() : undefined;
+      // An unreadable launch record mustn't hide every project from Open; the window says so on entry.
+      const lastPath = profile === userData ? await lastNote().catch(() => undefined) : undefined;
       const github = saved.localNotes ? undefined : await githubRepo(folder);
       const last = counted.get(folder);
       return { folder, name: identity?.name ?? basename(folder), accent: saved.localNotes ? "app" : identity?.accent ?? "teal", logo: saved.localNotes ? "none" : identity?.logo ?? "book", logoSrc: identity?.logoSrc, lastNote: lastPath ?? saved.lastNotePath, rank: history.rank, pinned: history.pinned, recent: history.notes, localNotes: saved.localNotes, ...(github ? { repo: github } : {}), ...(last ? { stats: last } : {}) };
@@ -990,5 +1009,5 @@ export function projectWindows(home: () => string, atomicWrite: (path: string, c
     await open(folder, file);
     return { file, here: false };
   }
-  return { removedRoots: () => removedProjectFolders(rootProfile, metadata), removed: () => metadata.isRemoved(userData), onFiltered: (listener: (folders: string[]) => Promise<void>) => { onFiltered = listener; }, list, known: knownFolder, stats, repo, adopt, openFile, openFilePath, open, choose, upload, pin, localNote, importLocal, edited: (path: string) => score(path, 2), parent: async () => dirname(home()), chooseParent, check, create, startEmpty, continueCreate, pendingCreate, lastNote, opened, rememberOpened, position, remember, closed, purge, resume, dispose, canCache, saveState, pendingCleanup: () => metadata.pendingScopes(), cleanupIssues: () => metadata.cleanupIssues(), retryCleanup, onCleared: (listener: () => Promise<void>) => { onCleared = listener; }, firstNoteAdmission: metadata.firstNoteAdmission };
+  return { removedRoots: () => removedProjectFolders(rootProfile, metadata), removed: () => metadata.isRemoved(userData), onFiltered: (listener: (folders: string[]) => Promise<void>) => { onFiltered = listener; }, list, known: knownFolder, stats, repo, adopt, openFile, openFilePath, open, choose, upload, pin, localNote, importLocal, edited: (path: string) => score(path, 2), parent: async () => dirname(home()), chooseParent, check, create, startEmpty, continueCreate, pendingCreate, lastNote, recentNote, opened, rememberOpened, position, remember, closed, purge, resume, dispose, canCache, saveState, pendingCleanup: () => metadata.pendingScopes(), cleanupIssues: () => metadata.cleanupIssues(), retryCleanup, onCleared: (listener: () => Promise<void>) => { onCleared = listener; }, firstNoteAdmission: metadata.firstNoteAdmission };
 }

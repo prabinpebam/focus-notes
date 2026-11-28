@@ -8,7 +8,7 @@
  * is written and the text found is returned, so another program's change, a pull, or a write queued
  * before this one is never written over. A missing file is written: nothing is lost by making it.
  */
-import { mkdir, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { mkdir, open, readdir, readFile, rename, rm } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 
 /**
@@ -103,7 +103,17 @@ export class NoteWriter {
     if (found !== undefined) return { outside: found };
     await mkdir(dirname(path), { recursive: true });
     const tmp = tempName(path, this.#tmp++);
-    await writeFile(tmp, this.#hooks.encode?.(path, content) ?? content);
+    // Flushed before the rename: after a crash or power loss the note is the old text or the new, never empty.
+    const file = await open(tmp, "w");
+    try {
+      await file.writeFile(this.#hooks.encode?.(path, content) ?? content);
+      await file.sync();
+    } catch (error) {
+      await file.close().catch(() => {});
+      await rm(tmp, { force: true });
+      throw error;
+    }
+    await file.close();
     try {
       // And again right before the rename: a change while the temporary file was written.
       const late = await outside();
