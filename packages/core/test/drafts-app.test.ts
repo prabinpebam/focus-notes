@@ -223,12 +223,12 @@ describe("QLT-06: what the last session left, at launch", () => {
     const f = setup({ found: { matched: [], changed: [d], recovered: 0 } });
     const { app } = await started(f);
     expect(conflict(app)).toMatchObject({
-      open: true, title: "“Welcome” changed while Focus Notes was closed", mineLabel: "Recovered", theirsLabel: "On disk",
+      open: true, title: "Two versions of “Welcome”", mineLabel: "Recovered", theirsLabel: "On disk",
       keepMine: "Keep recovered text", takeTheirs: "Take the version on disk",
     });
     expect(app.store.state.note).toMatchObject({ markdown: text, saveState: "unsaved" });
     const t = toasts(app).at(-1)!;
-    expect(t.message).toBe("“Welcome” changed while Focus Notes was closed. Compare to keep what you need.");
+    expect(t.message).toBe("“Welcome” has two versions: what you were writing and what's on disk. Compare to keep what you need.");
     expect(t.action).toMatchObject({ command: "recovery.review", label: "Review" });
     // Nothing is written until a choice.
     expect(await app.flush()).toBe(false);
@@ -299,7 +299,7 @@ describe("QLT-06: what the last session left, at launch", () => {
     f.files[`${PRIV}/c2.md`] = "# Other\n";
     const { app } = await started(f);
     const t = toasts(app).at(-1)!;
-    expect(t.message).toBe("Restored what you were writing in 2 notes. “Other” changed while Focus Notes was closed. Compare to keep what you need. Kept 2 drafts that couldn't go back in their notes.");
+    expect(t.message).toBe("Restored what you were writing in 2 notes. “Other” has two versions: what you were writing and what's on disk. Compare to keep what you need. Kept 2 drafts that couldn't go back in their notes.");
     expect(t.action).toMatchObject({ command: "recovery.review" });
     await app.commands.run("recovery.review");
     for (let i = 0; i < 5; i++) await settle();

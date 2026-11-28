@@ -117,7 +117,7 @@ test("QLT-06: matching at launch writes nothing to the workspace, whatever the d
   await expect(editorOf(l.page)).toContainText("A saved note.");
   const counts = await matchLine(l);
   expect(counts).toMatchObject({ saved: 1, matched: 2, changed: 1, recovered: 1 });
-  await expect(l.page.getByRole("status").filter({ hasText: "changed while Focus Notes was closed" })).toBeVisible();
+  await expect(l.page.getByRole("status").filter({ hasText: "has two versions: what you were writing and what's on disk" })).toBeVisible();
   // Settled: the warm-up and every check after start have run.
   await l.page.waitForTimeout(4000);
   expect(snapshot(ws)).toEqual(before);
@@ -176,10 +176,10 @@ test("QLT-06: opening a note that changed while the app was closed shows the res
 
   const l = await launch(dirs);
   const { page } = l;
-  await expect(page.getByRole("status").filter({ hasText: "“Plan” changed while Focus Notes was closed. Compare to keep what you need." })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: "“Plan” has two versions: what you were writing and what's on disk. Compare to keep what you need." })).toBeVisible();
   await expect(editorOf(page)).toContainText("A saved note.");
   await openFromFiles(page, "Plan");
-  const dialog = page.getByRole("dialog", { name: /changed while Focus Notes was closed/ });
+  const dialog = page.getByRole("dialog", { name: /^Two versions of / });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole("region", { name: "Recovered" })).toContainText("Typed before the crash.");
   await expect(dialog.getByRole("region", { name: "On disk" })).toContainText("Changed in another editor.");
@@ -320,7 +320,7 @@ test(`QLT-06: a title typed so every key renames the file survives a crash at an
       // round 22). Every typed character is still one choice away, as one only in Files › Recovered is; placing
       // it back by itself needs the crash-critical writes reordered (roadmap, QLT-06 after 1.1).
       const page = l.page;
-      const resolver = page.getByRole("dialog", { name: /changed while Focus Notes was closed$/ });
+      const resolver = page.getByRole("dialog", { name: /^Two versions of / });
       await expect.poll(async () => (await resolver.isVisible()) || (await editorOf(page).evaluate((el) => el === document.activeElement)), PROMPTLY).toBe(true);
       if (await resolver.isVisible()) {
         expect(counts(l)?.changed, `${at}: the resolver asks only for a changed note`).toBeGreaterThan(0);

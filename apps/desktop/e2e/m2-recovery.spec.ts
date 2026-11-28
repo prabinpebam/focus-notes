@@ -73,8 +73,8 @@ test("QLT-03, QLT-06: a note changed while the app was closed opens the resolver
 
   const again = await launch(dirs);
   const { page } = again;
-  await expect(page.getByRole("status").filter({ hasText: "“Welcome to Focus Notes” changed while Focus Notes was closed. Compare to keep what you need." })).toBeVisible();
-  const dialog = page.getByRole("dialog", { name: /changed while Focus Notes was closed/ });
+  await expect(page.getByRole("status").filter({ hasText: "“Welcome to Focus Notes” has two versions: what you were writing and what's on disk. Compare to keep what you need." })).toBeVisible();
+  const dialog = page.getByRole("dialog", { name: /^Two versions of / });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole("region", { name: "Recovered" })).toContainText(typedPart(kept.text));
   await expect(dialog.getByRole("region", { name: "On disk" })).toContainText("Changed in another editor.");

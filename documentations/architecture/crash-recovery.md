@@ -155,7 +155,7 @@ Matching reads Git and files only. It runs off the first-frame path, so the wind
 | Outcome | What happens | Words (Feedback and dialogs) |
 | --- | --- | --- |
 | **Matched** | When the note opens (the last note opens at launch), it shows the recovered text as unsaved edits on top of what's on disk, one undo step back to the disk's text. The normal save then writes it like any typing. Other matched notes show a small "unsaved" mark in Files until opened. | "Restored what you were writing in “⟨title⟩”." |
-| **Changed** | Opening the note opens the resolver (D-92) with *Recovered* and *On disk*. Nothing is written until the person chooses. | "“⟨title⟩” changed while Focus Notes was closed. Compare to keep what you need." |
+| **Changed** | Opening the note opens the resolver (D-92) with *Recovered* and *On disk*. Nothing is written until the person chooses. | "“⟨title⟩” has two versions: what you were writing and what's on disk. Compare to keep what you need." |
 | **Recovered** | A **Recovered** section in Files, shown only when it has something, like Recently deleted: title, where it was, when, and length. Each opens read-only, with *Save as a new note…* (the person picks the folder, the last known one by default), *Copy text* and *Discard*. | "Kept 2 drafts we couldn't place · Review" |
 
 One toast at launch sums everything up, with *Review* when anything needs a choice. A launch with nothing to recover says nothing.

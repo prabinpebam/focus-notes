@@ -57,7 +57,7 @@ Pressing it backs up now (the retry, on a problem). After *Save to cloud* the la
 **Restored after a crash (QLT-03, QLT-06, WP-8.9, D-190, D-220):** when the app starts after a crash, nothing is written to the workspace. The text a draft kept comes back in the editor as unsaved edits, one undo from the text on disk, and the normal save writes it. One information toast says what came back, its parts joined in one message (`toast.recovery.*`):
 
 - **Matched:** "Restored what you were writing in “⟨title⟩”." (or "in ⟨n⟩ notes").
-- **Changed while closed:** "“⟨title⟩” changed while Focus Notes was closed. Compare to keep what you need." (or "⟨n⟩ notes changed…"). Opening the note opens the resolver with *Recovered* and *On disk*; nothing is written until a choice.
+- **Changed while closed:** "“⟨title⟩” has two versions: what you were writing and what's on disk. Compare to keep what you need." (or "⟨n⟩ notes have two versions…"); the resolver's title is "Two versions of “⟨title⟩”". It never says the note changed while the app was closed: the disk's version can also be the app's own last save, made just before a crash. Opening the note opens the resolver with *Recovered* and *On disk*; nothing is written until a choice.
 - **Couldn't be placed:** "Kept ⟨n⟩ drafts that couldn't go back in their notes." They wait in Files → Recovered for 30 days. The toast speaks of the app, never as *we*.
 
 The toast has a **Review** action only when there's something to do: a note to compare (it opens the first one, or the resolver if it's open), or drafts kept in Files → Recovered. Otherwise there's nothing to decide.
