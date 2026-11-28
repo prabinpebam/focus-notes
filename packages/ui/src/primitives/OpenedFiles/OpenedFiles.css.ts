@@ -71,3 +71,7 @@ export const close = style({
 globalStyle(`${tab}:has([data-focus-visible]) ${close}`, { visibility: "visible" });
 globalStyle(`${tab}:hover ${close}`, { "@media": { "(hover: hover)": { visibility: "visible" } } });
 globalStyle(`${tab}[data-current] ${icon}, ${tab}[data-current] ${close}`, { "@media": { "(forced-colors: active)": { color: t.forcedCurrentText } } });
+
+/** A list whose current row keeps one weight (Ctrl+Tab's switcher): its highlight moves, so only fill and outline show it and a name never re-truncates. */
+export const steadyWeight = style({});
+globalStyle(`${steadyWeight} ${tab}[data-current] ${activate}`, { fontWeight: t.weight });

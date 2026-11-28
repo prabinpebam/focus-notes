@@ -45,7 +45,7 @@ export function TabSwitcher({ label, items, activeId = "", id, onChoose, onActiv
     }
   };
   return (
-    <ul ref={list} id={id} className={`${row.list} ${s.list}`} role="listbox" aria-label={label} tabIndex={0}
+    <ul ref={list} id={id} className={`${row.list} ${row.steadyWeight} ${s.list}`} role="listbox" aria-label={label} tabIndex={0}
       aria-activedescendant={active >= 0 ? optionId(active) : undefined} onKeyDown={keyDown}>
       {items.map((item, i) => {
         const nameId = `${base}-n${i}`;
