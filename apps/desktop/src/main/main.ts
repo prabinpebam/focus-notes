@@ -593,7 +593,7 @@ async function removeLocalWorkspace(): Promise<RemovalCheck> {
   watcher = undefined;
   const old = gitSync;
   armGit();
-  await old?.dispose();
+  await old?.dispose({ settle: true });
   const r = await removeWorkspace(setupRunner, folder);
   if (r.state !== "removed") {
     watcher = watchWorkspace(() => windows);
@@ -631,7 +631,7 @@ async function deleteLocalProject(keepPrivate: boolean, current: () => Promise<b
   watcher = undefined;
   const old = gitSync;
   armGit();
-  await old?.dispose();
+  await old?.dispose({ settle: true });
   // The watcher and Git restart whatever the last check or the move does, even if one of them throws.
   let r: DeletionResult = { state: "refused" };
   try {

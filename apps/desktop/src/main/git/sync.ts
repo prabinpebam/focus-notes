@@ -754,15 +754,18 @@ export class GitSync {
     return r;
   }
 
-  async dispose(): Promise<void> {
+  /**
+   * Stops syncing and lets go of the lock. `settle`: a running fetch, commit or push finishes first (at
+   * most `disposeWaitMs`), for a caller about to move or delete the folder (PRJ-23); a folder switch doesn't wait.
+   */
+  async dispose(opts: { settle?: boolean } = {}): Promise<void> {
     if (this.#disposed) return;
     this.#disposed = true;
     this.#cadence.dispose();
     for (const t of [this.#pointerTimer, this.#retryTimer, this.#fetchTimer]) if (t !== undefined) this.#clock.clearTimeout(t);
-    // A running fetch, commit or push finishes before the lock goes, so Delete never moves a folder
-    // Git is writing (PRJ-23). A hung one is bounded: the move then refuses with its real reason.
+    // A hung operation is bounded: the move then refuses with its real reason.
     let limit: ReturnType<typeof setTimeout> | undefined;
-    await Promise.race([
+    if (opts.settle) await Promise.race([
       this.#ops.run(async () => {}).catch(() => {}),
       new Promise<void>((r) => { limit = setTimeout(r, this.#o.disposeWaitMs ?? DISPOSE_WAIT_MS); limit.unref?.(); }),
     ]);
