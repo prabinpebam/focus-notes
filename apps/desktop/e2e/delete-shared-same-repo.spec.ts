@@ -84,7 +84,9 @@ test("D-428: Private + Public: deleting a published note takes its page down; a 
         })].join(" "));
         requestAnimationFrame(tick);
       };
-      requestAnimationFrame(tick);
+      // The first sample is taken now, before Delete is clicked: a stalled first animation frame in the
+      // invisible test window must not make the confirmation look closed from the start.
+      tick();
     }, { names, confirm });
     /** From the first frame after the confirmation closed: every row Deleting… at once, then Deleting… or Stopped until it goes, once. */
     const expectRowsSteady = async (label: string) => {
