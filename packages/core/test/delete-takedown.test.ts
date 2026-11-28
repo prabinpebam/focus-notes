@@ -48,7 +48,7 @@ describe("the order of a delete (D-428)", () => {
     const h = harness(newDeleteJob(["p/a.md"], "“A”", [], ["a.md"], 0), { unpublish: async () => { throw new Error("sharing:pages"); } });
     expect(await h.run()).toBe(false);
     expect(h.job()).toMatchObject({ failed: true, problem: "files.deleting.problem.pages" });
-    expect(messages["files.deleting.problem.pages"]).toBe("GitHub’s build of your website failed. Retry.");
+    expect(messages["files.deleting.problem.pages"]).toBe("GitHub’s build of your website failed.");
     expect(Object.values(messages).filter((m) => /in a minute/i.test(m))).toEqual([]);
   });
 
