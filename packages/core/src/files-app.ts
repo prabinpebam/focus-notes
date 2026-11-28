@@ -48,6 +48,8 @@ export interface FilesState {
   visits: readonly string[];
   /** Notes currently open as tabs in this window (D-410, FIL-20). */
   opened: readonly string[];
+  /** Ctrl+Tab's switcher (owner, 29 November): the opened tabs most recently used first, and the highlighted one. */
+  switcher: { open: boolean; order: readonly string[]; active: number };
   /** Bumped to move focus into the tree, to the focused row. */
   focusRequest: number;
   /** The inline name field: renaming a row, or naming a new folder in `parent`. */
@@ -82,7 +84,7 @@ export interface FilesState {
   newNote: { open: boolean; query: string; activeId: string; expanded: readonly string[]; focus: number; busy: boolean; error: string };
 }
 export const FILES_CLOSED: FilesState = {
-  open: false, pinned: false, fits: true, expanded: [], collapsed: [], selection: NO_SELECTION, filter: "", sort: "name", pins: [], visits: [], opened: [], focusRequest: 0, pending: [], unsaved: [],
+  open: false, pinned: false, fits: true, expanded: [], collapsed: [], selection: NO_SELECTION, filter: "", sort: "name", pins: [], visits: [], opened: [], switcher: { open: false, order: [], active: 0 }, focusRequest: 0, pending: [], unsaved: [],
   move: { open: false, query: "", activeId: "", paths: [], focus: 0 },
   recent: { open: false, loading: false, focus: 0 },
   recovered: { open: false, loading: false },
@@ -167,10 +169,13 @@ export function registerFiles(ctx: Ctx) {
   };
   const rootLabel = (id: string) => catalog.format(`files.root.${id === "local" && bridge.platform !== "web" ? "folder" : id}`);
   let lastVisited = "";
+  /** The notes this window showed, most recent first: Ctrl+Tab's order. Kept in memory only. */
+  let usedTabs: string[] = [];
   store.subscribe(() => {
     const path = store.state.note.path;
     if (!path || path === lastVisited || store.state.note.status !== "ready") return;
     lastVisited = path;
+    usedTabs = [path, ...usedTabs.filter((p) => p !== path)].slice(0, 100);
     const opened = files().opened.includes(path) ? files().opened : [...files().opened, path];
     if (!cacheEnabled || filteredRoots.some(root => atOrUnder(path, root))) {
       if (opened !== files().opened) setFiles(() => ({ opened }));
@@ -380,6 +385,64 @@ export function registerFiles(ctx: Ctx) {
     if (store.state.note.path !== row.path) await ctx.load(row.path);
   };
   commands.register<{ id: string }>({ id: "files.activate", title: "command.files.openItem", run: ({ id }) => activate(String(id)) });
+  // Ctrl+Tab (owner, 29 November): a centred list of the opened tabs, most recently used first, the
+  // previous one highlighted. Tab moves on while Ctrl is held; releasing Ctrl opens the highlighted tab.
+  const tabShown = (s: AppState, path: string) => {
+    const found = findNode(s.workspace.tree, path);
+    if (found) return found.node.kind === "note";
+    return s.workspace.tree.roots.length === 0 || path === s.note.path;
+  };
+  const switchOrder = (): string[] => {
+    const s = store.state;
+    const open = s.ui.files.opened.filter((p) => tabShown(s, p));
+    const used = usedTabs.filter((p) => open.includes(p));
+    return [...used, ...open.filter((p) => !used.includes(p))];
+  };
+  const switchStep = (step: 1 | -1) => {
+    const sw = files().switcher;
+    if (sw.open) {
+      const n = sw.order.length;
+      setFiles(() => ({ switcher: { ...sw, active: (sw.active + step + n) % n } }));
+      return;
+    }
+    const order = switchOrder();
+    if (order.length < 2) return;
+    setFiles(() => ({ switcher: { open: true, order, active: step === 1 ? 1 : order.length - 1 } }));
+  };
+  const switchClose = () => setFiles((f) => ({ switcher: { ...f.switcher, open: false } }));
+  commands.register({
+    id: "tabs.switchNext", title: "command.tabs.switchNext", group: "files", layer: "writer",
+    shortcut: { default: "Ctrl+Tab", web: null, whenEnabled: true },
+    enabled: (s) => s.ui.files.switcher.open || s.ui.files.opened.length > 1,
+    run: () => switchStep(1),
+  });
+  commands.register({
+    id: "tabs.switchPrevious", title: "command.tabs.switchPrevious", group: "files", layer: "writer",
+    shortcut: { default: "Ctrl+Shift+Tab", web: null, whenEnabled: true },
+    enabled: (s) => s.ui.files.switcher.open || s.ui.files.opened.length > 1,
+    run: () => switchStep(-1),
+  });
+  commands.register<{ id: string }>({
+    id: "tabs.switchSetActive", title: "command.tabs.switchNext",
+    run: ({ id }) => {
+      const sw = files().switcher;
+      const i = sw.order.indexOf(String(id));
+      if (sw.open && i >= 0 && i !== sw.active) setFiles(() => ({ switcher: { ...sw, active: i } }));
+    },
+  });
+  commands.register({ id: "tabs.switchCancel", title: "command.tabs.switchCancel", run: switchClose });
+  commands.register<{ id?: string }>({
+    id: "tabs.switchCommit", title: "command.tabs.switchNext",
+    run: async ({ id } = {}) => {
+      const sw = files().switcher;
+      if (!sw.open) return;
+      const path = id ? String(id) : sw.order[sw.active];
+      switchClose();
+      if (!path || !files().opened.includes(path)) return;
+      if (store.state.note.path !== path) await ctx.load(path);
+      else ctx.editorAction("edit.focus");
+    },
+  });
   commands.register<{ id: string }>({
     id: "files.activateOpened", title: "command.files.openItem", group: "files",
     run: async ({ id }) => {
@@ -1897,6 +1960,31 @@ export function registerFiles(ctx: Ctx) {
         ? [{ id: "opened", items: [{ ...ctx.describeItem("files.closeAllOpened"), label: catalog.format("files.opened.closeAll") }] }]
         : [];
       return { items, menu };
+    },
+  });
+  viewModels.register({
+    id: "vm.switcher",
+    schema: {
+      type: "object",
+      properties: { open: { type: "boolean" }, items: { type: "array", items: TREE_ITEM }, activeId: { type: "string" } },
+    },
+    reads: ["ui.files.switcher", "workspace.tree", "note.path", "ui.share.listing", "ui.share.publication"],
+    select: (s) => {
+      const sw = s.ui.files.switcher;
+      if (!sw.open) return { open: false, items: [], activeId: "" };
+      const items = sw.order.map((path, i) => {
+        const found = findNode(s.workspace.tree, path);
+        const label = found ? titleOfNode(found.node) : stemOf(path.split(/[\\/:]/).at(-1) ?? path);
+        return {
+          id: path, kind: "note", level: 1, label, title: path,
+          current: i === sw.active,
+          description: "", detail: "", parent: "",
+          expanded: false, hasChildren: false, selected: false,
+          pending: false, readOnly: false, draggable: false, droppable: false, editing: false, pinned: false,
+          ...(found ? siteMarksOf(s, path, catalog) : {}),
+        };
+      });
+      return { open: true, items, activeId: sw.order[sw.active] ?? "" };
     },
   });
   viewModels.register({

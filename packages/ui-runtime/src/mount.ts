@@ -89,6 +89,13 @@ export function mountApp(el: Element, { app, views, view = "canvas", overlays = 
     keyRanCommand();
     void resolver.runCommand(id);
   }, { capture: true, ...(signal ? { signal } : {}) });
+  // Ctrl+Tab's switcher opens the highlighted tab as Ctrl is released, and closes if the window loses the keys.
+  window.addEventListener("keyup", (e) => {
+    if (e.key === "Control" && app.store.state.ui.files.switcher.open) void resolver.runCommand("tabs.switchCommit");
+  }, { capture: true, ...(signal ? { signal } : {}) });
+  window.addEventListener("blur", () => {
+    if (app.store.state.ui.files.switcher.open) void resolver.runCommand("tabs.switchCancel");
+  }, signal ? { signal } : {});
   // Ctrl and the wheel change the text size as Mod+= and Mod+- do (D-130), and so does a trackpad's
   // pinch, which arrives as a wheel with Ctrl. The page itself never zooms. Small deltas (a pinch, a
   // fine wheel) add up to a notch, and one event is at most one step, so a gesture never jumps sizes.
@@ -120,6 +127,7 @@ export function mountApp(el: Element, { app, views, view = "canvas", overlays = 
   let sheetWasOpen = app.store.state.ui.shortcuts.open;
   let filesWereOpen = app.store.state.ui.files.open;
   let spotlightWasOpen = app.store.state.ui.spotlight.open;
+  let switcherWasOpen = app.store.state.ui.files.switcher.open;
   let findAllWasOpen = app.store.state.ui.findAll.open;
   let themeWasOpen = app.store.state.ui.theme.open;
   let feedbackWasOpen = app.store.state.ui.feedback.open;
@@ -133,6 +141,12 @@ export function mountApp(el: Element, { app, views, view = "canvas", overlays = 
       }, 300);
     }
     spotlightWasOpen = spotlight.open;
+    if (switcherWasOpen && !files.switcher.open) {
+      setTimeout(() => {
+        if (!document.activeElement || document.activeElement === document.body) refocusNote(ui);
+      }, 300);
+    }
+    switcherWasOpen = files.switcher.open;
     // Send feedback (D-203) opened from the ⋯ menu saved a menu item that's gone: back to the note,
     // unless it went back to Settings or something else took focus.
     if (feedbackWasOpen && !feedback.open) {

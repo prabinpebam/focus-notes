@@ -659,6 +659,7 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
   type NotePosition = { key: string; from: number; to: number; scroll: number };
   let notePosition: NotePosition | undefined;
   let restorePosition: NotePosition | undefined;
+  const tabPositions = new Map<string, { from: number; to: number; scroll: number }>();
   let editingScored = false;
   const slashed = (p: string) => p.replace(/\\/g, "/").replace(/\/+$/, "").toLowerCase();
   /** Whether a path is in the workspace's Public root (`notes/`). */
@@ -675,6 +676,11 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
     if (opts.current && !opts.current()) return false;
     // Switching notes commits and pushes the one being left (D-23).
     const leaving = store.state.note.path;
+    // Each note's caret and scroll this session, so switching tabs back finds them where they were.
+    if (leaving && notePosition?.key === store.state.note.key) {
+      const { from, to, scroll } = notePosition;
+      tabPositions.set(leaving, { from, to, scroll });
+    }
     if (leaving && leaving !== path) {
       // A new public note that waits is asked about before its first backup (D-158).
       void heldNotes.backingUp(leaving);
@@ -689,7 +695,9 @@ export function createApp(bridge: PlatformBridge, messages: Messages, locale = "
       if (opts.current && !opts.current()) return false;
       if (opts.accept && !opts.accept(md)) return false;
       const key = `${path}#${Date.now()}`;
-      if (bridge.projects) {
+      const kept = tabPositions.get(path);
+      if (kept) restorePosition = { ...kept, key };
+      else if (bridge.projects) {
         try {
           const position = await bridge.projects.position(path);
           if (opts.current && !opts.current()) return false;

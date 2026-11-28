@@ -365,6 +365,9 @@
           "$ref": "#/$defs/c_OpenedFiles"
         },
         {
+          "$ref": "#/$defs/c_TabSwitcher"
+        },
+        {
           "$ref": "#/$defs/c_SiteLink"
         },
         {
@@ -10277,6 +10280,82 @@
               "$ref": "#/$defs/actions"
             },
             "tabMenuAction": {
+              "$ref": "#/$defs/actions"
+            }
+          }
+        }
+      }
+    },
+    "c_TabSwitcher": {
+      "type": "object",
+      "description": "Ctrl+Tab's list of the opened tabs (owner, 29 November): the same rows as Opened files, most recently used first, the highlighted one drawn as the active tab. The list keeps focus and moves the highlight (aria-activedescendant); a click or Enter opens a row. Shown in a centred DialogPanel.",
+      "required": [
+        "type",
+        "props"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "TabSwitcher"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][A-Za-z0-9-]*$"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/expr"
+            },
+            {
+              "$ref": "#/$defs/read"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "label": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/message"
+                },
+                {
+                  "$ref": "#/$defs/read"
+                },
+                {
+                  "$ref": "#/$defs/expr"
+                }
+              ]
+            },
+            "items": {
+              "$ref": "#/$defs/read"
+            },
+            "activeId": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/read"
+                }
+              ]
+            }
+          },
+          "required": [
+            "label",
+            "items"
+          ]
+        },
+        "on": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "choose": {
+              "$ref": "#/$defs/actions"
+            },
+            "activeChange": {
               "$ref": "#/$defs/actions"
             }
           }

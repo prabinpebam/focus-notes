@@ -28,6 +28,7 @@
     "vm.about",
     "vm.files",
     "vm.opened",
+    "vm.switcher",
     "vm.findAll",
     "vm.move",
     "vm.confirm",
@@ -10526,6 +10527,22 @@
         ]
       }
     ]
+  }]
+},
+{
+  "type": "DialogPanel",
+  "id": "tabSwitcher",
+  "when": { "get": "vm.switcher.open" },
+  "props": { "label": { "t": "tabs.switcher.label" }, "open": { "get": "vm.switcher.open" }, "size": "s", "placement": "center", "height": "adaptive", "material": "frosted" },
+  "on": { "openChange": { "run": "tabs.switchCancel" } },
+  "children": [{
+    "type": "TabSwitcher",
+    "id": "tabSwitcherList",
+    "props": { "label": { "t": "tabs.switcher.label" }, "items": { "get": "vm.switcher.items" }, "activeId": { "get": "vm.switcher.activeId" } },
+    "on": {
+      "choose": { "run": "tabs.switchCommit", "args": { "id": { "get": "event.id" } } },
+      "activeChange": { "run": "tabs.switchSetActive", "args": { "id": { "get": "event.id" } } }
+    }
   }]
 }
 ]

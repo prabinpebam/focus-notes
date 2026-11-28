@@ -253,6 +253,12 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
       { id: "essays/long.md", kind: "note", level: 1, label: "What a calm writing app owes the person who opens it every morning", title: "essays/long.md", shared: true, published: true, siteLabel: "Shared and published", siteDescription: "Shared privately · anyone with the link and code can open it · until 26 Dec · Published · anyone can read it on your website" },
     ],
     openedFilesNone: [],
+    openedFilesSwitch: [
+      { id: "journal/2026-10-13.md", kind: "note", level: 1, label: "2026-10-13", title: "journal/2026-10-13.md" },
+      { id: "spec-ideas.md", kind: "note", level: 1, label: "Spec ideas", title: "spec-ideas.md", current: true, shared: true, siteLabel: "Shared", siteDescription: "Shared privately · anyone with the link and code can open it · until 26 Dec" },
+      { id: "essays/long.md", kind: "note", level: 1, label: "What a calm writing app owes the person who opens it every morning", title: "essays/long.md", shared: true, published: true, siteLabel: "Shared and published", siteDescription: "Shared privately · anyone with the link and code can open it · until 26 Dec · Published · anyone can read it on your website" },
+    ],
+    openedFilesSwitchActive: "spec-ideas.md",
     openedFilesMenu: [{ id: "opened", items: [{ id: "files.closeAllOpened", label: "Close all" }] }],
     noteBlocks: [
       { type: "heading", attrs: { level: 2 }, content: [{ type: "text", text: "On focus" }] },
@@ -350,6 +356,8 @@ export function registerGallery(app: App, contracts: readonly Contract[], naviga
         versionEmpty: { type: "array", items: { type: "object", properties: { id: { type: "string" }, text: { type: "string" }, changed: { type: "boolean" } } } },
         openedFiles: { type: "array", items: TREE_ITEM },
         openedFilesNone: { type: "array", items: TREE_ITEM },
+        openedFilesSwitch: { type: "array", items: TREE_ITEM },
+        openedFilesSwitchActive: { type: "string" },
         openedFilesMenu: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, items: { type: "array", items: ITEM } } } },
         themeTiles: { type: "array", items: { type: "object", properties: { id: { type: "string" }, label: { type: "string" }, kind: { type: "string" }, slot: { type: "string" }, badge: { type: "string" }, description: { type: "string" }, group: { type: "string" }, sample: { type: "string" }, colors: { type: "array", items: { type: "object", properties: { id: { type: "string" }, value: { type: "string" } } } } } } },
         themeFirst: { type: "string" },
