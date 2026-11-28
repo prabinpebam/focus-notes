@@ -40,6 +40,8 @@ interface Repo {
   /** Renames the app made (a file name following its title), so the commit says Rename. */
   moves: [string, string][];
   last?: RepoStatus;
+  /** The files in `last` that wait for backup by FIL-14's one rule: what the corner and the backup card count. */
+  waitingFiles?: Set<string>;
 }
 
 export interface GitSyncOptions {
@@ -161,6 +163,7 @@ export class GitSync {
           const res = await this.#run({ cwd: r.dir, args: [...STATUS_ARGS], read: true });
           if (res.code !== 0) throw new Error(`git status failed (${res.code})`);
           repo.last = parseStatus(res.stdout);
+          repo.waitingFiles = await this.#waitingFiles(repo, repo.last);
           return repo.last;
         }),
       }),
@@ -258,7 +261,30 @@ export class GitSync {
   }
 
   #waiting(statuses: (RepoStatus | undefined)[]): number {
-    return [this.notes, this.privateRepo].reduce((n, r) => n + (r?.pending.size ?? 0), 0) + statuses.reduce((n, s) => n + (s?.upstream ? s.ahead : 0), 0);
+    // The app's own saves not committed yet, and every file FIL-14's rule says waits (D-414), each once.
+    const files = [this.notes, this.privateRepo].reduce((n, r) => n + (r ? new Set([...r.pending.keys(), ...(r.waitingFiles ?? [])]).size : 0), 0);
+    return files + statuses.reduce((n, s) => n + (s?.upstream ? s.ahead : 0), 0);
+  }
+
+  /**
+   * The files in the notes folder that wait for backup (FIL-14's rule, `waitsForBackup`). A tracked
+   * file the app didn't write is checked against HEAD ignoring line endings, so a CRLF-only change
+   * never waits forever; when Git can't say, it waits (D-414).
+   */
+  async #waitingFiles(repo: Repo, st: RepoStatus): Promise<Set<string>> {
+    const files = new Set<string>();
+    const check: string[] = [];
+    for (const e of st.entries) {
+      if (e.kind === "unmerged" || !inNotes(e.path) || (e.from !== undefined && !inNotes(e.from))) continue;
+      if (e.kind === "changed" && !repo.pending.has(e.path)) check.push(e.path);
+      else if (await waitsForBackup(repo.dir, e)) files.add(e.path);
+    }
+    if (check.length) {
+      const d = await this.#run({ cwd: repo.dir, args: ["diff", "HEAD", "--name-only", "--no-renames", "--ignore-cr-at-eol", "-z", "--", NOTES], read: true });
+      const real = d.code === 0 ? new Set(d.stdout.split(/[\0\r\n]+/).filter(Boolean)) : undefined;
+      for (const p of check) if (!real || real.has(p)) files.add(p);
+    }
+    return files;
   }
 
   // ---- backup by repository (FIL-14, D-191) ----
@@ -287,7 +313,7 @@ export class GitSync {
         else if (/\.md$/i.test(rel)) notes.add(rel);
         else other.add(rel);
       };
-      for (const e of st.entries) if (e.kind !== "unmerged" && (e.from === undefined || inNotes(e.from)) && (await waitsForBackup(repo.dir, e))) add(e.path);
+      for (const p of repo.waitingFiles ?? []) add(p);
       for (const dir of await emptyFolders(join(repo.dir, NOTES))) folders.add(posix(relative(repo.dir, dir)));
       const commits = st.upstream ? st.ahead : 0;
       if (commits > 0) for (const p of (await unpushedPaths((args) => this.#git(repo, args), st)) ?? []) add(p);

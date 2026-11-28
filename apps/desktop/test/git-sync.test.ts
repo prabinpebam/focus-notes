@@ -435,6 +435,39 @@ describe("D-414: nothing says backed up before the launch count", () => {
     expect(claimsBackedUp(s.report)).toBe(true);
     expect(reports.some(claimsBackedUp)).toBe(true);
   });
+
+  // FIL-14's one rule (waitsForBackup): the corner counts what the backup card lists.
+  it("a note saved but not committed (left from before a crash) waits, at launch and after a refresh", async () => {
+    const { ws } = instance();
+    writeFileSync(join(ws, "private", "notes", "welcome.md"), "# Welcome\n\nSaved, never committed.\n");
+    const reports: SyncReport[] = [];
+    const s = await open(ws, { onReport: (r) => reports.push({ ...r }) });
+    expect(reports.filter(claimsBackedUp)).toEqual([]);
+    expect(s.report.waiting).toBe(1);
+    expect((await s.status()).waiting).toBe(1);
+    expect((await s.repos()).find((r) => r.repo === "private")?.notes).toBe(1);
+  });
+
+  it("an external edit (a new note another program wrote) waits", async () => {
+    const { ws } = instance();
+    write(join(ws, "notes", "from-elsewhere.md"), "# From elsewhere\n");
+    const s = await open(ws);
+    expect(s.report.waiting).toBe(1);
+    expect(claimsBackedUp(await s.status())).toBe(false);
+  });
+
+  it("no false alarm: a line-ending-only change or a touched but identical note doesn't wait", async () => {
+    const { ws } = instance();
+    const welcome = join(ws, "private", "notes", "welcome.md");
+    writeFileSync(welcome, readFileSync(welcome, "utf8").replace(/\r?\n/g, "\r\n"));
+    const hello = join(ws, "notes", "hello.md");
+    writeFileSync(hello, readFileSync(hello, "utf8"));
+    expect(git(join(ws, "private"), "status", "--porcelain"), "Git itself sees the line endings").toContain("notes/welcome.md");
+    const s = await open(ws);
+    expect(s.report.waiting).toBe(0);
+    expect(claimsBackedUp(await s.status())).toBe(true);
+    expect((await s.repos()).map((r) => r.notes)).toEqual([0, 0]);
+  });
 });
 
 describe("Repositories, the lock, the status cache, and credentials", () => {
